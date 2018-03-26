@@ -1,49 +1,53 @@
+#include <json_info.h>
 #include <Wire.h>
-#include "../C_Helpers/json_structs.h"
+#include <Servo.h>
 
 // Buffer Variables
-const int len = 128;
-char data[len];
-int i = 0;
+const int len = 32;
+uint8_t data[len];
+uint8_t KEY, VALUE;
 
 // Reading Variables
-int readLen;
-char* str;
+uint8_t readLen;
 
 // Setup pin watch for DIO
-const int num_DIO = 14;
-char DIO_SET[num_DIO];
-char DIO_VAL[num_DIO];
+const uint8_t num_DIO = 14;
+uint8_t DIO_SET[num_DIO];
+uint16_t DIO_VAL[num_DIO];
+Servo DIO_SERVO[num_DIO];
 float PWM_SCALE = 255.0 / 100.0;
 
 // Setup pin watch for AIO
-const int num_AIO = 6;
+const uint8_t num_AIO = 6;
 // No char array since no Analog outputs
 
 // Setup map values for AIO (0-5V)
 float AIO_LOW = 0.0;
 float AIO_HIGH = 5.0;
 float AIO_RES = 1024.0;
-float AIO_SCALE = (AIO_HIGH - AIO_LOW) / AIO_RES;
+float AIO_RANGE = 100.0;
+float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 
 // Setup infor for I2C connections
 bool i2cConnected = false;
 
 // Function prototypes
-void parseReceived();
+bool READ_NEXT(uint8_t rdata[], uint8_t n, uint32_t timeout);
+void PARSE();
 void READ_INFO();
 void SET_DIO();
 void SET_AIO();
 void RESET_VALUES();
 void RETURN_RECEIVED();
-void SET_CONN();
-void SEND_CONN();
-void DISCONNECT();
+void REMOTE_SET();
+void REMOTE_CONNECT();
+void REMOTE_SEND();
+void REMOTE_DISCONNECT();
 
 // Arduino setup function
 void setup()
 {
-    Serial.setTimeout(10000);
+    Serial.setTimeout(5000);
     Serial.begin(19200);
 
     RESET_VALUES();
@@ -52,64 +56,78 @@ void setup()
 // Arduino Loop function
 void loop()
 {
-    // Wait for serial data to be available
-    while (Serial.available() > 0)
+    // Read key/value pair (will wait for up to 1 seconds)
+    if (READ_NEXT(data, 2, 1000))
     {
-        // Read data until newline char
-        readLen = Serial.readBytesUntil('\n', data, sizeof(data));
-        if (readLen != 0)
-        {
-          parseReceived();
+        KEY = data[0];
+        VALUE = data[1];
 
-          // Set buffer back to 0 after done parsing
-          memset(data, 0, sizeof(data));
-          i = 0;
-        }
+        // Parse values
+        PARSE();
+
+        // Set buffer back to 0 after done parsing
+        memset(data, 0, sizeof(data));
     }
-
-    delay(10);
 }
 
 // Reset all internal values, for use with new connections
 void RESET_VALUES()
 {
-    memset(data, 0, sizeof(data));
-    memset(DIO_SET, DIO::INPUT, sizeof(DIO));
-    memset(DIO_VAL, DIO::OFF, sizeof(DIO));
-
     // Set all DIO to INPUTs
     for (int i = 0; i < num_DIO; i++)
     {
+        VALUE = DIO_SET[i];
+        if ((VALUE == IO_SERVO_US) || (VALUE == IO_SERVO_DEG)) DIO_SERVO[i].detach();
         pinMode(i, INPUT);
     }
 
-    i = 0;
+    // Reset buffered data
+    memset(data, 0, sizeof(data));
+    memset(DIO_SET, IO_INPUT, sizeof(DIO_SET));
+    memset(DIO_VAL, IO_OFF, sizeof(DIO_VAL));
+
+    // Reset and flush buffers
+    KEY = 0;
+    VALUE = 0;
+    Serial.flush();
+}
+
+// Read the next n bytes into rdata and return if successful
+bool READ_NEXT(uint8_t rdata[], uint8_t n, uint32_t timeout)
+{
+    uint8_t delay_time = 10;
+    uint32_t curr_time = 0;
+    
+    // Wait until all bytes loaded into serial buffer or timeout
+    while (Serial.available() < n)
+    {
+        delay(delay_time);
+        curr_time += delay_time;
+        if (timeout < curr_time) return false;
+    }
+
+    // Read bytes and return if successful
+    return (Serial.readBytes(rdata, n) == n);
 }
 
 // Parse the received data and set hardware accordingly
-void parseReceived()
+void PARSE()
 {
-    char key = data[i];
-    i = i + 1;
-
-    switch (key)
+    switch (KEY)
     {
-        case json_keys::read_values:
+        case JSON_READ:
             READ_INFO();
             break;
-        case json_keys::set_DIO:
+        case JSON_DIO:
             SET_DIO();
             break;
-        case json_keys::set_AIO:
+        case JSON_AIO:
             SET_AIO();
             break;
-        case json_keys::remote_connect:
-            SET_CONN();
+        case JSON_REMOTE_CONN:
+            REMOTE_SET();
             break;
-        case json_keys::remote_send:
-            SEND_CONN();
-            break;
-        case json_keys::reset:
+        case JSON_RESET:
             RESET_VALUES();
             break;
         default:
@@ -121,82 +139,130 @@ void parseReceived()
 // Read and return the requested information
 void READ_INFO()
 {
-    value = data[i];
-    Serial.print(json_keys::read_values);
-    switch (value)
+    Serial.write(JSON_READ);
+    switch (VALUE)
     {
-        case READ:AIO:
+        case JSON_AIO:
         {
-            Serial.print(READ::AIO);
-            float val = 0.0;
-            for (int i = 0; i < num_AIO; i++)
+            Serial.write(JSON_AIO);
+            uint16_t val = 0.0;
+            for (uint8_t i = 0; i < num_AIO; i++)
             {
-                val = AIO_SCALE * analogRead(i);
-                Serial.print(val);
+                // Scale value
+                val = (uint16_t) (AIO_SCALE * analogRead(i));
+
+                // Send pin num + value to GUI
+                Serial.write(i);
+                Serial.write((uint8_t) ((val >> 8) & 0xFF));
+                Serial.write((uint8_t) (val & 0xFF));
             }
-            Serial.print("\n");
             break;
         }
-        case READ::DIO:
+        case JSON_DIO:
         {
-            Serial.print(READ::DIO);
-            char val;
-            for (int i = 0; i < num_DIO; i++)
+            Serial.write(JSON_DIO);
+            uint16_t pos = 0;
+            for (uint8_t i = 0; i < num_DIO; i++)
             {
-                if (DIO_SET[i] == DIO::INPUT) val = (digitalRead(i)) ? DIO::ON : DIO::OFF;
-                else val = DIO_VAL[i];
-                Serial.print(val);
+                // Iterate over pins
+                switch (DIO_SET[i])
+                {
+                    case IO_INPUT:
+                        pos = (digitalRead(i)) ? IO_ON : IO_OFF;
+                        break;
+                    case IO_SERVO_US:
+                    case IO_SERVO_DEG:
+                        pos = DIO_SERVO[i].read();
+                        break;
+                    case IO_PWM:
+                    case IO_OUTPUT:
+                        pos = DIO_VAL[i];
+                        break;
+                }
+
+                // Send pin num + value to GUI
+                Serial.write(i);
+                Serial.write((uint8_t) ((pos >> 8) & 0xFF));
+                Serial.write((uint8_t) (pos & 0xFF));
             }
-            Serial.print("\n");
             break;
         }
         default:
             RETURN_RECEIVED();
             break;
     }
+    Serial.write(JSON_READ);
+    Serial.write(JSON_END);
 }
 
 // Set the DIO as per the command
 void SET_DIO()
 {
-    if (strlen(&data) < (i+2))
-    {
-        RETURN_RECEIVED();
-        return;
-    }
+    // Set current value to PIN
+    uint8_t PIN = VALUE;
 
-    char PIN = data[i+0];
-    char IO = data[i+1];
-    char VAL = data[i+2];
-    i = i + 3;
+    // Read follow up packets (blocks for up to 1 second)
+    if (!READ_NEXT(data, 3, 1000)) return;
 
-    int p = atoi(PIN);
-    int v = atoi(VAL);
-    if (DIO_SET[p] != IO)
+    // Set follow up packets to IO and pin val
+    uint8_t IO = (uint8_t) data[0];
+    uint16_t PIN_VAL = (uint16_t) ((((uint16_t) data[1]) << 8) | data[2]);
+
+    if (DIO_SET[PIN] != IO)
     {
+        switch (DIO_SET[PIN])
+        {
+            case IO_SERVO_US:
+            case IO_SERVO_DEG:
+                DIO_SERVO[PIN].detach();
+                break;
+            default:
+                break;
+        }
+        
         switch (IO)
         {
-            case DIO::INPUT:
-                pinMode(p, INPUT);
-                DIO_SET[p] = DIO::INPUT;
+            case IO_INPUT:
+                pinMode(PIN, INPUT);
                 break;
-            case DIO::OUTPUT:
-                pinMode(p, OUTPUT);
-                DIO_SET[p] = DIO::OUTPUT;
+            case IO_OUTPUT:
+                pinMode(PIN, OUTPUT);
                 break;
-            case DIO::PWM:
-                pinMode(p, OUTPUT);
-                DIO_SET[p] = DIO::PWM;
+            case IO_PWM:
+                pinMode(PIN, OUTPUT);
+                break;
+            case IO_SERVO_US:
+            case IO_SERVO_DEG:
+                DIO_SERVO[PIN].attach(PIN);
                 break;
             default:
                 RETURN_RECEIVED();
-                break;
+                return;
         }
+        
+        DIO_SET[PIN] = IO;
     }
 
-    if (DIO_VAL[p] == DIO::OUTPUT) digitalWrite(p, v);
-    else if (DIO_VAL[p] == DIO::PWM) analogWrite(p, (int) (PWM_SCALE * (float) v));
-    else RETURN_RECEIVED();
+    switch (DIO_SET[PIN])
+    {
+        case IO_OUTPUT:
+            digitalWrite(PIN, PIN_VAL);
+            break;
+        case IO_PWM:
+            analogWrite(PIN, (int) (PWM_SCALE * (float) PIN_VAL));
+            break;
+        case IO_SERVO_US:
+            DIO_SERVO[PIN].writeMicroseconds(PIN_VAL);
+            break;
+        case IO_SERVO_DEG:
+            DIO_SERVO[PIN].write(PIN_VAL);
+            break;
+        default:
+            RETURN_RECEIVED();
+            return;
+    }
+
+    DIO_VAL[PIN] = PIN_VAL;
 }
 
 // Empty for the Arduino Uno since no Analog out other than PWM
@@ -209,27 +275,43 @@ void SET_AIO()
 
 void RETURN_RECEIVED()
 {
-    Serial.print(data);
-    Serial.print('\n');
+    Serial.write(KEY);
+    Serial.write(VALUE);
 }
 
-void SET_CONN()
+void REMOTE_SET()
 {
-    char func = data[i];
-    i = i + 1;
-
-    switch (func)
+    switch (VALUE)
     {
-        case REMOTE_CONN::disconnect:
-            DISCONNECT();
+        case REMOTE_CONN_SET_TX:
+        case REMOTE_CONN_SET_RX:
+        case REMOTE_CONN_SET_TX_RX:
+        case REMOTE_CONN_SET_NONE:
+            // Set action here
             break;
-        case REMOTE_CONN::UART:
+        case REMOTE_CONN_DISCONNECT:
+            REMOTE_DISCONNECT();
+            break;
+        case REMOTE_CONN_SEND:
+            REMOTE_SEND();
+            break;
+        default:
+            RETURN_RECEIVED();
+            break;
+    }
+}
+
+void REMOTE_CONNECT()
+{
+    switch (VALUE)
+    {
+        case REMOTE_CONN_UART:
             // UART Stuff
             break;
-        case REMOTE_CONN::SPI:
+        case REMOTE_CONN_SPI:
             // SPI Stuff
             break;
-        case REMOTE_CONN::I2C:
+        case REMOTE_CONN_I2C:
             // I2C Stuff
             break;
         default:
@@ -238,25 +320,22 @@ void SET_CONN()
     }
 }
 
-void SEND_CONN()
+void REMOTE_SEND()
 {
     // Send stuff across connection (must already have connected)
 }
 
-void DISCONNECT()
+void REMOTE_DISCONNECT()
 {
-    char conn = data[i];
-    i = i + 1;
-
-    switch (conn)
+    switch (VALUE)
     {
-        case REMOTE_CONN::UART:
+        case REMOTE_CONN_UART:
             // UART Stuff
             break;
-        case REMOTE_CONN::SPI:
+        case REMOTE_CONN_SPI:
             // SPI Stuff
             break;
-        case REMOTE_CONN::I2C:
+        case REMOTE_CONN_I2C:
             // I2C Stuff
             break;
         default:
