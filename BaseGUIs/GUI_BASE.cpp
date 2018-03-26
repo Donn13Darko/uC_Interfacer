@@ -119,11 +119,10 @@ bool GUI_BASE::getOpenFilePath(QString *filePath)
 
 bool GUI_BASE::getSaveFilePath(QString *filePath)
 {
-    *filePath = QFileDialog::getSaveFileName(this, tr("Save Location"), "", tr("All Files (*)"));;
+    *filePath = QFileDialog::getSaveFileName(this, tr("Save Location"),
+                                             "", tr("All Files (*)"));;
 
-    if (filePath->length() <= 0)
-        return false;
-    return true;
+    return !filePath->isEmpty();
 }
 
 bool GUI_BASE::saveFile(QString filePath, QByteArray data)
