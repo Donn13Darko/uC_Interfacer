@@ -392,6 +392,8 @@ void GUI_8AIO_16DIO_COMM::recordLogData()
 
 void GUI_8AIO_16DIO_COMM::recordPinValues(PinTypeInfo *pInfo)
 {
+    if (logStream == nullptr) return;
+
     *logStream << pInfo->pinType << ",";
 
     QLineEdit *textValue;
@@ -410,6 +412,8 @@ void GUI_8AIO_16DIO_COMM::recordPinValues(PinTypeInfo *pInfo)
             colSel += pInfo->numButtons;
         }
     }
+
+    logStream->flush();
 }
 
 void GUI_8AIO_16DIO_COMM::on_updateStarter_clicked()
@@ -454,6 +458,7 @@ void GUI_8AIO_16DIO_COMM::on_startLog_clicked()
     logStream = new QTextStream(logFile);
     *logStream << "Started: " << QDateTime::currentDateTimeUtc().toString() << " ";
     *logStream << "with update rate " << ui->LOG_UREdit->text() << " seconds\n";
+    logStream->flush();
 
     logTimer.start((int) (S2MS * ui->LOG_UREdit->text().toFloat()));
     ui->startLog->setText("Running");
@@ -469,6 +474,7 @@ void GUI_8AIO_16DIO_COMM::on_stopLog_clicked()
     if (!logIsRecording) return;
     logTimer.stop();
 
+    logStream->flush();
     logFile->close();
     delete logStream;
     delete logFile;

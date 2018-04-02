@@ -51,5 +51,5 @@ FORMS += \
     BaseGUIs/GUI_DATA_TRANSMIT.ui
 
 DISTFILES += \
-    uCInterfaces/arduinouno_UART/arduinouno_UART.ino \
-    uCInterfaces/arduinomega_UART/arduinomega_UART.ino
+    uCInterfaces/arduinouno_io_uart/arduinouno_io_uart.ino \
+    uCInterfaces/arduinomega_io_uart/arduinomega_io_uart.ino

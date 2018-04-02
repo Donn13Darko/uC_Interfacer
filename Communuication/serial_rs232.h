@@ -17,6 +17,8 @@ public:
     void open();
     void close();
     bool isConnected();
+    static QStringList getDevices();
+
     static QStringList Baudrate_Defaults;
 
 signals:

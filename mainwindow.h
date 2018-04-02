@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QStringList>
 #include <QMap>
+#include <QTimer>
 
 namespace Ui {
 class MainWindow;
@@ -19,11 +20,13 @@ public:
 
 private slots:
     void on_DeviceCombo_currentIndexChanged(int);
+    void on_GUITypeCombo_currentIndexChanged(int);
     void on_ConnTypeCombo_currentIndexChanged(int);
     void on_SpeedCombo_currentIndexChanged(int);
-    void on_GUITypeCombo_currentIndexChanged(int);
 
     void on_DeviceConnect_clicked();
+
+    void updateConnInfoCombo();
 
 private:
     Ui::MainWindow *ui;
@@ -41,6 +44,8 @@ private:
 
     void updateTypeCombos();
     void updateSpeedCombo();
+
+    QTimer updateConnInfo;
 };
 
 #endif // MAINWINDOW_H

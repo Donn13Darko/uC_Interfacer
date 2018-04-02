@@ -3,6 +3,7 @@
 
 #include "uCInterfaces/arduinouno_io_gui.h"
 #include "BaseGUIs/GUI_DATA_TRANSMIT.h"
+#include "Communuication/serial_rs232.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -36,7 +37,8 @@ MainWindow::MainWindow(QWidget *parent) :
     on_SpeedCombo_currentIndexChanged(ui->SpeedCombo->currentIndex());
     on_GUITypeCombo_currentIndexChanged(ui->GUITypeCombo->currentIndex());
 
-    ui->ConnInfoEdit->clear();
+    // Add connections
+    connect(&updateConnInfo, SIGNAL(timeout()), this, SLOT(updateConnInfoCombo()));
 }
 
 MainWindow::~MainWindow()
@@ -53,13 +55,20 @@ void MainWindow::on_DeviceCombo_currentIndexChanged(int)
     updateTypeCombos();
 }
 
+void MainWindow::on_GUITypeCombo_currentIndexChanged(int)
+{
+    // Update Changed Data
+    guiType = ui->GUITypeCombo->currentText();
+}
+
 void MainWindow::on_ConnTypeCombo_currentIndexChanged(int)
 {
     // Update Changed Data
     connType = ui->ConnTypeCombo->currentText();
 
-    // Process changes to the speed combo
+    // Process changes to the speed & info combo
     updateSpeedCombo();
+    updateConnInfoCombo();
 }
 
 void MainWindow::on_SpeedCombo_currentIndexChanged(int)
@@ -68,16 +77,10 @@ void MainWindow::on_SpeedCombo_currentIndexChanged(int)
     speed = ui->SpeedCombo->currentText();
 }
 
-void MainWindow::on_GUITypeCombo_currentIndexChanged(int)
-{
-    // Update Changed Data
-    guiType = ui->GUITypeCombo->currentText();
-}
-
 void MainWindow::on_DeviceConnect_clicked()
 {
     // Get connection info
-    connInfo = ui->ConnInfoEdit->text();
+    connInfo = ui->ConnInfoCombo->currentText();
     QStringList uCConn;
     uCConn << deviceType << connType;
     uCConn << speed << connInfo << guiType;
@@ -126,4 +129,23 @@ void MainWindow::updateSpeedCombo()
     else ui->SpeedCombo->addItems(newItems);
 
     on_SpeedCombo_currentIndexChanged(ui->SpeedCombo->currentIndex());
+}
+
+void MainWindow::updateConnInfoCombo()
+{
+    if (connType == "RS-232")
+    {
+        updateConnInfo.start(1000);
+        ui->ConnInfoCombo->setEditable(false);
+
+        QStringList avail = Serial_RS232::getDevices();
+        QString curr = ui->ConnInfoCombo->currentText();
+        ui->ConnInfoCombo->clear();
+        ui->ConnInfoCombo->addItems(avail);
+        ui->ConnInfoCombo->setCurrentText(curr);
+    } else
+    {
+        updateConnInfo.stop();
+        ui->ConnInfoCombo->setEditable(true);
+    }
 }

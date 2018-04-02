@@ -11,14 +11,14 @@ uint8_t KEY, VALUE;
 uint8_t readLen;
 
 // Setup pin watch for DIO
-const uint8_t num_DIO = 14;
+const uint8_t num_DIO = 16;
 uint8_t DIO_SET[num_DIO];
 uint16_t DIO_VAL[num_DIO];
 Servo DIO_SERVO[num_DIO];
 float PWM_SCALE = 255.0 / 100.0;
 
 // Setup pin watch for AIO
-const uint8_t num_AIO = 6;
+const uint8_t num_AIO = 8;
 // No char array since no Analog outputs
 
 // Setup map values for AIO (0-5V)

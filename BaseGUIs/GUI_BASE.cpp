@@ -110,17 +110,16 @@ void GUI_BASE::sendFile(QString filePath, size_t chunkSize)
 
 bool GUI_BASE::getOpenFilePath(QString *filePath)
 {
-    *filePath = QFileDialog::getOpenFileName(this, tr("Open"), "", tr("All Files (*)"));;
+    *filePath = QFileDialog::getOpenFileName(this, tr("Open"),
+                                             "", tr("All Files (*)"));;
 
-    if (filePath->length() <= 0)
-        return false;
-    return true;
+    return !filePath->isEmpty();
 }
 
 bool GUI_BASE::getSaveFilePath(QString *filePath)
 {
     *filePath = QFileDialog::getSaveFileName(this, tr("Save Location"),
-                                             "", tr("All Files (*)"));;
+                                             "", tr("All Files (*)"));
 
     return !filePath->isEmpty();
 }
