@@ -28,11 +28,11 @@ float AIO_RES = 1024.0;
 float AIO_RANGE = 100.0;
 float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 
-// Setup infor for I2C connections
+// Setup info for I2C connections
 bool i2cConnected = false;
 
 // Function prototypes
-bool READ_NEXT(uint8_t rdata[], uint8_t n, uint32_t timeout);
+uint8_t READ_NEXT(uint8_t rdata[], uint8_t n, uint32_t timeout);
 void PARSE();
 void READ_INFO();
 void SET_DIO();
@@ -43,6 +43,7 @@ void REMOTE_SET();
 void REMOTE_CONNECT();
 void REMOTE_SEND();
 void REMOTE_DISCONNECT();
+void RECV_FILE();
 
 // Arduino setup function
 void setup()
@@ -57,7 +58,7 @@ void setup()
 void loop()
 {
     // Read key/value pair (will wait for up to 1 seconds)
-    if (READ_NEXT(data, 2, 1000))
+    if (READ_NEXT(data, 2, 1000) == 2)
     {
         KEY = data[0];
         VALUE = data[1];
@@ -93,7 +94,7 @@ void RESET_VALUES()
 }
 
 // Read the next n bytes into rdata and return if successful
-bool READ_NEXT(uint8_t rdata[], uint8_t n, uint32_t timeout)
+uint8_t READ_NEXT(uint8_t rdata[], uint8_t n, uint32_t timeout)
 {
     uint8_t delay_time = 10;
     uint32_t curr_time = 0;
@@ -106,8 +107,8 @@ bool READ_NEXT(uint8_t rdata[], uint8_t n, uint32_t timeout)
         if (timeout < curr_time) return false;
     }
 
-    // Read bytes and return if successful
-    return (Serial.readBytes(rdata, n) == n);
+    // Read bytes and return num read
+    return Serial.readBytes(rdata, n);
 }
 
 // Parse the received data and set hardware accordingly
@@ -126,6 +127,9 @@ void PARSE()
             break;
         case JSON_REMOTE_CONN:
             REMOTE_SET();
+            break;
+        case JSON_FILE:
+            RECV_FILE();
             break;
         case JSON_RESET:
             RESET_VALUES();
@@ -202,7 +206,7 @@ void SET_DIO()
     uint8_t PIN = VALUE;
 
     // Read follow up packets (blocks for up to 1 second)
-    if (!READ_NEXT(data, 3, 1000)) return;
+    if (READ_NEXT(data, 3, 1000) != 3) return;
 
     // Set follow up packets to IO and pin val
     uint8_t IO = (uint8_t) data[0];
@@ -343,3 +347,27 @@ void REMOTE_DISCONNECT()
             break;
     }
 }
+
+void RECV_FILE()
+{
+    // Set buffer back to 0 after done parsing
+    memset(data, 0, sizeof(data));
+    uint8_t rdLen = READ_NEXT (data, len, 1000);
+
+    // Parse data and read next set until FILE END or RESET set
+    // TO DO: add custom code defining what to do with received data
+    while (rdLen != 0)
+    {
+        for (uint8_t i = 0; i < (rdLen - 1); i++)
+        {
+            if ((data[i] == JSON_FILE) && (data[i+1] == JSON_END))
+              return;
+            else if ((data[i] == JSON_RESET)
+              && ((data[i+1] == JSON_START) || (data[i+1] == JSON_END)))
+              return;
+        }
+
+        rdLen = READ_NEXT (data, len, 1000);
+    }
+}
+
