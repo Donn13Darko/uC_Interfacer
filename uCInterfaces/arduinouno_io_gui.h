@@ -13,7 +13,7 @@ class ArduinoUno_IO : public GUI_8AIO_16DIO_COMM
     Q_OBJECT
 
 public:
-    explicit ArduinoUno_IO(QStringList params, QWidget *parent = 0);
+    explicit ArduinoUno_IO(QWidget *parent = 0);
     ~ArduinoUno_IO();
 };
 

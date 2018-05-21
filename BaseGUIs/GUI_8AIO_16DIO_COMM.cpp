@@ -4,20 +4,15 @@
 #include <QDateTime>
 #include <QList>
 
-#include <QDebug>
+#include "Communuication/serial_rs232.h"
 
-GUI_8AIO_16DIO_COMM::GUI_8AIO_16DIO_COMM(QStringList params, QWidget *parent) :
-    GUI_PIN_BASE(params, this),
+GUI_8AIO_16DIO_COMM::GUI_8AIO_16DIO_COMM(QWidget *parent) :
+    GUI_PIN_BASE(parent),
     ui(new Ui::GUI_8AIO_16DIO_COMM)
 {
     ui->setupUi(this);
-    setWindowTitle(params[0]);
-    ui->InfoLabel->setText(params.join(", "));
     ui->updateStarter->setText("Start");
     ui->startLog->setText("Start Log");
-
-    if (params[1] == "RS-232")
-        connect(serial_rs232, SIGNAL(readyRead(QByteArray)), this, SLOT(receive(QByteArray)));
 
     initialize();
     connectUniversalSlots();
@@ -165,83 +160,13 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 }
 
-void GUI_8AIO_16DIO_COMM::on_RESEST_BUTTON_clicked()
+void GUI_8AIO_16DIO_COMM::on_RESET_BUTTON_clicked()
 {
-    PinTypeInfo pInfo;
-    QWidget *item;
-    int rowNum, colNum;
+    // Reset the GUI
+    reset_gui();
 
-    // Disconnect sending slot
-    send_disconnect();
-
-    // Stop logging and updating if running
-    on_stopLog_clicked();
-    on_updateStopper_clicked();
-
-    // Get AIO pin info
-    if (getPinTypeInfo(JSON_AIO, &pInfo))
-    {
-        // Set AIO combo to start
-        for (int i = 0; i < pInfo.numPins; i++)
-        {
-            getPinLocation(&rowNum, &colNum, &pInfo, i);
-
-            // Set AIO Combo
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
-            {
-                ((QComboBox*) item)->setCurrentIndex(0);
-            }
-
-            // Set AIO Slider
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
-            {
-                ((QSlider*) item)->setValue(0);
-            }
-
-            // Set AIO Text
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
-            {
-                ((QLineEdit*) item)->setText("0.0");
-            }
-        }
-    }
-
-    // Get DIO pin info
-    if (getPinTypeInfo(JSON_DIO, &pInfo))
-    {
-        // Set DIO combo to start
-        for (int i = 0; i < pInfo.numPins; i++)
-        {
-            getPinLocation(&rowNum, &colNum, &pInfo, i);
-
-            // Set DIO Combo
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
-            {
-                ((QComboBox*) item)->setCurrentIndex(0);
-            }
-
-            // Set DIO Slider
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
-            {
-                ((QSlider*) item)->setValue(0);
-            }
-
-            // Set DIO Text
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
-            {
-                ((QLineEdit*) item)->setText("0");
-            }
-        }
-    }
-
-    currData.clear();
-
-    // Reconnect sending slot
-    send_connect();
-
-    // Send reset JSON
-    send({JSON_RESET, JSON_START});
-    send({JSON_RESET, JSON_END});
+    // Reset the Remote
+    reset_remote();
 }
 
 void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()
@@ -723,6 +648,81 @@ void GUI_8AIO_16DIO_COMM::setConTypes(QStringList connTypes, QList<char> mapValu
     ui->ConnTypeCombo->addItems(connTypes);
 
     on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
+}
+
+void GUI_8AIO_16DIO_COMM::reset_gui()
+{
+    PinTypeInfo pInfo;
+    QWidget *item;
+    int rowNum, colNum;
+
+    // Disconnect sending slot
+    emit connect_signals(false);
+
+    // Stop logging and updating if running
+    on_stopLog_clicked();
+    on_updateStopper_clicked();
+
+    // Get AIO pin info
+    if (getPinTypeInfo(JSON_AIO, &pInfo))
+    {
+        // Set AIO combo to start
+        for (int i = 0; i < pInfo.numPins; i++)
+        {
+            getPinLocation(&rowNum, &colNum, &pInfo, i);
+
+            // Set AIO Combo
+            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
+            {
+                ((QComboBox*) item)->setCurrentIndex(0);
+            }
+
+            // Set AIO Slider
+            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
+            {
+                ((QSlider*) item)->setValue(0);
+            }
+
+            // Set AIO Text
+            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
+            {
+                ((QLineEdit*) item)->setText("0.0");
+            }
+        }
+    }
+
+    // Get DIO pin info
+    if (getPinTypeInfo(JSON_DIO, &pInfo))
+    {
+        // Set DIO combo to start
+        for (int i = 0; i < pInfo.numPins; i++)
+        {
+            getPinLocation(&rowNum, &colNum, &pInfo, i);
+
+            // Set DIO Combo
+            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
+            {
+                ((QComboBox*) item)->setCurrentIndex(0);
+            }
+
+            // Set DIO Slider
+            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
+            {
+                ((QSlider*) item)->setValue(0);
+            }
+
+            // Set DIO Text
+            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
+            {
+                ((QLineEdit*) item)->setText("0");
+            }
+        }
+    }
+
+    currData.clear();
+
+    // Reconnect sending slot
+    emit connect_signals(true);
 }
 
 bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)

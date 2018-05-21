@@ -1,7 +1,6 @@
 #ifndef GUI_PIN_BASE_H
 #define GUI_PIN_BASE_H
 
-#include <QDialog>
 #include <QGridLayout>
 #include <QLayoutItem>
 #include <QMap>
@@ -39,7 +38,7 @@ class GUI_PIN_BASE : public GUI_BASE
     Q_OBJECT
 
 public:
-    GUI_PIN_BASE(QStringList params, QWidget *parent = 0);
+    GUI_PIN_BASE(QWidget *parent = 0);
     ~GUI_PIN_BASE();
 
 protected:

@@ -18,11 +18,13 @@ class GUI_8AIO_16DIO_COMM : public GUI_PIN_BASE
     Q_OBJECT
 
 public:
-    explicit GUI_8AIO_16DIO_COMM(QStringList params, QWidget *parent = 0);
+    explicit GUI_8AIO_16DIO_COMM(QWidget *parent = 0);
     ~GUI_8AIO_16DIO_COMM();
 
+    void reset_gui();
+
 private slots:
-    void on_RESEST_BUTTON_clicked();
+    void on_RESET_BUTTON_clicked();
 
     void DIO_ComboChanged();
     void DIO_SliderValueChanged();

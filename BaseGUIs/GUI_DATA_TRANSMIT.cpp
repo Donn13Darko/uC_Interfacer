@@ -4,33 +4,36 @@
 #include <QFile>
 #include <QFileDialog>
 
-GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QStringList params, size_t chunk, QWidget *parent) :
-    GUI_BASE(params, parent),
+GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(size_t chunk, QWidget *parent) :
+    GUI_BASE(parent),
     ui(new Ui::GUI_DATA_TRANSMIT)
 {
     ui->setupUi(this);
-    setWindowTitle(params[0]);
-    ui->InfoLabel->setText(params.join(", "));
     chunkSize = chunk;
 
     // Connect radio group change signals
     connect(ui->MSG_Sel, SIGNAL(buttonClicked(int)), this, SLOT(input_RadioClicked(int)));
     connect(ui->TX_RX_Sel, SIGNAL(buttonClicked(int)), this, SLOT(TX_RX_RadioClicked(int)));
 
-    // Set intial radio values
+    // Set radio values
     ui->File_Radio->setChecked(true);
     ui->TX_RX_Radio->setChecked(true);
     input_RadioClicked(0);
     TX_RX_RadioClicked(0);
-
-    // Connect read signals
-    if (params[1] == "RS-232")
-        connect(serial_rs232, SIGNAL(readyRead(QByteArray)), this, SLOT(receive(QByteArray)));
 }
 
 GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
 {
     delete ui;
+}
+
+void GUI_DATA_TRANSMIT::reset_gui()
+{
+    // Set radio values
+    ui->File_Radio->setChecked(true);
+    ui->TX_RX_Radio->setChecked(true);
+    input_RadioClicked(0);
+    TX_RX_RadioClicked(0);
 }
 
 void GUI_DATA_TRANSMIT::input_RadioClicked(int)

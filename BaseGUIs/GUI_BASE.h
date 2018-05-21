@@ -2,32 +2,32 @@
 #define GUI_BASE_H
 
 #include <QObject>
-#include <QDialog>
+#include <QWidget>
 
-#include "Communuication/serial_rs232.h"
 #include "Communuication/json_info.h"
+#include <QDebug>
 
-class GUI_BASE : public QDialog
+class GUI_BASE : public QWidget
 {
     Q_OBJECT
 
 public:
-    GUI_BASE(QStringList params, QWidget *parent = 0);
+    GUI_BASE(QWidget *parent = 0);
     ~GUI_BASE();
 
     static bool showMessage(QString msg);
+    void reset_gui() {/*Default do nothing*/}
 
 signals:
     void write_data(QByteArray data);
     void write_data(std::initializer_list<uint8_t> data);
+    void connect_signals(bool connect);
+
+private slots:
+    void receive(QByteArray) {/*Default do nothing*/}
 
 protected:
-    QStringList connParams;
-    Serial_RS232 *serial_rs232;
     static float S2MS;
-
-    void send_connect();
-    void send_disconnect();
 
     void send(QByteArray data);
     void send(std::initializer_list<uint8_t> data);
@@ -36,6 +36,8 @@ protected:
     bool getOpenFilePath(QString *filePath);
     bool getSaveFilePath(QString *filePath);
     bool saveFile(QString filePath, QByteArray data);
+
+    void reset_remote();
 };
 
 #endif // GUI_BASE_H

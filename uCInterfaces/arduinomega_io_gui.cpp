@@ -4,8 +4,8 @@
 #include <QMessageBox>
 #include <QTimer>
 
-ArduinoMega::ArduinoMega(QStringList params, QWidget *parent) :
-    GUI_8AIO_16DIO_COMM(params, parent)
+ArduinoMega::ArduinoMega(QWidget *parent) :
+    GUI_8AIO_16DIO_COMM(parent)
 {
     // Add new pin settings
     addNewPinSettings(  {JSON_DIO},

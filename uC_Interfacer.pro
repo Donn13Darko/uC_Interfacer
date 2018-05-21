@@ -25,17 +25,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp \
     BaseGUIs/GUI_8AIO_16DIO_COMM.cpp \
     Communuication/serial_rs232.cpp \
     uCInterfaces/arduinouno_io_gui.cpp \
     BaseGUIs/GUI_DATA_TRANSMIT.cpp \
     BaseGUIs/GUI_PIN_BASE.cpp \
     BaseGUIs/GUI_BASE.cpp \
-    uCInterfaces/arduinomega_io_gui.cpp
+    uCInterfaces/arduinomega_io_gui.cpp \
+    BaseGUIs/GUI_PROGRAMMER.cpp \
+    mainwindow.cpp
 
 HEADERS += \
-        mainwindow.h \
     BaseGUIs/GUI_8AIO_16DIO_COMM.h \
     Communuication/serial_rs232.h \
     uCInterfaces/arduinouno_io_gui.h \
@@ -43,12 +43,15 @@ HEADERS += \
     BaseGUIs/GUI_PIN_BASE.h \
     BaseGUIs/GUI_BASE.h \
     uCInterfaces/arduinomega_io_gui.h \
-    Communuication/json_info.h
+    Communuication/json_info.h \
+    BaseGUIs/GUI_PROGRAMMER.h \
+    mainwindow.h
 
 FORMS += \
-        mainwindow.ui \
+    BaseGUIs/GUI_DATA_TRANSMIT.ui \
     BaseGUIs/GUI_8AIO_16DIO_COMM.ui \
-    BaseGUIs/GUI_DATA_TRANSMIT.ui
+    BaseGUIs/GUI_PROGRAMMER.ui \
+    mainwindow.ui
 
 DISTFILES += \
     uCInterfaces/arduinouno_io_uart/arduinouno_io_uart.ino \

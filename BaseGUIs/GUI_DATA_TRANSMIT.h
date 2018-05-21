@@ -1,8 +1,6 @@
 #ifndef GUI_DATA_TRANSMIT_H
 #define GUI_DATA_TRANSMIT_H
 
-#include <QDialog>
-
 #include "GUI_BASE.h"
 
 namespace Ui {
@@ -14,8 +12,10 @@ class GUI_DATA_TRANSMIT : public GUI_BASE
     Q_OBJECT
 
 public:
-    explicit GUI_DATA_TRANSMIT(QStringList params, size_t chunk, QWidget *parent = 0);
+    explicit GUI_DATA_TRANSMIT(size_t chunk, QWidget *parent = 0);
     ~GUI_DATA_TRANSMIT();
+
+    void reset_gui();
 
 private slots:
     void input_RadioClicked(int);

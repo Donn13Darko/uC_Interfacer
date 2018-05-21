@@ -13,7 +13,7 @@ class ArduinoMega : public GUI_8AIO_16DIO_COMM
     Q_OBJECT
 
 public:
-    explicit ArduinoMega(QStringList params, QWidget *parent = 0);
+    explicit ArduinoMega(QWidget *parent = 0);
     ~ArduinoMega();
 };
 

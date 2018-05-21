@@ -1,7 +1,7 @@
 #include "GUI_PIN_BASE.h"
 
-GUI_PIN_BASE::GUI_PIN_BASE(QStringList params, QWidget *parent) :
-    GUI_BASE(params, this)
+GUI_PIN_BASE::GUI_PIN_BASE(QWidget *parent) :
+    GUI_BASE(parent)
 {
 }
 
