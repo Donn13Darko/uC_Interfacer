@@ -1,7 +1,7 @@
 #ifndef ARDUINOMEGA_H
 #define ARDUINOMEGA_H
 
-#include "BaseGUIs/GUI_8AIO_16DIO_COMM.h"
+#include "../baseGUIs/GUI_8AIO_16DIO_COMM.h"
 #include <QMap>
 
 namespace Ui {

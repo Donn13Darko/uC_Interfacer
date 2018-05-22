@@ -25,32 +25,32 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-    BaseGUIs/GUI_8AIO_16DIO_COMM.cpp \
-    Communuication/serial_rs232.cpp \
+    baseGUIs/GUI_8AIO_16DIO_COMM.cpp \
+    communication/serial_rs232.cpp \
     uCInterfaces/arduinouno_io_gui.cpp \
-    BaseGUIs/GUI_DATA_TRANSMIT.cpp \
-    BaseGUIs/GUI_PIN_BASE.cpp \
-    BaseGUIs/GUI_BASE.cpp \
+    baseGUIs/GUI_DATA_TRANSMIT.cpp \
+    baseGUIs/GUI_PIN_BASE.cpp \
+    baseGUIs/GUI_BASE.cpp \
     uCInterfaces/arduinomega_io_gui.cpp \
-    BaseGUIs/GUI_PROGRAMMER.cpp \
+    baseGUIs/GUI_PROGRAMMER.cpp \
     mainwindow.cpp
 
 HEADERS += \
-    BaseGUIs/GUI_8AIO_16DIO_COMM.h \
-    Communuication/serial_rs232.h \
+    baseGUIs/GUI_8AIO_16DIO_COMM.h \
+    communication/serial_rs232.h \
     uCInterfaces/arduinouno_io_gui.h \
-    BaseGUIs/GUI_DATA_TRANSMIT.h \
-    BaseGUIs/GUI_PIN_BASE.h \
-    BaseGUIs/GUI_BASE.h \
+    baseGUIs/GUI_DATA_TRANSMIT.h \
+    baseGUIs/GUI_PIN_BASE.h \
+    baseGUIs/GUI_BASE.h \
     uCInterfaces/arduinomega_io_gui.h \
-    Communuication/json_info.h \
-    BaseGUIs/GUI_PROGRAMMER.h \
+    communication/json_info.h \
+    baseGUIs/GUI_PROGRAMMER.h \
     mainwindow.h
 
 FORMS += \
-    BaseGUIs/GUI_DATA_TRANSMIT.ui \
-    BaseGUIs/GUI_8AIO_16DIO_COMM.ui \
-    BaseGUIs/GUI_PROGRAMMER.ui \
+    baseGUIs/GUI_DATA_TRANSMIT.ui \
+    baseGUIs/GUI_8AIO_16DIO_COMM.ui \
+    baseGUIs/GUI_PROGRAMMER.ui \
     mainwindow.ui
 
 DISTFILES += \

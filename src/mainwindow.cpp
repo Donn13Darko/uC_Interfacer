@@ -3,8 +3,8 @@
 
 #include "uCInterfaces/arduinouno_io_gui.h"
 #include "uCInterfaces/arduinomega_io_gui.h"
-#include "BaseGUIs/GUI_DATA_TRANSMIT.h"
-#include "BaseGUIs/GUI_PROGRAMMER.h"
+#include "baseGUIs/GUI_DATA_TRANSMIT.h"
+#include "baseGUIs/GUI_PROGRAMMER.h"
 
 #include <QMessageBox>
 

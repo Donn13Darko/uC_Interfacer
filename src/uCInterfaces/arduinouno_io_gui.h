@@ -1,7 +1,7 @@
 #ifndef ARDUINOUNO_IO_H
 #define ARDUINOUNO_IO_H
 
-#include "BaseGUIs/GUI_8AIO_16DIO_COMM.h"
+#include "../baseGUIs/GUI_8AIO_16DIO_COMM.h"
 #include <QMap>
 
 namespace Ui {

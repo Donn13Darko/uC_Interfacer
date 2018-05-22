@@ -7,9 +7,9 @@
 #include <QTimer>
 #include <QCloseEvent>
 
-#include "Communuication/serial_rs232.h"
-#include "Communuication/json_info.h"
-#include "BaseGUIs/GUI_BASE.h"
+#include "communication/serial_rs232.h"
+#include "communication/json_info.h"
+#include "baseGUIs/GUI_BASE.h"
 
 typedef enum {
     CONN_TYPE_ERROR = 0,
