@@ -22,6 +22,7 @@ signals:
     void write_data(QByteArray data);
     void write_data(std::initializer_list<uint8_t> data);
     void connect_signals(bool connect);
+    void waitForReadyRead();
 
 private slots:
     void receive(QByteArray) {/*Default do nothing*/}
@@ -33,9 +34,10 @@ protected:
     void send(std::initializer_list<uint8_t> data);
     void sendFile(QString filePath, size_t chunkSize);
 
-    bool getOpenFilePath(QString *filePath);
-    bool getSaveFilePath(QString *filePath);
+    bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
+    bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
     bool saveFile(QString filePath, QByteArray data);
+    QByteArray loadFile(QString filePath);
 
     void reset_remote();
 };

@@ -5,9 +5,21 @@
 #include <QStringList>
 #include <QMap>
 #include <QTimer>
+#include <QCloseEvent>
 
 #include "Communuication/serial_rs232.h"
 #include "Communuication/json_info.h"
+#include "BaseGUIs/GUI_BASE.h"
+
+typedef enum {
+    CONN_TYPE_ERROR = 0,
+    CONN_TYPE_RS_232
+} CONN_TYPE;
+
+typedef enum {
+    DEV_TYPE_ERROR = 0,
+    DEV_TYPE_ARDUINO_UNO
+} DEV_TYPE;
 
 namespace Ui {
 class MainWindow;
@@ -21,6 +33,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+    void closeEvent(QCloseEvent* e);
     static bool showMessage(QString msg);
 
 signals:
@@ -29,19 +42,21 @@ signals:
 
 public slots:
     void connect_signals(bool connect);
+    void waitForReadyRead(int msecs = 5000);
 
 private slots:
     void on_DeviceCombo_currentIndexChanged(int);
     void on_ConnTypeCombo_currentIndexChanged(int);
     void on_SpeedCombo_currentIndexChanged(int);
 
-    void on_DeviceConnect_clicked();
-    void on_DeviceDisconnect_clicked();
+    void on_DeviceConnect_Button_clicked();
+    void on_DeviceDisconnect_Button_clicked();
 
     void updateConnInfoCombo();
 
     void on_ucOptions_currentChanged(int index);
-    void receive(QByteArray) {}
+
+    void receive(QByteArray) {/*Default do nothing*/}
 
 private:
     Ui::MainWindow *ui;
@@ -64,6 +79,11 @@ private:
     void setConnecting(bool conn);
     void reset_remote();
     void connect2sender(QObject* obj, bool conn);
+
+    int getConnType();
+    int getDevType();
+
+    QObject* getConnObject(int type = -1);
 };
 
 #endif // MAINWINDOW_H

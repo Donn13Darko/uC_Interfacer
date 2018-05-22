@@ -47,7 +47,11 @@ void GUI_BASE::sendFile(QString filePath, size_t chunkSize)
 
     while (!sFile.atEnd())
     {
+        // Read & send next chunk
         send(sFile.read(chunkSize));
+
+        // Wait for ack back (todo)
+        emit waitForReadyRead();
     }
     sFile.close();
 
@@ -57,18 +61,18 @@ void GUI_BASE::sendFile(QString filePath, size_t chunkSize)
          });
 }
 
-bool GUI_BASE::getOpenFilePath(QString *filePath)
+bool GUI_BASE::getOpenFilePath(QString *filePath, QString fileTypes)
 {
     *filePath = QFileDialog::getOpenFileName(this, tr("Open"),
-                                             "", tr("All Files (*)"));;
+                                             "", fileTypes);;
 
     return !filePath->isEmpty();
 }
 
-bool GUI_BASE::getSaveFilePath(QString *filePath)
+bool GUI_BASE::getSaveFilePath(QString *filePath, QString fileTypes)
 {
     *filePath = QFileDialog::getSaveFileName(this, tr("Save Location"),
-                                             "", tr("All Files (*)"));
+                                             "", fileTypes);
 
     return !filePath->isEmpty();
 }
@@ -86,6 +90,18 @@ bool GUI_BASE::saveFile(QString filePath, QByteArray data)
     if (res < 0)
         return false;
     return true;
+}
+
+QByteArray GUI_BASE::loadFile(QString filePath)
+{
+    uint32_t enumFlags = QIODevice::ReadOnly;
+    QFile sFile(filePath);
+    if (!sFile.open((QIODevice::OpenModeFlag) enumFlags)) return QByteArray();
+
+    QByteArray data = sFile.readAll();
+    sFile.close();
+
+    return data;
 }
 
 void GUI_BASE::reset_remote()

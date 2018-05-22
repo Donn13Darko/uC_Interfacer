@@ -49,6 +49,12 @@ QStringList Serial_RS232::getDevices()
     return portNames;
 }
 
+void Serial_RS232::waitOnRead(int msecs)
+{
+    if (!isConnected()) return;
+    rs232->waitForReadyRead(msecs);
+}
+
 void Serial_RS232::write(QByteArray writeData)
 {
     writeLock->lock();
