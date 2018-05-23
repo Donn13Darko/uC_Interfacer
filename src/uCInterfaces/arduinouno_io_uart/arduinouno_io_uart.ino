@@ -31,6 +31,9 @@ float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 // Setup info for I2C connections
 bool i2cConnected = false;
 
+// Setup info for Programming
+uint8_t PROG_MODE = PROGRAMMING_INFO_ICSP;
+
 // Function prototypes
 uint8_t READ_NEXT(uint8_t rdata[], uint8_t n, uint32_t timeout);
 void PARSE();
@@ -44,12 +47,13 @@ void REMOTE_CONNECT();
 void REMOTE_SEND();
 void REMOTE_DISCONNECT();
 void RECV_FILE();
+void RECV_PROGRAM();
 
 // Arduino setup function
 void setup()
 {
     Serial.setTimeout(5000);
-    Serial.begin(19200);
+    Serial.begin(115200);
 
     RESET_VALUES();
 }
@@ -91,6 +95,7 @@ void RESET_VALUES()
     KEY = 0;
     VALUE = 0;
     Serial.flush();
+    while (Serial.available()) { Serial.read(); }
 }
 
 // Read the next n bytes into rdata and return if successful
@@ -130,6 +135,9 @@ void PARSE()
             break;
         case JSON_FILE:
             RECV_FILE();
+            break;
+        case JSON_PROGRAM:
+            RECV_PROGRAM();
             break;
         case JSON_RESET:
             RESET_VALUES();
@@ -368,6 +376,60 @@ void RECV_FILE()
         }
 
         rdLen = READ_NEXT (data, len, 1000);
+    }
+}
+
+void RECV_PROGRAM()
+{
+    if (VALUE != PROGRAMNING_INFO_START)
+    {
+        PROG_MODE = PROGRAMMING_INFO_MODE;
+        return;
+    }
+
+    uint8_t dataLen;
+    while (VALUE != PROGRAMNING_INFO_END)
+    {
+        // Read next key set (or data if prescribed)
+        memset(data, 0, sizeof(data));
+        if (READ_NEXT(data, 2, 1000) == 2)
+        {
+            KEY = data[0];
+            VALUE = data[1];
+
+            // If we don't receive JSON_PROGRAM as key error out
+            if (KEY != JSON_PROGRAM)
+            {
+                Serial.write((uint8_t) JSON_COPY);
+                Serial.write((uint8_t) JSON_FAILURE);
+                Serial.flush();
+                RESET_VALUES();
+                return;
+            }
+
+            // Switch on the value received
+            switch(VALUE)
+            {
+                case PROGRAMNING_INFO_ADDRESS:
+                case PROGRAMNING_INFO_DATA:
+                    // Read size argument
+                    memset(data, 0, sizeof(data));
+                    if (READ_NEXT(data, 1, 1000) != 1) break;
+                    dataLen = data[0];
+                    
+                    // Read next data
+                    memset(data, 0, sizeof(data));
+                    if (READ_NEXT(data, dataLen, 1000) != dataLen) break;
+
+                    // Act on next data (program to device)
+
+                    // Respond to data
+                    Serial.write((uint8_t) JSON_COPY);
+                    Serial.write((uint8_t) JSON_SUCCESS);
+                    Serial.flush();
+                    break;
+            }
+        }
     }
 }
 

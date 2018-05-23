@@ -42,7 +42,6 @@ signals:
 
 public slots:
     void connect_signals(bool connect);
-    void waitForReadyRead(int msecs = 5000);
 
 private slots:
     void on_DeviceCombo_currentIndexChanged(int);
@@ -72,7 +71,7 @@ private:
     QTimer updateConnInfo;
     Serial_RS232 *serial_rs232;
 
-    size_t arduino_chunk_size = 32;
+    uint8_t arduino_chunk_size = 32;
 
     void updateTypeCombos();
     void updateSpeedCombo();

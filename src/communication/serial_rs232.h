@@ -17,9 +17,8 @@ public:
     void open();
     void close();
     bool isConnected();
-    static QStringList getDevices();
-    void waitOnRead(int msecs = 30000);
 
+    static QStringList getDevices();
     static QStringList Baudrate_Defaults;
 
 signals:

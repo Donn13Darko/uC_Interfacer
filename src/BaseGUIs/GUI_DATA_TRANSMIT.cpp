@@ -4,7 +4,7 @@
 #include <QFile>
 #include <QFileDialog>
 
-GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(size_t chunk, QWidget *parent) :
+GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(uint8_t chunk, QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_DATA_TRANSMIT)
 {
@@ -85,7 +85,7 @@ void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
 {
     // Find which radio button selected
     if (ui->Input_Radio->isChecked())
-        send(ui->msg_PlainText->toPlainText().toUtf8());
+        send(ui->msg_PlainText->toPlainText());
     else if (ui->File_Radio->isChecked())
         sendFile(ui->FilePathEdit->text(), chunkSize);
 }

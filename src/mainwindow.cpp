@@ -42,7 +42,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    on_DeviceDisconnect_Button_clicked();
+    // If connected, disconnect
+    if (ui->DeviceDisconnect_Button->isEnabled())
+        on_DeviceDisconnect_Button_clicked();
+
     delete ui;
 }
 
@@ -72,27 +75,6 @@ void MainWindow::connect_signals(bool conn)
 
     // Connect signals to slots
     connect2sender(curr_widget, conn);
-}
-
-void MainWindow::waitForReadyRead(int msecs)
-{
-    // Redirect signals to sender GUI
-    connect2sender(ui->ucOptions->currentWidget(), false);
-    connect2sender(sender(), true);
-
-    // Wait for ready read signal
-    switch (getConnType())
-    {
-        case CONN_TYPE_RS_232:
-            if (serial_rs232) serial_rs232->waitOnRead(msecs);
-            break;
-        default:
-            break;
-    }
-
-    // Reset signals to selected tab
-    connect2sender(sender(), false);
-    connect2sender(ui->ucOptions->currentWidget(), true);
 }
 
 void MainWindow::on_DeviceCombo_currentIndexChanged(int)
@@ -174,7 +156,6 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     } else
     {
         showMessage("Error: Unable to connect to target!");
-
         on_DeviceDisconnect_Button_clicked();
     }
 
@@ -314,8 +295,8 @@ void MainWindow::setConnecting(bool conn)
 
 void MainWindow::reset_remote()
 {
-    emit write_data({JSON_RESET, JSON_START});
-    emit write_data({JSON_RESET, JSON_END});
+    emit write_data({JSON_RESET, JSON_RESET});
+    emit write_data({JSON_RESET, JSON_RESET});
 }
 
 void MainWindow::connect2sender(QObject* obj, bool conn)

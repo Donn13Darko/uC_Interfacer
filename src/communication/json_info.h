@@ -6,6 +6,11 @@ typedef enum {
     // Reset the state to start values
     JSON_RESET = 0,
 
+    // Confirm actions
+    JSON_COPY,
+    JSON_SUCCESS,
+    JSON_FAILURE,
+
     // Read information from device
     JSON_READ,
 
@@ -18,6 +23,9 @@ typedef enum {
 
     // Send file
     JSON_FILE,
+
+    // Programming
+    JSON_PROGRAM,
 
     // Start and end for efficiently grouping data
     JSON_START,
@@ -52,5 +60,20 @@ typedef enum {
     REMOTE_CONN_SET_TX_RX,
     REMOTE_CONN_SET_NONE
 } REMOTE_CONN;
+
+// Programming settings
+typedef enum {
+    // Programming helper keys
+    PROGRAMNING_INFO_START = 0,
+    PROGRAMNING_INFO_END,
+    PROGRAMNING_INFO_ADDRESS,
+    PROGRAMNING_INFO_DATA,
+
+    // Various programming modes
+    /** MUST STAY HERE **/
+    PROGRAMMING_INFO_MODE,
+    /** MUST STAY HERE **/
+    PROGRAMMING_INFO_ICSP
+} PROGRAMMING_INFO;
 
 #endif // JSON_INFO_H

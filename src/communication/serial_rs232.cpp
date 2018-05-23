@@ -49,17 +49,11 @@ QStringList Serial_RS232::getDevices()
     return portNames;
 }
 
-void Serial_RS232::waitOnRead(int msecs)
-{
-    if (!isConnected()) return;
-    rs232->waitForReadyRead(msecs);
-}
-
 void Serial_RS232::write(QByteArray writeData)
 {
     writeLock->lock();
 
-    qDebug() << writeData;
+    qDebug() << "S: " << writeData;
     rs232->write((const QByteArray) writeData);
     rs232->waitForBytesWritten();
 
@@ -80,6 +74,8 @@ void Serial_RS232::write(std::initializer_list<uint8_t> writeData)
 void Serial_RS232::read()
 {
     readLock->lock();
-    emit readyRead(rs232->readAll());
+    QByteArray recvData = rs232->readAll();
+    emit readyRead(recvData);
+    qDebug() << "R: " << recvData;
     readLock->unlock();
 }

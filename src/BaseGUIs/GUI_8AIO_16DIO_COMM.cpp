@@ -296,12 +296,6 @@ void GUI_8AIO_16DIO_COMM::receive(QByteArray recvData)
 
         // Remove ignored tokens
         currData = currData.mid(e + 1);
-
-//            QString msg = "Received: ";
-//            msg += QString::number(key);
-//            msg += ",";
-//            msg += QString::number(value);
-//            ui->RecvTextBox->appendPlainText(msg);
     }
 }
 

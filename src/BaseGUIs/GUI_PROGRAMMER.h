@@ -32,7 +32,7 @@ private:
     static QMap<QString, QStringList> burnMethods;
     static QStringList hexFormats;
 
-    QString format_hex();
+    QString format_hex(QByteArray rawHex);
 };
 
 #endif // GUI_PROGRAMMER_H

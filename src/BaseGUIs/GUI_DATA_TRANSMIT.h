@@ -12,7 +12,7 @@ class GUI_DATA_TRANSMIT : public GUI_BASE
     Q_OBJECT
 
 public:
-    explicit GUI_DATA_TRANSMIT(size_t chunk, QWidget *parent = 0);
+    explicit GUI_DATA_TRANSMIT(uint8_t chunk, QWidget *parent = 0);
     ~GUI_DATA_TRANSMIT();
 
     void reset_gui();
@@ -33,7 +33,7 @@ private:
     Ui::GUI_DATA_TRANSMIT *ui;
 
     QByteArray received;
-    size_t chunkSize;
+    uint8_t chunkSize;
 
     void input_select(bool fileIN, bool plainIN);
 
