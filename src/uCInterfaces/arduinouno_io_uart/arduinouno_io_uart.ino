@@ -379,6 +379,9 @@ void RECV_FILE()
     }
 }
 
+// PROGRAMMING FUNCTION PROTOTYPES
+void ICSP(char* data, uint8_t len);
+
 void RECV_PROGRAM()
 {
     if (VALUE != PROGRAMNING_INFO_START)
@@ -422,6 +425,12 @@ void RECV_PROGRAM()
                     if (READ_NEXT(data, dataLen, 1000) != dataLen) break;
 
                     // Act on next data (program to device)
+                    switch (PROG_MODE)
+                    {
+                        case PROGRAMMING_INFO_ICSP:
+                            ICSP();
+                            break;
+                    }
 
                     // Respond to data
                     Serial.write((uint8_t) JSON_COPY);
@@ -431,5 +440,10 @@ void RECV_PROGRAM()
             }
         }
     }
+}
+
+void ICSP()
+{
+    
 }
 

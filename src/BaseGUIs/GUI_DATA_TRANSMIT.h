@@ -18,8 +18,8 @@ public:
     void reset_gui();
 
 private slots:
-    void input_RadioClicked(int);
-    void TX_RX_RadioClicked(int);
+    void MSG_Sel_buttonClicked(int);
+    void TX_RX_Sel_buttonClicked(int);
     void on_SendMSG_Button_clicked();
 
     void on_OpenFile_Button_clicked();

@@ -68,6 +68,7 @@ typedef enum {
     PROGRAMNING_INFO_END,
     PROGRAMNING_INFO_ADDRESS,
     PROGRAMNING_INFO_DATA,
+    PROGRAMNING_INFO_READ,
 
     // Various programming modes
     /** MUST STAY HERE **/

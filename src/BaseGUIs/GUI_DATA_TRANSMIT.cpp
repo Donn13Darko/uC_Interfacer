@@ -11,15 +11,11 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(uint8_t chunk, QWidget *parent) :
     ui->setupUi(this);
     chunkSize = chunk;
 
-    // Connect radio group change signals
-    connect(ui->MSG_Sel, SIGNAL(buttonClicked(int)), this, SLOT(input_RadioClicked(int)));
-    connect(ui->TX_RX_Sel, SIGNAL(buttonClicked(int)), this, SLOT(TX_RX_RadioClicked(int)));
-
     // Set radio values
     ui->File_Radio->setChecked(true);
     ui->TX_RX_Radio->setChecked(true);
-    input_RadioClicked(0);
-    TX_RX_RadioClicked(0);
+    MSG_Sel_buttonClicked(0);
+    TX_RX_Sel_buttonClicked(0);
 }
 
 GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
@@ -32,11 +28,11 @@ void GUI_DATA_TRANSMIT::reset_gui()
     // Set radio values
     ui->File_Radio->setChecked(true);
     ui->TX_RX_Radio->setChecked(true);
-    input_RadioClicked(0);
-    TX_RX_RadioClicked(0);
+    MSG_Sel_buttonClicked(0);
+    TX_RX_Sel_buttonClicked(0);
 }
 
-void GUI_DATA_TRANSMIT::input_RadioClicked(int)
+void GUI_DATA_TRANSMIT::MSG_Sel_buttonClicked(int)
 {
     if (ui->File_Radio->isChecked())
         input_select(true, false);
@@ -44,7 +40,7 @@ void GUI_DATA_TRANSMIT::input_RadioClicked(int)
         input_select(false, true);
 }
 
-void GUI_DATA_TRANSMIT::TX_RX_RadioClicked(int)
+void GUI_DATA_TRANSMIT::TX_RX_Sel_buttonClicked(int)
 {
     if (ui->RX_Radio->isChecked())
     {
@@ -139,7 +135,7 @@ void GUI_DATA_TRANSMIT::TX_enable()
     ui->Input_Radio->setEnabled(true);
     ui->SendMSG_Button->setEnabled(true);
 
-    input_RadioClicked(0);
+    MSG_Sel_buttonClicked(0);
 }
 
 void GUI_DATA_TRANSMIT::TX_disable()

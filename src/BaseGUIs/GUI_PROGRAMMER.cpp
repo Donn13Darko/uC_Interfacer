@@ -21,6 +21,9 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QString deviceType, size_t chunk, QWidget *parent
 
     ui->HexFormat_Combo->addItems(GUI_PROGRAMMER::hexFormats);
     ui->BurnMethod_Combo->addItems(GUI_PROGRAMMER::burnMethods.value(deviceType));
+
+    ui->ReadAll_Radio->setChecked(true);
+    on_readSelect_buttonClicked(0);
 }
 
 GUI_PROGRAMMER::~GUI_PROGRAMMER()
@@ -139,6 +142,11 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_currentIndexChanged(int)
 
     // Set cursor to top
     ui->HexPreview_Edit->moveCursor(QTextCursor::Start);
+}
+
+void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
+{
+    ui->ReadAddr_Edit->setEnabled(ui->ReadAddr_Radio->isChecked());
 }
 
 QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)

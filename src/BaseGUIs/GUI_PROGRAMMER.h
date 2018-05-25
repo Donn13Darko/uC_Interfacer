@@ -23,6 +23,8 @@ private slots:
     void on_BurnData_Button_clicked();
     void on_HexFormat_Combo_currentIndexChanged(int);
 
+    void on_readSelect_buttonClicked(int);
+
 private:
     Ui::GUI_PROGRAMMER *ui;
 
