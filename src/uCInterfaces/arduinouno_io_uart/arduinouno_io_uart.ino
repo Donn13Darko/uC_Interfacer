@@ -444,6 +444,9 @@ void RECV_PROGRAM()
 
 void ICSP()
 {
-    
+    // Needs to be filled in with data pins and clock generation
+    // required for microchip programming. This features is currently
+    // in development and testing.
+    return;
 }
 

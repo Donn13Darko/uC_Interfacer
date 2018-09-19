@@ -58,6 +58,7 @@ void MainWindow::closeEvent(QCloseEvent* e)
     e->accept();
 }
 
+// Show message box
 bool MainWindow::showMessage(QString msg)
 {
     QMessageBox n;
@@ -135,7 +136,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
                 QWidget* tmp = new ArduinoUno_IO(this);
                 ui->ucOptions->addTab(tmp, "I/O");
                 tmp = new GUI_DATA_TRANSMIT(arduino_chunk_size, this);
-                ui->ucOptions->addTab(tmp, "File Transfer");
+                ui->ucOptions->addTab(tmp, "Data Transfer");
                 tmp = new GUI_PROGRAMMER(deviceType, arduino_chunk_size, this);
                 ui->ucOptions->addTab(tmp, "Programmer");
                 break;

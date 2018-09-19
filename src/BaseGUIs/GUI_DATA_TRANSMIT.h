@@ -22,7 +22,7 @@ private slots:
     void TX_RX_Sel_buttonClicked(int);
     void on_SendMSG_Button_clicked();
 
-    void on_OpenFile_Button_clicked();
+    void on_BrowseFile_Button_clicked();
     void on_SaveAs_Button_clicked();
 
     void on_ClearReceived_Button_clicked();

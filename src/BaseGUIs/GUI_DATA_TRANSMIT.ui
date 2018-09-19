@@ -33,7 +33,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="OpenFile_Button">
+  <widget class="QPushButton" name="BrowseFile_Button">
    <property name="geometry">
     <rect>
      <x>386</x>
@@ -43,7 +43,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Open</string>
+    <string>Browse</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -222,11 +222,30 @@
     <bool>false</bool>
    </property>
   </widget>
+  <widget class="QLabel" name="HelpText">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>320</y>
+     <width>921</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>This GUI requirees a custom backend in order to function properly. The default testers simply receive the command, receive the data, and return the ready for more command. Further functionality should be added between data receive and before the ready for more command is returned.</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignHCenter|Qt::AlignTop</set>
+   </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="TX_RX_Sel"/>
   <buttongroup name="MSG_Sel"/>
+  <buttongroup name="TX_RX_Sel"/>
  </buttongroups>
 </ui>

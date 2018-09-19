@@ -86,7 +86,7 @@ void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
         sendFile(ui->FilePathEdit->text(), chunkSize);
 }
 
-void GUI_DATA_TRANSMIT::on_OpenFile_Button_clicked()
+void GUI_DATA_TRANSMIT::on_BrowseFile_Button_clicked()
 {
     // Select file to send
     QString file;
@@ -124,7 +124,7 @@ void GUI_DATA_TRANSMIT::receive(QByteArray recvData)
 void GUI_DATA_TRANSMIT::input_select(bool fileIN, bool plainIN)
 {
     ui->FilePathEdit->setEnabled(fileIN);
-    ui->OpenFile_Button->setEnabled(fileIN);
+    ui->BrowseFile_Button->setEnabled(fileIN);
     ui->msg_PlainText->setEnabled(plainIN);
 }
 
