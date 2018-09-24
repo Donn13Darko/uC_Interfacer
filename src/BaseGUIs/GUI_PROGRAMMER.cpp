@@ -19,15 +19,41 @@
 #include "GUI_PROGRAMMER.h"
 #include "ui_GUI_PROGRAMMER.h"
 
-// Setup static burn methods list
-QMap<QString, QStringList> GUI_PROGRAMMER::burnMethods({
-                                                           {"Arduino Uno/Genuino",
-                                                            {"ICSP"}
-                                                           }
-                                                       });
-
 // Setup static hex format list
-QStringList GUI_PROGRAMMER::hexFormats({"Atmel 16-bit"});
+QMap<QString, QRegularExpression>
+GUI_PROGRAMMER::hexFormats({
+                               {"Microchip 8-bit",
+                                QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")},
+                               {"Microchip 16-bit",
+                                QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")},
+                               {"Microchip 32-bit",
+                                QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")}
+                           });
+
+// Setup static burn methods list
+QMap<QString, QStringList>
+GUI_PROGRAMMER::burnMethods({
+                                {"Arduino Uno/Genuino",
+                                 {"Microchip ISP/ICSP",
+                                  "Microchip TPI",
+                                  "Arduino Bootloader"}
+                                }
+                            });
+
+// Setup static instructions list
+QMap<QString, QMap<QString, QString>>
+GUI_PROGRAMMER::instructionTexts({
+                                     {"Arduino Uno/Genuino",
+                                      {
+                                          {"Microchip ISP/ICSP",
+                                           "A"},
+                                          {"Microchip TPI",
+                                           "B"},
+                                          {"Arduino Bootloader",
+                                           "C"}
+                                      }
+                                     }
+                                 });
 
 GUI_PROGRAMMER::GUI_PROGRAMMER(QString deviceType, size_t chunk, QWidget *parent) :
     GUI_BASE(parent),
@@ -36,8 +62,9 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QString deviceType, size_t chunk, QWidget *parent
     ui->setupUi(this);
     chunkSize = chunk;
     loadedHex = QByteArray();
+    deviceInstructions = instructionTexts.value(deviceType);
 
-    ui->HexFormat_Combo->addItems(GUI_PROGRAMMER::hexFormats);
+    ui->HexFormat_Combo->addItems(GUI_PROGRAMMER::hexFormats.keys());
     ui->BurnMethod_Combo->addItems(GUI_PROGRAMMER::burnMethods.value(deviceType));
 
     ui->ReadAll_Radio->setChecked(true);
@@ -58,7 +85,7 @@ void GUI_PROGRAMMER::reset_gui()
     ui->ReadData_Edit->appendPlainText("");
 }
 
-void GUI_PROGRAMMER::on_HexFile_Button_clicked()
+void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()
 {
     // Select programmer file
     QString file;
@@ -162,6 +189,11 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_currentIndexChanged(int)
     ui->HexPreview_Edit->moveCursor(QTextCursor::Start);
 }
 
+void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
+{
+    ui->InstructionsText_Label->setText(deviceInstructions.value(ui->BurnMethod_Combo->currentText()));
+}
+
 void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
 {
     ui->ReadAddr_Edit->setEnabled(ui->ReadAddr_Radio->isChecked());
@@ -170,31 +202,22 @@ void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
 QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
 {
     QStringList hexList = QString(rawHex).split('\n');
+    QRegularExpression hexReg = hexFormats.value(ui->HexFormat_Combo->currentText());
 
-    bool ok;
-    int len_data;
-    QString final, curr, nn, aaaa, tt, _dd_, cc;
+    QString final, curr;
+    QRegularExpressionMatch hexRegMatch;
     for (int i = 0; i < hexList.length(); i++)
     {
         // Grab next line
         curr = hexList[i];
         if (curr.isEmpty()) continue;
 
-        // Sort line [nnaaaatt_dd_cc]
-        nn = curr.mid(0+1,2); // First two characters is length of data
-        aaaa = curr.mid(2+1, 4); // Next four characters is data address
-        tt = curr.mid(2+4+1,2); // Next two characters is type of record
-
-        // Compute command length
-        len_data = 2 * nn.toInt(&ok, 16);
-        if (!ok) continue;
-
-        // Finish sorting line
-        _dd_ = curr.mid(2+4+2+1, len_data); // Next len_data characters is data
-        cc = curr.mid(2+4+2+len_data+1, 2); // Last two characters is checksum (after data)
-
-        // Append to final string
-        final += nn + " " + tt + " " + cc + " " + aaaa + " " + _dd_ + "\n";
+        // Attempt to match with regex
+        // Should be in format [nnaaaatt_dd_cc]
+        hexRegMatch = hexReg.match(curr.trimmed());
+        final += hexRegMatch.captured(1) + " " + hexRegMatch.captured(3) + " " \
+                + hexRegMatch.captured(5) + " " + hexRegMatch.captured(2) + " " \
+                + hexRegMatch.captured(4) + "\n";
     }
 
     return final;

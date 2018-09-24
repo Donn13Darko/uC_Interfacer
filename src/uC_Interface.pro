@@ -33,7 +33,8 @@ SOURCES += \
     uCInterfaces/arduinomega_io_gui.cpp \
     baseGUIs/GUI_PROGRAMMER.cpp \
     mainwindow.cpp \
-    communication/Serial_RS232.cpp
+    communication/Serial_RS232.cpp \
+    uCInterfaces/uc_control_fsm.cpp
 
 HEADERS += \
     baseGUIs/GUI_8AIO_16DIO_COMM.h \
@@ -45,7 +46,8 @@ HEADERS += \
     communication/json_info.h \
     baseGUIs/GUI_PROGRAMMER.h \
     mainwindow.h \
-    communication/Serial_RS232.h
+    communication/Serial_RS232.h \
+    uCInterfaces/uc_control_fsm.h
 
 FORMS += \
     baseGUIs/GUI_DATA_TRANSMIT.ui \

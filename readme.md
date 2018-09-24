@@ -5,6 +5,7 @@ This project aims at providing a simple interface with supporting application fo
 Currently there are 3 supported
 
 ## I/O Controller
+This GUI enables control and reading of all the pins on a given device. For devices without support for USB, an interface board is required.
 
 ## File Transmit
 
@@ -19,6 +20,8 @@ The programmer in this application was greatly aided and loosely based off of th
 # Source Descriptions
 
 
+# License
+uC Interface - A GUI for Programming & Interfacing with Microcontrollers
 Copyright (C) 2018  Mitchell Oleson
 
 This program is free software: you can redistribute it and/or modify

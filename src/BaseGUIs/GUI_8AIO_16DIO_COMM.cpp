@@ -473,7 +473,7 @@ void GUI_8AIO_16DIO_COMM::on_ConnTypeCombo_currentIndexChanged(int)
 {
     QString currVal = ui->ConnTypeCombo->currentText();
     uint8_t type = controlMap.value(currVal);
-    if (disabledValueSet[JSON_REMOTE_CONN].contains(type)) ui->SpeedCombo->setEnabled(false);
+    if (disabledValueSet.value(JSON_REMOTE_CONN).contains(type)) ui->SpeedCombo->setEnabled(false);
     else ui->SpeedCombo->setEnabled(true);
 
     QStringList deviceConns = devSettings.value(currVal);
@@ -488,12 +488,14 @@ void GUI_8AIO_16DIO_COMM::addNewPinSettings(QList<uint8_t> pinTypes, QList<QStri
                                             QList<uint8_t> pinValues, QList<bool> pinSetDisabled,
                                             QList<RangeList> pinRanges)
 {
+    // Verify correct input (at least in lengths)
+    if ((pinCombos.length() != pinValues.length())
+            || (pinValues.length() != pinSetDisabled.length())) return;
+
     uint8_t pinType;
     for (auto pin = pinTypes.begin(); pin != pinTypes.end(); pin++)
     {
         pinType = (*pin);
-        if ((pinCombos.length() != pinValues.length())
-                || (pinValues.length() != pinSetDisabled.length())) return;
 
         addPinControls(pinCombos, pinValues);
         addPinRangeMap(pinValues, pinRanges);
@@ -503,7 +505,7 @@ void GUI_8AIO_16DIO_COMM::addNewPinSettings(QList<uint8_t> pinTypes, QList<QStri
         {
             if (pinSetDisabled[i]) pinDisables << pinValues[i];
         }
-        disabledValueSet[pinType].append(pinDisables);
+        ((QList<uint8_t>) disabledValueSet.value(pinType)).append(pinDisables);
     }
 }
 
@@ -534,7 +536,7 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
         if (getItemWidget((QWidget**) &comboBox, pInfo.grid, rowNum, colNum+comboPos))
         {
             comboVal = controlMap.value(comboBox->currentText());
-            if (disabledValueSet[pinType].contains(comboVal)
+            if (disabledValueSet.value(pinType).contains(comboVal)
                     && getItemWidget((QWidget**) &sliderValue, pInfo.grid, rowNum, colNum+slideValuePos)
                     && getItemWidget((QWidget**) &textValue, pInfo.grid, rowNum, colNum+textValuePos))
             {
@@ -607,7 +609,7 @@ void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> values, QLis
             if (getItemWidget(&sliderWidget, pInfo.grid, rowNum, colNum+slideValuePos)
                     && getItemWidget(&textWidget, pInfo.grid, rowNum, colNum+textValuePos))
             {
-                if (disabledValueSet[pinType].contains(IO))
+                if (disabledValueSet.value(pinType).contains(IO))
                 {
                     sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
                     textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);

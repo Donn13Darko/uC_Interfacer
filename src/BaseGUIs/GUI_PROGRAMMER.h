@@ -19,6 +19,9 @@
 #ifndef GUI_PROGRAMMER_H
 #define GUI_PROGRAMMER_H
 
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
+
 #include "GUI_BASE.h"
 
 namespace Ui {
@@ -36,21 +39,24 @@ public:
     void reset_gui();
 
 private slots:
-    void on_HexFile_Button_clicked();
+    void on_BrowseHexFile_Button_clicked();
     void on_RefreshPreview_Button_clicked();
     void on_BurnData_Button_clicked();
     void on_HexFormat_Combo_currentIndexChanged(int);
+    void on_BurnMethod_Combo_currentIndexChanged(int);
 
     void on_readSelect_buttonClicked(int);
 
 private:
     Ui::GUI_PROGRAMMER *ui;
+    QMap<QString, QString> deviceInstructions;
 
     size_t chunkSize;
     QByteArray loadedHex;
 
+    static QMap<QString, QRegularExpression> hexFormats;
     static QMap<QString, QStringList> burnMethods;
-    static QStringList hexFormats;
+    static QMap<QString, QMap<QString, QString>> instructionTexts;
 
     QString format_hex(QByteArray rawHex);
 };

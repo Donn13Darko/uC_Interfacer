@@ -143,20 +143,21 @@ void MainWindow::on_DeviceConnect_Button_clicked()
 
     // Error out of can't connect to hardware
     // First write operations for new connection always fail
-    if (connected)
+    if (true || connected)
     {
         // Setup tabs
         ui->ucOptions->blockSignals(true);
+        QWidget* tab_holder;
         switch (getDevType())
         {
             case DEV_TYPE_ARDUINO_UNO:
             {
-                QWidget* tmp = new ArduinoUno_IO(this);
-                ui->ucOptions->addTab(tmp, "I/O");
-                tmp = new GUI_DATA_TRANSMIT(arduino_chunk_size, this);
-                ui->ucOptions->addTab(tmp, "Data Transfer");
-                tmp = new GUI_PROGRAMMER(deviceType, arduino_chunk_size, this);
-                ui->ucOptions->addTab(tmp, "Programmer");
+                tab_holder = new ArduinoUno_IO(this);
+                ui->ucOptions->addTab(tab_holder, "I/O");
+                tab_holder = new GUI_DATA_TRANSMIT(arduino_chunk_size, this);
+                ui->ucOptions->addTab(tab_holder, "Data Transfer");
+                tab_holder = new GUI_PROGRAMMER(deviceType, arduino_chunk_size, this);
+                ui->ucOptions->addTab(tab_holder, "Programmer");
                 break;
             }
             default:
@@ -164,6 +165,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
         }
         ui->ucOptions->blockSignals(false);
 
+        // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
 
         // Set to connected mode
@@ -217,6 +219,14 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
 
     // Set to disconnected mode
     setConnected(false);
+}
+
+void MainWindow::on_MoreOptions_Button_clicked()
+{
+    QMessageBox moreOptions(this);
+
+    moreOptions.exec();
+    return;
 }
 
 void MainWindow::updateConnInfoCombo()
@@ -312,7 +322,6 @@ void MainWindow::setConnected(bool conn)
     // Set Buttons Enabled
     ui->DeviceConnect_Button->setEnabled(op_conn);
     ui->DeviceDisconnect_Button->setEnabled(conn);
-    ui->DeviceProgram_Button->setEnabled(conn);
 }
 
 void MainWindow::reset_remote()

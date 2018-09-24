@@ -78,7 +78,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, int colOffset)
             if (caller == combo)
             {
                 // Enable/Disable pins if selection changed
-                if (disabledValueSet[pInfo->pinType].contains(IO))
+                if (disabledValueSet.value(pInfo->pinType).contains(IO))
                 {
                     sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, true);
                     textValue->setAttribute(Qt::WA_TransparentForMouseEvents, true);

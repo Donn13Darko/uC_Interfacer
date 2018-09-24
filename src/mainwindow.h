@@ -68,6 +68,7 @@ private slots:
 
     void on_DeviceConnect_Button_clicked();
     void on_DeviceDisconnect_Button_clicked();
+    void on_MoreOptions_Button_clicked();
 
     void updateConnInfoCombo();
 
