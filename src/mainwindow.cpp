@@ -1,3 +1,21 @@
+/*
+ * uC Interface - A GUI for Programming & Interfacing with Microcontrollers
+ * Copyright (C) 2018  Mitchell Oleson
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
@@ -31,7 +49,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->DeviceCombo->addItems(MainWindow::supportMapper.keys());
 
     // Set Initial values
-    setConnecting(true);
+    setConnected(false);
     on_DeviceCombo_currentIndexChanged(ui->DeviceCombo->currentIndex());
     on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
     on_SpeedCombo_currentIndexChanged(ui->SpeedCombo->currentIndex());
@@ -83,7 +101,7 @@ void MainWindow::on_DeviceCombo_currentIndexChanged(int)
     // Update Changed Data
     deviceType = ui->DeviceCombo->currentText();
 
-    // Update Main GUI
+    // Process changes to type combo
     updateTypeCombos();
 }
 
@@ -92,7 +110,7 @@ void MainWindow::on_ConnTypeCombo_currentIndexChanged(int)
     // Update Changed Data
     connType = ui->ConnTypeCombo->currentText();
 
-    // Process changes to the speed & info combo
+    // Process changes to the speed & info combos
     updateSpeedCombo();
     updateConnInfoCombo();
 }
@@ -160,7 +178,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
         on_DeviceDisconnect_Button_clicked();
     }
 
-    setConnecting(!connected);
+    setConnected(connected);
 }
 
 void MainWindow::on_DeviceDisconnect_Button_clicked()
@@ -198,7 +216,7 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     prev_tab = -1;
 
     // Set to disconnected mode
-    setConnecting(true);
+    setConnected(false);
 }
 
 void MainWindow::updateConnInfoCombo()
@@ -281,17 +299,20 @@ void MainWindow::updateSpeedCombo()
     on_SpeedCombo_currentIndexChanged(ui->SpeedCombo->currentIndex());
 }
 
-void MainWindow::setConnecting(bool conn)
+void MainWindow::setConnected(bool conn)
 {
-    // Set connect
-    ui->DeviceConnect_Button->setEnabled(conn);
-    ui->DeviceCombo->setEnabled(conn);
-    ui->ConnTypeCombo->setEnabled(conn);
-    ui->SpeedCombo->setEnabled(conn);
-    ui->ConnInfoCombo->setEnabled(conn);
+    bool op_conn = !conn;
 
-    // Set disconnect
-    ui->DeviceDisconnect_Button->setEnabled(!conn);
+    // Set Combos Enabled
+    ui->DeviceCombo->setEnabled(op_conn);
+    ui->ConnTypeCombo->setEnabled(op_conn);
+    ui->SpeedCombo->setEnabled(op_conn);
+    ui->ConnInfoCombo->setEnabled(op_conn);
+
+    // Set Buttons Enabled
+    ui->DeviceConnect_Button->setEnabled(op_conn);
+    ui->DeviceDisconnect_Button->setEnabled(conn);
+    ui->DeviceProgram_Button->setEnabled(conn);
 }
 
 void MainWindow::reset_remote()

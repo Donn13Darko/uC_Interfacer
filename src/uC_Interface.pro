@@ -8,7 +8,7 @@ QT       += core gui serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = uC_Interfacer
+TARGET = uC_Interface
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -26,18 +26,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
     baseGUIs/GUI_8AIO_16DIO_COMM.cpp \
-    communication/serial_rs232.cpp \
     uCInterfaces/arduinouno_io_gui.cpp \
     baseGUIs/GUI_DATA_TRANSMIT.cpp \
     baseGUIs/GUI_PIN_BASE.cpp \
     baseGUIs/GUI_BASE.cpp \
     uCInterfaces/arduinomega_io_gui.cpp \
     baseGUIs/GUI_PROGRAMMER.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    communication/Serial_RS232.cpp
 
 HEADERS += \
     baseGUIs/GUI_8AIO_16DIO_COMM.h \
-    communication/serial_rs232.h \
     uCInterfaces/arduinouno_io_gui.h \
     baseGUIs/GUI_DATA_TRANSMIT.h \
     baseGUIs/GUI_PIN_BASE.h \
@@ -45,7 +44,8 @@ HEADERS += \
     uCInterfaces/arduinomega_io_gui.h \
     communication/json_info.h \
     baseGUIs/GUI_PROGRAMMER.h \
-    mainwindow.h
+    mainwindow.h \
+    communication/Serial_RS232.h
 
 FORMS += \
     baseGUIs/GUI_DATA_TRANSMIT.ui \
