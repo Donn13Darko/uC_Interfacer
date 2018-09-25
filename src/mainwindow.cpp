@@ -143,7 +143,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
 
     // Error out of can't connect to hardware
     // First write operations for new connection always fail
-    if (true || connected)
+    if (connected)
     {
         // Setup tabs
         ui->ucOptions->blockSignals(true);

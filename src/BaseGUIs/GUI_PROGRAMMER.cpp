@@ -19,7 +19,7 @@
 #include "GUI_PROGRAMMER.h"
 #include "ui_GUI_PROGRAMMER.h"
 
-// Setup static hex format list
+// Setup static hex format and regex parsing map
 QMap<QString, QRegularExpression>
 GUI_PROGRAMMER::hexFormats({
                                {"Microchip 8-bit",
@@ -34,8 +34,10 @@ GUI_PROGRAMMER::hexFormats({
 QMap<QString, QStringList>
 GUI_PROGRAMMER::burnMethods({
                                 {"Arduino Uno/Genuino",
-                                 {"Microchip ISP/ICSP",
-                                  "Microchip TPI",
+                                 {"AVR ICSP",
+                                  "PIC18 ICSP",
+                                  "PIC32 ICSP 2-Wire",
+                                  "PIC32 ICSP 4-Wire",
                                   "Arduino Bootloader"}
                                 }
                             });
@@ -45,12 +47,41 @@ QMap<QString, QMap<QString, QString>>
 GUI_PROGRAMMER::instructionTexts({
                                      {"Arduino Uno/Genuino",
                                       {
-                                          {"Microchip ISP/ICSP",
-                                           "A"},
-                                          {"Microchip TPI",
-                                           "B"},
+                                          {"AVR ICSP",
+                                           QString("Arduino Pinout:\nPin 10: RESET\nPin 11: MOSI\nPin 12: MISO\nPin 13: SCK\n")
+                                           + "\n"
+                                           + "Target Pinout:\nConnect one-to-one.\ni.e. SCK->SCK, MISO->MISO, etc.\n"
+                                           + "\n"
+                                           + "6-Pin ICSP Pinout:\nPin 1: MISO\nPin 2: +VCC\nPin 3: SCK\n"
+                                           + "Pin 4: MOSI\nPin 5: RESET\nPin 6: GROUND\n"
+                                           + "\n"
+                                           + "10-Pin ICSP Pinout:\nPin 1: MISO\nPin 2: +VCC\nPin 3: NC\n"
+                                           + "Pin 4: GROUND\nPin 5: RESET\nPin 6: GROUND\nPin 7: SCK\n"
+                                           + "Pin 8: GROUND\nPin 9: MISO\nPin 10: GROUND\n"
+                                          },
+                                          {"PIC18 ICSP",
+                                           QString("Arduino Pinout:\nPin 10: MCLR\nPin 11: ICSPDAT\nPin 13: ICSPCLK\n")
+                                           + "\n"
+                                           + "Target Pinout:\nConnect one-to-one.\ni.e. ICSPCLK->ICSPCLK, ICSPDAT->ICSPDAT, etc.\n"
+                                           + "\n"
+                                          },
+                                          {"PIC32 ICSP 2-Wire",
+                                           QString("Arduino Pinout:\n")
+                                           + "\n"
+                                           + "Target Pinout:\n"
+                                           + "\n"
+                                          },
+                                          {"PIC32 ICSP 4-Wire",
+                                           QString("Arduino Pinout:\n")
+                                           + "\n"
+                                           + "Target Pinout:\n"
+                                           + "\n"
+                                          },
                                           {"Arduino Bootloader",
-                                           "C"}
+                                           QString("Arduino Pinout:\nPin 0: RX\nPin 1: TX\n")
+                                           + "\n"
+                                           + "Target Pinout:\nRX to Arduino TX\nTX to Arduino RX\n"
+                                          }
                                       }
                                      }
                                  });
@@ -191,7 +222,8 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_currentIndexChanged(int)
 
 void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
 {
-    ui->InstructionsText_Label->setText(deviceInstructions.value(ui->BurnMethod_Combo->currentText()));
+    ui->Instructions_TextEdit->clear();
+    ui->Instructions_TextEdit->appendPlainText(deviceInstructions.value(ui->BurnMethod_Combo->currentText()));
 }
 
 void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
