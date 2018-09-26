@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "GUI_DATA_TRANSMIT.h"
-#include "ui_gui_data_transmit.h"
+#include "gui-data-transmit.h"
+#include "ui_gui-data-transmit.h"
 
 #include <QFile>
 #include <QFileDialog>

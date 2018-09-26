@@ -16,10 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "Serial_RS232.h"
+#include "serial-rs232.h"
 #include <QDebug>
 
-QStringList Serial_RS232::Baudrate_Defaults({"1200", "2400", "4800", "9600", "19200", "39400", "57600", "115200"});
+QStringList
+Serial_RS232::Baudrate_Defaults({
+                                    "1200", "2400", "4800",
+                                    "9600", "19200", "39400",
+                                    "57600", "115200"
+                                });
 
 Serial_RS232::Serial_RS232(QString port, QString baudrate, QObject *parent) :
     QObject(parent)

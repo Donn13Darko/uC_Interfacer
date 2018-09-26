@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "GUI_PIN_BASE.h"
+#include "gui-pin-io-base.h"
 
 GUI_PIN_BASE::GUI_PIN_BASE(QWidget *parent) :
     GUI_BASE(parent)

@@ -19,7 +19,7 @@
 #ifndef GUI_DATA_TRANSMIT_H
 #define GUI_DATA_TRANSMIT_H
 
-#include "GUI_BASE.h"
+#include "gui-base.h"
 
 namespace Ui {
 class GUI_DATA_TRANSMIT;

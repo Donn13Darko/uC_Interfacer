@@ -16,23 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ARDUINOUNO_IO_H
-#define ARDUINOUNO_IO_H
+#ifndef UC_CONTROL_FSM_H
+#define UC_CONTROL_FSM_H
 
-#include "../baseGUIs/GUI_8AIO_16DIO_COMM.h"
-#include <QMap>
+#include "../communication/json-info.h"
 
-namespace Ui {
-class ArduinoUno_IO;
-}
+void uc_control_fsm();
 
-class ArduinoUno_IO : public GUI_8AIO_16DIO_COMM
-{
-    Q_OBJECT
-
-public:
-    explicit ArduinoUno_IO(QWidget *parent = 0);
-    ~ArduinoUno_IO();
-};
-
-#endif // ARDUINOUNO_IO_H
+#endif // UC_CONTROL_FSM_H

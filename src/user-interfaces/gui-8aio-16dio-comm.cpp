@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "GUI_8AIO_16DIO_COMM.h"
-#include "ui_GUI_8AIO_16DIO_COMM.h"
+#include "gui-8aio-16dio-comm.h"
+#include "ui_gui-8aio-16dio-comm.h"
 
 #include <QDateTime>
 #include <QList>
 
-#include "../communication/Serial_RS232.h"
+#include "../communication/serial-rs232.h"
 
 GUI_8AIO_16DIO_COMM::GUI_8AIO_16DIO_COMM(QWidget *parent) :
     GUI_PIN_BASE(parent),

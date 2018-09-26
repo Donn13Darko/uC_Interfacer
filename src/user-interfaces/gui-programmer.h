@@ -22,7 +22,7 @@
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
 
-#include "GUI_BASE.h"
+#include "gui-base.h"
 
 namespace Ui {
 class GUI_PROGRAMMER;
@@ -54,7 +54,8 @@ private:
     size_t chunkSize;
     QByteArray loadedHex;
 
-    static QMap<QString, QRegularExpression> hexFormats;
+    static QStringList hexFormatsList;
+    static QMap<QString, QRegularExpression> hexFormatsRegex;
     static QMap<QString, QStringList> burnMethods;
     static QMap<QString, QMap<QString, QString>> instructionTexts;
 

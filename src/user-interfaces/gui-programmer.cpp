@@ -16,24 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "GUI_PROGRAMMER.h"
-#include "ui_GUI_PROGRAMMER.h"
+#include "gui-programmer.h"
+#include "ui_gui-programmer.h"
+
+// Setup static hex format list
+QStringList
+GUI_PROGRAMMER::hexFormatsList({
+                                   "Microchip 8-bit",
+                                   "Microchip 16-bit",
+                                   "Microchip 32-bit"
+                               });
 
 // Setup static hex format and regex parsing map
 QMap<QString, QRegularExpression>
-GUI_PROGRAMMER::hexFormats({
-                               {"Microchip 8-bit",
-                                QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")},
-                               {"Microchip 16-bit",
-                                QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")},
-                               {"Microchip 32-bit",
-                                QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")}
-                           });
+GUI_PROGRAMMER::hexFormatsRegex({
+                                    {"Microchip 8-bit",
+                                     QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")},
+                                    {"Microchip 16-bit",
+                                     QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")},
+                                    {"Microchip 32-bit",
+                                     QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")}
+                                });
 
 // Setup static burn methods list
 QMap<QString, QStringList>
 GUI_PROGRAMMER::burnMethods({
-                                {"Arduino Uno/Genuino",
+                                {"Arduino Uno",
                                  {"AVR ICSP",
                                   "PIC18 ICSP",
                                   "PIC32 ICSP 2-Wire",
@@ -45,7 +53,7 @@ GUI_PROGRAMMER::burnMethods({
 // Setup static instructions list
 QMap<QString, QMap<QString, QString>>
 GUI_PROGRAMMER::instructionTexts({
-                                     {"Arduino Uno/Genuino",
+                                     {"Arduino Uno",
                                       {
                                           {"AVR ICSP",
                                            QString("Arduino Pinout:\nPin 10: RESET\nPin 11: MOSI\nPin 12: MISO\nPin 13: SCK\n")
@@ -95,7 +103,7 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QString deviceType, size_t chunk, QWidget *parent
     loadedHex = QByteArray();
     deviceInstructions = instructionTexts.value(deviceType);
 
-    ui->HexFormat_Combo->addItems(GUI_PROGRAMMER::hexFormats.keys());
+    ui->HexFormat_Combo->addItems(GUI_PROGRAMMER::hexFormatsList);
     ui->BurnMethod_Combo->addItems(GUI_PROGRAMMER::burnMethods.value(deviceType));
 
     ui->ReadAll_Radio->setChecked(true);
@@ -234,7 +242,7 @@ void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
 QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
 {
     QStringList hexList = QString(rawHex).split('\n');
-    QRegularExpression hexReg = hexFormats.value(ui->HexFormat_Combo->currentText());
+    QRegularExpression hexReg = hexFormatsRegex.value(ui->HexFormat_Combo->currentText());
 
     QString final, curr;
     QRegularExpressionMatch hexRegMatch;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "uc_control_fsm.h"
+#include "uc-generic-fsm.h"
 
 void uc_control_fsm()
 {

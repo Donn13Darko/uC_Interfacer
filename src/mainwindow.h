@@ -24,19 +24,24 @@
 #include <QMap>
 #include <QTimer>
 #include <QCloseEvent>
+#include <QSettings>
 
-#include "communication/Serial_RS232.h"
-#include "communication/json_info.h"
-#include "baseGUIs/GUI_BASE.h"
+#include "communication/json-info.h"
+#include "communication/serial-rs232.h"
+#include "user-interfaces/gui-base.h"
 
 typedef enum {
     CONN_TYPE_ERROR = 0,
-    CONN_TYPE_RS_232
+    CONN_TYPE_RS_232,
+    CONN_TYPE_TCP,
+    CONN_TYPE_UDP
 } CONN_TYPE;
 
 typedef enum {
     DEV_TYPE_ERROR = 0,
-    DEV_TYPE_ARDUINO_UNO
+    DEV_TYPE_ARDUINO_UNO,
+    DEV_TYPE_PC,
+    DEV_TYPE_OTHER
 } DEV_TYPE;
 
 namespace Ui {
@@ -81,26 +86,32 @@ private:
     int prev_tab;
 
     QString deviceType;
+    QString deviceINI;
     QString connType;
     QString speed;
     QString connInfo;
 
-    QMap<QString, QMap<QString, QStringList>> supportMapper;
+    static QStringList supportedDevicesList;
+    static QStringList supportedProtocolsList;
+
+    static QMap<QString, uint8_t> supportedDevicesMap;
+    static QMap<QString, uint8_t> supportedProtocolsMap;
 
     QTimer updateConnInfo;
     Serial_RS232 *serial_rs232;
 
+//    QSettings gui_settings;
+
     uint8_t arduino_chunk_size = 32;
 
-    void updateTypeCombos();
     void updateSpeedCombo();
     void setConnected(bool conn);
     void reset_remote();
     void connect2sender(QObject* obj, bool conn);
 
-    int getConnType();
-    int getDevType();
-
+    uint8_t getDevType();
+    uint8_t getConnType();
+    QStringList getConnSpeeds();
     QObject* getConnObject(int type = -1);
 };
 

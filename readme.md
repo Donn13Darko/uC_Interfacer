@@ -30,8 +30,9 @@ Adds baseline programming to some microcontrollers without the need for a man in
 
 
 # General Sources
-The following were heavily used across the entire project:
+The following were utilized across the project:
 1. [Qt](https://www.qt.io/): Qt Creator & accompanying software
+2. [UPX](https://upx.github.io/): Used to compress the static release executables
 
 
 # License

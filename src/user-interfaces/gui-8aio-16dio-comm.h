@@ -19,7 +19,7 @@
 #ifndef GUI_8AIO_16DIO_COMM_H
 #define GUI_8AIO_16DIO_COMM_H
 
-#include "GUI_PIN_BASE.h"
+#include "gui-pin-io-base.h"
 
 #include <QObject>
 #include <QTimer>

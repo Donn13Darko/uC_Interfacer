@@ -22,7 +22,7 @@
 #include <QObject>
 #include <QWidget>
 
-#include "../communication/json_info.h"
+#include "../communication/json-info.h"
 #include <QDebug>
 
 class GUI_BASE : public QWidget

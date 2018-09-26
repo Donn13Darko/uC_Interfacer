@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "GUI_BASE.h"
+#include "gui-base.h"
 
 #include <QMessageBox>
 #include <QFile>
@@ -109,7 +109,7 @@ void GUI_BASE::sendFile(QString filePath, uint8_t chunkSize)
 bool GUI_BASE::getOpenFilePath(QString *filePath, QString fileTypes)
 {
     *filePath = QFileDialog::getOpenFileName(this, tr("Open"),
-                                             "", fileTypes);;
+                                             "", fileTypes);
 
     return !filePath->isEmpty();
 }

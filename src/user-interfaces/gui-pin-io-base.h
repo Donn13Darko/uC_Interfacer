@@ -29,7 +29,7 @@
 #include <QFile>
 #include <QTimer>
 
-#include "GUI_BASE.h"
+#include "gui-base.h"
 
 struct RangeList {
     int min;

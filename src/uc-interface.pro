@@ -8,7 +8,7 @@ QT       += core gui serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = uC_Interface
+TARGET = uc-interface
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -24,37 +24,37 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += \
-        main.cpp \
-    baseGUIs/GUI_8AIO_16DIO_COMM.cpp \
-    uCInterfaces/arduinouno_io_gui.cpp \
-    baseGUIs/GUI_DATA_TRANSMIT.cpp \
-    baseGUIs/GUI_PIN_BASE.cpp \
-    baseGUIs/GUI_BASE.cpp \
-    uCInterfaces/arduinomega_io_gui.cpp \
-    baseGUIs/GUI_PROGRAMMER.cpp \
+    main.cpp \
     mainwindow.cpp \
-    communication/Serial_RS232.cpp \
-    uCInterfaces/uc_control_fsm.cpp
+    communication/serial-rs232.cpp \
+    uc-interfaces/uc-generic-fsm.cpp \
+    uc-interfaces/gui-arduino-uno-io.cpp \
+    user-interfaces/gui-base.cpp \
+    user-interfaces/gui-pin-io-base.cpp \
+    user-interfaces/gui-8aio-16dio-comm.cpp \
+    user-interfaces/gui-data-transmit.cpp \
+    user-interfaces/gui-programmer.cpp
 
 HEADERS += \
-    baseGUIs/GUI_8AIO_16DIO_COMM.h \
-    uCInterfaces/arduinouno_io_gui.h \
-    baseGUIs/GUI_DATA_TRANSMIT.h \
-    baseGUIs/GUI_PIN_BASE.h \
-    baseGUIs/GUI_BASE.h \
-    uCInterfaces/arduinomega_io_gui.h \
-    communication/json_info.h \
-    baseGUIs/GUI_PROGRAMMER.h \
     mainwindow.h \
-    communication/Serial_RS232.h \
-    uCInterfaces/uc_control_fsm.h
+    communication/json-info.h \
+    communication/serial-rs232.h \
+    uc-interfaces/uc-generic-fsm.h \
+    uc-interfaces/gui-arduino-uno-io.h \
+    user-interfaces/gui-base.h \
+    user-interfaces/gui-pin-io-base.h \
+    user-interfaces/gui-8aio-16dio-comm.h \
+    user-interfaces/gui-data-transmit.h \
+    user-interfaces/gui-programmer.h
 
 FORMS += \
-    baseGUIs/GUI_DATA_TRANSMIT.ui \
-    baseGUIs/GUI_8AIO_16DIO_COMM.ui \
-    baseGUIs/GUI_PROGRAMMER.ui \
-    mainwindow.ui
+    mainwindow.ui \
+    user-interfaces/gui-8aio-16dio-comm.ui \
+    user-interfaces/gui-data-transmit.ui \
+    user-interfaces/gui-programmer.ui
 
 DISTFILES += \
-    uCInterfaces/arduinouno_io_uart/arduinouno_io_uart.ino \
-    uCInterfaces/arduinomega_io_uart/arduinomega_io_uart.ino
+    uc-interfaces/arduino_uno_uart/arduino_uno_uart.ino
+
+RESOURCES += \
+    uc-interfaces.qrc

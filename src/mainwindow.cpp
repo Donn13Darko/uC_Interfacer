@@ -19,12 +19,44 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include "uCInterfaces/arduinouno_io_gui.h"
-#include "uCInterfaces/arduinomega_io_gui.h"
-#include "baseGUIs/GUI_DATA_TRANSMIT.h"
-#include "baseGUIs/GUI_PROGRAMMER.h"
+#include "uc-interfaces/gui-arduino-uno-io.h"
+#include "user-interfaces/gui-data-transmit.h"
+#include "user-interfaces/gui-programmer.h"
 
 #include <QMessageBox>
+#include <QFileDialog>
+
+// Setup static supported devices list
+QStringList
+MainWindow::supportedDevicesList({
+                                     "Arduino Uno",
+                                     "PC",
+                                     "Other"
+                                 });
+
+// Setup static supported devices map
+QMap<QString, uint8_t>
+MainWindow::supportedDevicesMap({
+                                 {"Arduino Uno", DEV_TYPE_ARDUINO_UNO},
+                                 {"PC", DEV_TYPE_PC},
+                                 {"Other", DEV_TYPE_OTHER}
+                             });
+
+// Setup static supported protocols list
+QStringList
+MainWindow::supportedProtocolsList({
+                                       "RS-232",
+                                       "TCP",
+                                       "UDP"
+                                   });
+
+// Setup static supported protocols map
+QMap<QString, uint8_t>
+MainWindow::supportedProtocolsMap({
+                                   {"RS-232", CONN_TYPE_RS_232},
+                                   {"TCP", CONN_TYPE_TCP},
+                                   {"UDP", CONN_TYPE_UDP}
+                               });
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -37,16 +69,11 @@ MainWindow::MainWindow(QWidget *parent) :
     serial_rs232 = nullptr;
     prev_tab = -1;
 
-    // Set default support values
-    supportMapper = {
-                    {"Arduino Uno/Genuino",
-                     {{"RS-232", Serial_RS232::Baudrate_Defaults}}
-                    }
-                };
-
     // Add specified values to combos
     ui->DeviceCombo->clear();
-    ui->DeviceCombo->addItems(MainWindow::supportMapper.keys());
+    ui->DeviceCombo->addItems(MainWindow::supportedDevicesList);
+    ui->ConnTypeCombo->clear();
+    ui->ConnTypeCombo->addItems(MainWindow::supportedProtocolsList);
 
     // Set Initial values
     setConnected(false);
@@ -98,11 +125,29 @@ void MainWindow::connect_signals(bool conn)
 
 void MainWindow::on_DeviceCombo_currentIndexChanged(int)
 {
+    // Save previous value
+    QString prev_deviceType = deviceType;
+
     // Update Changed Data
     deviceType = ui->DeviceCombo->currentText();
 
-    // Process changes to type combo
-    updateTypeCombos();
+    // Get new INI file
+    deviceINI = ":/uc-interfaces/";
+    switch (getDevType())
+    {
+        case DEV_TYPE_ARDUINO_UNO:
+            deviceINI += "gui-arduino-uno.ini";
+            break;
+        case DEV_TYPE_OTHER:
+            deviceINI = QFileDialog::getOpenFileName(this, tr("Open"), "",
+                                                     tr("INI (*.ini);;All Files (*.*)"));;
+            break;
+    }
+
+    if (deviceINI.isEmpty())
+    {
+        ui->DeviceCombo->setCurrentText(prev_deviceType);
+    }
 }
 
 void MainWindow::on_ConnTypeCombo_currentIndexChanged(int)
@@ -126,25 +171,30 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     // Get connection info
     connInfo = ui->ConnInfoCombo->currentText();
 
-    // Connect and add widgets of device class
-    // Try to connect to device
-    bool connected = false;
-    switch (getConnType())
-    {
-        case CONN_TYPE_RS_232:
-            serial_rs232 = new Serial_RS232(connInfo, speed);
-            serial_rs232->open();
-            connected = serial_rs232->isConnected();
-            break;
-        default:
-            connected = false;
-            break;
-    }
+    // Try to connect to the device
+    bool connected = true;
+//    switch (getConnType())
+//    {
+//        case CONN_TYPE_RS_232:
+//            serial_rs232 = new Serial_RS232(connInfo, speed);
+//            serial_rs232->open();
+//            connected = serial_rs232->isConnected();
+//            break;
+//        default:
+//            connected = false;
+//            break;
+//    }
 
     // Error out of can't connect to hardware
-    // First write operations for new connection always fail
     if (connected)
     {
+        // Reset & load the GUI settings file
+        QSettings gui_settings(deviceINI, QSettings::IniFormat);
+        qDebug() << deviceINI;
+        qDebug() << gui_settings.fileName();
+        qDebug() << gui_settings.childGroups();
+        qDebug() << gui_settings.value("Programmer/burn_methods");
+
         // Setup tabs
         ui->ucOptions->blockSignals(true);
         QWidget* tab_holder;
@@ -248,9 +298,11 @@ void MainWindow::updateConnInfoCombo()
             break;
         }
         default:
+        {
             updateConnInfo.stop();
             ui->ConnInfoCombo->setEditable(true);
             break;
+        }
     }
 }
 
@@ -288,21 +340,12 @@ void MainWindow::on_ucOptions_currentChanged(int index)
     prev_tab = index;
 }
 
-void MainWindow::updateTypeCombos()
-{
-    QStringList connTypes = MainWindow::supportMapper.value(deviceType).keys();
-    ui->ConnTypeCombo->clear();
-    ui->ConnTypeCombo->addItems(connTypes);
-
-    on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
-}
-
 void MainWindow::updateSpeedCombo()
 {
     ui->SpeedCombo->clear();
     ui->SpeedCombo->setEnabled(true);
 
-    QStringList newItems = MainWindow::supportMapper.value(deviceType).value(connType);
+    QStringList newItems = getConnSpeeds();
     if (newItems.length() == 0) ui->SpeedCombo->setEnabled(false);
     else ui->SpeedCombo->addItems(newItems);
 
@@ -332,9 +375,9 @@ void MainWindow::reset_remote()
 
 void MainWindow::connect2sender(QObject* obj, bool conn)
 {
-    // Get connection type
+    // Get connection type & verify connection
     QObject* conn_obj = getConnObject();
-    if (!conn_obj) return;
+    if (!obj || !conn_obj) return;
 
     // Connect or disconnect signals
     if (conn) {
@@ -356,16 +399,23 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
     }
 }
 
-int MainWindow::getConnType()
+uint8_t MainWindow::getConnType()
 {
-    if (connType == "RS-232") return CONN_TYPE_RS_232;
-    else return CONN_TYPE_ERROR;
+    return supportedProtocolsMap.value(connType, CONN_TYPE_ERROR);
 }
 
-int MainWindow::getDevType()
+uint8_t MainWindow::getDevType()
 {
-    if (deviceType == "Arduino Uno/Genuino") return DEV_TYPE_ARDUINO_UNO;
-    else return DEV_TYPE_ERROR;
+    return supportedDevicesMap.value(deviceType, DEV_TYPE_ERROR);
+}
+
+QStringList MainWindow::getConnSpeeds()
+{
+    switch (getConnType())
+    {
+        case CONN_TYPE_RS_232: return Serial_RS232::Baudrate_Defaults;
+        default: return {};
+    }
 }
 
 QObject* MainWindow::getConnObject(int type)

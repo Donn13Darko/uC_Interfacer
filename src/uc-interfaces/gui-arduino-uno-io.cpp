@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "uCInterfaces/arduinomega_io_gui.h"
-#include "ui_GUI_8AIO_16DIO_COMM.h"
+#include "gui-arduino-uno-io.h"
+#include "ui_gui-8aio-16dio-comm.h"
 
 #include <QMessageBox>
 #include <QTimer>
 
-ArduinoMega::ArduinoMega(QWidget *parent) :
+ArduinoUno_IO::ArduinoUno_IO(QWidget *parent) :
     GUI_8AIO_16DIO_COMM(parent)
 {
     // Add new pin settings
@@ -37,6 +37,7 @@ ArduinoMega::ArduinoMega(QWidget *parent) :
                         }
                       );
 
+
     // Set combo values for pins
     setCombos(  JSON_AIO, {"Input"});
     setCombos(  JSON_DIO,
@@ -45,9 +46,15 @@ ArduinoMega::ArduinoMega(QWidget *parent) :
                 {"Input", "Output", "PWM", "Servo Deg", "Servo uS"},
                 {3, 5, 6, 9, 10, 11});
 
-    // Remove Extra Pins
+    // Remove Extra Pins (make this automatic based on AIO/DIO pin counts)
+    disablePins(JSON_AIO, {6, 7});
+    disablePins(JSON_DIO, {14, 15});
+
+    // Set Device pin count (make setter and previous step automatic)
+    num_AIOpins_DEV = 6;
+    num_DIOpins_DEV = 14;
 }
 
-ArduinoMega::~ArduinoMega()
+ArduinoUno_IO::~ArduinoUno_IO()
 {
 }
