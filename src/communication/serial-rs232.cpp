@@ -66,8 +66,8 @@ QStringList Serial_RS232::getDevices()
 {
     QStringList portNames;
     QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
-    for (auto i = ports.begin(); i != ports.end(); i++)
-        portNames.append((*i).portName());
+    foreach (QSerialPortInfo i, ports)
+        portNames.append(i.portName());
 
     return portNames;
 }
@@ -86,9 +86,9 @@ void Serial_RS232::write(QByteArray writeData)
 void Serial_RS232::write(std::initializer_list<uint8_t> writeData)
 {
     QByteArray data;
-    for (auto i = writeData.begin(); i != writeData.end(); i++)
+    foreach (char i, writeData)
     {
-        data.append((char) (*i));
+        data.append(i);
     }
 
     write(data);

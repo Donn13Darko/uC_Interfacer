@@ -72,9 +72,7 @@ private slots:
 protected:
     Ui::GUI_8AIO_16DIO_COMM *ui;
 
-    void addNewPinSettings(QList<uint8_t> pinTypes, QList<QString> pinCombos, QList<uint8_t> pinValues, QList<bool> pinSetDisabled, QList<RangeList> pinRanges = {EMPTY_RANGE});
-
-    void disablePins(uint8_t pinType, QList<int> pinNums);
+    void setNumPins(uint8_t pinType, uint8_t num_dev_pins);
     void setCombos(uint8_t pinTypes, QList<QString> values, QList<int> pinNums = {});
 
     void setConTypes(QStringList connTypes, QList<char> mapValues);
@@ -88,9 +86,6 @@ private:
     void setValues(uint8_t pinType, QByteArray values);
 
     void recordPinValues(PinTypeInfo *pInfo);
-
-    void addPinControls(QList<QString> keys, QList<uint8_t> values);
-    void addPinRangeMap(QList<uint8_t> keys, QList<RangeList> values = {EMPTY_RANGE});
 
     bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 };

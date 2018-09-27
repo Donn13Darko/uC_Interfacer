@@ -172,28 +172,35 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     connInfo = ui->ConnInfoCombo->currentText();
 
     // Try to connect to the device
-    bool connected = true;
-//    switch (getConnType())
-//    {
-//        case CONN_TYPE_RS_232:
-//            serial_rs232 = new Serial_RS232(connInfo, speed);
-//            serial_rs232->open();
-//            connected = serial_rs232->isConnected();
-//            break;
-//        default:
-//            connected = false;
-//            break;
-//    }
+    bool connected = false;
+    switch (getConnType())
+    {
+        case CONN_TYPE_RS_232:
+            serial_rs232 = new Serial_RS232(connInfo, speed);
+            serial_rs232->open();
+            connected = serial_rs232->isConnected();
+            break;
+        default:
+            connected = false;
+            break;
+    }
 
     // Error out of can't connect to hardware
     if (connected)
     {
         // Reset & load the GUI settings file
         QSettings gui_settings(deviceINI, QSettings::IniFormat);
-        qDebug() << deviceINI;
-        qDebug() << gui_settings.fileName();
-        qDebug() << gui_settings.childGroups();
-        qDebug() << gui_settings.value("Programmer/burn_methods");
+        QStringList key_groups = gui_settings.childGroups();
+//        qDebug() << deviceINI;
+//        qDebug() << gui_settings.fileName();
+//        qDebug() << gui_settings.childGroups();
+//        qDebug() << gui_settings.value("Programmer/instructions");
+
+        QMap<QString, QVariant> temp;
+        foreach (QString i, key_groups)
+        {
+            gui_settings.beginGroup(i);
+        }
 
         // Setup tabs
         ui->ucOptions->blockSignals(true);

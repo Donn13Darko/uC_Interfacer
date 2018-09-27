@@ -31,13 +31,19 @@
 
 #include "gui-base.h"
 
+typedef enum {
+    PIN_TYPES_DIO = 0,
+    PIN_TYPES_AIO,
+    PIN_TYPES_REMOTE
+} PIN_TYPES;
+
 struct RangeList {
     int min;
     int max;
     int step;
     float div;
 };
-#define EMPTY_RANGE RangeList{.min=0, .max=0, .step=0, .div=0}
+#define EMPTY_RANGE RangeList{.min=0, .max=0, .step=0, .div=1.0}
 
 struct PinTypeInfo {
     QGridLayout *grid;
@@ -46,9 +52,8 @@ struct PinTypeInfo {
     int rows;
     int numButtons;
     int numPins;
-    RangeList rangeDefault;
 };
-#define EMPTY_PINTYPEINFO PinTypeInfo{.grid=NULL, .pinType=0, .cols=0, .rows=0, .numButtons=0, .numPins=0, .rangeDefault=EMPTY_RANGE}
+#define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=NULL, .pinType=0, .cols=0, .rows=0, .numButtons=0, .numPins=0}
 
 
 class GUI_PIN_BASE : public GUI_BASE
@@ -60,14 +65,9 @@ public:
     ~GUI_PIN_BASE();
 
 protected:
-    QMap<QString, uint8_t> controlMap;
-    QMap<uint8_t, QList<uint8_t>> disabledValueSet;
-
-    int rLen;
-    QMap<uint8_t, RangeList> rangeMap;
-
-    RangeList DIO_rangeDefault;
-    RangeList AIO_rangeDefault;
+    QMap<uint8_t, QMap<QString, uint8_t>*> controlMap;
+    QMap<uint8_t, QList<uint8_t>*> disabledValueSet;
+    QMap<uint8_t, QMap<uint8_t, RangeList>*> rangeMap;
 
     QTimer DIO_READ;
     QTimer AIO_READ;
@@ -100,9 +100,7 @@ protected:
     int slideValuePos;
     int textValuePos;
 
-    void setRangeDefaults(RangeList DIO_range, RangeList AIO_range);
-    RangeList getDIORangeDefault();
-    RangeList getAIORangeDefault();
+    void addNewPinSettings(uint8_t pinType, QList<QString> newSettings);
 
     void inputsChanged(PinTypeInfo *pInfo, int colOffset);
     void updateSliderRange(QSlider *slider, RangeList *rList);
@@ -112,6 +110,11 @@ protected:
     bool getItemWidget(QWidget** itemWidget, QGridLayout *grid, int row, int col);
     void getPinLocation(int *row, int* col, PinTypeInfo *pInfo, int pin);
     bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
+
+private:
+    RangeList* makeRangeList(QString rangeInfo);
+    void addPinControls(uint8_t pinType, QList<QString> keys);
+    void addPinRangeMap(uint8_t pinType, QList<QString> keys, QList<RangeList> values = {EMPTY_RANGE});
 };
 
 #endif // GUI_PIN_BASE_H

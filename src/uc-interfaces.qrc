@@ -1,5 +1,9 @@
 <RCC>
     <qresource prefix="/">
         <file>uc-interfaces/gui-arduino-uno.ini</file>
+        <file>communication/gui-base-encoding.ini</file>
+        <file>communication/gui-data-transmit-encoding.ini</file>
+        <file>communication/gui-pin-io-encoding.ini</file>
+        <file>communication/gui-programming-encoding.ini</file>
     </qresource>
 </RCC>

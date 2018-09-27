@@ -161,9 +161,9 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 
     QStringList formattedHexList = ui->HexPreview_Edit->toPlainText().split('\n');
     QStringList curr;
-    for (int i = 0; i < formattedHexList.length(); i++)
+    foreach (QString i, formattedHexList)
     {
-        curr = formattedHexList[i].split(' ');
+        curr = i.split(' ');
         if (curr.isEmpty() || (curr.length() < 5)) continue;
 
         // Send across address
@@ -244,17 +244,15 @@ QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
     QStringList hexList = QString(rawHex).split('\n');
     QRegularExpression hexReg = hexFormatsRegex.value(ui->HexFormat_Combo->currentText());
 
-    QString final, curr;
+    QString final;
     QRegularExpressionMatch hexRegMatch;
-    for (int i = 0; i < hexList.length(); i++)
+    foreach (QString i, hexList)
     {
-        // Grab next line
-        curr = hexList[i];
-        if (curr.isEmpty()) continue;
+        if (i.isEmpty()) continue;
 
         // Attempt to match with regex
         // Should be in format [nnaaaatt_dd_cc]
-        hexRegMatch = hexReg.match(curr.trimmed());
+        hexRegMatch = hexReg.match(i.trimmed());
         final += hexRegMatch.captured(1) + " " + hexRegMatch.captured(3) + " " \
                 + hexRegMatch.captured(5) + " " + hexRegMatch.captured(2) + " " \
                 + hexRegMatch.captured(4) + "\n";

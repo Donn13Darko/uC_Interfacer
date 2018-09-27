@@ -26,17 +26,23 @@ ArduinoUno_IO::ArduinoUno_IO(QWidget *parent) :
     GUI_8AIO_16DIO_COMM(parent)
 {
     // Add new pin settings
-    addNewPinSettings(  {JSON_DIO},
-                        {"PWM", "Servo Deg", "Servo uS"},
-                        {IO_PWM, IO_SERVO_DEG, IO_SERVO_US},
-                        {false, false, false},
-                        {
-                          {.min=0, .max=100, .step=5, .div=1},
-                          {.min=0, .max=360, .step=5, .div=1},
-                          {.min=0, .max=3000, .step=5, .div=1}
-                        }
-                      );
+    addNewPinSettings(JSON_DIO, {
+                          "Input,true,0-1-1-1.0",
+                          "Output,false,0-1-1-1.0",
+                          "PWM,false,0-100-5-1",
+                          "Servo Deg,false,0-360-5-1",
+                          "Servo uS,false,0-3000-5-1"
+                      });
 
+    addNewPinSettings(JSON_AIO, {
+                          "Input,true,0-500-50-100.0"
+                      });
+
+    addNewPinSettings(REMOTE_CONN_REMOTE, {
+                          "UART,false,",
+                          "I2C,false,",
+                          "SPI,true,"
+                      });
 
     // Set combo values for pins
     setCombos(  JSON_AIO, {"Input"});
@@ -45,14 +51,14 @@ ArduinoUno_IO::ArduinoUno_IO(QWidget *parent) :
     setCombos(  JSON_DIO,
                 {"Input", "Output", "PWM", "Servo Deg", "Servo uS"},
                 {3, 5, 6, 9, 10, 11});
+    setCombos(REMOTE_CONN_REMOTE, {"UART", "I2C", "SPI"});
 
-    // Remove Extra Pins (make this automatic based on AIO/DIO pin counts)
-    disablePins(JSON_AIO, {6, 7});
-    disablePins(JSON_DIO, {14, 15});
+    // Set device pins (Automatically disables extra pins)
+    setNumPins(JSON_AIO, 6);
+    setNumPins(JSON_DIO, 14);
 
-    // Set Device pin count (make setter and previous step automatic)
-    num_AIOpins_DEV = 6;
-    num_DIOpins_DEV = 14;
+    qDebug() << controlMap.keys();
+    qDebug() << controlMap.value(JSON_DIO)->keys();
 }
 
 ArduinoUno_IO::~ArduinoUno_IO()

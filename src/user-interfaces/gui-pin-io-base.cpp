@@ -27,20 +27,42 @@ GUI_PIN_BASE::~GUI_PIN_BASE()
 {
 }
 
-void GUI_PIN_BASE::setRangeDefaults(RangeList DIO_range, RangeList AIO_range)
+void GUI_PIN_BASE::addNewPinSettings(uint8_t pinType, QList<QString> newSettings)
 {
-    DIO_rangeDefault = DIO_range;
-    AIO_rangeDefault = AIO_range;
-}
+//    qDebug() << newSettings;
+    QList<QString> settingValues;
+    QList<QString> pinCombos = {}, pinSetDisabled = {};
+    QList<RangeList> pinRanges = {};
+    foreach (QString i, newSettings)
+    {
+        // Split settings string into values [name,setEnabled,rangeList]
+        settingValues = (i).split(',');
 
-RangeList GUI_PIN_BASE::getDIORangeDefault()
-{
-    return DIO_rangeDefault;
-}
+        pinCombos.append(settingValues[0]);
 
-RangeList GUI_PIN_BASE::getAIORangeDefault()
-{
-    return AIO_rangeDefault;
+        if (settingValues[1].toLower() == "true")
+            pinSetDisabled.append(settingValues[0]);
+
+        pinRanges.append(*makeRangeList(settingValues[2]));
+    }
+
+    // Add new pinTypes (if relevant)
+    if (!controlMap.contains(pinType)) controlMap.insert(pinType, new QMap<QString, uint8_t>());
+    if (!disabledValueSet.contains(pinType)) disabledValueSet.insert(pinType, new QList<uint8_t>());
+    if (!rangeMap.contains(pinType)) rangeMap.insert(pinType, new QMap<uint8_t, RangeList>());
+
+//    qDebug() << pinCombos;
+//    qDebug() << pinSetDisabled;
+
+    addPinControls(pinType, pinCombos);
+    addPinRangeMap(pinType, pinCombos, pinRanges);
+
+    QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
+    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pinType);
+    foreach (QString i, pinSetDisabled)
+    {
+        pinDisabledSet->append(pinMap->value(i));
+    }
 }
 
 void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, int colOffset)
@@ -57,86 +79,91 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, int colOffset)
     QLayoutItem *itemCombo = pInfo->grid->itemAtPosition(row, col+comboPos);
     QLayoutItem *itemSliderValue = pInfo->grid->itemAtPosition(row, col+slideValuePos);
     QLayoutItem *itemTextValue = pInfo->grid->itemAtPosition(row, col+textValuePos);
+    if (!(itemLabel && itemCombo && itemSliderValue && itemTextValue)) return;
 
-    // Compile & send request for uC
-    if (itemLabel && itemCombo && itemSliderValue && itemTextValue)
+    // Get mapping info
+    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo->pinType);
+    QMap<uint8_t, RangeList>* pinRangeMap = rangeMap.value(pInfo->pinType);
+    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo->pinType);
+    if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
+
+    // Find widgets of interest
+    QLabel *label = (QLabel*) itemLabel->widget();
+    QComboBox *combo = (QComboBox*) itemCombo->widget();
+    QSlider *sliderValue = (QSlider*) itemSliderValue->widget();
+    QLineEdit *textValue = (QLineEdit*) itemTextValue->widget();
+    if (!(label && combo && sliderValue && textValue)) return;
+
+    // Set Pin Num
+    QString pinNum = QString::number(label->text().toInt());
+
+    // Clarify IO selection
+    uint8_t IO = pinMap->value(combo->currentText());
+
+    // Get range list for use in next sections
+    RangeList rList = pinRangeMap->value(IO);
+
+    // Set IO if combo changed
+    if (caller == combo)
     {
-        QLabel *label = (QLabel*) itemLabel->widget();
-        QComboBox *combo = (QComboBox*) itemCombo->widget();
-        QSlider *sliderValue = (QSlider*) itemSliderValue->widget();
-        QLineEdit *textValue = (QLineEdit*) itemTextValue->widget();
-        if (label && combo && sliderValue && textValue)
+        // Enable/Disable pins if selection changed
+        if (pinDisabledSet->contains(IO))
         {
-            // Set Pin Num
-            QString pinNum = QString::number(label->text().toInt());
-
-            // Clarify IO selection
-            uint8_t IO = controlMap.value(combo->currentText());
-            RangeList rList = rangeMap.value(IO, pInfo->rangeDefault);
-
-            // Set IO if combo changed
-            if (caller == combo)
-            {
-                // Enable/Disable pins if selection changed
-                if (disabledValueSet.value(pInfo->pinType).contains(IO))
-                {
-                    sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-                    textValue->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-                } else
-                {
-                    sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-                    textValue->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-                }
-
-                // Reset slider range if selection changed
-                int prevPos = sliderValue->sliderPosition();
-                updateSliderRange(sliderValue, &rList);
-
-                int curPos = sliderValue->sliderPosition();
-                if (prevPos == curPos) emit sliderValue->valueChanged(curPos);
-
-                return;
-            }
-
-            QString VAL;
-            if (caller == sliderValue)
-            {
-                // Update values if slider moved
-                int newVal = sliderValue->value();
-                float tempVAL = (float) newVal / rList.div;
-
-                if (pInfo->pinType == JSON_AIO) tempVAL = qRound(tempVAL);
-
-                VAL = QString::number(tempVAL);
-                textValue->setText(VAL);
-            } else if (caller == textValue)
-            {
-                // Update values if text box changed
-                VAL = textValue->text();
-                float tempVAL = rList.div * VAL.toFloat();
-
-                if (pInfo->pinType != JSON_AIO) tempVAL = qRound(tempVAL);
-
-                sliderValue->setSliderPosition(tempVAL);
-                VAL = QString::number(tempVAL);
-                return;
-            } else
-            {
-                // No change or error
-                return;
-            }
-
-            // Send request to uC
-            uint16_t v = (uint16_t) VAL.toInt();
-            send({
-                     pInfo->pinType,
-                     (uint8_t) pinNum.toInt(),
-                     IO,
-                     (uint8_t) ((v >> 8) & 0xFF),
-                     (uint8_t) (v & 0xFF)
-                 });
+            sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+            textValue->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+        } else
+        {
+            sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+            textValue->setAttribute(Qt::WA_TransparentForMouseEvents, false);
         }
+
+        // Reset slider range if selection changed
+        int prevPos = sliderValue->sliderPosition();
+        updateSliderRange(sliderValue, &rList);
+
+        int curPos = sliderValue->sliderPosition();
+        if (prevPos == curPos) emit sliderValue->valueChanged(curPos);
+
+        return;
     }
+
+    QString VAL;
+    if (caller == sliderValue)
+    {
+        // Update values if slider moved
+        int newVal = sliderValue->value();
+        float tempVAL = (float) newVal / rList.div;
+
+        if (pInfo->pinType == JSON_AIO) tempVAL = qRound(tempVAL);
+
+        VAL = QString::number(tempVAL);
+        textValue->setText(VAL);
+    } else if (caller == textValue)
+    {
+        // Update values if text box changed
+        VAL = textValue->text();
+        float tempVAL = rList.div * VAL.toFloat();
+
+        if (pInfo->pinType != JSON_AIO) tempVAL = qRound(tempVAL);
+
+        sliderValue->setSliderPosition(tempVAL);
+        VAL = QString::number(tempVAL);
+        return;
+    } else
+    {
+        // No change or error
+        return;
+    }
+
+    // Send request to uC
+    uint16_t v = (uint16_t) VAL.toInt();
+    send({
+             pInfo->pinType,
+             (uint8_t) pinNum.toInt(),
+             IO,
+             (uint8_t) ((v >> 8) & 0xFF),
+             (uint8_t) (v & 0xFF)
+         });
 }
 
 void GUI_PIN_BASE::updateSliderRange(QSlider *slider, RangeList *rList)
@@ -195,17 +222,66 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
             infoPtr->numPins = num_AIOpins_GUI;
             infoPtr->cols = num_AIOcols;
             infoPtr->rows = num_AIOrows;
-            infoPtr->rangeDefault = AIO_rangeDefault;
             return true;
         case JSON_DIO:
             infoPtr->numButtons = num_DIObuttons;
             infoPtr->numPins = num_DIOpins_GUI;
             infoPtr->cols = num_DIOcols;
             infoPtr->rows = num_DIOrows;
-            infoPtr->rangeDefault = DIO_rangeDefault;
             return true;
         default:
-            *infoPtr = EMPTY_PINTYPEINFO;
+            delete infoPtr;
+            *infoPtr = EMPTY_PIN_TYPE_INFO;
             return false;
+    }
+}
+
+RangeList* GUI_PIN_BASE::makeRangeList(QString rangeInfo)
+{
+    // Split range info string into values
+    QStringList rangeInfoList = rangeInfo.split('-');
+    if (rangeInfoList.length() != 4) return new EMPTY_RANGE;
+
+    RangeList* rList = new RangeList();
+
+    // Set min
+    if (rangeInfoList[0].isEmpty()) rList->min = 0;
+    else rList->min = rangeInfoList[0].toInt();
+
+    // Set max
+    if (rangeInfoList[1].isEmpty()) rList->max = 0;
+    else rList->max = rangeInfoList[1].toInt();
+
+    // Set step
+    if (rangeInfoList[2].isEmpty()) rList->step = 0;
+    else rList->step = rangeInfoList[2].toInt();
+
+    // Set div
+    if (rangeInfoList[3].isEmpty()) rList->div = 0;
+    else rList->div = rangeInfoList[3].toFloat();
+
+    return rList;
+}
+
+void GUI_PIN_BASE::addPinControls(uint8_t pinType, QList<QString> keys)
+{
+    QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
+    uint8_t key_num = pinMap->keys().length();
+    foreach (QString i, keys)
+    {
+        pinMap->insert(i, key_num);
+        key_num += 1;
+    }
+}
+
+void GUI_PIN_BASE::addPinRangeMap(uint8_t pinType, QList<QString> keys, QList<RangeList> values)
+{
+    if (keys.length() != values.length()) return;
+
+    QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
+    QMap<uint8_t, RangeList>* pinRangeMap = rangeMap.value(pinType);
+    for (int i = 0; i < keys.length(); i++)
+    {
+        pinRangeMap->insert(pinMap->value(keys[i]), values[i]);
     }
 }

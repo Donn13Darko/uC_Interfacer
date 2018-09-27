@@ -209,23 +209,7 @@
     <item>
      <layout class="QGridLayout" name="AIO_Grid">
       <item row="5" column="1">
-       <widget class="QComboBox" name="A05Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>PWM</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="A05Combo"/>
       </item>
       <item row="5" column="3">
        <widget class="QLineEdit" name="A05TextValue">
@@ -260,51 +244,13 @@
        </widget>
       </item>
       <item row="4" column="1">
-       <widget class="QComboBox" name="A04Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="A04Combo"/>
       </item>
       <item row="3" column="1">
-       <widget class="QComboBox" name="A03Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>PWM</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="A03Combo"/>
       </item>
       <item row="2" column="1">
-       <widget class="QComboBox" name="A02Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="A02Combo"/>
       </item>
       <item row="7" column="3">
        <widget class="QLineEdit" name="A07TextValue">
@@ -332,60 +278,13 @@
        </widget>
       </item>
       <item row="6" column="1">
-       <widget class="QComboBox" name="A06Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="A06Combo"/>
       </item>
       <item row="7" column="1">
-       <widget class="QComboBox" name="A07Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="1" column="1">
-       <widget class="QComboBox" name="A01Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="A07Combo"/>
       </item>
       <item row="0" column="1">
-       <widget class="QComboBox" name="A00Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="A00Combo"/>
       </item>
       <item row="4" column="0">
        <widget class="QLabel" name="A04Label">
@@ -882,6 +781,9 @@
         </property>
        </widget>
       </item>
+      <item row="1" column="1">
+       <widget class="QComboBox" name="A01Combo"/>
+      </item>
      </layout>
     </item>
    </layout>
@@ -991,21 +893,6 @@
      <height>22</height>
     </rect>
    </property>
-   <item>
-    <property name="text">
-     <string>UART</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>I2C Master</string>
-    </property>
-   </item>
-   <item>
-    <property name="text">
-     <string>I2C Slave</string>
-    </property>
-   </item>
   </widget>
   <widget class="Line" name="line_3">
    <property name="geometry">
@@ -1312,18 +1199,7 @@
        </widget>
       </item>
       <item row="7" column="5">
-       <widget class="QComboBox" name="D15Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D15Combo"/>
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="D00Label">
@@ -1333,18 +1209,7 @@
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QComboBox" name="D00Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D00Combo"/>
       </item>
       <item row="1" column="2">
        <widget class="QSlider" name="D02SlideValue">
@@ -1422,18 +1287,7 @@
        </widget>
       </item>
       <item row="1" column="1">
-       <widget class="QComboBox" name="D02Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D02Combo"/>
       </item>
       <item row="2" column="0">
        <widget class="QLabel" name="D04Label">
@@ -1450,18 +1304,7 @@
        </widget>
       </item>
       <item row="7" column="1">
-       <widget class="QComboBox" name="D14Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D14Combo"/>
       </item>
       <item row="6" column="4">
        <widget class="QLabel" name="D13Label">
@@ -1505,18 +1348,7 @@
        </widget>
       </item>
       <item row="6" column="5">
-       <widget class="QComboBox" name="D13Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D13Combo"/>
       </item>
       <item row="6" column="6">
        <widget class="QSlider" name="D13SlideValue">
@@ -1553,18 +1385,7 @@
        </widget>
       </item>
       <item row="3" column="5">
-       <widget class="QComboBox" name="D07Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D07Combo"/>
       </item>
       <item row="5" column="4">
        <widget class="QLabel" name="D11Label">
@@ -1649,46 +1470,13 @@
        </widget>
       </item>
       <item row="5" column="5">
-       <widget class="QComboBox" name="D11Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D11Combo"/>
       </item>
       <item row="4" column="1">
-       <widget class="QComboBox" name="D08Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D08Combo"/>
       </item>
       <item row="2" column="1">
-       <widget class="QComboBox" name="D04Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D04Combo"/>
       </item>
       <item row="2" column="2">
        <widget class="QSlider" name="D04SlideValue">
@@ -1746,18 +1534,7 @@
        </widget>
       </item>
       <item row="0" column="5">
-       <widget class="QComboBox" name="D01Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D01Combo"/>
       </item>
       <item row="3" column="0">
        <widget class="QLabel" name="D06Label">
@@ -1835,32 +1612,10 @@
        </widget>
       </item>
       <item row="3" column="1">
-       <widget class="QComboBox" name="D06Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D06Combo"/>
       </item>
       <item row="6" column="1">
-       <widget class="QComboBox" name="D12Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D12Combo"/>
       </item>
       <item row="4" column="6">
        <widget class="QSlider" name="D09SlideValue">
@@ -1897,18 +1652,7 @@
        </widget>
       </item>
       <item row="1" column="5">
-       <widget class="QComboBox" name="D03Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D03Combo"/>
       </item>
       <item row="4" column="4">
        <widget class="QLabel" name="D09Label">
@@ -1959,18 +1703,7 @@
        </widget>
       </item>
       <item row="4" column="5">
-       <widget class="QComboBox" name="D09Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D09Combo"/>
       </item>
       <item row="1" column="6">
        <widget class="QSlider" name="D03SlideValue">
@@ -2014,18 +1747,7 @@
        </widget>
       </item>
       <item row="5" column="1">
-       <widget class="QComboBox" name="D10Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D10Combo"/>
       </item>
       <item row="1" column="4">
        <widget class="QLabel" name="D03Label">
@@ -2035,18 +1757,7 @@
        </widget>
       </item>
       <item row="2" column="5">
-       <widget class="QComboBox" name="D05Combo">
-        <item>
-         <property name="text">
-          <string>Input</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Output</string>
-         </property>
-        </item>
-       </widget>
+       <widget class="QComboBox" name="D05Combo"/>
       </item>
       <item row="0" column="6">
        <widget class="QSlider" name="D01SlideValue">
