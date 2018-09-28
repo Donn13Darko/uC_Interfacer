@@ -31,6 +31,13 @@
 #include "user-interfaces/gui-base.h"
 
 typedef enum {
+    GUI_TYPE_ERROR = 0,
+    GUI_TYPE_IO,
+    GUI_TYPE_DATA_TRANSMIT,
+    GUI_TYPE_PROGRAMMING
+} GUI_TYPE;
+
+typedef enum {
     CONN_TYPE_ERROR = 0,
     CONN_TYPE_RS_232,
     CONN_TYPE_TCP,
@@ -94,6 +101,7 @@ private:
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
 
+    static QMap<QString, uint8_t> supportedGUIsMap;
     static QMap<QString, uint8_t> supportedDevicesMap;
     static QMap<QString, uint8_t> supportedProtocolsMap;
 
@@ -111,6 +119,7 @@ private:
 
     uint8_t getDevType();
     uint8_t getConnType();
+    uint8_t getGUIType(QString type);
     QStringList getConnSpeeds();
     QObject* getConnObject(int type = -1);
 };

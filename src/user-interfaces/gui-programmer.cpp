@@ -39,72 +39,64 @@ GUI_PROGRAMMER::hexFormatsRegex({
                                 });
 
 // Setup static burn methods list
-QMap<QString, QStringList>
+QStringList
 GUI_PROGRAMMER::burnMethods({
-                                {"Arduino Uno",
-                                 {"AVR ICSP",
-                                  "PIC18 ICSP",
-                                  "PIC32 ICSP 2-Wire",
-                                  "PIC32 ICSP 4-Wire",
-                                  "Arduino Bootloader"}
-                                }
+                                "AVR ICSP",
+                                "PIC18 ICSP",
+                                "PIC32 ICSP 2-Wire",
+                                "PIC32 ICSP 4-Wire",
+                                "Arduino Bootloader"
                             });
 
 // Setup static instructions list
-QMap<QString, QMap<QString, QString>>
+QMap<QString, QString>
 GUI_PROGRAMMER::instructionTexts({
-                                     {"Arduino Uno",
-                                      {
-                                          {"AVR ICSP",
-                                           QString("Arduino Pinout:\nPin 10: RESET\nPin 11: MOSI\nPin 12: MISO\nPin 13: SCK\n")
-                                           + "\n"
-                                           + "Target Pinout:\nConnect one-to-one.\ni.e. SCK->SCK, MISO->MISO, etc.\n"
-                                           + "\n"
-                                           + "6-Pin ICSP Pinout:\nPin 1: MISO\nPin 2: +VCC\nPin 3: SCK\n"
-                                           + "Pin 4: MOSI\nPin 5: RESET\nPin 6: GROUND\n"
-                                           + "\n"
-                                           + "10-Pin ICSP Pinout:\nPin 1: MISO\nPin 2: +VCC\nPin 3: NC\n"
-                                           + "Pin 4: GROUND\nPin 5: RESET\nPin 6: GROUND\nPin 7: SCK\n"
-                                           + "Pin 8: GROUND\nPin 9: MISO\nPin 10: GROUND\n"
-                                          },
-                                          {"PIC18 ICSP",
-                                           QString("Arduino Pinout:\nPin 10: MCLR\nPin 11: ICSPDAT\nPin 13: ICSPCLK\n")
-                                           + "\n"
-                                           + "Target Pinout:\nConnect one-to-one.\ni.e. ICSPCLK->ICSPCLK, ICSPDAT->ICSPDAT, etc.\n"
-                                           + "\n"
-                                          },
-                                          {"PIC32 ICSP 2-Wire",
-                                           QString("Arduino Pinout:\n")
-                                           + "\n"
-                                           + "Target Pinout:\n"
-                                           + "\n"
-                                          },
-                                          {"PIC32 ICSP 4-Wire",
-                                           QString("Arduino Pinout:\n")
-                                           + "\n"
-                                           + "Target Pinout:\n"
-                                           + "\n"
-                                          },
-                                          {"Arduino Bootloader",
-                                           QString("Arduino Pinout:\nPin 0: RX\nPin 1: TX\n")
-                                           + "\n"
-                                           + "Target Pinout:\nRX to Arduino TX\nTX to Arduino RX\n"
-                                          }
+                                      {"AVR ICSP",
+                                       QString("Arduino Pinout:\nPin 10: RESET\nPin 11: MOSI\nPin 12: MISO\nPin 13: SCK\n")
+                                       + "\n"
+                                       + "Target Pinout:\nConnect one-to-one.\ni.e. SCK->SCK, MISO->MISO, etc.\n"
+                                       + "\n"
+                                       + "6-Pin ICSP Pinout:\nPin 1: MISO\nPin 2: +VCC\nPin 3: SCK\n"
+                                       + "Pin 4: MOSI\nPin 5: RESET\nPin 6: GROUND\n"
+                                       + "\n"
+                                       + "10-Pin ICSP Pinout:\nPin 1: MISO\nPin 2: +VCC\nPin 3: NC\n"
+                                       + "Pin 4: GROUND\nPin 5: RESET\nPin 6: GROUND\nPin 7: SCK\n"
+                                       + "Pin 8: GROUND\nPin 9: MISO\nPin 10: GROUND\n"
+                                      },
+                                      {"PIC18 ICSP",
+                                       QString("Arduino Pinout:\nPin 10: MCLR\nPin 11: ICSPDAT\nPin 13: ICSPCLK\n")
+                                       + "\n"
+                                       + "Target Pinout:\nConnect one-to-one.\ni.e. ICSPCLK->ICSPCLK, ICSPDAT->ICSPDAT, etc.\n"
+                                       + "\n"
+                                      },
+                                      {"PIC32 ICSP 2-Wire",
+                                       QString("Arduino Pinout:\n")
+                                       + "\n"
+                                       + "Target Pinout:\n"
+                                       + "\n"
+                                      },
+                                      {"PIC32 ICSP 4-Wire",
+                                       QString("Arduino Pinout:\n")
+                                       + "\n"
+                                       + "Target Pinout:\n"
+                                       + "\n"
+                                      },
+                                      {"Arduino Bootloader",
+                                       QString("Arduino Pinout:\nPin 0: RX\nPin 1: TX\n")
+                                       + "\n"
+                                       + "Target Pinout:\nRX to Arduino TX\nTX to Arduino RX\n"
                                       }
-                                     }
                                  });
 
-GUI_PROGRAMMER::GUI_PROGRAMMER(QString deviceType, size_t chunk, QWidget *parent) :
+GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_PROGRAMMER)
 {
     ui->setupUi(this);
-    chunkSize = chunk;
     loadedHex = QByteArray();
-    deviceInstructions = instructionTexts.value(deviceType);
 
     ui->HexFormat_Combo->addItems(GUI_PROGRAMMER::hexFormatsList);
-    ui->BurnMethod_Combo->addItems(GUI_PROGRAMMER::burnMethods.value(deviceType));
+    ui->BurnMethod_Combo->addItems(GUI_PROGRAMMER::burnMethods);
 
     ui->ReadAll_Radio->setChecked(true);
     on_readSelect_buttonClicked(0);
@@ -231,7 +223,7 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_currentIndexChanged(int)
 void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
 {
     ui->Instructions_TextEdit->clear();
-    ui->Instructions_TextEdit->appendPlainText(deviceInstructions.value(ui->BurnMethod_Combo->currentText()));
+    ui->Instructions_TextEdit->appendPlainText(instructionTexts.value(ui->BurnMethod_Combo->currentText()));
 }
 
 void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)

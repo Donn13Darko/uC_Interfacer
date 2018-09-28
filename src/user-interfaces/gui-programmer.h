@@ -33,7 +33,7 @@ class GUI_PROGRAMMER : public GUI_BASE
     Q_OBJECT
 
 public:
-    explicit GUI_PROGRAMMER(QString deviceType, size_t chunk, QWidget *parent = 0);
+    explicit GUI_PROGRAMMER(QWidget *parent = 0);
     ~GUI_PROGRAMMER();
 
     void reset_gui();
@@ -49,15 +49,13 @@ private slots:
 
 private:
     Ui::GUI_PROGRAMMER *ui;
-    QMap<QString, QString> deviceInstructions;
 
-    size_t chunkSize;
     QByteArray loadedHex;
 
     static QStringList hexFormatsList;
     static QMap<QString, QRegularExpression> hexFormatsRegex;
-    static QMap<QString, QStringList> burnMethods;
-    static QMap<QString, QMap<QString, QString>> instructionTexts;
+    static QStringList burnMethods;
+    static QMap<QString, QString> instructionTexts;
 
     QString format_hex(QByteArray rawHex);
 };

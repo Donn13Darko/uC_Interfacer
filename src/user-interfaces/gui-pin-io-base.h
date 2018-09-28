@@ -51,9 +51,11 @@ struct PinTypeInfo {
     int cols;
     int rows;
     int numButtons;
-    int numPins;
+    int numPins_GUI;
+    int numPins_DEV;
 };
-#define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=NULL, .pinType=0, .cols=0, .rows=0, .numButtons=0, .numPins=0}
+#define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=NULL, .pinType=0, \
+    .cols=0, .rows=0, .numButtons=0, .numPins_GUI=0, .numPins_DEV=0}
 
 
 class GUI_PIN_BASE : public GUI_BASE
@@ -64,10 +66,12 @@ public:
     GUI_PIN_BASE(QWidget *parent = 0);
     ~GUI_PIN_BASE();
 
+    void addNewPinSettings(uint8_t pinType, QList<QString> newSettings);
+
 protected:
     QMap<uint8_t, QMap<QString, uint8_t>*> controlMap;
     QMap<uint8_t, QList<uint8_t>*> disabledValueSet;
-    QMap<uint8_t, QMap<uint8_t, RangeList>*> rangeMap;
+    QMap<uint8_t, QMap<uint8_t, RangeList*>*> rangeMap;
 
     QTimer DIO_READ;
     QTimer AIO_READ;
@@ -100,8 +104,6 @@ protected:
     int slideValuePos;
     int textValuePos;
 
-    void addNewPinSettings(uint8_t pinType, QList<QString> newSettings);
-
     void inputsChanged(PinTypeInfo *pInfo, int colOffset);
     void updateSliderRange(QSlider *slider, RangeList *rList);
 
@@ -114,7 +116,7 @@ protected:
 private:
     RangeList* makeRangeList(QString rangeInfo);
     void addPinControls(uint8_t pinType, QList<QString> keys);
-    void addPinRangeMap(uint8_t pinType, QList<QString> keys, QList<RangeList> values = {EMPTY_RANGE});
+    void addPinRangeMap(uint8_t pinType, QList<QString> keys, QList<RangeList*> values);
 };
 
 #endif // GUI_PIN_BASE_H

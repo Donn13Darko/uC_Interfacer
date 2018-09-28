@@ -45,20 +45,16 @@ ArduinoUno_IO::ArduinoUno_IO(QWidget *parent) :
                       });
 
     // Set combo values for pins
-    setCombos(  JSON_AIO, {"Input"});
+    setCombos(  JSON_AIO,
+                {"-Input"});
     setCombos(  JSON_DIO,
-                {"Input", "Output", "Servo Deg", "Servo uS"});
-    setCombos(  JSON_DIO,
-                {"Input", "Output", "PWM", "Servo Deg", "Servo uS"},
-                {3, 5, 6, 9, 10, 11});
-    setCombos(REMOTE_CONN_REMOTE, {"UART", "I2C", "SPI"});
+                {"1,2,4,7,8,12,13-Input,Output,Servo Deg,Servo uS",
+                 "3,5,6,9,10,11-Input,Output,PWM,Servo Deg,Servo uS"});
+    setCombos(REMOTE_CONN_REMOTE, {"UART,I2C,SPI"});
 
     // Set device pins (Automatically disables extra pins)
     setNumPins(JSON_AIO, 6);
     setNumPins(JSON_DIO, 14);
-
-    qDebug() << controlMap.keys();
-    qDebug() << controlMap.value(JSON_DIO)->keys();
 }
 
 ArduinoUno_IO::~ArduinoUno_IO()

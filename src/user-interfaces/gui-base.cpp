@@ -43,6 +43,11 @@ bool GUI_BASE::showMessage(QString msg)
     return n.exec();
 }
 
+void GUI_BASE::set_chunkSize(size_t chunk)
+{
+    chunkSize = chunk;
+}
+
 void GUI_BASE::receive(QByteArray recvData)
 {
     rcvd += recvData;
@@ -64,7 +69,7 @@ void GUI_BASE::send(std::initializer_list<uint8_t> data)
     emit write_data(data);
 }
 
-void GUI_BASE::sendFile(QString filePath, uint8_t chunkSize)
+void GUI_BASE::sendFile(QString filePath)
 {
     uint32_t enumFlags = QIODevice::ReadOnly;
     QFile sFile(filePath);

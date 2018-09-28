@@ -67,7 +67,9 @@ QStringList Serial_RS232::getDevices()
     QStringList portNames;
     QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
     foreach (QSerialPortInfo i, ports)
+    {
         portNames.append(i.portName());
+    }
 
     return portNames;
 }

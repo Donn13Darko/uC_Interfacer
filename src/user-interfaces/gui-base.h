@@ -35,6 +35,7 @@ public:
 
     static bool showMessage(QString msg);
     void reset_gui() {/*Default do nothing*/}
+    void set_chunkSize(size_t chunk);
 
 signals:
     void write_data(QByteArray data);
@@ -48,11 +49,12 @@ private slots:
 protected:
     static float S2MS;
     QByteArray rcvd;
+    uint8_t chunkSize;
 
     void send(QString data);
     void send(QByteArray data);
     void send(std::initializer_list<uint8_t> data);
-    void sendFile(QString filePath, uint8_t chunkSize);
+    void sendFile(QString filePath);
 
     bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
     bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));

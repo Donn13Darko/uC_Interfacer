@@ -59,57 +59,33 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     on_updateStopper_clicked();
 
     // Get AIO pin info
-    if (getPinTypeInfo(JSON_AIO, &pInfo))
+    QList<uint8_t> pinTypes({JSON_AIO, JSON_DIO});
+    foreach (uint8_t pinType, pinTypes)
     {
-        // Set AIO combo to start
-        for (int i = 0; i < pInfo.numPins; i++)
+        if (getPinTypeInfo(pinType, &pInfo))
         {
-            getPinLocation(&rowNum, &colNum, &pInfo, i);
-
-            // Set AIO Combo
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
+            // Set combo to start
+            for (int i = 0; i < pInfo.numPins_GUI; i++)
             {
-                ((QComboBox*) item)->setCurrentIndex(0);
-            }
+                getPinLocation(&rowNum, &colNum, &pInfo, i);
 
-            // Set AIO Slider
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
-            {
-                ((QSlider*) item)->setValue(0);
-            }
+                // Set Combo
+                if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
+                {
+                    ((QComboBox*) item)->setCurrentIndex(0);
+                }
 
-            // Set AIO Text
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
-            {
-                ((QLineEdit*) item)->setText("0.0");
-            }
-        }
-    }
+                // Set Slider
+                if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
+                {
+                    ((QSlider*) item)->setValue(0);
+                }
 
-    // Get DIO pin info
-    if (getPinTypeInfo(JSON_DIO, &pInfo))
-    {
-        // Set DIO combo to start
-        for (int i = 0; i < pInfo.numPins; i++)
-        {
-            getPinLocation(&rowNum, &colNum, &pInfo, i);
-
-            // Set DIO Combo
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
-            {
-                ((QComboBox*) item)->setCurrentIndex(0);
-            }
-
-            // Set DIO Slider
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
-            {
-                ((QSlider*) item)->setValue(0);
-            }
-
-            // Set DIO Text
-            if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
-            {
-                ((QLineEdit*) item)->setText("0");
+                // Set Text
+                if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
+                {
+                    ((QLineEdit*) item)->setText("0");
+                }
             }
         }
     }
@@ -118,6 +94,150 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
 
     // Reconnect sending slot
     emit connect_signals(true);
+}
+
+void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins)
+{
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(pinType, &pInfo)) return;
+
+    // Update dev pins
+    switch (pInfo.pinType)
+    {
+        case JSON_AIO:
+            num_AIOpins_DEV = num_dev_pins;
+            break;
+        case JSON_DIO:
+            num_DIOpins_DEV = num_dev_pins;
+            break;
+    }
+
+    // Disable each button set in the list
+    for (int i = (pInfo.numPins_GUI-1); num_dev_pins <= i; i--)
+    {
+        setPinAttribute(&pInfo, i, Qt::WA_Disabled, true);
+    }
+}
+
+void GUI_8AIO_16DIO_COMM::setPinNumbers(uint8_t pinType, uint8_t start_num)
+{
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(pinType, &pInfo)) return;
+
+    int rowNum, colNum;
+    QWidget *item;
+    for (int i = 0; i < pInfo.numPins_GUI; i++)
+    {
+        // Find local pin (numbering starts at 0)
+        getPinLocation(&rowNum, &colNum, &pInfo, i);
+
+        // Set the new text value (start_num+i)
+        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+labelPos))
+        {
+            ((QLabel*) item)->setText(QString("%1").arg(start_num+i, 2, 10, QChar('0')));
+        }
+    }
+}
+
+void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
+{
+    // Handle remote connection info
+    if (pinType == REMOTE_CONN_REMOTE)
+    {
+        ui->ConnTypeCombo->blockSignals(true);
+        ui->ConnTypeCombo->clear();
+        ui->ConnTypeCombo->addItems(combos);
+        ui->ConnTypeCombo->blockSignals(false);
+        return;
+    }
+
+    // Retrieve & verify pin type info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(pinType, &pInfo)) return;
+
+    // Retrieve & verify pin type maps
+    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo.pinType);
+    QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pInfo.pinType);
+    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo.pinType);
+    if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
+
+    // Setup arrays & constructs for use in the loop
+    uint8_t IO;
+    int rowNum, colNum;
+    QList<int> pinNums;
+    QList<QString> listValues;
+    QStringList comboStr_split;
+
+    // Setup widget holders
+    QComboBox *itemCombo;
+    QWidget *sliderWidget, *textWidget;
+
+    foreach (QString comboStr, combos)
+    {
+        // Reset Arrays
+        pinNums.clear();
+        listValues.clear();
+
+        // Parse inputs
+        comboStr_split = comboStr.split('-');
+        if ((comboStr[0] == '-') && (comboStr_split.length() == 2)
+                && comboStr_split[0].isEmpty())
+        {
+            // Apply combo values to all pins
+            for (int pinNum = 0; pinNum < pInfo.numPins_DEV; pinNum++)
+            {
+                pinNums.append(pinNum);
+            }
+        } else if (comboStr_split.length() == 2)
+        {
+            // Apply combo values to supplied pins
+            foreach (QString pinNum, comboStr_split[0].split(','))
+            {
+                pinNums.append(pinNum.toInt());
+            }
+        } else
+        {
+            // Malformed so skip
+            continue;
+        }
+        listValues = comboStr_split[1].split(',');
+
+        // Set combo for each pin in the list
+        foreach (int pin, pinNums)
+        {
+            // Find row & column of desired combo
+            getPinLocation(&rowNum, &colNum, &pInfo, pin);
+
+            // Replace combo options
+            if (getItemWidget((QWidget**) &itemCombo, pInfo.grid, rowNum, colNum+comboPos))
+            {
+                itemCombo->blockSignals(true);
+
+                itemCombo->clear();
+                itemCombo->addItems(listValues);
+
+                IO = pinMap->value(itemCombo->currentText());
+                if (getItemWidget(&sliderWidget, pInfo.grid, rowNum, colNum+slideValuePos)
+                        && getItemWidget(&textWidget, pInfo.grid, rowNum, colNum+textValuePos))
+                {
+                    if (pinDisabledSet->contains(IO))
+                    {
+                        sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+                        textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+                    } else
+                    {
+                        sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+                        textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+                    }
+
+                    RangeList* rList = pinRangeMap->value(IO);
+                    updateSliderRange((QSlider*) sliderWidget, rList);
+                }
+
+                itemCombo->blockSignals(false);
+            }
+        }
+    }
 }
 
 void GUI_8AIO_16DIO_COMM::initialize()
@@ -169,7 +289,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Connect AIO combo changes to the universal slot
-    for (int i = 0; i < pInfo.numPins; i++)
+    for (int i = 0; i < pInfo.numPins_GUI; i++)
     {
         getPinLocation(&rowNum, &colNum, &pInfo, i);
 
@@ -200,7 +320,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Connect DIO combo changes to the universal slot
-    for (int i = 0; i < pInfo.numPins; i++)
+    for (int i = 0; i < pInfo.numPins_GUI; i++)
     {
         getPinLocation(&rowNum, &colNum, &pInfo, i);
 
@@ -538,14 +658,14 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
     QComboBox *comboBox;
     QSlider *sliderValue;
     QLineEdit *textValue;
-    char comboVal;
     uint32_t value;
-    uint8_t pin_num;
+    uint8_t pin_num, comboVal;
     int rowNum, colNum, divisor;
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo.pinType);
-    QMap<uint8_t, RangeList>* pinRangeMap = rangeMap.value(pInfo.pinType);
-    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo.pinType);
 
+    // Get & verify maps
+    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo.pinType);
+    QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pInfo.pinType);
+    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo.pinType);
     if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
 
     for (int i = 0; i < values.length(); i++)
@@ -570,106 +690,13 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
                 sliderValue->blockSignals(true);
                 textValue->blockSignals(true);
 
-                divisor = pinRangeMap->value(comboVal).div;
+                divisor = pinRangeMap->value(comboVal)->div;
                 sliderValue->setSliderPosition(value);
                 textValue->setText(QString::number(((float) value) / divisor));
 
                 sliderValue->blockSignals(false);
                 textValue->blockSignals(false);
             }
-        }
-    }
-}
-
-void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins)
-{
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(pinType, &pInfo)) return;
-
-    // Update dev pins
-    switch (pInfo.pinType)
-    {
-        case JSON_AIO:
-            num_AIOpins_DEV = num_dev_pins;
-            break;
-        case JSON_DIO:
-            num_DIOpins_DEV = num_dev_pins;
-            break;
-    }
-
-    // Disable each button set in the list
-    for (int i = (pInfo.numPins-1); num_dev_pins <= i; i--)
-    {
-        setPinAttribute(&pInfo, i, Qt::WA_Disabled, true);
-    }
-}
-
-void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> values, QList<int> pinNums)
-{
-    if (pinType == REMOTE_CONN_REMOTE)
-    {
-        ui->ConnTypeCombo->blockSignals(true);
-        ui->ConnTypeCombo->clear();
-        ui->ConnTypeCombo->addItem(values[0]);
-        ui->ConnTypeCombo->blockSignals(false);
-        return;
-    }
-
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(pinType, &pInfo)) return;
-
-    if (pinNums.length() == 0)
-    {
-        pinNums.clear();
-        for (int i = 0; i < pInfo.numPins; i++)
-        {
-            pinNums.append(i);
-        }
-    }
-
-    // Set combo for each pin in the list
-    int rowNum, colNum;
-    QComboBox *itemCombo;
-    QWidget *sliderWidget, *textWidget;
-    QStringList listValues(values);
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo.pinType);
-    QMap<uint8_t, RangeList>* pinRangeMap = rangeMap.value(pInfo.pinType);
-    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo.pinType);
-
-    if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
-
-    foreach (int i, pinNums)
-    {
-        // Find row & column of desired combo
-        getPinLocation(&rowNum, &colNum, &pInfo, i);
-
-        // Replace combo options
-        if (getItemWidget((QWidget**) &itemCombo, pInfo.grid, rowNum, colNum+comboPos))
-        {
-            itemCombo->blockSignals(true);
-
-            itemCombo->clear();
-            itemCombo->addItems(listValues);
-
-            char IO = pinMap->value(itemCombo->currentText());
-            if (getItemWidget(&sliderWidget, pInfo.grid, rowNum, colNum+slideValuePos)
-                    && getItemWidget(&textWidget, pInfo.grid, rowNum, colNum+textValuePos))
-            {
-                if (pinDisabledSet->contains(IO))
-                {
-                    sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-                    textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-                } else
-                {
-                    sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-                    textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-                }
-
-                RangeList rList = pinRangeMap->value(IO);
-                updateSliderRange((QSlider*) sliderWidget, &rList);
-            }
-
-            itemCombo->blockSignals(false);
         }
     }
 }

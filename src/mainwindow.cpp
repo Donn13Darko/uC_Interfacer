@@ -26,6 +26,14 @@
 #include <QMessageBox>
 #include <QFileDialog>
 
+// Setup supported GUIs map
+QMap<QString, uint8_t>
+MainWindow::supportedGUIsMap({
+                                 {"IO", GUI_TYPE_IO},
+                                 {"Data Transmit", GUI_TYPE_DATA_TRANSMIT},
+                                 {"Programmer", GUI_TYPE_PROGRAMMING},
+                             });
+
 // Setup static supported devices list
 QStringList
 MainWindow::supportedDevicesList({
@@ -46,7 +54,8 @@ MainWindow::supportedDevicesMap({
 QStringList
 MainWindow::supportedProtocolsList({
                                        "RS-232",
-                                       "TCP",
+                                       "TCP Client",
+                                       "TCP Server",
                                        "UDP"
                                    });
 
@@ -190,35 +199,79 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     {
         // Reset & load the GUI settings file
         QSettings gui_settings(deviceINI, QSettings::IniFormat);
-        QStringList key_groups = gui_settings.childGroups();
-//        qDebug() << deviceINI;
-//        qDebug() << gui_settings.fileName();
-//        qDebug() << gui_settings.childGroups();
-//        qDebug() << gui_settings.value("Programmer/instructions");
-
-        QMap<QString, QVariant> temp;
-        foreach (QString i, key_groups)
-        {
-            gui_settings.beginGroup(i);
-        }
 
         // Setup tabs
         ui->ucOptions->blockSignals(true);
-        QWidget* tab_holder;
-        switch (getDevType())
+        uint8_t gui_type;
+        QMap<QString, QVariant> temp;
+        QWidget* tab_holder = nullptr;
+        foreach (QString gui_ini, gui_settings.childGroups())
         {
-            case DEV_TYPE_ARDUINO_UNO:
+            // Verify that its a known GUI
+            gui_type = getGUIType(gui_ini.split('_').last());
+            if (gui_type == GUI_TYPE_ERROR) continue;
+
+            // Clear temporary map
+            temp.clear();
+
+            // Begin GUI group settings
+            gui_settings.beginGroup(gui_ini);
+            foreach (QString key, gui_settings.childKeys())
             {
-                tab_holder = new ArduinoUno_IO(this);
-                ui->ucOptions->addTab(tab_holder, "I/O");
-                tab_holder = new GUI_DATA_TRANSMIT(arduino_chunk_size, this);
-                ui->ucOptions->addTab(tab_holder, "Data Transfer");
-                tab_holder = new GUI_PROGRAMMER(deviceType, arduino_chunk_size, this);
-                ui->ucOptions->addTab(tab_holder, "Programmer");
-                break;
+                temp.insert(key, gui_settings.value(key));
             }
-            default:
-                break;
+
+            // Exit GUI group settings
+            gui_settings.endGroup();
+
+            // Instantiate and add GUI
+            switch (gui_type)
+            {
+                case GUI_TYPE_IO:
+                {
+                    tab_holder = new GUI_8AIO_16DIO_COMM(this);
+                    GUI_8AIO_16DIO_COMM* temp_holder = \
+                            (GUI_8AIO_16DIO_COMM*) tab_holder;
+
+                    // Setup pintypes variable
+                    uint8_t pinType;
+
+                    // Add DIO controls
+                    pinType = JSON_DIO;
+                    temp_holder->setNumPins(pinType, temp.value("dio_num").toInt());
+                    temp_holder->setPinNumbers(pinType, temp.value("dio_start_num").toInt());
+                    temp_holder->addNewPinSettings(pinType, temp.value("dio_pin_settings").toStringList());
+                    temp_holder->setCombos(pinType, temp.value("dio_combo_settings").toStringList());
+
+                    // Add AIO controls
+                    pinType = JSON_AIO;
+                    temp_holder->setNumPins(pinType, temp.value("aio_num").toInt());
+                    temp_holder->setPinNumbers(pinType, temp.value("aio_start_num").toInt());
+                    temp_holder->addNewPinSettings(pinType, temp.value("aio_pin_settings").toStringList());
+                    temp_holder->setCombos(pinType, temp.value("aio_combo_settings").toStringList());
+
+                    // Add Transmit controls
+                    pinType = REMOTE_CONN_REMOTE;
+                    temp_holder->addNewPinSettings(pinType, temp.value("remote_pin_settings").toStringList());
+                    temp_holder->setCombos(pinType, temp.value("remote_combo_settings").toStringList());
+
+                    // Exit switch
+                    break;
+                }
+                case GUI_TYPE_DATA_TRANSMIT:
+                    tab_holder = new GUI_DATA_TRANSMIT(this);
+                    break;
+                case GUI_TYPE_PROGRAMMING:
+                    tab_holder = new GUI_PROGRAMMER(this);
+                    break;
+            }
+
+            // Set base chunk size to value or 0
+            ((GUI_BASE*) tab_holder)->set_chunkSize(temp.value("chunkSize").toInt());
+
+            // Add new GUI to tabs
+            if (!tab_holder) continue;
+            ui->ucOptions->addTab(tab_holder, gui_ini);
         }
         ui->ucOptions->blockSignals(false);
 
@@ -415,6 +468,12 @@ uint8_t MainWindow::getDevType()
 {
     return supportedDevicesMap.value(deviceType, DEV_TYPE_ERROR);
 }
+
+uint8_t MainWindow::getGUIType(QString type)
+{
+    return supportedGUIsMap.value(type, GUI_TYPE_ERROR);
+}
+
 
 QStringList MainWindow::getConnSpeeds()
 {

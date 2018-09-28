@@ -22,12 +22,11 @@
 #include <QFile>
 #include <QFileDialog>
 
-GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(uint8_t chunk, QWidget *parent) :
+GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_DATA_TRANSMIT)
 {
     ui->setupUi(this);
-    chunkSize = chunk;
 
     // Set radio values
     ui->File_Radio->setChecked(true);
@@ -101,7 +100,7 @@ void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
     if (ui->Input_Radio->isChecked())
         send(ui->msg_PlainText->toPlainText());
     else if (ui->File_Radio->isChecked())
-        sendFile(ui->FilePathEdit->text(), chunkSize);
+        sendFile(ui->FilePathEdit->text());
 }
 
 void GUI_DATA_TRANSMIT::on_BrowseFile_Button_clicked()
