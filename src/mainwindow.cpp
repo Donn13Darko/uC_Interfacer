@@ -180,18 +180,31 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     switch (getConnType())
     {
         case CONN_TYPE_RS_232:
+        {
             serial_rs232 = new Serial_RS232(connInfo, speed);
             serial_rs232->open();
             connected = serial_rs232->isConnected();
             break;
+        }
+        case CONN_TYPE_TCP_CLIENT:
+        {
+            QStringList conn = connInfo.split(':');
+            if (conn.length() != 2) break;
+            tcp_client = new TCP_CLIENT(conn[0], conn[1].toInt());
+            tcp_client->open();
+            connected = tcp_client->isConnected();
+            break;
+        }
         default:
+        {
             connected = false;
             break;
+        }
     }
 
     // If connected, add relevant tabs
     // Else, show failed to connect message
-    if (connected)
+    if (true || connected)
     {
         // Reset & load the GUI settings file
         QSettings gui_settings(deviceINI, QSettings::IniFormat);
@@ -326,6 +339,12 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
             else if (serial_rs232->isConnected()) serial_rs232->close();
             delete serial_rs232;
             serial_rs232 = nullptr;
+            break;
+        case CONN_TYPE_TCP_CLIENT:
+            if (!tcp_client) break;
+            else if (tcp_client->isConnected()) tcp_client->close();
+            delete tcp_client;
+            tcp_client = nullptr;
             break;
         default:
             break;
@@ -521,6 +540,7 @@ QObject* MainWindow::getConnObject(int type)
     switch (type)
     {
         case CONN_TYPE_RS_232: return serial_rs232;
+        case CONN_TYPE_TCP_CLIENT: return tcp_client;
         default: return nullptr;
     }
 }

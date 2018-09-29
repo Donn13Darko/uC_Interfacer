@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui serialport
+QT       += core gui serialport network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -33,7 +33,8 @@ SOURCES += \
     user-interfaces/gui-8aio-16dio-comm.cpp \
     user-interfaces/gui-data-transmit.cpp \
     user-interfaces/gui-programmer.cpp \
-    user-interfaces/gui-welcome.cpp
+    user-interfaces/gui-welcome.cpp \
+    communication/tcp-client.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -45,7 +46,8 @@ HEADERS += \
     user-interfaces/gui-8aio-16dio-comm.h \
     user-interfaces/gui-data-transmit.h \
     user-interfaces/gui-programmer.h \
-    user-interfaces/gui-welcome.h
+    user-interfaces/gui-welcome.h \
+    communication/tcp-client.h
 
 FORMS += \
     mainwindow.ui \

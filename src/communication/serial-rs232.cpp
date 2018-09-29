@@ -34,7 +34,6 @@ Serial_RS232::Serial_RS232(QString port, QString baudrate, QObject *parent) :
     rs232->setBaudRate(baudrate.toInt());
     rs232->setDataBits(QSerialPort::Data8);
 
-    maxSize = 1024;
     readLock = new QMutex(QMutex::Recursive);
     writeLock = new QMutex(QMutex::Recursive);
 
@@ -43,6 +42,7 @@ Serial_RS232::Serial_RS232(QString port, QString baudrate, QObject *parent) :
 
 Serial_RS232::~Serial_RS232()
 {
+    if (isConnected()) close();
     delete rs232;
 }
 

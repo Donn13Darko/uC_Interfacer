@@ -16,28 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SERIAL_RS232_H
-#define SERIAL_RS232_H
+#ifndef TCP_CLIENT_H
+#define TCP_CLIENT_H
 
 #include <QObject>
 #include <QMutex>
-#include <QSerialPort>
-#include <QSerialPortInfo>
+#include <QTcpSocket>
 
-class Serial_RS232 : public QObject
+class TCP_CLIENT : public QObject
 {
     Q_OBJECT
 
 public:
-    Serial_RS232(QString port, QString baudrate = "9600", QObject *parent = NULL);
-    ~Serial_RS232();
+    TCP_CLIENT(QString ip, int port, QObject *parent = NULL);
+    ~TCP_CLIENT();
 
     void open();
     void close();
     bool isConnected();
-
-    static QStringList getDevices();
-    static QStringList Baudrate_Defaults;
 
 signals:
     void readyRead(QByteArray readData);
@@ -50,11 +46,13 @@ private slots:
     void read();
 
 private:
-    QSerialPort *rs232;
+    QTcpSocket *client;
+
+    QString server_ip;
+    int server_port;
+
     QMutex *readLock;
     QMutex *writeLock;
-
-    bool connected;
 };
 
-#endif // SERIAL_RS232_H
+#endif // TCP_CLIENT_H
