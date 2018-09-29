@@ -19,7 +19,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include "uc-interfaces/gui-arduino-uno-io.h"
+#include "user-interfaces/gui-8aio-16dio-comm.h"
 #include "user-interfaces/gui-data-transmit.h"
 #include "user-interfaces/gui-programmer.h"
 
@@ -29,9 +29,10 @@
 // Setup supported GUIs map
 QMap<QString, uint8_t>
 MainWindow::supportedGUIsMap({
+                                 {"Welcome", GUI_TYPE_WELCOME},
                                  {"IO", GUI_TYPE_IO},
                                  {"Data Transmit", GUI_TYPE_DATA_TRANSMIT},
-                                 {"Programmer", GUI_TYPE_PROGRAMMING},
+                                 {"Programmer", GUI_TYPE_PROGRAMMER},
                              });
 
 // Setup static supported devices list
@@ -42,14 +43,6 @@ MainWindow::supportedDevicesList({
                                      "Other"
                                  });
 
-// Setup static supported devices map
-QMap<QString, uint8_t>
-MainWindow::supportedDevicesMap({
-                                 {"Arduino Uno", DEV_TYPE_ARDUINO_UNO},
-                                 {"PC", DEV_TYPE_PC},
-                                 {"Other", DEV_TYPE_OTHER}
-                             });
-
 // Setup static supported protocols list
 QStringList
 MainWindow::supportedProtocolsList({
@@ -59,20 +52,14 @@ MainWindow::supportedProtocolsList({
                                        "UDP"
                                    });
 
-// Setup static supported protocols map
-QMap<QString, uint8_t>
-MainWindow::supportedProtocolsMap({
-                                   {"RS-232", CONN_TYPE_RS_232},
-                                   {"TCP", CONN_TYPE_TCP},
-                                   {"UDP", CONN_TYPE_UDP}
-                               });
-
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     // Setup base GUI items
     ui->setupUi(this);
+    welcome_tab = new GUI_WELCOME(this);
+    welcome_tab_text = "Welcome";
 
     // Set base parameters
     serial_rs232 = nullptr;
@@ -86,9 +73,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Set Initial values
     setConnected(false);
-    on_DeviceCombo_currentIndexChanged(ui->DeviceCombo->currentIndex());
+    on_DeviceCombo_activated(ui->DeviceCombo->currentIndex());
     on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
-    on_SpeedCombo_currentIndexChanged(ui->SpeedCombo->currentIndex());
 
     // Add connections
     connect(&updateConnInfo, SIGNAL(timeout()), this, SLOT(updateConnInfoCombo()));
@@ -100,6 +86,7 @@ MainWindow::~MainWindow()
     if (ui->DeviceDisconnect_Button->isEnabled())
         on_DeviceDisconnect_Button_clicked();
 
+    delete welcome_tab;
     delete ui;
 }
 
@@ -132,53 +119,61 @@ void MainWindow::connect_signals(bool conn)
     connect2sender(curr_widget, conn);
 }
 
-void MainWindow::on_DeviceCombo_currentIndexChanged(int)
+void MainWindow::on_DeviceCombo_activated(int)
 {
     // Save previous value
-    QString prev_deviceType = deviceType;
-
-    // Update Changed Data
-    deviceType = ui->DeviceCombo->currentText();
+    uint8_t prev_deviceType = deviceType;
+    QString prev_deviceINI = deviceINI;
 
     // Get new INI file
-    deviceINI = ":/uc-interfaces/";
     switch (getDevType())
     {
         case DEV_TYPE_ARDUINO_UNO:
-            deviceINI += "gui-arduino-uno.ini";
+            deviceINI = ":/uc-interfaces/gui-arduino-uno.ini";
+            break;
+        case DEV_TYPE_PC:
+            deviceINI = ":/uc-interfaces/gui-pc.ini";
             break;
         case DEV_TYPE_OTHER:
             deviceINI = QFileDialog::getOpenFileName(this, tr("Open"), "",
                                                      tr("INI (*.ini);;All Files (*.*)"));;
             break;
+        default:
+            deviceINI = "";
+            break;
     }
 
+    // Failed config load
     if (deviceINI.isEmpty())
     {
-        ui->DeviceCombo->setCurrentText(prev_deviceType);
+        // Update welcome tab msg with failure
+        welcome_tab->setMsg("Failed to load config for "
+                            + ui->DeviceCombo->currentText()
+                            + "!\nReverted to Previous Config: "
+                            + prev_deviceINI);
+
+        // Revert to previous dev type
+        ui->DeviceCombo->setCurrentIndex(prev_deviceType-1);
+        deviceINI = prev_deviceINI;
+        return;
     }
+
+    deviceType = getDevType();
+    welcome_tab->setMsg("Current Config: " + deviceINI);
 }
 
 void MainWindow::on_ConnTypeCombo_currentIndexChanged(int)
 {
-    // Update Changed Data
-    connType = ui->ConnTypeCombo->currentText();
-
     // Process changes to the speed & info combos
     updateSpeedCombo();
     updateConnInfoCombo();
 }
 
-void MainWindow::on_SpeedCombo_currentIndexChanged(int)
-{
-    // Update Changed Data
-    speed = ui->SpeedCombo->currentText();
-}
-
 void MainWindow::on_DeviceConnect_Button_clicked()
 {
-    // Get connection info
-    connInfo = ui->ConnInfoCombo->currentText();
+    // Update selected info
+    QString connInfo = ui->ConnInfoCombo->currentText();
+    QString speed = ui->SpeedCombo->currentText();
 
     // Try to connect to the device
     bool connected = false;
@@ -194,7 +189,8 @@ void MainWindow::on_DeviceConnect_Button_clicked()
             break;
     }
 
-    // Error out of can't connect to hardware
+    // If connected, add relevant tabs
+    // Else, show failed to connect message
     if (connected)
     {
         // Reset & load the GUI settings file
@@ -203,22 +199,22 @@ void MainWindow::on_DeviceConnect_Button_clicked()
         // Setup tabs
         ui->ucOptions->blockSignals(true);
         uint8_t gui_type;
-        QMap<QString, QVariant> temp;
-        QWidget* tab_holder = nullptr;
-        foreach (QString gui_ini, gui_settings.childGroups())
+        QMap<QString, QVariant> configMap;
+        QWidget* tab_holder;
+        foreach (QString childGroup, gui_settings.childGroups())
         {
             // Verify that its a known GUI
-            gui_type = getGUIType(gui_ini.split('_').last());
+            gui_type = getGUIType(childGroup.split('_').last());
             if (gui_type == GUI_TYPE_ERROR) continue;
 
-            // Clear temporary map
-            temp.clear();
+            // Clear configMap
+            configMap.clear();
 
             // Begin GUI group settings
-            gui_settings.beginGroup(gui_ini);
-            foreach (QString key, gui_settings.childKeys())
+            gui_settings.beginGroup(childGroup);
+            foreach (QString childKey, gui_settings.childKeys())
             {
-                temp.insert(key, gui_settings.value(key));
+                configMap.insert(childKey, gui_settings.value(childKey));
             }
 
             // Exit GUI group settings
@@ -227,10 +223,20 @@ void MainWindow::on_DeviceConnect_Button_clicked()
             // Instantiate and add GUI
             switch (gui_type)
             {
+                case GUI_TYPE_WELCOME:
+                {
+                    tab_holder = new GUI_WELCOME(this);
+                    GUI_WELCOME* welcome_holder = \
+                            (GUI_WELCOME*) tab_holder;
+
+                    welcome_holder->setHeader(configMap.value("header", welcome_tab_text).toString());
+                    welcome_holder->setMsg(configMap.value("msg").toString());
+                    break;
+                }
                 case GUI_TYPE_IO:
                 {
                     tab_holder = new GUI_8AIO_16DIO_COMM(this);
-                    GUI_8AIO_16DIO_COMM* temp_holder = \
+                    GUI_8AIO_16DIO_COMM* io_holder = \
                             (GUI_8AIO_16DIO_COMM*) tab_holder;
 
                     // Setup pintypes variable
@@ -238,40 +244,51 @@ void MainWindow::on_DeviceConnect_Button_clicked()
 
                     // Add DIO controls
                     pinType = JSON_DIO;
-                    temp_holder->setNumPins(pinType, temp.value("dio_num").toInt());
-                    temp_holder->setPinNumbers(pinType, temp.value("dio_start_num").toInt());
-                    temp_holder->addNewPinSettings(pinType, temp.value("dio_pin_settings").toStringList());
-                    temp_holder->setCombos(pinType, temp.value("dio_combo_settings").toStringList());
+                    io_holder->setNumPins(pinType, configMap.value("dio_num").toInt());
+                    io_holder->setPinNumbers(pinType, configMap.value("dio_start_num").toInt());
+                    io_holder->addNewPinSettings(pinType, configMap.value("dio_pin_settings").toStringList());
+                    io_holder->setCombos(pinType, configMap.value("dio_combo_settings").toStringList());
 
                     // Add AIO controls
                     pinType = JSON_AIO;
-                    temp_holder->setNumPins(pinType, temp.value("aio_num").toInt());
-                    temp_holder->setPinNumbers(pinType, temp.value("aio_start_num").toInt());
-                    temp_holder->addNewPinSettings(pinType, temp.value("aio_pin_settings").toStringList());
-                    temp_holder->setCombos(pinType, temp.value("aio_combo_settings").toStringList());
+                    io_holder->setNumPins(pinType, configMap.value("aio_num").toInt());
+                    io_holder->setPinNumbers(pinType, configMap.value("aio_start_num").toInt());
+                    io_holder->addNewPinSettings(pinType, configMap.value("aio_pin_settings").toStringList());
+                    io_holder->setCombos(pinType, configMap.value("aio_combo_settings").toStringList());
 
                     // Add Transmit controls
                     pinType = REMOTE_CONN_REMOTE;
-                    temp_holder->addNewPinSettings(pinType, temp.value("remote_pin_settings").toStringList());
-                    temp_holder->setCombos(pinType, temp.value("remote_combo_settings").toStringList());
+                    io_holder->addNewPinSettings(pinType, configMap.value("remote_pin_settings").toStringList());
+                    io_holder->setCombos(pinType, configMap.value("remote_combo_settings").toStringList());
 
                     // Exit switch
                     break;
                 }
                 case GUI_TYPE_DATA_TRANSMIT:
+                {
                     tab_holder = new GUI_DATA_TRANSMIT(this);
                     break;
-                case GUI_TYPE_PROGRAMMING:
+                }
+                case GUI_TYPE_PROGRAMMER:
+                {
                     tab_holder = new GUI_PROGRAMMER(this);
+                    GUI_PROGRAMMER* programmer_holder = \
+                            (GUI_PROGRAMMER*) tab_holder;
+
+                    programmer_holder->addHexFormats(configMap.value("hex_formats").toStringList());
+                    programmer_holder->removeHexFormats(configMap.value("hex_formats_rm").toStringList());
+                    programmer_holder->addBurnMethods(configMap.value("burn_methods").toStringList());
                     break;
+                }
+                default:
+                    continue;
             }
 
-            // Set base chunk size to value or 0
-            ((GUI_BASE*) tab_holder)->set_chunkSize(temp.value("chunkSize").toInt());
+            // Set base chunk size to config value or 0 if non-existant
+            ((GUI_BASE*) tab_holder)->set_chunkSize(configMap.value("chunk_size").toInt());
 
             // Add new GUI to tabs
-            if (!tab_holder) continue;
-            ui->ucOptions->addTab(tab_holder, gui_ini);
+            ui->ucOptions->addTab(tab_holder, configMap.value("tab_name", childGroup).toString());
         }
         ui->ucOptions->blockSignals(false);
 
@@ -282,12 +299,11 @@ void MainWindow::on_DeviceConnect_Button_clicked()
         connect2sender(this, true);
 
         // Reset the remote
-        // (this window must be in connected mode prior to call)
+        // (the window must be in connected mode prior to call)
         reset_remote();
     } else
     {
         showMessage("Error: Unable to connect to target!");
-        on_DeviceDisconnect_Button_clicked();
     }
 
     setConnected(connected);
@@ -339,6 +355,40 @@ void MainWindow::on_MoreOptions_Button_clicked()
     return;
 }
 
+void MainWindow::on_ucOptions_currentChanged(int index)
+{
+    // No change
+    if (prev_tab == index) return;
+
+    // Disconnet old signals
+    if (prev_tab != -1)
+    {
+        QObject* prev_widget = (QObject*) ui->ucOptions->widget(prev_tab);
+
+        // Disconnect slots/signals
+        connect2sender(prev_widget, false);
+        disconnect(prev_widget, SIGNAL(connect_signals(bool)),
+                   this, SLOT(connect_signals(bool)));
+
+        // Reset the previous GUI (qobject_cast returns null if cast not possible)
+        if (qobject_cast<GUI_8AIO_16DIO_COMM*>(prev_widget)) ((GUI_8AIO_16DIO_COMM*) prev_widget)->reset_gui();
+        else if (qobject_cast<GUI_DATA_TRANSMIT*>(prev_widget)) ((GUI_DATA_TRANSMIT*) prev_widget)->reset_gui();
+        else if (qobject_cast<GUI_PROGRAMMER*>(prev_widget)) ((GUI_PROGRAMMER*) prev_widget)->reset_gui();
+    }
+
+    // Reset the remote
+    reset_remote();
+
+    // Connect new signals
+    QObject* curr_widget = (QObject*) ui->ucOptions->currentWidget();
+    connect(curr_widget, SIGNAL(connect_signals(bool)),
+            this, SLOT(connect_signals(bool)));
+    connect_signals(true);
+
+    // Update previous tab index
+    prev_tab = index;
+}
+
 void MainWindow::updateConnInfoCombo()
 {
     switch (getConnType())
@@ -366,40 +416,6 @@ void MainWindow::updateConnInfoCombo()
     }
 }
 
-void MainWindow::on_ucOptions_currentChanged(int index)
-{
-    // No change
-    if (prev_tab == index) return;
-
-    // Disconnet old signals
-    if (prev_tab != -1)
-    {
-        QObject* prev_widget = (QObject*) ui->ucOptions->widget(prev_tab);
-
-        // Disconnect slots/signals
-        connect2sender(prev_widget, false);
-        disconnect(prev_widget, SIGNAL(connect_signals(bool)),
-                   this, SLOT(connect_signals(bool)));
-
-        // Reset the previous GUI (qobject_cast returns null if cast not possible)
-        if (qobject_cast<ArduinoUno_IO*>(prev_widget)) ((ArduinoUno_IO*) prev_widget)->reset_gui();
-        else if (qobject_cast<GUI_DATA_TRANSMIT*>(prev_widget)) ((GUI_DATA_TRANSMIT*) prev_widget)->reset_gui();
-        else if (qobject_cast<GUI_PROGRAMMER*>(prev_widget)) ((GUI_PROGRAMMER*) prev_widget)->reset_gui();
-    }
-
-    // Reset the remote
-    reset_remote();
-
-    // Connect new signals
-    QObject* curr_widget = (QObject*) ui->ucOptions->currentWidget();
-    connect(curr_widget, SIGNAL(connect_signals(bool)),
-            this, SLOT(connect_signals(bool)));
-    connect_signals(true);
-
-    // Update previous tab index
-    prev_tab = index;
-}
-
 void MainWindow::updateSpeedCombo()
 {
     ui->SpeedCombo->clear();
@@ -408,8 +424,6 @@ void MainWindow::updateSpeedCombo()
     QStringList newItems = getConnSpeeds();
     if (newItems.length() == 0) ui->SpeedCombo->setEnabled(false);
     else ui->SpeedCombo->addItems(newItems);
-
-    on_SpeedCombo_currentIndexChanged(ui->SpeedCombo->currentIndex());
 }
 
 void MainWindow::setConnected(bool conn)
@@ -425,6 +439,18 @@ void MainWindow::setConnected(bool conn)
     // Set Buttons Enabled
     ui->DeviceConnect_Button->setEnabled(op_conn);
     ui->DeviceDisconnect_Button->setEnabled(conn);
+
+    // Add or remove welcome tab
+    ui->ucOptions->blockSignals(true);
+    if (conn && (0 < ui->ucOptions->count()) &&
+            (ui->ucOptions->tabText(0) == welcome_tab_text))
+    {
+        ui->ucOptions->removeTab(0);
+    } else if (op_conn && (ui->ucOptions->count() == 0))
+    {
+        ui->ucOptions->addTab(welcome_tab, welcome_tab_text);
+    }
+    ui->ucOptions->blockSignals(false);
 }
 
 void MainWindow::reset_remote()
@@ -461,12 +487,14 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
 
 uint8_t MainWindow::getConnType()
 {
-    return supportedProtocolsMap.value(connType, CONN_TYPE_ERROR);
+    // currentIndex() returns -1 on error which maps to TYPE_ERROR
+    return (uint8_t) (ui->ConnTypeCombo->currentIndex()+1);
 }
 
 uint8_t MainWindow::getDevType()
 {
-    return supportedDevicesMap.value(deviceType, DEV_TYPE_ERROR);
+    // currentIndex() returns -1 on error which maps to TYPE_ERROR
+    return (uint8_t) (ui->DeviceCombo->currentIndex()+1);
 }
 
 uint8_t MainWindow::getGUIType(QString type)

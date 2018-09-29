@@ -19,85 +19,30 @@
 #include "gui-programmer.h"
 #include "ui_gui-programmer.h"
 
-// Setup static hex format list
-QStringList
-GUI_PROGRAMMER::hexFormatsList({
-                                   "Microchip 8-bit",
-                                   "Microchip 16-bit",
-                                   "Microchip 32-bit"
-                               });
-
-// Setup static hex format and regex parsing map
-QMap<QString, QRegularExpression>
-GUI_PROGRAMMER::hexFormatsRegex({
-                                    {"Microchip 8-bit",
-                                     QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")},
-                                    {"Microchip 16-bit",
-                                     QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")},
-                                    {"Microchip 32-bit",
-                                     QRegularExpression("^:(.{2})(.{4})(.{2})(.*)(.{2})$")}
-                                });
-
-// Setup static burn methods list
-QStringList
-GUI_PROGRAMMER::burnMethods({
-                                "AVR ICSP",
-                                "PIC18 ICSP",
-                                "PIC32 ICSP 2-Wire",
-                                "PIC32 ICSP 4-Wire",
-                                "Arduino Bootloader"
-                            });
-
-// Setup static instructions list
-QMap<QString, QString>
-GUI_PROGRAMMER::instructionTexts({
-                                      {"AVR ICSP",
-                                       QString("Arduino Pinout:\nPin 10: RESET\nPin 11: MOSI\nPin 12: MISO\nPin 13: SCK\n")
-                                       + "\n"
-                                       + "Target Pinout:\nConnect one-to-one.\ni.e. SCK->SCK, MISO->MISO, etc.\n"
-                                       + "\n"
-                                       + "6-Pin ICSP Pinout:\nPin 1: MISO\nPin 2: +VCC\nPin 3: SCK\n"
-                                       + "Pin 4: MOSI\nPin 5: RESET\nPin 6: GROUND\n"
-                                       + "\n"
-                                       + "10-Pin ICSP Pinout:\nPin 1: MISO\nPin 2: +VCC\nPin 3: NC\n"
-                                       + "Pin 4: GROUND\nPin 5: RESET\nPin 6: GROUND\nPin 7: SCK\n"
-                                       + "Pin 8: GROUND\nPin 9: MISO\nPin 10: GROUND\n"
-                                      },
-                                      {"PIC18 ICSP",
-                                       QString("Arduino Pinout:\nPin 10: MCLR\nPin 11: ICSPDAT\nPin 13: ICSPCLK\n")
-                                       + "\n"
-                                       + "Target Pinout:\nConnect one-to-one.\ni.e. ICSPCLK->ICSPCLK, ICSPDAT->ICSPDAT, etc.\n"
-                                       + "\n"
-                                      },
-                                      {"PIC32 ICSP 2-Wire",
-                                       QString("Arduino Pinout:\n")
-                                       + "\n"
-                                       + "Target Pinout:\n"
-                                       + "\n"
-                                      },
-                                      {"PIC32 ICSP 4-Wire",
-                                       QString("Arduino Pinout:\n")
-                                       + "\n"
-                                       + "Target Pinout:\n"
-                                       + "\n"
-                                      },
-                                      {"Arduino Bootloader",
-                                       QString("Arduino Pinout:\nPin 0: RX\nPin 1: TX\n")
-                                       + "\n"
-                                       + "Target Pinout:\nRX to Arduino TX\nTX to Arduino RX\n"
-                                      }
-                                 });
-
 GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_PROGRAMMER)
 {
+    // Create UI and arrays
     ui->setupUi(this);
     loadedHex = QByteArray();
 
-    ui->HexFormat_Combo->addItems(GUI_PROGRAMMER::hexFormatsList);
-    ui->BurnMethod_Combo->addItems(GUI_PROGRAMMER::burnMethods);
+    // Read config settings
+    QMap<QString, QMap<QString, QVariant>*>* configMap = readConfigINI(":/user-interfaces/gui-programmer.ini");
 
+    // Add configs to local maps
+    QMap<QString, QVariant>* groupMap;
+    if (configMap->contains("settings"))
+    {
+        groupMap = configMap->value("settings");
+        addHexFormats(groupMap->value("hex_formats").toStringList());
+        addBurnMethods(groupMap->value("burn_methods").toStringList());
+    }
+
+    // Delete map after use
+    deleteConfigMap(configMap);
+
+    // Setup UI for user
     ui->ReadAll_Radio->setChecked(true);
     on_readSelect_buttonClicked(0);
 }
@@ -114,6 +59,54 @@ void GUI_PROGRAMMER::reset_gui()
     ui->HexPreview_Edit->appendPlainText("");
     ui->ReadData_Edit->clear();
     ui->ReadData_Edit->appendPlainText("");
+}
+
+void GUI_PROGRAMMER::addHexFormats(QStringList hexFormatsMap)
+{
+    QStringList hexFormat;
+    foreach (QString hexFormatString, hexFormatsMap)
+    {
+        // Parse input string
+        hexFormat = hexFormatString.split('=');
+        if (hexFormat.length() != 2) continue;
+
+        // Add hex format to combo and map
+        ui->HexFormat_Combo->addItem(hexFormat[0]);
+        hexFormats.insert(hexFormat[0], QRegularExpression(hexFormat[1]));
+    }
+}
+
+void GUI_PROGRAMMER::removeHexFormats(QStringList hexFormatsList)
+{
+    int pos;
+    foreach (QString hexFormat, hexFormatsList)
+    {
+        // Get hex format in combo
+        pos = ui->HexFormat_Combo->findText(hexFormat);
+        if (pos == -1) continue;
+
+        // Remove hex format from combo and map
+        ui->HexFormat_Combo->removeItem(pos);
+        hexFormats.remove(hexFormat);
+    }
+}
+
+void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
+{
+    QStringList burnMethod;
+    foreach (QString burnMethodString, burnMethodsMap)
+    {
+        // Parse input string
+        burnMethod = burnMethodString.split('=');
+        if (burnMethod.length() != 2) continue;
+
+        // Add burn method to combo and map
+        ui->BurnMethod_Combo->addItem(burnMethod[0]);
+        burnMethods.insert(burnMethod[0], burnMethod[1]);
+    }
+
+    // Update instructions text
+    on_BurnMethod_Combo_currentIndexChanged(0);
 }
 
 void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()
@@ -223,7 +216,8 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_currentIndexChanged(int)
 void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
 {
     ui->Instructions_TextEdit->clear();
-    ui->Instructions_TextEdit->appendPlainText(instructionTexts.value(ui->BurnMethod_Combo->currentText()));
+    ui->Instructions_TextEdit->appendPlainText(burnMethods.value(ui->BurnMethod_Combo->currentText()));
+    ui->Instructions_TextEdit->moveCursor(QTextCursor::Start);
 }
 
 void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
@@ -234,7 +228,7 @@ void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
 QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
 {
     QStringList hexList = QString(rawHex).split('\n');
-    QRegularExpression hexReg = hexFormatsRegex.value(ui->HexFormat_Combo->currentText());
+    QRegularExpression hexReg = hexFormats.value(ui->HexFormat_Combo->currentText());
 
     QString final;
     QRegularExpressionMatch hexRegMatch;

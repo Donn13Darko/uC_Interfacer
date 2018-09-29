@@ -21,6 +21,8 @@
 
 #include <QObject>
 #include <QWidget>
+#include <QMap>
+#include <QVariant>
 
 #include "../communication/json-info.h"
 #include <QDebug>
@@ -47,7 +49,7 @@ private slots:
     void receive(QByteArray recvData);
 
 protected:
-    static float S2MS;
+    const float S2MS = 1000.0f;
     QByteArray rcvd;
     uint8_t chunkSize;
 
@@ -64,6 +66,9 @@ protected:
     void reset_remote();
     void waitForResponse(int len, int msecs = 5000);
     bool checkAck(QByteArray ack);
+
+    QMap<QString, QMap<QString, QVariant>*>* readConfigINI(QString config);
+    void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*>* configMap);
 };
 
 #endif // GUI_BASE_H

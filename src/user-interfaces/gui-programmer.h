@@ -37,6 +37,9 @@ public:
     ~GUI_PROGRAMMER();
 
     void reset_gui();
+    void addHexFormats(QStringList hexFormatsMap);
+    void removeHexFormats(QStringList hexFormatsList);
+    void addBurnMethods(QStringList burnMethodsMap);
 
 private slots:
     void on_BrowseHexFile_Button_clicked();
@@ -52,10 +55,8 @@ private:
 
     QByteArray loadedHex;
 
-    static QStringList hexFormatsList;
-    static QMap<QString, QRegularExpression> hexFormatsRegex;
-    static QStringList burnMethods;
-    static QMap<QString, QString> instructionTexts;
+    QMap<QString, QRegularExpression> hexFormats;
+    QMap<QString, QString> burnMethods;
 
     QString format_hex(QByteArray rawHex);
 };

@@ -260,28 +260,15 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
 RangeList* GUI_PIN_BASE::makeRangeList(QString rangeInfo)
 {
     // Split range info string into values
-    QStringList rangeInfoList = rangeInfo.split('-');
-    if (rangeInfoList.length() != 4) return new EMPTY_RANGE;
+    QStringList ril = rangeInfo.split('-');
+    if (ril.length() != 4) return new EMPTY_RANGE;
 
-    RangeList* rList = new RangeList();
-
-    // Set min
-    if (rangeInfoList[0].isEmpty()) rList->min = 0;
-    else rList->min = rangeInfoList[0].toInt();
-
-    // Set max
-    if (rangeInfoList[1].isEmpty()) rList->max = 0;
-    else rList->max = rangeInfoList[1].toInt();
-
-    // Set step
-    if (rangeInfoList[2].isEmpty()) rList->step = 0;
-    else rList->step = rangeInfoList[2].toInt();
-
-    // Set div
-    if (rangeInfoList[3].isEmpty()) rList->div = 0;
-    else rList->div = rangeInfoList[3].toFloat();
-
-    return rList;
+    return new RangeList({
+                             .min=ril[0].toInt(),
+                             .max=ril[1].toInt(),
+                             .step=ril[2].toInt(),
+                             .div=ril[3].toFloat()
+                         });
 }
 
 void GUI_PIN_BASE::addPinControls(uint8_t pinType, QList<QString> keys)

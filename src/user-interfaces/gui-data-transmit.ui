@@ -17,9 +17,9 @@
    <property name="geometry">
     <rect>
      <x>76</x>
-     <y>131</y>
+     <y>91</y>
      <width>381</width>
-     <height>101</height>
+     <height>141</height>
     </rect>
    </property>
   </widget>
@@ -27,7 +27,7 @@
    <property name="geometry">
     <rect>
      <x>146</x>
-     <y>82</y>
+     <y>41</y>
      <width>231</width>
      <height>20</height>
     </rect>
@@ -37,7 +37,7 @@
    <property name="geometry">
     <rect>
      <x>386</x>
-     <y>81</y>
+     <y>40</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -49,28 +49,12 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QRadioButton" name="TX_Radio">
-   <property name="geometry">
-    <rect>
-     <x>116</x>
-     <y>21</y>
-     <width>35</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>TX</string>
-   </property>
-   <attribute name="buttonGroup">
-    <string notr="true">TX_RX_Sel</string>
-   </attribute>
-  </widget>
   <widget class="QPlainTextEdit" name="recv_PlainText">
    <property name="geometry">
     <rect>
-     <x>620</x>
+     <x>610</x>
      <y>40</y>
-     <width>381</width>
+     <width>391</width>
      <height>191</height>
     </rect>
    </property>
@@ -97,9 +81,9 @@
   <widget class="QLabel" name="Receive_Label">
    <property name="geometry">
     <rect>
-     <x>620</x>
+     <x>610</x>
      <y>20</y>
-     <width>381</width>
+     <width>391</width>
      <height>20</height>
     </rect>
    </property>
@@ -110,27 +94,11 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QRadioButton" name="TX_RX_Radio">
-   <property name="geometry">
-    <rect>
-     <x>376</x>
-     <y>21</y>
-     <width>52</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>TX/RX</string>
-   </property>
-   <attribute name="buttonGroup">
-    <string notr="true">TX_RX_Sel</string>
-   </attribute>
-  </widget>
   <widget class="QRadioButton" name="File_Radio">
    <property name="geometry">
     <rect>
      <x>86</x>
-     <y>81</y>
+     <y>40</y>
      <width>51</width>
      <height>20</height>
     </rect>
@@ -146,7 +114,7 @@
    <property name="geometry">
     <rect>
      <x>75</x>
-     <y>51</y>
+     <y>20</y>
      <width>381</width>
      <height>20</height>
     </rect>
@@ -162,7 +130,7 @@
    <property name="geometry">
     <rect>
      <x>86</x>
-     <y>106</y>
+     <y>65</y>
      <width>49</width>
      <height>17</height>
     </rect>
@@ -172,22 +140,6 @@
    </property>
    <attribute name="buttonGroup">
     <string notr="true">MSG_Sel</string>
-   </attribute>
-  </widget>
-  <widget class="QRadioButton" name="RX_Radio">
-   <property name="geometry">
-    <rect>
-     <x>246</x>
-     <y>21</y>
-     <width>36</width>
-     <height>17</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>RX</string>
-   </property>
-   <attribute name="buttonGroup">
-    <string notr="true">TX_RX_Sel</string>
    </attribute>
   </widget>
   <widget class="QPushButton" name="SaveAs_Button">
@@ -246,6 +198,5 @@
  <connections/>
  <buttongroups>
   <buttongroup name="MSG_Sel"/>
-  <buttongroup name="TX_RX_Sel"/>
  </buttongroups>
 </ui>

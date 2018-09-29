@@ -24,8 +24,7 @@
 #include <QFileDialog>
 #include <QTextStream>
 #include <QEventLoop>
-
-float GUI_BASE::S2MS = 1000.0;
+#include <QSettings>
 
 GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
@@ -190,4 +189,48 @@ bool GUI_BASE::checkAck(QByteArray ack)
     {
         return true;
     }
+}
+
+QMap<QString, QMap<QString, QVariant>*>* GUI_BASE::readConfigINI(QString config)
+{
+    // Reset & load the GUI settings file
+    QSettings config_settings(config, QSettings::IniFormat);
+
+    QMap<QString, QVariant>* groupMap;
+    QMap<QString, QMap<QString, QVariant>*>* configMap;
+    configMap = new QMap<QString, QMap<QString, QVariant>*>();
+
+    // Loop through all child groups
+    foreach (QString childGroup, config_settings.childGroups())
+    {
+        // Create new group map
+        groupMap = new QMap<QString, QVariant>();
+
+        // Begin GUI group settings
+        config_settings.beginGroup(childGroup);
+        foreach (QString childKey, config_settings.childKeys())
+        {
+            groupMap->insert(childKey, config_settings.value(childKey));
+        }
+
+        // Exit GUI group settings
+        config_settings.endGroup();
+
+        // Add groupMap to configMap
+        configMap->insert(childGroup, groupMap);
+    }
+
+    return configMap;
+}
+
+void GUI_BASE::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *> *configMap)
+{
+    QMap<QString, QVariant>* groupMap;
+    foreach (QString group, configMap->keys())
+    {
+        groupMap = configMap->value(group);
+        configMap->remove(group);
+        delete groupMap;
+    }
+    delete configMap;
 }

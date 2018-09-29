@@ -16,42 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_DATA_TRANSMIT_H
-#define GUI_DATA_TRANSMIT_H
+#ifndef GUI_WELCOME_H
+#define GUI_WELCOME_H
 
 #include "gui-base.h"
 
 namespace Ui {
-class GUI_DATA_TRANSMIT;
+class GUI_WELCOME;
 }
 
-class GUI_DATA_TRANSMIT : public GUI_BASE
+class GUI_WELCOME : public GUI_BASE
 {
     Q_OBJECT
 
 public:
-    explicit GUI_DATA_TRANSMIT(QWidget *parent = 0);
-    ~GUI_DATA_TRANSMIT();
+    explicit GUI_WELCOME(QWidget *parent = 0);
+    ~GUI_WELCOME();
 
-    void reset_gui();
+    void setHeader(QString text);
+    QString getHeader();
 
-private slots:
-    void on_MSG_Sel_buttonClicked(int);
-    void on_SendMSG_Button_clicked();
-
-    void on_BrowseFile_Button_clicked();
-    void on_SaveAs_Button_clicked();
-
-    void on_ClearReceived_Button_clicked();
-
-    void receive(QByteArray recvData);
+    void setMsg(QString text);
+    QString getMsg();
 
 private:
-    Ui::GUI_DATA_TRANSMIT *ui;
+    Ui::GUI_WELCOME *ui;
 
-    QByteArray received;
-
-    void input_select(bool fileIN, bool plainIN);
 };
 
-#endif // GUI_DATA_TRANSMIT_H
+#endif // GUI_WELCOME_H

@@ -1,9 +1,12 @@
 <RCC>
     <qresource prefix="/">
         <file>uc-interfaces/gui-arduino-uno.ini</file>
-        <file>communication/gui-base-encoding.ini</file>
-        <file>communication/gui-data-transmit-encoding.ini</file>
-        <file>communication/gui-pin-io-encoding.ini</file>
-        <file>communication/gui-programming-encoding.ini</file>
+        <file>user-interfaces/gui-8io-16io-comm.ini</file>
+        <file>user-interfaces/gui-base.ini</file>
+        <file>user-interfaces/gui-data-transmit.ini</file>
+        <file>user-interfaces/gui-pin-io-base.ini</file>
+        <file>user-interfaces/gui-programmer.ini</file>
+        <file>user-interfaces/gui-welcome.ini</file>
+        <file>uc-interfaces/gui-pc.ini</file>
     </qresource>
 </RCC>

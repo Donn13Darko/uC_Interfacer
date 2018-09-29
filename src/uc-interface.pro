@@ -28,30 +28,31 @@ SOURCES += \
     mainwindow.cpp \
     communication/serial-rs232.cpp \
     uc-interfaces/uc-generic-fsm.cpp \
-    uc-interfaces/gui-arduino-uno-io.cpp \
     user-interfaces/gui-base.cpp \
     user-interfaces/gui-pin-io-base.cpp \
     user-interfaces/gui-8aio-16dio-comm.cpp \
     user-interfaces/gui-data-transmit.cpp \
-    user-interfaces/gui-programmer.cpp
+    user-interfaces/gui-programmer.cpp \
+    user-interfaces/gui-welcome.cpp
 
 HEADERS += \
     mainwindow.h \
     communication/json-info.h \
     communication/serial-rs232.h \
     uc-interfaces/uc-generic-fsm.h \
-    uc-interfaces/gui-arduino-uno-io.h \
     user-interfaces/gui-base.h \
     user-interfaces/gui-pin-io-base.h \
     user-interfaces/gui-8aio-16dio-comm.h \
     user-interfaces/gui-data-transmit.h \
-    user-interfaces/gui-programmer.h
+    user-interfaces/gui-programmer.h \
+    user-interfaces/gui-welcome.h
 
 FORMS += \
     mainwindow.ui \
     user-interfaces/gui-8aio-16dio-comm.ui \
     user-interfaces/gui-data-transmit.ui \
-    user-interfaces/gui-programmer.ui
+    user-interfaces/gui-programmer.ui \
+    user-interfaces/gui-welcome.ui
 
 DISTFILES += \
     uc-interfaces/arduino_uno_uart/arduino_uno_uart.ino

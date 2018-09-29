@@ -16,23 +16,38 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef ARDUINOUNO_IO_H
-#define ARDUINOUNO_IO_H
+#include "gui-welcome.h"
+#include "ui_gui-welcome.h"
 
-#include "../user-interfaces/gui-8aio-16dio-comm.h"
-#include <QMap>
 
-namespace Ui {
-class ArduinoUno_IO;
+GUI_WELCOME::GUI_WELCOME(QWidget *parent) :
+    GUI_BASE(parent),
+    ui(new Ui::GUI_WELCOME)
+{
+    ui->setupUi(this);
 }
 
-class ArduinoUno_IO : public GUI_8AIO_16DIO_COMM
+GUI_WELCOME::~GUI_WELCOME()
 {
-    Q_OBJECT
+    delete ui;
+}
 
-public:
-    explicit ArduinoUno_IO(QWidget *parent = 0);
-    ~ArduinoUno_IO();
-};
+void GUI_WELCOME::setHeader(QString text)
+{
+    ui->header_label->setText(text);
+}
 
-#endif // ARDUINOUNO_IO_H
+QString GUI_WELCOME::getHeader()
+{
+    return ui->header_label->text();
+}
+
+void GUI_WELCOME::setMsg(QString text)
+{
+    ui->msg_label->setText(text);
+}
+
+QString GUI_WELCOME::getMsg()
+{
+    return ui->msg_label->text();
+}

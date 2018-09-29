@@ -28,28 +28,33 @@
 
 #include "communication/json-info.h"
 #include "communication/serial-rs232.h"
-#include "user-interfaces/gui-base.h"
+#include "user-interfaces/gui-welcome.h"
 
+// Order not important (supportedGUIsMap handles)
 typedef enum {
     GUI_TYPE_ERROR = 0,
+    GUI_TYPE_WELCOME,
     GUI_TYPE_IO,
     GUI_TYPE_DATA_TRANSMIT,
-    GUI_TYPE_PROGRAMMING
+    GUI_TYPE_PROGRAMMER
 } GUI_TYPE;
 
-typedef enum {
-    CONN_TYPE_ERROR = 0,
-    CONN_TYPE_RS_232,
-    CONN_TYPE_TCP,
-    CONN_TYPE_UDP
-} CONN_TYPE;
-
+// Must be in same order as supportedDevicesList
 typedef enum {
     DEV_TYPE_ERROR = 0,
     DEV_TYPE_ARDUINO_UNO,
     DEV_TYPE_PC,
     DEV_TYPE_OTHER
 } DEV_TYPE;
+
+// Must be in same order as supportedProtocolsList
+typedef enum {
+    CONN_TYPE_ERROR = 0,
+    CONN_TYPE_RS_232,
+    CONN_TYPE_TCP_CLIENT,
+    CONN_TYPE_TCP_SERVER,
+    CONN_TYPE_UDP
+} CONN_TYPE;
 
 namespace Ui {
 class MainWindow;
@@ -74,43 +79,34 @@ public slots:
     void connect_signals(bool connect);
 
 private slots:
-    void on_DeviceCombo_currentIndexChanged(int);
+    void on_DeviceCombo_activated(int);
     void on_ConnTypeCombo_currentIndexChanged(int);
-    void on_SpeedCombo_currentIndexChanged(int);
 
     void on_DeviceConnect_Button_clicked();
     void on_DeviceDisconnect_Button_clicked();
     void on_MoreOptions_Button_clicked();
 
-    void updateConnInfoCombo();
-
     void on_ucOptions_currentChanged(int index);
+
+    void updateConnInfoCombo();
 
     void receive(QByteArray) {/*Default do nothing*/}
 
 private:
     Ui::MainWindow *ui;
+    GUI_WELCOME* welcome_tab;
+    QString welcome_tab_text;
     int prev_tab;
 
-    QString deviceType;
+    uint8_t deviceType;
     QString deviceINI;
-    QString connType;
-    QString speed;
-    QString connInfo;
 
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
-
     static QMap<QString, uint8_t> supportedGUIsMap;
-    static QMap<QString, uint8_t> supportedDevicesMap;
-    static QMap<QString, uint8_t> supportedProtocolsMap;
 
     QTimer updateConnInfo;
     Serial_RS232 *serial_rs232;
-
-//    QSettings gui_settings;
-
-    uint8_t arduino_chunk_size = 32;
 
     void updateSpeedCombo();
     void setConnected(bool conn);
