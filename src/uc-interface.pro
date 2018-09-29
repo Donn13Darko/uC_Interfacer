@@ -34,7 +34,8 @@ SOURCES += \
     user-interfaces/gui-data-transmit.cpp \
     user-interfaces/gui-programmer.cpp \
     user-interfaces/gui-welcome.cpp \
-    communication/tcp-client.cpp
+    communication/tcp-client.cpp \
+    communication/tcp-server.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -47,7 +48,8 @@ HEADERS += \
     user-interfaces/gui-data-transmit.h \
     user-interfaces/gui-programmer.h \
     user-interfaces/gui-welcome.h \
-    communication/tcp-client.h
+    communication/tcp-client.h \
+    communication/tcp-server.h
 
 FORMS += \
     mainwindow.ui \

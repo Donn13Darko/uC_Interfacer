@@ -50,7 +50,7 @@ void TCP_CLIENT::open()
 
 void TCP_CLIENT::close()
 {
-    client->close();
+    client->disconnectFromHost();
 }
 
 bool TCP_CLIENT::isConnected()

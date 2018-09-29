@@ -29,6 +29,7 @@
 #include "communication/json-info.h"
 #include "communication/serial-rs232.h"
 #include "communication/tcp-client.h"
+#include "communication/tcp-server.h"
 
 #include "user-interfaces/gui-welcome.h"
 
@@ -110,6 +111,7 @@ private:
     QTimer updateConnInfo;
     Serial_RS232 *serial_rs232;
     TCP_CLIENT *tcp_client;
+    TCP_SERVER *tcp_server;
 
     void updateSpeedCombo();
     void setConnected(bool conn);

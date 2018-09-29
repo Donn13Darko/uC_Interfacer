@@ -195,6 +195,13 @@ void MainWindow::on_DeviceConnect_Button_clicked()
             connected = tcp_client->isConnected();
             break;
         }
+        case CONN_TYPE_TCP_SERVER:
+        {
+            tcp_server = new TCP_SERVER(connInfo.toInt());
+            tcp_server->open();
+            connected = tcp_server->isConnected();
+            break;
+        }
         default:
         {
             connected = false;
@@ -335,17 +342,29 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     switch (getConnType())
     {
         case CONN_TYPE_RS_232:
+        {
             if (!serial_rs232) break;
             else if (serial_rs232->isConnected()) serial_rs232->close();
             delete serial_rs232;
             serial_rs232 = nullptr;
             break;
+        }
         case CONN_TYPE_TCP_CLIENT:
+        {
             if (!tcp_client) break;
             else if (tcp_client->isConnected()) tcp_client->close();
             delete tcp_client;
             tcp_client = nullptr;
             break;
+        }
+        case CONN_TYPE_TCP_SERVER:
+        {
+            if (!tcp_server) break;
+            else if (tcp_server->isConnected()) tcp_server->close();
+            delete tcp_server;
+            tcp_server = nullptr;
+            break;
+        }
         default:
             break;
     }
@@ -541,6 +560,7 @@ QObject* MainWindow::getConnObject(int type)
     {
         case CONN_TYPE_RS_232: return serial_rs232;
         case CONN_TYPE_TCP_CLIENT: return tcp_client;
+        case CONN_TYPE_TCP_SERVER: return tcp_server;
         default: return nullptr;
     }
 }
