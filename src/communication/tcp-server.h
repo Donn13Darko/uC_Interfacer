@@ -37,6 +37,8 @@ public:
     bool isConnected();
 
 signals:
+    void deviceConnected();
+    void deviceDisconnected();
     void readyRead(QByteArray readData);
 
 public slots:
@@ -47,11 +49,13 @@ public slots:
 private slots:
     void read();
     void connectClient();
+    void disconnectClient();
+    void connecting_finished(int res);
 
 private:
     QTcpServer *server;
     QTcpSocket *server_client;
-    QMessageBox *connecting;
+    QMessageBox *connecting_msg;
 
     int listen_port;
 

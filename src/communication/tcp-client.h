@@ -32,13 +32,17 @@ public:
     ~TCP_CLIENT();
 
     void open();
-    void close();
     bool isConnected();
 
 signals:
+    void deviceConnected();
+    void deviceDisconnected();
     void readyRead(QByteArray readData);
 
 public slots:
+    void close();
+    void connectClient();
+    void disconnectClient();
     void write(QByteArray writeData);
     void write(std::initializer_list<uint8_t> writeData);
 

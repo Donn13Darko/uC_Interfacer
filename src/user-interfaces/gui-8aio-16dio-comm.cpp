@@ -51,7 +51,7 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     QWidget *item;
     int rowNum, colNum;
 
-    // Disconnect sending slot
+    // Disconnect sending slot for setup
     emit connect_signals(false);
 
     // Stop logging and updating if running

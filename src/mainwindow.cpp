@@ -63,6 +63,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Set base parameters
     serial_rs232 = nullptr;
+    tcp_client = nullptr;
+    tcp_server = nullptr;
     prev_tab = -1;
 
     // Add specified values to combos
@@ -75,6 +77,7 @@ MainWindow::MainWindow(QWidget *parent) :
     setConnected(false);
     on_DeviceCombo_activated(ui->DeviceCombo->currentIndex());
     on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
+    ui->ucOptions->addTab(welcome_tab, welcome_tab_text);
 
     // Add connections
     connect(&updateConnInfo, SIGNAL(timeout()), this, SLOT(updateConnInfoCombo()));
@@ -83,7 +86,7 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     // If connected, disconnect
-    if (ui->DeviceDisconnect_Button->isEnabled())
+    if (deviceConnected())
         on_DeviceDisconnect_Button_clicked();
 
     delete welcome_tab;
@@ -93,7 +96,7 @@ MainWindow::~MainWindow()
 void MainWindow::closeEvent(QCloseEvent* e)
 {
     // If connected, disconnect
-    if (ui->DeviceDisconnect_Button->isEnabled())
+    if (deviceConnected())
         on_DeviceDisconnect_Button_clicked();
 
     e->accept();
@@ -171,48 +174,88 @@ void MainWindow::on_ConnTypeCombo_currentIndexChanged(int)
 
 void MainWindow::on_DeviceConnect_Button_clicked()
 {
+    // Disable input switching
+    setConnected(true);
+
     // Update selected info
     QString connInfo = ui->ConnInfoCombo->currentText();
     QString speed = ui->SpeedCombo->currentText();
 
     // Try to connect to the device
-    bool connected = false;
     switch (getConnType())
     {
         case CONN_TYPE_RS_232:
         {
+            // Create new object
             serial_rs232 = new Serial_RS232(connInfo, speed);
+
+            // Connect signals and slots
+            connect(serial_rs232, SIGNAL(deviceConnected()),
+                       this, SLOT(on_DeviceConnected()));
+            connect(serial_rs232, SIGNAL(deviceDisconnected()),
+                       this, SLOT(on_DeviceDisconnected()));
+
+            // Try to connect
             serial_rs232->open();
-            connected = serial_rs232->isConnected();
             break;
         }
         case CONN_TYPE_TCP_CLIENT:
         {
+            // Parse input
             QStringList conn = connInfo.split(':');
             if (conn.length() != 2) break;
+
+            // Create new object
             tcp_client = new TCP_CLIENT(conn[0], conn[1].toInt());
+
+            // Connect signals and slots
+            connect(tcp_client, SIGNAL(deviceConnected()),
+                       this, SLOT(on_DeviceConnected()));
+            connect(tcp_client, SIGNAL(deviceDisconnected()),
+                       this, SLOT(on_DeviceDisconnected()));
+
+            // Try to connect
             tcp_client->open();
-            connected = tcp_client->isConnected();
             break;
         }
         case CONN_TYPE_TCP_SERVER:
         {
+            // Create new object
             tcp_server = new TCP_SERVER(connInfo.toInt());
+
+            // Connect signals and slots
+            connect(tcp_server, SIGNAL(deviceConnected()),
+                       this, SLOT(on_DeviceConnected()));
+            connect(tcp_server, SIGNAL(deviceDisconnected()),
+                       this, SLOT(on_DeviceDisconnected()));
+
+            // Try to connect
             tcp_server->open();
-            connected = tcp_server->isConnected();
             break;
         }
         default:
         {
-            connected = false;
-            break;
+            return;
         }
+    }
+}
+
+void MainWindow::on_DeviceConnected() {
+    // Disconnect signals from device
+    QObject* device = getConnObject();
+    if (device)
+    {
+        disconnect(device, SIGNAL(deviceConnected()),
+                   this, SLOT(on_DeviceConnected()));
     }
 
     // If connected, add relevant tabs
     // Else, show failed to connect message
-    if (true || connected)
+    if (deviceConnected())
     {
+        // Remove all existing tabs
+        ucOptionsClear();
+
         // Reset & load the GUI settings file
         QSettings gui_settings(deviceINI, QSettings::IniFormat);
 
@@ -326,13 +369,32 @@ void MainWindow::on_DeviceConnect_Button_clicked()
         showMessage("Error: Unable to connect to target!");
     }
 
-    setConnected(connected);
+    setConnected(deviceConnected());
+}
+
+void MainWindow::on_DeviceDisconnected()
+{
+    // Remove widgets from GUI
+    on_DeviceDisconnect_Button_clicked();
+
+    // Notify user of connection loss
+    showMessage("Error: Connection to target lost!");
 }
 
 void MainWindow::on_DeviceDisconnect_Button_clicked()
 {
     // Reset the remote
-    reset_remote();
+    if (deviceConnected()) reset_remote();
+
+    // Disconnect any connected slots
+    QObject* device = getConnObject();
+    if (device)
+    {
+        disconnect(device, SIGNAL(deviceConnected()),
+                   this, SLOT(on_DeviceConnected()));
+        disconnect(device, SIGNAL(deviceDisconnected()),
+                   this, SLOT(on_DeviceDisconnected()));
+    }
 
     // Disconnect connections
     connect2sender(ui->ucOptions->currentWidget(), false);
@@ -344,24 +406,24 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
         case CONN_TYPE_RS_232:
         {
             if (!serial_rs232) break;
-            else if (serial_rs232->isConnected()) serial_rs232->close();
-            delete serial_rs232;
+            serial_rs232->close();
+            serial_rs232->deleteLater();
             serial_rs232 = nullptr;
             break;
         }
         case CONN_TYPE_TCP_CLIENT:
         {
             if (!tcp_client) break;
-            else if (tcp_client->isConnected()) tcp_client->close();
-            delete tcp_client;
+            tcp_client->close();
+            tcp_client->deleteLater();
             tcp_client = nullptr;
             break;
         }
         case CONN_TYPE_TCP_SERVER:
         {
             if (!tcp_server) break;
-            else if (tcp_server->isConnected()) tcp_server->close();
-            delete tcp_server;
+            tcp_server->close();
+            tcp_server->deleteLater();
             tcp_server = nullptr;
             break;
         }
@@ -370,16 +432,10 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     }
 
     // Remove widgets
-    QWidget* tmp;
-    ui->ucOptions->blockSignals(true);
-    for (int tabIndex = (ui->ucOptions->count() - 1); 0 <= tabIndex; tabIndex--)
-    {
-        tmp = ui->ucOptions->widget(tabIndex);
-        ui->ucOptions->removeTab(tabIndex);
-        delete tmp;
-    }
-    ui->ucOptions->blockSignals(false);
-    prev_tab = -1;
+    ucOptionsClear();
+
+    // Add welcome widget
+    ui->ucOptions->addTab(welcome_tab, welcome_tab_text);
 
     // Set to disconnected mode
     setConnected(false);
@@ -401,17 +457,19 @@ void MainWindow::on_ucOptions_currentChanged(int index)
     // Disconnet old signals
     if (prev_tab != -1)
     {
-        QObject* prev_widget = (QObject*) ui->ucOptions->widget(prev_tab);
+        QObject* prev_widget = ui->ucOptions->widget(prev_tab);
+        if (prev_widget)
+        {
+            // Disconnect slots/signals
+            connect2sender(prev_widget, false);
+            disconnect(prev_widget, SIGNAL(connect_signals(bool)),
+                       this, SLOT(connect_signals(bool)));
 
-        // Disconnect slots/signals
-        connect2sender(prev_widget, false);
-        disconnect(prev_widget, SIGNAL(connect_signals(bool)),
-                   this, SLOT(connect_signals(bool)));
-
-        // Reset the previous GUI (qobject_cast returns null if cast not possible)
-        if (qobject_cast<GUI_8AIO_16DIO_COMM*>(prev_widget)) ((GUI_8AIO_16DIO_COMM*) prev_widget)->reset_gui();
-        else if (qobject_cast<GUI_DATA_TRANSMIT*>(prev_widget)) ((GUI_DATA_TRANSMIT*) prev_widget)->reset_gui();
-        else if (qobject_cast<GUI_PROGRAMMER*>(prev_widget)) ((GUI_PROGRAMMER*) prev_widget)->reset_gui();
+            // Reset the previous GUI (qobject_cast returns null if cast not possible)
+            if (qobject_cast<GUI_8AIO_16DIO_COMM*>(prev_widget)) ((GUI_8AIO_16DIO_COMM*) prev_widget)->reset_gui();
+            else if (qobject_cast<GUI_DATA_TRANSMIT*>(prev_widget)) ((GUI_DATA_TRANSMIT*) prev_widget)->reset_gui();
+            else if (qobject_cast<GUI_PROGRAMMER*>(prev_widget)) ((GUI_PROGRAMMER*) prev_widget)->reset_gui();
+        }
     }
 
     // Reset the remote
@@ -419,9 +477,15 @@ void MainWindow::on_ucOptions_currentChanged(int index)
 
     // Connect new signals
     QObject* curr_widget = (QObject*) ui->ucOptions->currentWidget();
-    connect(curr_widget, SIGNAL(connect_signals(bool)),
-            this, SLOT(connect_signals(bool)));
-    connect_signals(true);
+    if (curr_widget)
+    {
+        // Enable device to manage signals
+        connect(curr_widget, SIGNAL(connect_signals(bool)),
+                this, SLOT(connect_signals(bool)));
+
+        // Set signal acceptance to true
+        connect_signals(true);
+    }
 
     // Update previous tab index
     prev_tab = index;
@@ -435,20 +499,28 @@ void MainWindow::updateConnInfoCombo()
         {
             if (!updateConnInfo.isActive()) {
                 updateConnInfo.start(1000);
+                ui->ConnInfoCombo->setEditable(false);
             }
-            ui->ConnInfoCombo->setEditable(false);
 
             QStringList avail = Serial_RS232::getDevices();
-            QString curr = ui->ConnInfoCombo->currentText();
-            ui->ConnInfoCombo->clear();
-            ui->ConnInfoCombo->addItems(avail);
-            ui->ConnInfoCombo->setCurrentText(curr);
+            if (avail.length() != 0)
+            {
+                QString curr = ui->ConnInfoCombo->currentText();
+                ui->ConnInfoCombo->clear();
+                ui->ConnInfoCombo->addItems(avail);
+                ui->ConnInfoCombo->setCurrentText(curr);
+                ui->DeviceConnect_Button->setEnabled(true);
+            } else
+            {
+                ui->DeviceConnect_Button->setEnabled(false);
+            }
             break;
         }
         default:
         {
             updateConnInfo.stop();
             ui->ConnInfoCombo->setEditable(true);
+            ui->DeviceConnect_Button->setEnabled(true);
             break;
         }
     }
@@ -477,18 +549,6 @@ void MainWindow::setConnected(bool conn)
     // Set Buttons Enabled
     ui->DeviceConnect_Button->setEnabled(op_conn);
     ui->DeviceDisconnect_Button->setEnabled(conn);
-
-    // Add or remove welcome tab
-    ui->ucOptions->blockSignals(true);
-    if (conn && (0 < ui->ucOptions->count()) &&
-            (ui->ucOptions->tabText(0) == welcome_tab_text))
-    {
-        ui->ucOptions->removeTab(0);
-    } else if (op_conn && (ui->ucOptions->count() == 0))
-    {
-        ui->ucOptions->addTab(welcome_tab, welcome_tab_text);
-    }
-    ui->ucOptions->blockSignals(false);
 }
 
 void MainWindow::reset_remote()
@@ -520,6 +580,36 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
 
         disconnect(conn_obj, SIGNAL(readyRead(QByteArray)),
                    obj, SLOT(receive(QByteArray)));
+    }
+}
+
+void MainWindow::ucOptionsClear()
+{
+    ui->ucOptions->blockSignals(true);
+    QWidget* tab;
+    for (int i = ui->ucOptions->count(); 0 < i; i--)
+    {
+        tab = ui->ucOptions->widget(0);
+        ui->ucOptions->removeTab(0);
+        if (tab != welcome_tab) delete tab;
+    }
+    ui->ucOptions->blockSignals(false);
+
+    prev_tab = -1;
+}
+
+bool MainWindow::deviceConnected()
+{
+    // Verify connection exists
+    if (!getConnObject()) return false;
+
+    // Select connection object
+    switch (getConnType())
+    {
+        case CONN_TYPE_RS_232: return serial_rs232->isConnected();
+        case CONN_TYPE_TCP_CLIENT: return tcp_client->isConnected();
+        case CONN_TYPE_TCP_SERVER: return tcp_server->isConnected();
+        default: return false;
     }
 }
 

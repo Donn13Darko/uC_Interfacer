@@ -30,32 +30,51 @@ TCP_CLIENT::TCP_CLIENT(QString ip, int port, QObject *parent) :
     writeLock = new QMutex(QMutex::Recursive);
 
     connect(client, SIGNAL(readyRead()), this, SLOT(read()));
+    connect(client, SIGNAL(disconnected()), this, SLOT(close()));
 }
 
 TCP_CLIENT::~TCP_CLIENT()
 {
     if (isConnected()) close();
+
     delete client;
+    delete readLock;
+    delete writeLock;
 }
 
 void TCP_CLIENT::open()
 {
+    // Connect signals and slots
+    connect(client, SIGNAL(connected()), this, SLOT(connectClient()));
+
     // Attempt to connect
     client->connectToHost(server_ip, server_port, QIODevice::ReadWrite);
-
-    // Wait some time for connection
-    if (client->state() != QTcpSocket::ConnectedState)
-        client->waitForConnected(5000);
 }
 
 void TCP_CLIENT::close()
 {
+    // Remove close slot to prevent infinite loop
+    disconnect(client, SIGNAL(disconnected()),
+            this, SLOT(disconnectClient()));
+
+    // Disconnect
     client->disconnectFromHost();
 }
 
 bool TCP_CLIENT::isConnected()
 {
-    return (client->state() == QTcpSocket::ConnectedState);
+    return (client && (client->state() == QTcpSocket::ConnectedState));
+}
+
+void TCP_CLIENT::connectClient()
+{
+    disconnect(client, SIGNAL(connected()), this, SLOT(connectClient));
+    emit deviceConnected();
+}
+
+void TCP_CLIENT::disconnectClient()
+{
+    emit deviceDisconnected();
 }
 
 void TCP_CLIENT::write(QByteArray writeData)

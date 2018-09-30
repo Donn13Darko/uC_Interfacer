@@ -37,28 +37,48 @@ Serial_RS232::Serial_RS232(QString port, QString baudrate, QObject *parent) :
     readLock = new QMutex(QMutex::Recursive);
     writeLock = new QMutex(QMutex::Recursive);
 
-    connect(rs232, SIGNAL(readyRead()), this, SLOT(read()));
+    conn_checker = new QTimer();
+
+    connect(conn_checker, SIGNAL(timeout()),
+            this, SLOT(checkConnection()));
+    connect(rs232, SIGNAL(readyRead()),
+            this, SLOT(read()));
 }
 
 Serial_RS232::~Serial_RS232()
 {
     if (isConnected()) close();
     delete rs232;
+    delete readLock;
+    delete writeLock;
+    delete conn_checker;
 }
 
 void Serial_RS232::open()
 {
     connected = rs232->open(QIODevice::ReadWrite);
+
+    if (connected)
+    {
+        emit deviceConnected();
+        conn_checker->start(500);
+    } else
+    {
+        emit deviceDisconnected();
+    }
 }
 
 void Serial_RS232::close()
 {
+    conn_checker->stop();
     rs232->close();
     connected = false;
+    emit deviceDisconnected();
 }
 
 bool Serial_RS232::isConnected()
 {
+    checkConnection();
     return connected;
 }
 
@@ -103,4 +123,12 @@ void Serial_RS232::read()
     emit readyRead(recvData);
     qDebug() << "R: " << recvData;
     readLock->unlock();
+}
+
+void Serial_RS232::checkConnection()
+{
+    if (!getDevices().contains(rs232->portName()))
+    {
+        close();
+    }
 }

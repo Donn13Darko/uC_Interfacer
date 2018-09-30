@@ -24,12 +24,13 @@ TCP_SERVER::TCP_SERVER(int port, QObject *parent) :
 {
     server = new QTcpServer(this);
     server->setMaxPendingConnections(1);
-    server_client = new QTcpSocket(this);
+    server_client = nullptr;
     listen_port = port;
 
-    connecting = new QMessageBox();
-    connecting->setText("Waiting for connection...");
-    connecting->addButton(QMessageBox::Cancel);
+    connecting_msg = new QMessageBox();
+    connecting_msg->setText("Waiting for connection...");
+    connecting_msg->addButton(QMessageBox::Cancel);
+    connecting_msg->setModal(true);
 
     readLock = new QMutex(QMutex::Recursive);
     writeLock = new QMutex(QMutex::Recursive);
@@ -38,30 +39,43 @@ TCP_SERVER::TCP_SERVER(int port, QObject *parent) :
 TCP_SERVER::~TCP_SERVER()
 {
     if (isConnected()) close();
+    if (server_client) delete server_client;
+
     delete server;
-    delete server_client;
-    delete connecting;
+    delete readLock;
+    delete writeLock;
+    delete connecting_msg;
 }
 
 void TCP_SERVER::open()
 {
+    // Connect signals before use
+    connect(server, SIGNAL(newConnection()), this, SLOT(connectClient()));
+    connect(connecting_msg, SIGNAL(finished(int)),
+            this, SLOT(connecting_finished(int)));
+
     // Begin listening
     server->listen(QHostAddress::Any, listen_port);
-    connect(server, SIGNAL(newConnection()), this, SLOT(connectClient()));
-
-    connecting->show();
-    connect(connecting, SIGNAL(rejected()), this, SLOT(close()));
+    connecting_msg->show();
 }
 
 void TCP_SERVER::close()
 {
+    // Disconnect server_client
+    if (server_client)
+    {
+        disconnect(server_client, SIGNAL(disconnected()),
+                   this, SLOT(disconnectClient()));
+        server_client->disconnectFromHost();
+    }
+
+    // Disconnect server
     server->close();
-    server_client->disconnectFromHost();
 }
 
 bool TCP_SERVER::isConnected()
 {
-    return (server_client->state() == QTcpSocket::ConnectedState);
+    return (server_client && (server_client->state() == QTcpSocket::ConnectedState));
 }
 
 void TCP_SERVER::write(QByteArray writeData)
@@ -102,12 +116,35 @@ void TCP_SERVER::connectClient()
     // Open pending connections
     if (server->hasPendingConnections())
     {
+        // Get next connection from server
         server_client = server->nextPendingConnection();
         server->close();
-        connecting->hide();
+        connecting_msg->hide();
 
+        // Connect client signals and slots
         connect(server_client, SIGNAL(readyRead()), this, SLOT(read()));
+        connect(server_client, SIGNAL(disconnected()), this, SLOT(disconnectClient()));
+
+        // Remove uneeded connections
         disconnect(server, SIGNAL(newConnection()), this, SLOT(connectClient()));
-        disconnect(connecting, SIGNAL(rejected()), this, SLOT(close()));
+        disconnect(connecting_msg, SIGNAL(finished(int)),
+                this, SLOT(connecting_finished(int)));
+
+        // Notify host to conitnue
+        emit deviceConnected();
+    }
+}
+
+void TCP_SERVER::disconnectClient()
+{
+    emit deviceDisconnected();
+}
+
+void TCP_SERVER::connecting_finished(int res)
+{
+    if ((res == QMessageBox::Cancel) || (res == QMessageBox::Close))
+    {
+        close();
+        emit deviceDisconnected();
     }
 }

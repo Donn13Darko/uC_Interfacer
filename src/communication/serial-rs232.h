@@ -23,6 +23,7 @@
 #include <QMutex>
 #include <QSerialPort>
 #include <QSerialPortInfo>
+#include <QTimer>
 
 class Serial_RS232 : public QObject
 {
@@ -40,9 +41,12 @@ public:
     static QStringList Baudrate_Defaults;
 
 signals:
+    void deviceConnected();
+    void deviceDisconnected();
     void readyRead(QByteArray readData);
 
 public slots:
+    void checkConnection();
     void write(QByteArray writeData);
     void write(std::initializer_list<uint8_t> writeData);
 
@@ -53,6 +57,7 @@ private:
     QSerialPort *rs232;
     QMutex *readLock;
     QMutex *writeLock;
+    QTimer *conn_checker;
 
     bool connected;
 };

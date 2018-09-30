@@ -89,6 +89,9 @@ private slots:
     void on_DeviceDisconnect_Button_clicked();
     void on_MoreOptions_Button_clicked();
 
+    void on_DeviceConnected();
+    void on_DeviceDisconnected();
+
     void on_ucOptions_currentChanged(int index);
 
     void updateConnInfoCombo();
@@ -117,6 +120,8 @@ private:
     void setConnected(bool conn);
     void reset_remote();
     void connect2sender(QObject* obj, bool conn);
+    void ucOptionsClear();
+    bool deviceConnected();
 
     uint8_t getDevType();
     uint8_t getConnType();
