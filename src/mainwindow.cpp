@@ -58,6 +58,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     // Setup base GUI items
     ui->setupUi(this);
+    updateConnInfo = new QTimer();
     welcome_tab = new GUI_WELCOME(this);
     welcome_tab_text = "Welcome";
 
@@ -77,19 +78,23 @@ MainWindow::MainWindow(QWidget *parent) :
     // Set Initial values
     setConnected(false);
     on_DeviceCombo_activated(ui->DeviceCombo->currentIndex());
-    on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
+    on_ConnTypeCombo_currentIndexChanged(0);
     ui->ucOptions->addTab(welcome_tab, welcome_tab_text);
 
     // Add connections
-    connect(&updateConnInfo, SIGNAL(timeout()), this, SLOT(updateConnInfoCombo()));
+    connect(updateConnInfo, SIGNAL(timeout()), this, SLOT(updateConnInfoCombo()));
 }
 
 MainWindow::~MainWindow()
 {
     // If connected, disconnect
     if (deviceConnected())
+    {
         on_DeviceDisconnect_Button_clicked();
+    }
 
+    updateConnInfo->stop();
+    delete updateConnInfo;
     delete welcome_tab;
     delete ui;
 }
@@ -98,7 +103,9 @@ void MainWindow::closeEvent(QCloseEvent* e)
 {
     // If connected, disconnect
     if (deviceConnected())
+    {
         on_DeviceDisconnect_Button_clicked();
+    }
 
     e->accept();
 }
@@ -327,15 +334,15 @@ void MainWindow::on_DeviceConnected() {
 
                     // Add DIO controls
                     pinType = JSON_DIO;
-                    io_holder->setNumPins(pinType, configMap.value("dio_num").toInt());
-                    io_holder->setPinNumbers(pinType, configMap.value("dio_start_num").toInt());
+                    io_holder->setNumPins(pinType, configMap.value("dio_num").toInt(),
+                                          configMap.value("dio_start_num").toInt());
                     io_holder->addNewPinSettings(pinType, configMap.value("dio_pin_settings").toStringList());
                     io_holder->setCombos(pinType, configMap.value("dio_combo_settings").toStringList());
 
                     // Add AIO controls
                     pinType = JSON_AIO;
-                    io_holder->setNumPins(pinType, configMap.value("aio_num").toInt());
-                    io_holder->setPinNumbers(pinType, configMap.value("aio_start_num").toInt());
+                    io_holder->setNumPins(pinType, configMap.value("aio_num").toInt(),
+                                          configMap.value("aio_start_num").toInt());
                     io_holder->addNewPinSettings(pinType, configMap.value("aio_pin_settings").toStringList());
                     io_holder->setCombos(pinType, configMap.value("aio_combo_settings").toStringList());
 
@@ -467,6 +474,10 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
 
     // Set to disconnected mode
     setConnected(false);
+
+    // Refresh device & conn type combos
+    on_DeviceCombo_activated(0);
+    on_ConnTypeCombo_currentIndexChanged(0);
 }
 
 void MainWindow::on_MoreOptions_Button_clicked()
@@ -521,32 +532,43 @@ void MainWindow::on_ucOptions_currentChanged(int index)
 
 void MainWindow::updateConnInfoCombo()
 {
+    // Stop timers and disable connect if device connected
+    if (deviceConnected())
+    {
+        updateConnInfo->stop();
+        ui->DeviceConnect_Button->setEnabled(false);
+        return;
+    }
+
+    // Otherwise handle based on connection type
     switch (getConnType())
     {
         case CONN_TYPE_RS_232:
         {
-            if (!updateConnInfo.isActive()) {
-                updateConnInfo.start(1000);
+            if (!updateConnInfo->isActive()) {
+                updateConnInfo->start(1000);
                 ui->ConnInfoCombo->setEditable(false);
             }
 
-            QStringList avail = Serial_RS232::getDevices();
-            if (avail.length() != 0)
+            QStringList* avail = Serial_RS232::getDevices();
+            if (avail->length() != 0)
             {
                 QString curr = ui->ConnInfoCombo->currentText();
                 ui->ConnInfoCombo->clear();
-                ui->ConnInfoCombo->addItems(avail);
+                ui->ConnInfoCombo->addItems(*avail);
                 ui->ConnInfoCombo->setCurrentText(curr);
                 ui->DeviceConnect_Button->setEnabled(true);
             } else
             {
+                ui->ConnInfoCombo->clear();
                 ui->DeviceConnect_Button->setEnabled(false);
             }
+            delete avail;
             break;
         }
         default:
         {
-            updateConnInfo.stop();
+            updateConnInfo->stop();
             ui->ConnInfoCombo->setEditable(true);
             ui->DeviceConnect_Button->setEnabled(true);
             break;
@@ -556,12 +578,30 @@ void MainWindow::updateConnInfoCombo()
 
 void MainWindow::updateSpeedCombo()
 {
-    ui->SpeedCombo->clear();
-    ui->SpeedCombo->setEnabled(true);
-
+    // Get speed list
     QStringList newItems = getConnSpeeds();
-    if (newItems.length() == 0) ui->SpeedCombo->setEnabled(false);
-    else ui->SpeedCombo->addItems(newItems);
+
+    // Load into combo
+    if (newItems.length() == 0)
+    {
+        ui->SpeedCombo->clear();
+        ui->SpeedCombo->setEnabled(false);
+    } else
+    {
+        // Save previous speed
+        QString prevSpeed = ui->SpeedCombo->currentText();
+
+        // Clear and load new speed list in
+        ui->SpeedCombo->clear();
+        ui->SpeedCombo->setEnabled(true);
+        ui->SpeedCombo->addItems(newItems);
+
+        // Set to previous speed if in new items
+        if (newItems.contains(prevSpeed))
+        {
+            ui->SpeedCombo->setCurrentText(prevSpeed);
+        }
+    }
 }
 
 void MainWindow::setConnected(bool conn)
@@ -628,7 +668,7 @@ void MainWindow::ucOptionsClear()
 
 bool MainWindow::deviceConnected()
 {
-    // Verify connection exists
+    // Verify connection object exists
     if (!getConnObject()) return false;
 
     // Select connection object

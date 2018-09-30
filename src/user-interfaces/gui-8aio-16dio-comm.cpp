@@ -49,7 +49,7 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
 {
     PinTypeInfo pInfo;
     QWidget *item;
-    int rowNum, colNum;
+    uint8_t rowNum, colNum;
 
     // Disconnect sending slot for setup
     emit connect_signals(false);
@@ -65,7 +65,7 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
         if (getPinTypeInfo(pinType, &pInfo))
         {
             // Set combo to start
-            for (int i = 0; i < pInfo.numPins_GUI; i++)
+            for (uint8_t i = 0; i < pInfo.numPins_GUI; i++)
             {
                 getPinLocation(&rowNum, &colNum, &pInfo, i);
 
@@ -96,7 +96,7 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     emit connect_signals(true);
 }
 
-void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins)
+void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint8_t start_num)
 {
     PinTypeInfo pInfo;
     if (!getPinTypeInfo(pinType, &pInfo)) return;
@@ -112,31 +112,14 @@ void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins)
             break;
     }
 
-    // Disable each button set in the list
-    for (int i = (pInfo.numPins_GUI-1); num_dev_pins <= i; i--)
+    // Disable each button set not in the list
+    for (uint8_t i = (pInfo.numPins_GUI-1); num_dev_pins <= i; i--)
     {
         setPinAttribute(&pInfo, i, Qt::WA_Disabled, true);
     }
-}
 
-void GUI_8AIO_16DIO_COMM::setPinNumbers(uint8_t pinType, uint8_t start_num)
-{
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(pinType, &pInfo)) return;
-
-    int rowNum, colNum;
-    QWidget *item;
-    for (int i = 0; i < pInfo.numPins_GUI; i++)
-    {
-        // Find local pin (numbering starts at 0)
-        getPinLocation(&rowNum, &colNum, &pInfo, i);
-
-        // Set the new text value (start_num+i)
-        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+labelPos))
-        {
-            ((QLabel*) item)->setText(QString("%1").arg(start_num+i, 2, 10, QChar('0')));
-        }
-    }
+    // Set pin numbering
+    setPinNumbers(&pInfo, start_num);
 }
 
 void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
@@ -163,8 +146,8 @@ void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
 
     // Setup arrays & constructs for use in the loop
     uint8_t IO;
-    int rowNum, colNum;
-    QList<int> pinNums;
+    uint8_t rowNum, colNum;
+    QList<uint8_t> pinNums;
     QList<QString> listValues;
     QStringList comboStr_split;
 
@@ -184,7 +167,7 @@ void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
                 && comboStr_split[0].isEmpty())
         {
             // Apply combo values to all pins
-            for (int pinNum = 0; pinNum < pInfo.numPins_DEV; pinNum++)
+            for (uint8_t pinNum = 0; pinNum < pInfo.numPins_DEV; pinNum++)
             {
                 pinNums.append(pinNum);
             }
@@ -203,7 +186,7 @@ void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
         listValues = comboStr_split[1].split(',');
 
         // Set combo for each pin in the list
-        foreach (int pin, pinNums)
+        foreach (uint8_t pin, pinNums)
         {
             // Find row & column of desired combo
             getPinLocation(&rowNum, &colNum, &pInfo, pin);
@@ -250,12 +233,14 @@ void GUI_8AIO_16DIO_COMM::initialize()
     num_AIOcols = 1;
     num_AIOrows = num_AIOpins_GUI / num_AIOcols;
     num_AIObuttons = 4;
+    num_AIOpins_START = 0;
 
     num_DIOpins_GUI = 16;
     num_DIOpins_DEV = num_DIOpins_GUI;
     num_DIOcols = 2;
     num_DIOrows = num_DIOpins_GUI / num_DIOcols;
     num_DIObuttons = 4;
+    num_DIOpins_START = 0;
 
     labelPos = 0;
     comboPos = 1;
@@ -279,7 +264,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
 {
     PinTypeInfo pInfo;
     QWidget *item;
-    int rowNum, colNum;
+    uint8_t rowNum, colNum;
 
     // Get AIO pin info
     if (!getPinTypeInfo(JSON_AIO, &pInfo))
@@ -289,7 +274,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Connect AIO combo changes to the universal slot
-    for (int i = 0; i < pInfo.numPins_GUI; i++)
+    for (uint8_t i = 0; i < pInfo.numPins_GUI; i++)
     {
         getPinLocation(&rowNum, &colNum, &pInfo, i);
 
@@ -320,7 +305,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Connect DIO combo changes to the universal slot
-    for (int i = 0; i < pInfo.numPins_GUI; i++)
+    for (uint8_t i = 0; i < pInfo.numPins_GUI; i++)
     {
         getPinLocation(&rowNum, &colNum, &pInfo, i);
 
@@ -430,18 +415,18 @@ void GUI_8AIO_16DIO_COMM::updateValues()
 void GUI_8AIO_16DIO_COMM::receive(QByteArray recvData)
 {
     currData.append(recvData);
-    int m = currData.length();
+    uint8_t m = currData.length();
     if (m & 1) m = m - 1;
     if (m == 0) return;
 
     // Search received for valid key,value formations
     uint8_t key, value;
-    for (int i = 0; i < (m - 1); i++)
+    for (uint8_t i = 0; i < (m - 1); i++)
     {
         key = (uint8_t) currData[0];
         value = (uint8_t) currData[1];
 
-        int e = 0;
+        uint8_t e = 0;
         switch (key)
         {
             case JSON_READ:
@@ -500,11 +485,11 @@ void GUI_8AIO_16DIO_COMM::recordPinValues(PinTypeInfo *pInfo)
     *logStream << pInfo->pinType << ",";
 
     QLineEdit *textValue;
-    int iend = pInfo->rows-1, jend = pInfo->cols-1;
-    for (int i = 0; i < pInfo->rows; i++)
+    uint8_t iend = pInfo->rows-1, jend = pInfo->cols-1;
+    for (uint8_t i = 0; i < pInfo->rows; i++)
     {
-        int colSel = textValuePos;
-        for (int j = 0; j < pInfo->cols; j++)
+        uint8_t colSel = textValuePos;
+        for (uint8_t j = 0; j < pInfo->cols; j++)
         {
             getItemWidget((QWidget**) &textValue, pInfo->grid, i, colSel);
             *logStream << textValue->text();
@@ -660,7 +645,7 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
     QLineEdit *textValue;
     uint32_t value;
     uint8_t pin_num, comboVal;
-    int rowNum, colNum, divisor;
+    uint8_t rowNum, colNum, divisor;
 
     // Get & verify maps
     QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo.pinType);
@@ -668,11 +653,11 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
     QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo.pinType);
     if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
 
-    for (int i = 0; i < values.length(); i++)
+    for (uint8_t i = 0; i < values.length(); i++)
     {
         value = 0;
         pin_num = values[i];
-        for (int j = (bytesPerPin - 1); 0 < j; j--)
+        for (uint8_t j = (bytesPerPin - 1); 0 < j; j--)
         {
             i = i + 1;
             value = value | (values[i] & 0xFF) << (8 * (j - 1));
@@ -706,7 +691,7 @@ void GUI_8AIO_16DIO_COMM::setConTypes(QStringList connTypes, QList<char> mapValu
     if (connTypes.length() != mapValues.length()) return;
 
     QMap<QString, uint8_t>* pinMap = controlMap.value(JSON_REMOTE_CONN);
-    for (int i = 0; i < connTypes.length(); i++)
+    for (uint8_t i = 0; i < connTypes.length(); i++)
     {
         pinMap->insert(connTypes[i], mapValues[i]);
     }

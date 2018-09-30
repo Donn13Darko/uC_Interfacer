@@ -84,13 +84,13 @@ void GUI_PIN_BASE::addNewPinSettings(uint8_t pinType, QList<QString> newSettings
     }
 }
 
-void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, int colOffset)
+void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
 {
     // Get info of set button clicked
     QObject *caller = sender();
-    int in, col, row, rowSp, colSp;
-    in = pInfo->grid->indexOf((QWidget*) caller);
-    pInfo->grid->getItemPosition(in, &row, &col, &rowSp, &colSp);
+    int index, col, row, rowSp, colSp;
+    index = pInfo->grid->indexOf((QWidget*) caller);
+    pInfo->grid->getItemPosition(index, &row, &col, &rowSp, &colSp);
     col = col - colOffset;
 
     // Get all pin info
@@ -198,15 +198,15 @@ void GUI_PIN_BASE::updateSliderRange(QSlider *slider, RangeList *rList)
     else slider->setSliderPosition(0);
 }
 
-void GUI_PIN_BASE::setPinAttribute(PinTypeInfo *pInfo, int pinNum, Qt::WidgetAttribute attribute, bool on)
+void GUI_PIN_BASE::setPinAttribute(PinTypeInfo *pInfo, uint8_t pinNum, Qt::WidgetAttribute attribute, bool on)
 {
     // Find row & column of desired buttons
-    int rowNum, colNum;
+    uint8_t rowNum, colNum;
     getPinLocation(&rowNum, &colNum, pInfo, pinNum);
 
     // Go through each element and set attributes
     QWidget *itemWidget;
-    for (int i = 0; i < pInfo->numButtons; i++)
+    for (uint8_t i = 0; i < pInfo->numButtons; i++)
     {
         if (getItemWidget(&itemWidget, pInfo->grid, rowNum, colNum+i))
         {
@@ -215,7 +215,35 @@ void GUI_PIN_BASE::setPinAttribute(PinTypeInfo *pInfo, int pinNum, Qt::WidgetAtt
     }
 }
 
-bool GUI_PIN_BASE::getItemWidget(QWidget** itemWidget, QGridLayout *grid, int row, int col)
+void GUI_PIN_BASE::setPinNumbers(PinTypeInfo *pInfo, uint8_t start_num)
+{
+    uint8_t rowNum, colNum;
+    QWidget *item;
+    for (uint8_t i = 0; i < pInfo->numPins_GUI; i++)
+    {
+        // Find local pin (numbering starts at 0)
+        getPinLocation(&rowNum, &colNum, pInfo, i);
+
+        // Set the new text value (start_num+i)
+        if (getItemWidget(&item, pInfo->grid, rowNum, colNum+labelPos))
+        {
+            ((QLabel*) item)->setText(QString("%1").arg(start_num+i, 2, 10, QChar('0')));
+        }
+    }
+
+    // Set global startnum
+    switch (pInfo->pinType)
+    {
+        case JSON_AIO:
+            num_AIOpins_START = start_num;
+            break;
+        case JSON_DIO:
+            num_DIOpins_START = start_num;
+            break;
+    }
+}
+
+bool GUI_PIN_BASE::getItemWidget(QWidget** itemWidget, QGridLayout *grid, uint8_t row, uint8_t col)
 {
     *itemWidget = 0;
     QLayoutItem *item = grid->itemAtPosition(row, col);
@@ -223,7 +251,7 @@ bool GUI_PIN_BASE::getItemWidget(QWidget** itemWidget, QGridLayout *grid, int ro
     return (*itemWidget != 0);
 }
 
-void GUI_PIN_BASE::getPinLocation(int *row, int *col, PinTypeInfo *pInfo, int pin)
+void GUI_PIN_BASE::getPinLocation(uint8_t *row, uint8_t *col, PinTypeInfo *pInfo, uint8_t pin)
 {
     *row = pin / pInfo->cols;
     *col = pInfo->numButtons * (pin % pInfo->cols);
@@ -240,6 +268,7 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
             infoPtr->numButtons = num_AIObuttons;
             infoPtr->numPins_GUI = num_AIOpins_GUI;
             infoPtr->numPins_DEV = num_AIOpins_DEV;
+            infoPtr->numPins_START = num_AIOpins_START;
             infoPtr->cols = num_AIOcols;
             infoPtr->rows = num_AIOrows;
             return true;
@@ -247,6 +276,7 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
             infoPtr->numButtons = num_DIObuttons;
             infoPtr->numPins_GUI = num_DIOpins_GUI;
             infoPtr->numPins_DEV = num_DIOpins_DEV;
+            infoPtr->numPins_START = num_DIOpins_START;
             infoPtr->cols = num_DIOcols;
             infoPtr->rows = num_DIOrows;
             return true;
@@ -288,7 +318,7 @@ void GUI_PIN_BASE::addPinRangeMap(uint8_t pinType, QList<QString> keys, QList<Ra
 
     QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
     QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pinType);
-    for (int i = 0; i < keys.length(); i++)
+    for (uint8_t i = 0; i < keys.length(); i++)
     {
         pinRangeMap->insert(pinMap->value(keys[i]), values[i]);
     }

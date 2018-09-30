@@ -37,7 +37,7 @@ public:
     void close();
     bool isConnected();
 
-    static QStringList getDevices();
+    static QStringList* getDevices();
     static QStringList Baudrate_Defaults;
 
 signals:
@@ -46,9 +46,9 @@ signals:
     void readyRead(QByteArray readData);
 
 public slots:
-    void checkConnection();
     void write(QByteArray writeData);
     void write(std::initializer_list<uint8_t> writeData);
+    void checkError(QSerialPort::SerialPortError);
 
 private slots:
     void read();
@@ -57,7 +57,6 @@ private:
     QSerialPort *rs232;
     QMutex *readLock;
     QMutex *writeLock;
-    QTimer *conn_checker;
 
     bool connected;
 };

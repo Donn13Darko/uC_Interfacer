@@ -48,14 +48,16 @@ struct RangeList {
 struct PinTypeInfo {
     QGridLayout *grid;
     uint8_t pinType;
-    int cols;
-    int rows;
-    int numButtons;
-    int numPins_GUI;
-    int numPins_DEV;
+    uint8_t cols;
+    uint8_t rows;
+    uint8_t numButtons;
+    uint8_t numPins_GUI;
+    uint8_t numPins_DEV;
+    uint8_t numPins_START;
 };
-#define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=NULL, .pinType=0, \
-    .cols=0, .rows=0, .numButtons=0, .numPins_GUI=0, .numPins_DEV=0}
+#define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=nullptr, .pinType=0, \
+    .cols=0, .rows=0, .numButtons=0, \
+    .numPins_GUI=0, .numPins_DEV=0, .numPins_START=0}
 
 
 class GUI_PIN_BASE : public GUI_BASE
@@ -85,32 +87,35 @@ protected:
     QMap<QString, QStringList> devSettings;
 
     QByteArray currData;
-    int bytesPerPin;
+    uint8_t bytesPerPin;
 
-    int num_AIOpins_GUI;
-    int num_AIOpins_DEV;
-    int num_AIOrows;
-    int num_AIOcols;
-    int num_AIObuttons;
+    uint8_t num_AIOpins_GUI;
+    uint8_t num_AIOpins_DEV;
+    uint8_t num_AIOrows;
+    uint8_t num_AIOcols;
+    uint8_t num_AIObuttons;
+    uint8_t num_AIOpins_START;
 
-    int num_DIOpins_GUI;
-    int num_DIOpins_DEV;
-    int num_DIOrows;
-    int num_DIOcols;
-    int num_DIObuttons;
+    uint8_t num_DIOpins_GUI;
+    uint8_t num_DIOpins_DEV;
+    uint8_t num_DIOrows;
+    uint8_t num_DIOcols;
+    uint8_t num_DIObuttons;
+    uint8_t num_DIOpins_START;
 
-    int labelPos;
-    int comboPos;
-    int slideValuePos;
-    int textValuePos;
+    uint8_t labelPos;
+    uint8_t comboPos;
+    uint8_t slideValuePos;
+    uint8_t textValuePos;
 
-    void inputsChanged(PinTypeInfo *pInfo, int colOffset);
+    void inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset);
     void updateSliderRange(QSlider *slider, RangeList *rList);
 
-    void setPinAttribute(PinTypeInfo *pInfo, int pinNum, Qt::WidgetAttribute attribute, bool on);
+    void setPinAttribute(PinTypeInfo *pInfo, uint8_t pinNum, Qt::WidgetAttribute attribute, bool on);
+    void setPinNumbers(PinTypeInfo *pInfo, uint8_t start_num);
 
-    bool getItemWidget(QWidget** itemWidget, QGridLayout *grid, int row, int col);
-    void getPinLocation(int *row, int* col, PinTypeInfo *pInfo, int pin);
+    bool getItemWidget(QWidget** itemWidget, QGridLayout *grid, uint8_t row, uint8_t col);
+    void getPinLocation(uint8_t *row, uint8_t* col, PinTypeInfo *pInfo, uint8_t pin);
     bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 
 private:

@@ -112,7 +112,7 @@ private:
     static QStringList supportedProtocolsList;
     static QMap<QString, uint8_t> supportedGUIsMap;
 
-    QTimer updateConnInfo;
+    QTimer *updateConnInfo;
     Serial_RS232 *serial_rs232;
     TCP_CLIENT *tcp_client;
     TCP_SERVER *tcp_server;

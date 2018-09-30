@@ -40,8 +40,7 @@ public:
     ~GUI_8AIO_16DIO_COMM();
 
     void reset_gui();
-    void setNumPins(uint8_t pinType, uint8_t num_dev_pins);
-    void setPinNumbers(uint8_t pinType, uint8_t start_num);
+    void setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint8_t start_num);
     void setCombos(uint8_t pinTypes, QList<QString> combos);
 
 private slots:
