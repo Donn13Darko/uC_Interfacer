@@ -16,81 +16,81 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "tcp-client.h"
+#include "udp-socket.h"
 #include <QDebug>
+#include <QNetworkDatagram>
 
-TCP_CLIENT::TCP_CLIENT(QString ip, int port, QObject *parent) :
+UDP_SOCKET::UDP_SOCKET(QString client_ip, int client_port, int server_port, QObject *parent) :
     QObject(parent)
 {
-    client = new QTcpSocket(this);
-    server_ip = ip;
-    server_port = port;
+    client = new QUdpSocket(this);
+    server = new QUdpSocket(this);
+    udp_client_ip = QHostAddress(client_ip);
+    udp_client_port = client_port;
+    udp_server_port = server_port;
 
     readLock = new QMutex(QMutex::Recursive);
     writeLock = new QMutex(QMutex::Recursive);
 
-    connect(client, SIGNAL(readyRead()),
+    connect(server, SIGNAL(readyRead()),
             this, SLOT(read()));
-    connect(client, SIGNAL(disconnected()),
+    connect(server, SIGNAL(disconnected()),
             this, SLOT(disconnectClient()));
 }
 
-TCP_CLIENT::~TCP_CLIENT()
+UDP_SOCKET::~UDP_SOCKET()
 {
     if (isConnected()) close();
 
     delete client;
+    delete server;
     delete readLock;
     delete writeLock;
 }
 
-void TCP_CLIENT::open()
+void UDP_SOCKET::open()
 {
-    // Connect signals and slots
-    connect(client, SIGNAL(connected()), this, SLOT(connectClient()));
-
-    // Attempt to connect
-    client->connectToHost(server_ip, server_port, QIODevice::ReadWrite);
+    // Attempt to bind port
+    bool connected = server->bind(udp_server_port);
+    if (!connected && !server->waitForConnected(1000))
+        emit deviceDisconnected();
+    else
+        emit deviceConnected();
 }
 
-void TCP_CLIENT::close()
+void UDP_SOCKET::close()
 {
     // Remove close slot to prevent infinite loop
-    disconnect(client, SIGNAL(disconnected()),
+    disconnect(server, SIGNAL(disconnected()),
             this, SLOT(disconnectClient()));
 
     // Disconnect
-    client->disconnectFromHost();
+    server->disconnectFromHost();
 }
 
-bool TCP_CLIENT::isConnected()
+bool UDP_SOCKET::isConnected()
 {
-    return (client && (client->state() == QTcpSocket::ConnectedState));
+    return (server && (server->state() == QUdpSocket::BoundState));
 }
 
-void TCP_CLIENT::connectClient()
-{
-    disconnect(client, SIGNAL(connected()), this, SLOT(connectClient()));
-    emit deviceConnected();
-}
-
-void TCP_CLIENT::disconnectClient()
+void UDP_SOCKET::disconnectClient()
 {
     emit deviceDisconnected();
 }
 
-void TCP_CLIENT::write(QByteArray writeData)
+void UDP_SOCKET::write(QByteArray writeData)
 {
     writeLock->lock();
 
     qDebug() << "S: " << writeData;
-    client->write((const QByteArray) writeData);
+    client->writeDatagram((const QByteArray) writeData,
+                          udp_client_ip, udp_client_port);
     client->waitForBytesWritten();
 
     writeLock->unlock();
 }
 
-void TCP_CLIENT::write(std::initializer_list<uint8_t> writeData)
+void UDP_SOCKET::write(std::initializer_list<uint8_t> writeData)
 {
     QByteArray data;
     foreach (char i, writeData)
@@ -101,11 +101,15 @@ void TCP_CLIENT::write(std::initializer_list<uint8_t> writeData)
     write(data);
 }
 
-void TCP_CLIENT::read()
+void UDP_SOCKET::read()
 {
     readLock->lock();
 
-    QByteArray recvData = client->readAll();
+    QByteArray recvData;
+    while (server->hasPendingDatagrams())
+    {
+        recvData += server->receiveDatagram().data();
+    }
     emit readyRead(recvData);
     qDebug() << "R: " << recvData;
 

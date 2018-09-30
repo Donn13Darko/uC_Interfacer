@@ -49,7 +49,7 @@ MainWindow::supportedProtocolsList({
                                        "RS-232",
                                        "TCP Client",
                                        "TCP Server",
-                                       "UDP"
+                                       "UDP Socket"
                                    });
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -65,6 +65,7 @@ MainWindow::MainWindow(QWidget *parent) :
     serial_rs232 = nullptr;
     tcp_client = nullptr;
     tcp_server = nullptr;
+    udp_socket = nullptr;
     prev_tab = -1;
 
     // Add specified values to combos
@@ -231,6 +232,25 @@ void MainWindow::on_DeviceConnect_Button_clicked()
 
             // Try to connect
             tcp_server->open();
+            break;
+        }
+        case CONN_TYPE_UDP_SOCKET:
+        {
+            // Parse input
+            QStringList conn = connInfo.split(':');
+            if (conn.length() != 3) break;
+
+            // Create new object
+            udp_socket = new UDP_SOCKET(conn[0], conn[1].toInt(), conn[2].toInt());
+
+            // Connect signals and slots
+            connect(udp_socket, SIGNAL(deviceConnected()),
+                       this, SLOT(on_DeviceConnected()));
+            connect(udp_socket, SIGNAL(deviceDisconnected()),
+                       this, SLOT(on_DeviceDisconnected()));
+
+            // Try to connect
+            udp_socket->open();
             break;
         }
         default:
@@ -427,6 +447,14 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
             tcp_server = nullptr;
             break;
         }
+        case CONN_TYPE_UDP_SOCKET:
+        {
+            if (!udp_socket) break;
+            udp_socket->close();
+            udp_socket->deleteLater();
+            udp_socket = nullptr;
+            break;
+        }
         default:
             break;
     }
@@ -609,6 +637,7 @@ bool MainWindow::deviceConnected()
         case CONN_TYPE_RS_232: return serial_rs232->isConnected();
         case CONN_TYPE_TCP_CLIENT: return tcp_client->isConnected();
         case CONN_TYPE_TCP_SERVER: return tcp_server->isConnected();
+        case CONN_TYPE_UDP_SOCKET: return udp_socket->isConnected();
         default: return false;
     }
 }
@@ -651,6 +680,7 @@ QObject* MainWindow::getConnObject(int type)
         case CONN_TYPE_RS_232: return serial_rs232;
         case CONN_TYPE_TCP_CLIENT: return tcp_client;
         case CONN_TYPE_TCP_SERVER: return tcp_server;
+        case CONN_TYPE_UDP_SOCKET: return udp_socket;
         default: return nullptr;
     }
 }

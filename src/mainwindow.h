@@ -30,6 +30,7 @@
 #include "communication/serial-rs232.h"
 #include "communication/tcp-client.h"
 #include "communication/tcp-server.h"
+#include "communication/udp-socket.h"
 
 #include "user-interfaces/gui-welcome.h"
 
@@ -56,7 +57,7 @@ typedef enum {
     CONN_TYPE_RS_232,
     CONN_TYPE_TCP_CLIENT,
     CONN_TYPE_TCP_SERVER,
-    CONN_TYPE_UDP
+    CONN_TYPE_UDP_SOCKET
 } CONN_TYPE;
 
 namespace Ui {
@@ -115,6 +116,7 @@ private:
     Serial_RS232 *serial_rs232;
     TCP_CLIENT *tcp_client;
     TCP_SERVER *tcp_server;
+    UDP_SOCKET *udp_socket;
 
     void updateSpeedCombo();
     void setConnected(bool conn);

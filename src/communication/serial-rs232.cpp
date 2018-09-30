@@ -73,7 +73,6 @@ void Serial_RS232::close()
     conn_checker->stop();
     rs232->close();
     connected = false;
-    emit deviceDisconnected();
 }
 
 bool Serial_RS232::isConnected()
@@ -129,6 +128,7 @@ void Serial_RS232::checkConnection()
 {
     if (!getDevices().contains(rs232->portName()))
     {
-        close();
+        connected = false;
+        emit deviceDisconnected();
     }
 }

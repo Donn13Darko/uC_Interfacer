@@ -50,7 +50,8 @@ TCP_SERVER::~TCP_SERVER()
 void TCP_SERVER::open()
 {
     // Connect signals before use
-    connect(server, SIGNAL(newConnection()), this, SLOT(connectClient()));
+    connect(server, SIGNAL(newConnection()),
+            this, SLOT(connectClient()));
     connect(connecting_msg, SIGNAL(finished(int)),
             this, SLOT(connecting_finished(int)));
 
