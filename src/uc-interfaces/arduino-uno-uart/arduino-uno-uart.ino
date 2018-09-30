@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <json_info.h>
+#include <json-info.h>
 #include <Wire.h>
 #include <Servo.h>
 
