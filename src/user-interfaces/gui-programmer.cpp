@@ -68,7 +68,8 @@ void GUI_PROGRAMMER::addHexFormats(QStringList hexFormatsMap)
     {
         // Parse input string
         hexFormat = hexFormatString.split('=');
-        if (hexFormat.length() != 2) continue;
+        if (hexFormat.length() != 2
+                || hexFormat[0].isEmpty()) continue;
 
         // Add hex format to combo and map
         ui->HexFormat_Combo->addItem(hexFormat[0]);
@@ -239,9 +240,12 @@ QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
         // Attempt to match with regex
         // Should be in format [nnaaaatt_dd_cc]
         hexRegMatch = hexReg.match(i.trimmed());
-        final += hexRegMatch.captured(1) + " " + hexRegMatch.captured(3) + " " \
-                + hexRegMatch.captured(5) + " " + hexRegMatch.captured(2) + " " \
-                + hexRegMatch.captured(4) + "\n";
+        foreach (QString capturedText, hexRegMatch.capturedTexts())
+        {
+            final += capturedText + " ";
+        }
+        final.chop(1);
+        final += "\n";
     }
 
     return final;

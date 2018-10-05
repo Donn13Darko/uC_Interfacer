@@ -143,7 +143,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Hex Preview: [NN TT CC Addr Data]</string>
+    <string>Hex Preview: [NN Addr TT Data CC]</string>
    </property>
   </widget>
   <widget class="QLabel" name="BurnMethod_Label">
