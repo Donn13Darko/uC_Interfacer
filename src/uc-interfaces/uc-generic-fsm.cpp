@@ -18,7 +18,70 @@
 
 #include "uc-generic-fsm.h"
 
-void uc_control_fsm()
+UC_CONTROL_FSM::UC_CONTROL_FSM(uint32_t buffer_len)
 {
+    this->buffer_len = buffer_len;
+    this->buffer = new uint8_t[buffer_len];
     return;
+}
+
+UC_CONTROL_FSM::~UC_CONTROL_FSM()
+{
+    delete[] this->buffer;
+    return;
+}
+
+void UC_CONTROL_FSM::start_fsm()
+{
+    uint32_t bytes_read;
+    while (true)
+    {
+        // Read next major key or break after 5 seconds
+        if ((read_next(this->buffer, 3, 5000) != 3)
+                || (check_crc(this->buffer, 2, this->buffer[2])))
+        {
+            continue;
+        }
+
+        // Parse the major key
+        switch(key)
+        {
+            case GUI_TYPE_IO:
+                break;
+            case GUI_TYPE_DATA_TRANSMIT:
+                break;
+            case GUI_TYPE_PROGRAMMER:
+                break;
+            default:
+                continue;
+
+        }
+    }
+}
+
+uint32_t UC_CONTROL_FSM::read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
+{
+    // Set control variables
+    uint32_t check_delay = 10; // ms
+    uint32_t wait_time = 0;
+
+    // Wait for num_bytes to be received
+    while (this->bytes_available() < num_bytes)
+    {
+        this->delay(this->check_delay);
+        wait_time += check_delay;
+        if (timeout < wait_time) return 0;
+    }
+
+    // Read bytes into array
+    for (uint32_t i = 0; i < num_bytes; i++)
+    {
+        data_array[i] = this->getch();
+    }
+    return num_bytes;
+}
+
+bool UC_CONTROL_FSM::check_crc_8(uint8_t *data_array, uint8_t data_len, uint8_t crc)
+{
+    return false;
 }

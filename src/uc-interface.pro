@@ -36,7 +36,8 @@ SOURCES += \
     user-interfaces/gui-welcome.cpp \
     communication/tcp-client.cpp \
     communication/tcp-server.cpp \
-    communication/udp-socket.cpp
+    communication/udp-socket.cpp \
+    communication/crc-calcs.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -51,7 +52,8 @@ HEADERS += \
     user-interfaces/gui-welcome.h \
     communication/tcp-client.h \
     communication/tcp-server.h \
-    communication/udp-socket.h
+    communication/udp-socket.h \
+    communication/crc-calcs.h
 
 FORMS += \
     mainwindow.ui \

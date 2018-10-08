@@ -19,8 +19,59 @@
 #ifndef UC_CONTROL_FSM_H
 #define UC_CONTROL_FSM_H
 
-#include "../communication/json-info.h"
+#include <cstdint>
 
-void uc_control_fsm();
+/*
+ * Create a class that inherits this class and redefine
+ * the protected functions defined here with comment
+ * { Default does nothing }.
+ *
+ * Also to the top of the inheriting class .h definition
+ * (before any includes), #define what type of crc to use
+ * as well as if it should use a lookup table or compute
+ * on the fly.
+ * CRC type defines: __crc_8, __crc_16, __crc_32, or __crc_cust
+ * CRC Lookup table: #define __crc_LUT
+ * If __crc_cust defined, must do the following
+ * (see crc-calcs.cpp/.h for example):
+ *  1) typdef _____ crc_t to whatever the type
+ *  2) Provide one of the following:
+ *    a) LUT if __crc_LUT: static const _____ crc_table[256] = ;
+ *    b) Otherwise reverse poly: static const _____ crc_poly = ;
+ *
+*/
+
+class UC_CONTROL_FSM
+{
+public:
+    explicit UC_CONTROL_FSM(uint32_t buffer_len = 32);
+    ~UC_CONTROL_FSM();
+
+    void start_fsm();
+
+protected:
+    /* General GUI functions */
+    /* Removes & returns one byte from received */
+    uint8_t getch() {/*Default does nothing*/}
+    /* Waits for timeout milliseconds */
+    void delay(uint32_t timeout) {/*Default do nothing*/}
+    /* Returns number of bytes available */
+    uint32_t bytes_available() {return 0;}
+
+    /* Pin I/O GUI */
+    /* Set & read the DIO value */
+    void write_dio(uint8_t pin_num, uint8_t setting, uint32_t value) {/*Default do nothing*/}
+    uint32_t read_dio(uint8_t pin_num) {/*Default do nothing*/}
+    /* Set & read the AIO value */
+    void write_aio(uint8_t pin_num, uint8_t setting, uint32_t value) {/*Default do nothing*/}
+    uint32_t read_aio(uint8_t pin_num) {/*Default do nothing*/}
+
+private:
+    uint32_t read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
+    bool check_crc_8(uint8_t* data_array, uint8_t data_len, uint8_t crc);
+
+    uint32_t buffer_len;
+    uint8_t* buffer;
+};
 
 #endif // UC_CONTROL_FSM_H
