@@ -19,6 +19,10 @@
 #ifndef UC_CONTROL_FSM_H
 #define UC_CONTROL_FSM_H
 
+// Set checksum to CRC8 w/ lookup table
+#define __crc_8
+#define __crc_LUT
+
 #include <cstdint>
 
 /*
@@ -41,6 +45,14 @@
  *
 */
 
+typedef enum {
+    GUI_TYPE_ERROR = 0,
+    GUI_TYPE_WELCOME,
+    GUI_TYPE_IO,
+    GUI_TYPE_DATA_TRANSMIT,
+    GUI_TYPE_PROGRAMMER
+} GUI_TYPE;
+
 class UC_CONTROL_FSM
 {
 public:
@@ -52,23 +64,25 @@ public:
 protected:
     /* General GUI functions */
     /* Removes & returns one byte from received */
-    uint8_t getch() {/*Default does nothing*/}
-    /* Waits for timeout milliseconds */
-    void delay(uint32_t timeout) {/*Default do nothing*/}
+    uint8_t getch() {return 0;}
+    /* Waits for timeout milliseconds (args: timeout) */
+    void delay(uint32_t) {/*Default do nothing*/}
     /* Returns number of bytes available */
     uint32_t bytes_available() {return 0;}
 
     /* Pin I/O GUI */
-    /* Set & read the DIO value */
-    void write_dio(uint8_t pin_num, uint8_t setting, uint32_t value) {/*Default do nothing*/}
-    uint32_t read_dio(uint8_t pin_num) {/*Default do nothing*/}
+    /* Set & read the DIO value (args: pin_num, setting, value) */
+    void write_dio(uint8_t, uint8_t, uint32_t) {/*Default do nothing*/}
+    /* (args: pin_num) */
+    uint32_t read_dio(uint8_t) {return 0;}
     /* Set & read the AIO value */
-    void write_aio(uint8_t pin_num, uint8_t setting, uint32_t value) {/*Default do nothing*/}
-    uint32_t read_aio(uint8_t pin_num) {/*Default do nothing*/}
+    void write_aio(uint8_t, uint8_t, uint32_t) {/*Default do nothing*/}
+    /* (args: pin_num) (args: pin_num, setting, value) */
+    uint32_t read_aio(uint8_t) {return 0;}
 
 private:
+    bool read_bytes(uint32_t num_bytes, uint32_t timeout);
     uint32_t read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
-    bool check_crc_8(uint8_t* data_array, uint8_t data_len, uint8_t crc);
 
     uint32_t buffer_len;
     uint8_t* buffer;

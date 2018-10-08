@@ -209,7 +209,7 @@ static const uint32_t crc_poly = 0x105EC76F;
 #endif
 
 // Define get_crc based on CPU calcs
-crc_t get_crc(const uint8_t *data_array, crc_t data_len, crc_t crc)
+crc_t get_crc(const uint8_t *data_array, uint32_t data_len, crc_t crc)
 {
     uint8_t i;
     const uint8_t *data_p = data_array;
@@ -231,7 +231,7 @@ crc_t get_crc(const uint8_t *data_array, crc_t data_len, crc_t crc)
 #endif
 
 // Check CRC unchanged based on CRC type
-bool check_crc(const uint8_t* data_array, crc_t data_len, crc_t crc_cmp)
+bool check_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_cmp, crc_t crc)
 {
-    return (get_crc(data_array, data_len) == crc_cmp);
+    return (get_crc(data_array, data_len, crc) == crc_cmp);
 }

@@ -19,12 +19,13 @@
 #ifndef CRC_CALCS_H
 #define CRC_CALCS_H
 
-#include <cstdint>
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
+
+#include <stdint.h>
+#include <stdbool.h>
 
 #if defined __crc_8
 typedef uint8_t crc_t;
@@ -42,8 +43,8 @@ typedef uint8_t crc_t;
 
 #endif
 
-static crc_t get_crc(const uint8_t* data_array, crc_t data_len, crc_t crc = 0);
-static bool check_crc(const uint8_t* data_array, crc_t data_len, crc_t crc_cmp, crc_t crc = 0);
+crc_t get_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc);
+bool check_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_cmp, crc_t crc);
 
 #ifdef __cplusplus
 }

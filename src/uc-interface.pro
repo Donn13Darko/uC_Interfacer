@@ -37,7 +37,7 @@ SOURCES += \
     communication/tcp-client.cpp \
     communication/tcp-server.cpp \
     communication/udp-socket.cpp \
-    communication/crc-calcs.cpp
+    communication/crc-calcs.c
 
 HEADERS += \
     mainwindow.h \

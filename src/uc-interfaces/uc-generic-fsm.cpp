@@ -17,6 +17,7 @@
 */
 
 #include "uc-generic-fsm.h"
+#include "../communication/crc-calcs.h"
 
 UC_CONTROL_FSM::UC_CONTROL_FSM(uint32_t buffer_len)
 {
@@ -33,18 +34,13 @@ UC_CONTROL_FSM::~UC_CONTROL_FSM()
 
 void UC_CONTROL_FSM::start_fsm()
 {
-    uint32_t bytes_read;
     while (true)
     {
         // Read next major key or break after 5 seconds
-        if ((read_next(this->buffer, 3, 5000) != 3)
-                || (check_crc(this->buffer, 2, this->buffer[2])))
-        {
-            continue;
-        }
+        if (!this->read_bytes(3, 5000)) continue;
 
         // Parse the major key
-        switch(key)
+        switch(this->buffer[0])
         {
             case GUI_TYPE_IO:
                 break;
@@ -59,6 +55,12 @@ void UC_CONTROL_FSM::start_fsm()
     }
 }
 
+bool UC_CONTROL_FSM::read_bytes(uint32_t num_bytes, uint32_t timeout)
+{
+    return ((read_next(this->buffer, num_bytes, timeout) == num_bytes)
+                    && (check_crc(this->buffer, num_bytes-1, this->buffer[num_bytes-1], 0)));
+}
+
 uint32_t UC_CONTROL_FSM::read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 {
     // Set control variables
@@ -68,7 +70,7 @@ uint32_t UC_CONTROL_FSM::read_next(uint8_t* data_array, uint32_t num_bytes, uint
     // Wait for num_bytes to be received
     while (this->bytes_available() < num_bytes)
     {
-        this->delay(this->check_delay);
+        this->delay(check_delay);
         wait_time += check_delay;
         if (timeout < wait_time) return 0;
     }
@@ -79,9 +81,4 @@ uint32_t UC_CONTROL_FSM::read_next(uint8_t* data_array, uint32_t num_bytes, uint
         data_array[i] = this->getch();
     }
     return num_bytes;
-}
-
-bool UC_CONTROL_FSM::check_crc_8(uint8_t *data_array, uint8_t data_len, uint8_t crc)
-{
-    return false;
 }
