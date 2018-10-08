@@ -27,7 +27,6 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     communication/serial-rs232.cpp \
-    uc-interfaces/uc-generic-fsm.cpp \
     user-interfaces/gui-base.cpp \
     user-interfaces/gui-pin-io-base.cpp \
     user-interfaces/gui-8aio-16dio-comm.cpp \
@@ -37,7 +36,8 @@ SOURCES += \
     communication/tcp-client.cpp \
     communication/tcp-server.cpp \
     communication/udp-socket.cpp \
-    communication/crc-calcs.c
+    communication/crc-calcs.c \
+    uc-interfaces/uc-generic-fsm.c
 
 HEADERS += \
     mainwindow.h \

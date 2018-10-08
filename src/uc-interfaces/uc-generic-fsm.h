@@ -23,17 +23,13 @@
 #define __crc_8
 #define __crc_LUT
 
-#include <cstdint>
-
 /*
- * Create a class that inherits this class and redefine
- * the protected functions defined here with comment
- * { Default does nothing }.
+ * Create a file that inplements main and defines the externs
  *
- * Also to the top of the inheriting class .h definition
- * (before any includes), #define what type of crc to use
- * as well as if it should use a lookup table or compute
- * on the fly.
+ * Also to the top of the inheriting .h (before any includes),
+ * #define what type of crc to use as well as whether it should
+ * use a lookup table or compute on the fly.
+ *
  * CRC type defines: __crc_8, __crc_16, __crc_32, or __crc_cust
  * CRC Lookup table: #define __crc_LUT
  * If __crc_cust defined, must do the following
@@ -53,39 +49,37 @@ typedef enum {
     GUI_TYPE_PROGRAMMER
 } GUI_TYPE;
 
-class UC_CONTROL_FSM
+#ifdef __cplusplus
+extern "C"
 {
-public:
-    explicit UC_CONTROL_FSM(uint32_t buffer_len = 32);
-    ~UC_CONTROL_FSM();
+#endif
 
-    void start_fsm();
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
 
-protected:
-    /* General GUI functions */
-    /* Removes & returns one byte from received */
-    uint8_t getch() {return 0;}
-    /* Waits for timeout milliseconds (args: timeout) */
-    void delay(uint32_t) {/*Default do nothing*/}
-    /* Returns number of bytes available */
-    uint32_t bytes_available() {return 0;}
+void fsm_start(uint32_t buffer_len);
+bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout);
+uint32_t fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
 
-    /* Pin I/O GUI */
-    /* Set & read the DIO value (args: pin_num, setting, value) */
-    void write_dio(uint8_t, uint8_t, uint32_t) {/*Default do nothing*/}
-    /* (args: pin_num) */
-    uint32_t read_dio(uint8_t) {return 0;}
-    /* Set & read the AIO value */
-    void write_aio(uint8_t, uint8_t, uint32_t) {/*Default do nothing*/}
-    /* (args: pin_num) (args: pin_num, setting, value) */
-    uint32_t read_aio(uint8_t) {return 0;}
+/* General GUI functions */
+/* Removes & returns one byte from received */
+extern uint8_t fsm_getch();
+/* Waits for timeout milliseconds (args: timeout) */
+extern void fsm_delay(uint32_t timeout);
+/* Returns number of bytes available */
+extern uint32_t fsm_bytes_available();
 
-private:
-    bool read_bytes(uint32_t num_bytes, uint32_t timeout);
-    uint32_t read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
+/* Pin I/O GUI */
+/* Set & read the DIO value */
+extern void fsm_write_dio(uint8_t pin_num, uint8_t setting, uint32_t value);
+extern uint32_t fsm_read_dio(uint8_t pin_num);
+/* Set & read the AIO value */
+extern void fsm_write_aio(uint8_t pin_num, uint8_t setting, uint32_t value);
+extern uint32_t fsm_read_aio(uint8_t pin_num);
 
-    uint32_t buffer_len;
-    uint8_t* buffer;
-};
+#ifdef __cplusplus
+}
+#endif
 
 #endif // UC_CONTROL_FSM_H

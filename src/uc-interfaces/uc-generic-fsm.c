@@ -19,28 +19,18 @@
 #include "uc-generic-fsm.h"
 #include "../communication/crc-calcs.h"
 
-UC_CONTROL_FSM::UC_CONTROL_FSM(uint32_t buffer_len)
-{
-    this->buffer_len = buffer_len;
-    this->buffer = new uint8_t[buffer_len];
-    return;
-}
+uint8_t *fsm_buffer;
 
-UC_CONTROL_FSM::~UC_CONTROL_FSM()
+void fsm_start(uint32_t buffer_len)
 {
-    delete[] this->buffer;
-    return;
-}
-
-void UC_CONTROL_FSM::start_fsm()
-{
+    fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
     while (true)
     {
         // Read next major key or break after 5 seconds
-        if (!this->read_bytes(3, 5000)) continue;
+        if (fsm_read_bytes(3, 5000)) continue;
 
         // Parse the major key
-        switch(this->buffer[0])
+        switch(fsm_buffer[0])
         {
             case GUI_TYPE_IO:
                 break;
@@ -53,24 +43,26 @@ void UC_CONTROL_FSM::start_fsm()
 
         }
     }
+
+    free(fsm_buffer);
 }
 
-bool UC_CONTROL_FSM::read_bytes(uint32_t num_bytes, uint32_t timeout)
+bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout)
 {
-    return ((read_next(this->buffer, num_bytes, timeout) == num_bytes)
-                    && (check_crc(this->buffer, num_bytes-1, this->buffer[num_bytes-1], 0)));
+    return ((fsm_read_next(fsm_buffer, num_bytes, timeout) == num_bytes)
+                    && (check_crc(fsm_buffer, num_bytes-1, fsm_buffer[num_bytes-1], 0)));
 }
 
-uint32_t UC_CONTROL_FSM::read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
+uint32_t fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 {
     // Set control variables
     uint32_t check_delay = 10; // ms
     uint32_t wait_time = 0;
 
     // Wait for num_bytes to be received
-    while (this->bytes_available() < num_bytes)
+    while (fsm_bytes_available() < num_bytes)
     {
-        this->delay(check_delay);
+        fsm_delay(check_delay);
         wait_time += check_delay;
         if (timeout < wait_time) return 0;
     }
@@ -78,7 +70,7 @@ uint32_t UC_CONTROL_FSM::read_next(uint8_t* data_array, uint32_t num_bytes, uint
     // Read bytes into array
     for (uint32_t i = 0; i < num_bytes; i++)
     {
-        data_array[i] = this->getch();
+        data_array[i] = fsm_getch();
     }
     return num_bytes;
 }
