@@ -204,7 +204,7 @@ void GUI_8AIO_16DIO_COMM::updateValues()
          });
 }
 
-void GUI_8AIO_16DIO_COMM::receive(QByteArray recvData)
+void GUI_8AIO_16DIO_COMM::io_receive(QByteArray recvData)
 {
     currData.append(recvData);
     uint8_t m = currData.length();
@@ -579,6 +579,7 @@ void GUI_8AIO_16DIO_COMM::initialize()
 
 void GUI_8AIO_16DIO_COMM::setupUpdaters()
 {
+//    connect(this, SIGNAL(readyRead()), this, SLOT(io_receive()));
     connect(&DIO_READ, SIGNAL(timeout()), this, SLOT(updateValues()));
     connect(&AIO_READ, SIGNAL(timeout()), this, SLOT(updateValues()));
     connect(&logTimer, SIGNAL(timeout()), this, SLOT(recordLogData()));

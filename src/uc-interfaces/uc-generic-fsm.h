@@ -55,7 +55,12 @@ extern "C"
 #include <stdlib.h>
 
 /* FSM Functions */
-void fsm_start(uint32_t buffer_len);
+void fsm_setup(uint32_t buffer_len);
+void fsm_destroy();
+void fsm_poll();
+void fsm_isr();
+void fsm_run();
+void fsm_ack(uint8_t val1, uint8_t val2);
 bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout);
 uint32_t fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
 
@@ -63,6 +68,8 @@ uint32_t fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout
 
 /* Resets all the data and pins on the uc */
 extern void uc_reset();
+/* Resets receive buffer on the uc */
+extern void uc_reset_buffers();
 /* Removes & returns one byte from received */
 extern uint8_t uc_getch();
 /* Waits for timeout milliseconds (args: timeout) */

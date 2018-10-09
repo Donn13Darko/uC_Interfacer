@@ -167,10 +167,10 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
             send(QByteArray::fromHex(curr[3].toUtf8()));
 
             // Wait for ack back
-            waitForResponse(2, 1000);
+            //waitForResponse(2, 1000);
 
             // Check ack
-            if (!checkAck(rcvd)) break;
+            //if (!checkAck(rcvd)) break;
         }
 
         // Send across data
@@ -188,10 +188,10 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
             send(QByteArray::fromHex(curr[4].toUtf8()));
 
             // Wait for ack back
-            waitForResponse(2, 1000);
+            //waitForResponse(2, 1000);
 
             // Check ack
-            if (!checkAck(rcvd)) break;
+            //if (!checkAck(rcvd)) break;
         }
     }
 

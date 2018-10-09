@@ -45,7 +45,7 @@ signals:
     void connect_signals(bool connect);
     void readyRead();
 
-private slots:
+protected slots:
     void receive(QByteArray recvData);
 
 protected:
@@ -59,8 +59,8 @@ protected:
     void sendFile(QString filePath);
 
     void reset_remote();
-    void waitForResponse(int len, int msecs = 5000);
-    bool checkAck(QByteArray ack);
+    bool waitForResponse(int len, int msecs = 5000);
+    bool checkAck(uint8_t val1, uint8_t val2, QByteArray ack);
 };
 
 #endif // GUI_BASE_H

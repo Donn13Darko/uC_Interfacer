@@ -17,15 +17,7 @@
 */
 
 #include "uc-generic-io.h"
-
-/* Packet #2 (p2) io key positions enum */
-typedef enum {
-    p2_sub_key_loc = 0,
-    p2_pin_num_loc,
-    p2_combo_loc,
-    p2_value_high_loc,
-    p2_value_low_loc
-} P2_IO_Settings;
+#include "gui-pin-io-base-sub-keys.h"
 
 void uc_io(const uint8_t* buffer, uint8_t num_bytes)
 {

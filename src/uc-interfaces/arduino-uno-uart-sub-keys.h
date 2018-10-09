@@ -16,26 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_PIN_BASE_SUB_KEYS_H
-#define GUI_PIN_BASE_SUB_KEYS_H
+#ifndef GUI_ARDUINO_UNO_UART_SUB_KEYS_H
+#define GUI_ARDUINO_UNO_UART_SUB_KEYS_H
 
-// IO Sub Keys enum
-typedef enum {
-    // Error and reset
-    SUB_KEY_IO_ERROR = 0,
-
-    // Pin type set
-    SUB_KEY_IO_DIO,
-    SUB_KEY_IO_AIO,
-
-    // Pin type read
-    SUB_KEY_IO_DIO_READ,
-    SUB_KEY_IO_AIO_READ,
-
-    // Remote Communications
-    SUB_KEY_IO_REMOTE_CONN
-} SUB_KEY_IO;
-
+// Used in uC code
 typedef enum {
     IO_INPUT = 0,
     IO_OUTPUT,
@@ -49,4 +33,4 @@ typedef enum {
     IO_ON
 } IO_PINS;
 
-#endif // GUI_PIN_BASE_SUB_KEYS_H
+#endif // GUI_ARDUINO_UNO_UART_SUB_KEYS_H

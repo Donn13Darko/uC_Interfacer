@@ -42,7 +42,7 @@ void GUI_BASE::set_chunkSize(size_t chunk)
 
 void GUI_BASE::receive(QByteArray recvData)
 {
-    rcvd += recvData;
+    rcvd.append(recvData);
     emit readyRead();
 }
 
@@ -54,11 +54,25 @@ void GUI_BASE::send(QString data)
 void GUI_BASE::send(QByteArray data)
 {
     // Append crc before sending
-    data.append((char) get_crc((const uint8_t*) data.data(),
-                               (uint8_t) data.length(), (uint8_t) 0));
+    uint8_t crc = get_crc((const uint8_t*) data.data(),
+                          (uint8_t) data.length(), (uint8_t) 0);
+    data.append((char) crc);
 
-    // Emit write command for connected class
-    emit write_data(data);
+    uint8_t i = 0, j = 0;
+    do
+    {
+        // recv
+        rcvd.clear();
+
+        // Emit write command for connected class
+        emit write_data(data);
+
+        // Wait for ack
+        j = 0;
+        while (!waitForResponse(2, 1000) && (++j < 5));
+    } while ((++i < 5)
+             && ((j == 5)
+                 || !checkAck((uint8_t) data[0], crc, rcvd)));
 }
 
 void GUI_BASE::send(std::initializer_list<uint8_t> data)
@@ -78,6 +92,8 @@ void GUI_BASE::sendFile(QString filePath)
     QFile sFile(filePath);
     if (!sFile.open((QIODevice::OpenModeFlag) enumFlags)) return;
 
+    // Enter file transfer mode
+
     int sizeRead;
     char chunkRead[chunkSize];
     while (!sFile.atEnd())
@@ -96,14 +112,10 @@ void GUI_BASE::sendFile(QString filePath)
                  (uint8_t) sizeRead,
              });
 
+        // Get read chunck ack
+
         // Send next chunk
         send(QString(chunkRead));
-
-        // Wait for ack back
-        waitForResponse(2, 1000);
-
-        // Check ack
-        if (!checkAck(rcvd)) break;
     }
     sFile.close();
 
@@ -120,10 +132,10 @@ void GUI_BASE::reset_remote()
     send({MAJOR_KEY_RESET, 0});
 }
 
-void GUI_BASE::waitForResponse(int len, int msecs)
+bool GUI_BASE::waitForResponse(int len, int msecs)
 {
     // Setup time keeping
-    int updateRate = 10;
+    int updateRate = 100;
     QEventLoop loop;
     QTimer timer;
     connect(this,  SIGNAL(readyRead()), &loop, SLOT(quit()) );
@@ -136,18 +148,21 @@ void GUI_BASE::waitForResponse(int len, int msecs)
         timer.start(updateRate);
         loop.exec();
     }
+
+    // Return true/false if received enough
+    return !(rcvd.length() < len);
 }
 
-bool GUI_BASE::checkAck(QByteArray ack)
+bool GUI_BASE::checkAck(uint8_t val1, uint8_t val2, QByteArray ack)
 {
+    qDebug() << "A:" << ack;
     // Check ack
-    if ((ack.length() != 2) || (((uint8_t) ack[0]) != MAJOR_KEY_ACK)
-            || (((uint8_t) ack[1]) != MAJOR_KEY_SUCCESS))
-    {
-        GUI_HELPER::showMessage("Error: Incorrect ACK, operation failed!");
-        return false;
-    } else
+    if ((ack[0] == (char) val1) && (ack[1] == (char) val2))
     {
         return true;
+    } else
+    {
+        //GUI_HELPER::showMessage("Error: Incorrect ACK, operation failed!");
+        return false;
     }
 }
