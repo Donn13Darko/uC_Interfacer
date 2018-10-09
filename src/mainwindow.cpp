@@ -22,6 +22,7 @@
 #include "user-interfaces/gui-8aio-16dio-comm.h"
 #include "user-interfaces/gui-data-transmit.h"
 #include "user-interfaces/gui-programmer.h"
+#include "gui-helper.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -108,14 +109,6 @@ void MainWindow::closeEvent(QCloseEvent* e)
     }
 
     e->accept();
-}
-
-// Show message box
-bool MainWindow::showMessage(QString msg)
-{
-    QMessageBox n;
-    n.setText(msg);
-    return n.exec();
 }
 
 void MainWindow::connect_signals(bool conn)
@@ -284,31 +277,23 @@ void MainWindow::on_DeviceConnected() {
         ucOptionsClear();
 
         // Reset & load the GUI settings file
-        QSettings gui_settings(deviceINI, QSettings::IniFormat);
+        // Read config settings
+        QMap<QString, QMap<QString, QVariant>*>* configMap = \
+                GUI_HELPER::readConfigINI(deviceINI);
 
         // Setup tabs
         ui->ucOptions->blockSignals(true);
         uint8_t gui_type;
-        QMap<QString, QVariant> configMap;
+        QMap<QString, QVariant>* groupMap;
         QWidget* tab_holder;
-        foreach (QString childGroup, gui_settings.childGroups())
+        foreach (QString childGroup, configMap->keys())
         {
             // Verify that its a known GUI
             gui_type = getGUIType(childGroup.split('_').last());
             if (gui_type == GUI_TYPE_ERROR) continue;
 
-            // Clear configMap
-            configMap.clear();
-
-            // Begin GUI group settings
-            gui_settings.beginGroup(childGroup);
-            foreach (QString childKey, gui_settings.childKeys())
-            {
-                configMap.insert(childKey, gui_settings.value(childKey));
-            }
-
-            // Exit GUI group settings
-            gui_settings.endGroup();
+            // Get group QMap
+            groupMap = configMap->value(childGroup);
 
             // Instantiate and add GUI
             switch (gui_type)
@@ -319,8 +304,8 @@ void MainWindow::on_DeviceConnected() {
                     GUI_WELCOME* welcome_holder = \
                             (GUI_WELCOME*) tab_holder;
 
-                    welcome_holder->setHeader(configMap.value("header", welcome_tab_text).toString());
-                    welcome_holder->setMsg(configMap.value("msg").toString());
+                    welcome_holder->setHeader(groupMap->value("header", welcome_tab_text).toString());
+                    welcome_holder->setMsg(groupMap->value("msg").toString());
                     break;
                 }
                 case GUI_TYPE_IO:
@@ -329,27 +314,8 @@ void MainWindow::on_DeviceConnected() {
                     GUI_8AIO_16DIO_COMM* io_holder = \
                             (GUI_8AIO_16DIO_COMM*) tab_holder;
 
-                    // Setup pintypes variable
-                    uint8_t pinType;
-
-                    // Add DIO controls
-                    pinType = JSON_DIO;
-                    io_holder->setNumPins(pinType, configMap.value("dio_num").toInt(),
-                                          configMap.value("dio_start_num").toInt());
-                    io_holder->addNewPinSettings(pinType, configMap.value("dio_pin_settings").toStringList());
-                    io_holder->setCombos(pinType, configMap.value("dio_combo_settings").toStringList());
-
-                    // Add AIO controls
-                    pinType = JSON_AIO;
-                    io_holder->setNumPins(pinType, configMap.value("aio_num").toInt(),
-                                          configMap.value("aio_start_num").toInt());
-                    io_holder->addNewPinSettings(pinType, configMap.value("aio_pin_settings").toStringList());
-                    io_holder->setCombos(pinType, configMap.value("aio_combo_settings").toStringList());
-
-                    // Add Transmit controls
-                    pinType = REMOTE_CONN_REMOTE;
-                    io_holder->addNewPinSettings(pinType, configMap.value("remote_pin_settings").toStringList());
-                    io_holder->setCombos(pinType, configMap.value("remote_combo_settings").toStringList());
+                    // Parse the config map
+                    io_holder->parseConfigMap(groupMap);
 
                     // Exit switch
                     break;
@@ -365,9 +331,9 @@ void MainWindow::on_DeviceConnected() {
                     GUI_PROGRAMMER* programmer_holder = \
                             (GUI_PROGRAMMER*) tab_holder;
 
-                    programmer_holder->addHexFormats(configMap.value("hex_formats").toStringList());
-                    programmer_holder->removeHexFormats(configMap.value("hex_formats_rm").toStringList());
-                    programmer_holder->addBurnMethods(configMap.value("burn_methods").toStringList());
+                    programmer_holder->addHexFormats(groupMap->value("hex_formats").toStringList());
+                    programmer_holder->removeHexFormats(groupMap->value("hex_formats_rm").toStringList());
+                    programmer_holder->addBurnMethods(groupMap->value("burn_methods").toStringList());
                     break;
                 }
                 default:
@@ -375,12 +341,15 @@ void MainWindow::on_DeviceConnected() {
             }
 
             // Set base chunk size to config value or 0 if non-existant
-            ((GUI_BASE*) tab_holder)->set_chunkSize(configMap.value("chunk_size").toInt());
+            ((GUI_BASE*) tab_holder)->set_chunkSize(groupMap->value("chunk_size").toInt());
 
             // Add new GUI to tabs
-            ui->ucOptions->addTab(tab_holder, configMap.value("tab_name", childGroup).toString());
+            ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());
         }
         ui->ucOptions->blockSignals(false);
+
+        // Delete map after use
+        GUI_HELPER::deleteConfigMap(configMap);
 
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
@@ -393,7 +362,7 @@ void MainWindow::on_DeviceConnected() {
         reset_remote();
     } else
     {
-        showMessage("Error: Unable to connect to target!");
+        GUI_HELPER::showMessage("Error: Unable to connect to target!");
     }
 
     setConnected(deviceConnected());
@@ -405,7 +374,7 @@ void MainWindow::on_DeviceDisconnected()
     on_DeviceDisconnect_Button_clicked();
 
     // Notify user of connection loss
-    showMessage("Error: Connection to target lost!");
+    GUI_HELPER::showMessage("Error: Connection to target lost!");
 }
 
 void MainWindow::on_DeviceDisconnect_Button_clicked()
@@ -621,8 +590,16 @@ void MainWindow::setConnected(bool conn)
 
 void MainWindow::reset_remote()
 {
-    emit write_data({JSON_RESET, JSON_RESET});
-    emit write_data({JSON_RESET, JSON_RESET});
+    QByteArray reset_array;
+    reset_array.append((char) MAJOR_KEY_RESET);
+    reset_array.append((char) 0);
+    reset_array.append(
+                (char) get_crc((uint8_t*) reset_array.data(),
+                               reset_array.length(), 0)
+                );
+
+    emit write_data(reset_array);
+    emit write_data(reset_array);
 }
 
 void MainWindow::connect2sender(QObject* obj, bool conn)
@@ -635,16 +612,12 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
     if (conn) {
         connect(obj, SIGNAL(write_data(QByteArray)),
                 conn_obj, SLOT(write(QByteArray)));
-        connect(obj, SIGNAL(write_data(std::initializer_list<uint8_t>)),
-                conn_obj, SLOT(write(std::initializer_list<uint8_t>)));
 
         connect(conn_obj, SIGNAL(readyRead(QByteArray)),
                 obj, SLOT(receive(QByteArray)));
     } else {
         disconnect(obj, SIGNAL(write_data(QByteArray)),
                    conn_obj, SLOT(write(QByteArray)));
-        disconnect(obj, SIGNAL(write_data(std::initializer_list<uint8_t>)),
-                   conn_obj, SLOT(write(std::initializer_list<uint8_t>)));
 
         disconnect(conn_obj, SIGNAL(readyRead(QByteArray)),
                    obj, SLOT(receive(QByteArray)));
@@ -684,13 +657,13 @@ bool MainWindow::deviceConnected()
 
 uint8_t MainWindow::getConnType()
 {
-    // currentIndex() returns -1 on error which maps to TYPE_ERROR
+    // currentIndex() returns -1 on error which maps to CONN_TYPE_ERROR
     return (uint8_t) (ui->ConnTypeCombo->currentIndex()+1);
 }
 
 uint8_t MainWindow::getDevType()
 {
-    // currentIndex() returns -1 on error which maps to TYPE_ERROR
+    // currentIndex() returns -1 on error which maps to DEV_TYPE_ERROR
     return (uint8_t) (ui->DeviceCombo->currentIndex()+1);
 }
 

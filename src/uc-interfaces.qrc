@@ -8,5 +8,9 @@
         <file>user-interfaces/gui-programmer.ini</file>
         <file>user-interfaces/gui-welcome.ini</file>
         <file>uc-interfaces/gui-pc.ini</file>
+        <file>uc-interfaces/uc-generic-fsm.c</file>
+        <file>uc-interfaces/uc-generic-fsm.h</file>
+        <file>uc-interfaces/uc-generic-io.c</file>
+        <file>uc-interfaces/uc-generic-io.h</file>
     </qresource>
 </RCC>

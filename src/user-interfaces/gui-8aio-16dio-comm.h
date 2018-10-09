@@ -40,8 +40,7 @@ public:
     ~GUI_8AIO_16DIO_COMM();
 
     void reset_gui();
-    void setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint8_t start_num);
-    void setCombos(uint8_t pinTypes, QList<QString> combos);
+    void parseConfigMap(QMap<QString, QVariant>* configMap);
 
 private slots:
     void on_RESET_BUTTON_clicked();
@@ -73,6 +72,9 @@ private slots:
 
 protected:
     Ui::GUI_8AIO_16DIO_COMM *ui;
+
+    void setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint8_t start_num);
+    void setCombos(uint8_t pinTypes, QList<QString> combos);
 
     void setConTypes(QStringList connTypes, QList<char> mapValues);
 

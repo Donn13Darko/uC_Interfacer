@@ -16,46 +16,35 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TCP_CLIENT_H
-#define TCP_CLIENT_H
+#ifndef GENERAL_COMMS_H
+#define GENERAL_COMMS_H
 
-#include <QObject>
-#include <QMutex>
-#include <QTcpSocket>
+// Major Keys enum
+typedef enum {
+    // Error and reset
+    MAJOR_KEY_ERROR = 0,
+    MAJOR_KEY_RESET,
 
-class TCP_CLIENT : public QObject
-{
-    Q_OBJECT
+    // Action confirmations
+    MAJOR_KEY_ACK,
+    MAJOR_KEY_SUCCESS,
+    MAJOR_KEY_FAILURE,
 
-public:
-    TCP_CLIENT(QString ip, int port, QObject *parent = NULL);
-    ~TCP_CLIENT();
+    // Update Config Settings
+    MAJOR_KEY_CONFIG_UPDATE,
 
-    void open();
-    bool isConnected();
+    // GUI Types (Major Keys)
+    GUI_TYPE_ERROR,
+    GUI_TYPE_WELCOME,
+    GUI_TYPE_IO,
+    GUI_TYPE_DATA_TRANSMIT,
+    GUI_TYPE_PROGRAMMER
+} MAJOR_KEYS;
 
-signals:
-    void deviceConnected();
-    void deviceDisconnected();
-    void readyRead(QByteArray readData);
+// Define major key errorcodes
+typedef enum {
+    MAJOR_KEY_ERROR_GENERIC = 0,
+    MAJOR_KEY_ERROR_BAD_CRC
+} MAJOR_KEY_ERRORS;
 
-public slots:
-    void close();
-    void connectClient();
-    void disconnectClient();
-    void write(QByteArray writeData);
-
-private slots:
-    void read();
-
-private:
-    QTcpSocket *client;
-
-    QString server_ip;
-    int server_port;
-
-    QMutex *readLock;
-    QMutex *writeLock;
-};
-
-#endif // TCP_CLIENT_H
+#endif // GENERAL_COMMS_H

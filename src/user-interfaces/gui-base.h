@@ -24,7 +24,9 @@
 #include <QMap>
 #include <QVariant>
 
-#include "../communication/json-info.h"
+#include "../communication/crc-calcs.h"
+#include "../communication/general-comms.h"
+#include "../gui-helper.h"
 #include <QDebug>
 
 class GUI_BASE : public QWidget
@@ -35,13 +37,11 @@ public:
     GUI_BASE(QWidget *parent = 0);
     ~GUI_BASE();
 
-    static bool showMessage(QString msg);
     void reset_gui() {/*Default do nothing*/}
     void set_chunkSize(size_t chunk);
 
 signals:
     void write_data(QByteArray data);
-    void write_data(std::initializer_list<uint8_t> data);
     void connect_signals(bool connect);
     void readyRead();
 
@@ -58,17 +58,9 @@ protected:
     void send(std::initializer_list<uint8_t> data);
     void sendFile(QString filePath);
 
-    bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
-    bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
-    bool saveFile(QString filePath, QByteArray data);
-    QByteArray loadFile(QString filePath);
-
     void reset_remote();
     void waitForResponse(int len, int msecs = 5000);
     bool checkAck(QByteArray ack);
-
-    QMap<QString, QMap<QString, QVariant>*>* readConfigINI(QString config);
-    void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*>* configMap);
 };
 
 #endif // GUI_BASE_H

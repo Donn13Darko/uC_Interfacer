@@ -59,7 +59,7 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     on_updateStopper_clicked();
 
     // Get AIO pin info
-    QList<uint8_t> pinTypes({JSON_AIO, JSON_DIO});
+    QList<uint8_t> pinTypes({SUB_KEY_IO_AIO, SUB_KEY_IO_DIO});
     foreach (uint8_t pinType, pinTypes)
     {
         if (getPinTypeInfo(pinType, &pInfo))
@@ -96,6 +96,314 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     emit connect_signals(true);
 }
 
+void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
+{
+    // Setup pintypes variable
+    uint8_t pinType;
+
+    // Add DIO controls
+    pinType = SUB_KEY_IO_DIO;
+    setNumPins(pinType, configMap->value("dio_num").toInt(),
+                          configMap->value("dio_start_num").toInt());
+    addNewPinSettings(pinType, configMap->value("dio_pin_settings").toStringList());
+    setCombos(pinType, configMap->value("dio_combo_settings").toStringList());
+
+    // Add AIO controls
+    pinType = SUB_KEY_IO_AIO;
+    setNumPins(pinType, configMap->value("aio_num").toInt(),
+                          configMap->value("aio_start_num").toInt());
+    addNewPinSettings(pinType, configMap->value("aio_pin_settings").toStringList());
+    setCombos(pinType, configMap->value("aio_combo_settings").toStringList());
+
+    // Add Transmit controls
+    pinType = SUB_KEY_IO_REMOTE_CONN;
+    addNewPinSettings(pinType, configMap->value("remote_pin_settings").toStringList());
+    setCombos(pinType, configMap->value("remote_combo_settings").toStringList());
+}
+
+void GUI_8AIO_16DIO_COMM::on_RESET_BUTTON_clicked()
+{
+    // Reset the GUI
+    reset_gui();
+
+    // Reset the Remote
+    reset_remote();
+}
+
+void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()
+{
+    // Grab pin info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo)) return;
+
+    // Set message for clicked button
+    inputsChanged(&pInfo, comboPos);
+}
+
+void GUI_8AIO_16DIO_COMM::DIO_SliderValueChanged()
+{
+    // Grab pin info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo)) return;
+
+    // Set message for clicked button
+    inputsChanged(&pInfo, slideValuePos);
+}
+
+void GUI_8AIO_16DIO_COMM::DIO_TextValueChanged()
+{
+    // Grab pin info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo)) return;
+
+    // Set message for clicked button
+    inputsChanged(&pInfo, textValuePos);
+}
+
+void GUI_8AIO_16DIO_COMM::AIO_ComboChanged()
+{
+    // Grab pin info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo)) return;
+
+    // Send message for edited button
+    inputsChanged(&pInfo, comboPos);
+}
+
+void GUI_8AIO_16DIO_COMM::AIO_SliderValueChanged()
+{
+    // Grab pin info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo)) return;
+
+    // Send message for edited button
+    inputsChanged(&pInfo, slideValuePos);
+}
+
+void GUI_8AIO_16DIO_COMM::AIO_TextValueChanged()
+{
+    // Grab pin info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo)) return;
+
+    // Send message for edited button
+    inputsChanged(&pInfo, textValuePos);
+}
+
+void GUI_8AIO_16DIO_COMM::updateValues()
+{
+    uint8_t pinType;
+    QTimer *caller = (QTimer*) sender();
+    if (caller == &DIO_READ) pinType = SUB_KEY_IO_DIO;
+    else if (caller == &AIO_READ) pinType = SUB_KEY_IO_AIO;
+    else return;
+
+    send({
+             GUI_TYPE_IO,
+             pinType
+         });
+}
+
+void GUI_8AIO_16DIO_COMM::receive(QByteArray recvData)
+{
+    currData.append(recvData);
+    uint8_t m = currData.length();
+    if (m & 1) m = m - 1;
+    if (m == 0) return;
+
+    // Search received for valid key,value formations
+    uint8_t key, value;
+    for (uint8_t i = 0; i < (m - 1); i++)
+    {
+        key = (uint8_t) currData[0];
+        value = (uint8_t) currData[1];
+
+        uint8_t e = 0;
+        switch (key)
+        {
+            case GUI_TYPE_IO:
+                {
+                    switch (value)
+                    {
+                        case SUB_KEY_IO_DIO:
+                            if ((bytesPerPin*num_DIOpins_DEV) < m)
+                                e = bytesPerPin*num_DIOpins_DEV;
+                            else
+                                return;
+                            break;
+                        case SUB_KEY_IO_AIO:
+                            if ((bytesPerPin*num_AIOpins_DEV) < m)
+                                e = bytesPerPin*num_AIOpins_DEV;
+                            else
+                                return;
+                            break;
+                        default:
+                            currData = currData.mid(1);
+                            return;
+                    }
+
+                    if (e != 0)
+                    {
+                        // Update the value set & update i to remove from buffer
+                        setValues(value, currData.mid(2, e));
+                        currData = currData.mid(e+4);
+                        return;
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+
+        // Remove ignored tokens
+        currData = currData.mid(e + 1);
+    }
+}
+
+void GUI_8AIO_16DIO_COMM::recordLogData()
+{
+    if (!logIsRecording) return;
+
+    PinTypeInfo pInfo;
+    if (getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo)) recordPinValues(&pInfo);
+    if (getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo)) recordPinValues(&pInfo);
+
+}
+
+void GUI_8AIO_16DIO_COMM::on_updateStarter_clicked()
+{
+    ui->updateStarter->setText("Reset");
+
+    DIO_READ.start((int) (S2MS * ui->DIO_UREdit->text().toFloat()));
+    AIO_READ.start((int) (S2MS * ui->AIO_UREdit->text().toFloat()));
+}
+
+void GUI_8AIO_16DIO_COMM::on_updateStopper_clicked()
+{
+    ui->updateStarter->setText("Start");
+
+    DIO_READ.stop();
+    AIO_READ.stop();
+}
+
+void GUI_8AIO_16DIO_COMM::on_selectSaveLocation_clicked()
+{
+    // Get file
+    QString filePath;
+    if (GUI_HELPER::getSaveFilePath(&filePath))
+        ui->saveLocEdit->setText(filePath);
+}
+
+void GUI_8AIO_16DIO_COMM::on_startLog_clicked()
+{
+    bool error = false;
+    if (logIsRecording)
+        error = GUI_HELPER::showMessage("Error: Already recording!");
+    else if (ui->saveLocEdit->text().isEmpty())
+        error = GUI_HELPER::showMessage("Error: Must provide log file!");
+    if (error) return;
+
+    uint32_t enumFlags = QIODevice::WriteOnly | QIODevice::Text;
+    if (ui->appendLog->isChecked()) enumFlags |= QIODevice::Append;
+    else enumFlags |= QIODevice::Truncate;
+
+    logFile = new QFile(ui->saveLocEdit->text());
+    if (!logFile->open((QIODevice::OpenModeFlag) enumFlags))
+        error = GUI_HELPER::showMessage("Error: Couldn't open log file!");
+    if (error) return;
+
+    logStream = new QTextStream(logFile);
+    *logStream << "Started: " << QDateTime::currentDateTimeUtc().toString() << " ";
+    *logStream << "with update rate " << ui->LOG_UREdit->text() << " seconds\n";
+    logStream->flush();
+
+    logTimer.start((int) (S2MS * ui->LOG_UREdit->text().toFloat()));
+    ui->startLog->setText("Running");
+    ui->startLog->setEnabled(false);
+    ui->appendLog->setEnabled(false);
+    ui->LOG_UREdit->setEnabled(false);
+    ui->logURLabel->setEnabled(false);
+    logIsRecording = true;
+}
+
+void GUI_8AIO_16DIO_COMM::on_stopLog_clicked()
+{
+    if (!logIsRecording) return;
+    logTimer.stop();
+
+    logStream->flush();
+    logFile->close();
+    delete logStream;
+    delete logFile;
+    logStream = NULL;
+    logFile = NULL;
+
+    ui->startLog->setText("Start Log");
+    ui->startLog->setEnabled(true);
+    ui->appendLog->setEnabled(true);
+    ui->LOG_UREdit->setEnabled(true);
+    ui->logURLabel->setEnabled(true);
+    logIsRecording = false;
+}
+
+void GUI_8AIO_16DIO_COMM::on_ConnectButton_clicked()
+{
+    QByteArray msg;
+    msg.append(controlMap.value(SUB_KEY_IO_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
+
+    if (devConnected)
+    {
+        msg.append(SUB_KEY_IO_REMOTE_CONN);
+
+        ui->ConnectButton->setText("Connect");
+        ui->SendButton->setEnabled(false);
+        devConnected = false;
+    } else
+    {
+        msg.append(SUB_KEY_IO_REMOTE_CONN);
+
+        ui->ConnectButton->setText("Disconnect");
+        ui->SendButton->setEnabled(true);
+        devConnected = true;
+    }
+    msg.append(ui->SpeedCombo->currentText());
+    msg.append(ui->DeviceCombo->currentText());
+
+    send(msg);
+}
+
+void GUI_8AIO_16DIO_COMM::on_SendButton_clicked()
+{
+    QByteArray msg;
+    msg.append(controlMap.value(SUB_KEY_IO_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
+    msg.append(SUB_KEY_IO_REMOTE_CONN);
+    msg.append(ui->MessageEdit->text());
+    msg.append(SUB_KEY_IO_REMOTE_CONN);
+    msg.append(SUB_KEY_IO_REMOTE_CONN);
+
+    send(msg);
+}
+
+void GUI_8AIO_16DIO_COMM::on_ClearRecvButton_clicked()
+{
+    ui->RecvTextBox->clear();
+}
+
+void GUI_8AIO_16DIO_COMM::on_ConnTypeCombo_currentIndexChanged(int)
+{
+    QString currVal = ui->ConnTypeCombo->currentText();
+    uint8_t type = controlMap.value(SUB_KEY_IO_REMOTE_CONN)->value(currVal);
+    if (disabledValueSet.value(SUB_KEY_IO_REMOTE_CONN)->contains(type)) ui->SpeedCombo->setEnabled(false);
+    else ui->SpeedCombo->setEnabled(true);
+
+    QStringList deviceConns = devSettings.value(currVal);
+    ui->DeviceCombo->clear();
+    ui->DeviceCombo->addItems(deviceConns);
+
+    if (deviceConns.length() == 0) ui->DeviceCombo->setEditable(true);
+    else ui->DeviceCombo->setEditable(false);
+}
+
 void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint8_t start_num)
 {
     PinTypeInfo pInfo;
@@ -104,10 +412,10 @@ void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint
     // Update dev pins
     switch (pInfo.pinType)
     {
-        case JSON_AIO:
+        case SUB_KEY_IO_AIO:
             num_AIOpins_DEV = num_dev_pins;
             break;
-        case JSON_DIO:
+        case SUB_KEY_IO_DIO:
             num_DIOpins_DEV = num_dev_pins;
             break;
     }
@@ -125,7 +433,7 @@ void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint
 void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
 {
     // Handle remote connection info
-    if (pinType == REMOTE_CONN_REMOTE)
+    if (pinType == SUB_KEY_IO_REMOTE_CONN)
     {
         ui->ConnTypeCombo->blockSignals(true);
         ui->ConnTypeCombo->clear();
@@ -223,6 +531,22 @@ void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
     }
 }
 
+void GUI_8AIO_16DIO_COMM::setConTypes(QStringList connTypes, QList<char> mapValues)
+{
+    if (connTypes.length() != mapValues.length()) return;
+
+    QMap<QString, uint8_t>* pinMap = controlMap.value(SUB_KEY_IO_REMOTE_CONN);
+    for (uint8_t i = 0; i < connTypes.length(); i++)
+    {
+        pinMap->insert(connTypes[i], mapValues[i]);
+    }
+
+    ui->ConnTypeCombo->clear();
+    ui->ConnTypeCombo->addItems(connTypes);
+
+    on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
+}
+
 void GUI_8AIO_16DIO_COMM::initialize()
 {
     // Set class pin variables
@@ -267,9 +591,9 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     uint8_t rowNum, colNum;
 
     // Get AIO pin info
-    if (!getPinTypeInfo(JSON_AIO, &pInfo))
+    if (!getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo))
     {
-        showMessage("Error: Unable to connect AIO!");
+        GUI_HELPER::showMessage("Error: Unable to connect AIO!");
         QTimer::singleShot(0, this, SLOT(close()));
     }
 
@@ -298,9 +622,9 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Get DIO pin info
-    if (!getPinTypeInfo(JSON_DIO, &pInfo))
+    if (!getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo))
     {
-        showMessage("Error: Unable to connect DIO!");
+        GUI_HELPER::showMessage("Error: Unable to connect DIO!");
         QTimer::singleShot(0, this, SLOT(close()));
     }
 
@@ -327,312 +651,6 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
             connect((QLineEdit*) item, SIGNAL(editingFinished()), this, SLOT(DIO_TextValueChanged()));
         }
     }
-}
-
-void GUI_8AIO_16DIO_COMM::on_RESET_BUTTON_clicked()
-{
-    // Reset the GUI
-    reset_gui();
-
-    // Reset the Remote
-    reset_remote();
-}
-
-void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()
-{
-    // Grab pin info
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(JSON_DIO, &pInfo)) return;
-
-    // Set message for clicked button
-    inputsChanged(&pInfo, comboPos);
-}
-
-void GUI_8AIO_16DIO_COMM::DIO_SliderValueChanged()
-{
-    // Grab pin info
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(JSON_DIO, &pInfo)) return;
-
-    // Set message for clicked button
-    inputsChanged(&pInfo, slideValuePos);
-}
-
-void GUI_8AIO_16DIO_COMM::DIO_TextValueChanged()
-{
-    // Grab pin info
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(JSON_DIO, &pInfo)) return;
-
-    // Set message for clicked button
-    inputsChanged(&pInfo, textValuePos);
-}
-
-void GUI_8AIO_16DIO_COMM::AIO_ComboChanged()
-{
-    // Grab pin info
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(JSON_AIO, &pInfo)) return;
-
-    // Send message for edited button
-    inputsChanged(&pInfo, comboPos);
-}
-
-void GUI_8AIO_16DIO_COMM::AIO_SliderValueChanged()
-{
-    // Grab pin info
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(JSON_AIO, &pInfo)) return;
-
-    // Send message for edited button
-    inputsChanged(&pInfo, slideValuePos);
-}
-
-void GUI_8AIO_16DIO_COMM::AIO_TextValueChanged()
-{
-    // Grab pin info
-    PinTypeInfo pInfo;
-    if (!getPinTypeInfo(JSON_AIO, &pInfo)) return;
-
-    // Send message for edited button
-    inputsChanged(&pInfo, textValuePos);
-}
-
-void GUI_8AIO_16DIO_COMM::updateValues()
-{
-    uint8_t pinType;
-    QTimer *caller = (QTimer*) sender();
-    if (caller == &DIO_READ) pinType = JSON_DIO;
-    else if (caller == &AIO_READ) pinType = JSON_AIO;
-    else return;
-
-    send({
-             JSON_READ,
-             pinType
-         });
-}
-
-void GUI_8AIO_16DIO_COMM::receive(QByteArray recvData)
-{
-    currData.append(recvData);
-    uint8_t m = currData.length();
-    if (m & 1) m = m - 1;
-    if (m == 0) return;
-
-    // Search received for valid key,value formations
-    uint8_t key, value;
-    for (uint8_t i = 0; i < (m - 1); i++)
-    {
-        key = (uint8_t) currData[0];
-        value = (uint8_t) currData[1];
-
-        uint8_t e = 0;
-        switch (key)
-        {
-            case JSON_READ:
-                {
-                    switch (value)
-                    {
-                        case JSON_DIO:
-                            if ((bytesPerPin*num_DIOpins_DEV) < m)
-                                e = bytesPerPin*num_DIOpins_DEV;
-                            else
-                                return;
-                            break;
-                        case JSON_AIO:
-                            if ((bytesPerPin*num_AIOpins_DEV) < m)
-                                e = bytesPerPin*num_AIOpins_DEV;
-                            else
-                                return;
-                            break;
-                        default:
-                            currData = currData.mid(1);
-                            return;
-                    }
-
-                    if (e != 0)
-                    {
-                        // Update the value set & update i to remove from buffer
-                        setValues(value, currData.mid(2, e));
-                        currData = currData.mid(e+4);
-                        return;
-                    }
-                }
-                break;
-            default:
-                break;
-        }
-
-        // Remove ignored tokens
-        currData = currData.mid(e + 1);
-    }
-}
-
-void GUI_8AIO_16DIO_COMM::recordLogData()
-{
-    if (!logIsRecording) return;
-
-    PinTypeInfo pInfo;
-    if (getPinTypeInfo(JSON_AIO, &pInfo)) recordPinValues(&pInfo);
-    if (getPinTypeInfo(JSON_DIO, &pInfo)) recordPinValues(&pInfo);
-
-}
-
-void GUI_8AIO_16DIO_COMM::recordPinValues(PinTypeInfo *pInfo)
-{
-    if (logStream == nullptr) return;
-
-    *logStream << pInfo->pinType << ",";
-
-    QLineEdit *textValue;
-    uint8_t iend = pInfo->rows-1, jend = pInfo->cols-1;
-    for (uint8_t i = 0; i < pInfo->rows; i++)
-    {
-        uint8_t colSel = textValuePos;
-        for (uint8_t j = 0; j < pInfo->cols; j++)
-        {
-            getItemWidget((QWidget**) &textValue, pInfo->grid, i, colSel);
-            *logStream << textValue->text();
-
-            if ((i == iend) && (j == jend)) *logStream << "\n";
-            else *logStream << ",";
-
-            colSel += pInfo->numButtons;
-        }
-    }
-
-    logStream->flush();
-}
-
-void GUI_8AIO_16DIO_COMM::on_updateStarter_clicked()
-{
-    ui->updateStarter->setText("Reset");
-
-    DIO_READ.start((int) (S2MS * ui->DIO_UREdit->text().toFloat()));
-    AIO_READ.start((int) (S2MS * ui->AIO_UREdit->text().toFloat()));
-}
-
-void GUI_8AIO_16DIO_COMM::on_updateStopper_clicked()
-{
-    ui->updateStarter->setText("Start");
-
-    DIO_READ.stop();
-    AIO_READ.stop();
-}
-
-void GUI_8AIO_16DIO_COMM::on_selectSaveLocation_clicked()
-{
-    // Get file
-    QString filePath;
-    if (getSaveFilePath(&filePath))
-        ui->saveLocEdit->setText(filePath);
-}
-
-void GUI_8AIO_16DIO_COMM::on_startLog_clicked()
-{
-    bool error = false;
-    if (logIsRecording) error = showMessage("Error: Already recording!");
-    else if (ui->saveLocEdit->text().isEmpty()) error = showMessage("Error: Must provide log file!");
-    if (error) return;
-
-    uint32_t enumFlags = QIODevice::WriteOnly | QIODevice::Text;
-    if (ui->appendLog->isChecked()) enumFlags |= QIODevice::Append;
-    else enumFlags |= QIODevice::Truncate;
-
-    logFile = new QFile(ui->saveLocEdit->text());
-    if (!logFile->open((QIODevice::OpenModeFlag) enumFlags)) error = showMessage("Error: Couldn't open log file!");
-    if (error) return;
-
-    logStream = new QTextStream(logFile);
-    *logStream << "Started: " << QDateTime::currentDateTimeUtc().toString() << " ";
-    *logStream << "with update rate " << ui->LOG_UREdit->text() << " seconds\n";
-    logStream->flush();
-
-    logTimer.start((int) (S2MS * ui->LOG_UREdit->text().toFloat()));
-    ui->startLog->setText("Running");
-    ui->startLog->setEnabled(false);
-    ui->appendLog->setEnabled(false);
-    ui->LOG_UREdit->setEnabled(false);
-    ui->logURLabel->setEnabled(false);
-    logIsRecording = true;
-}
-
-void GUI_8AIO_16DIO_COMM::on_stopLog_clicked()
-{
-    if (!logIsRecording) return;
-    logTimer.stop();
-
-    logStream->flush();
-    logFile->close();
-    delete logStream;
-    delete logFile;
-    logStream = NULL;
-    logFile = NULL;
-
-    ui->startLog->setText("Start Log");
-    ui->startLog->setEnabled(true);
-    ui->appendLog->setEnabled(true);
-    ui->LOG_UREdit->setEnabled(true);
-    ui->logURLabel->setEnabled(true);
-    logIsRecording = false;
-}
-
-void GUI_8AIO_16DIO_COMM::on_ConnectButton_clicked()
-{
-    QByteArray msg;
-    msg.append(controlMap.value(JSON_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
-
-    if (devConnected)
-    {
-        msg.append(REMOTE_CONN_DISCONNECT);
-
-        ui->ConnectButton->setText("Connect");
-        ui->SendButton->setEnabled(false);
-        devConnected = false;
-    } else
-    {
-        msg.append(REMOTE_CONN_CONNECT);
-
-        ui->ConnectButton->setText("Disconnect");
-        ui->SendButton->setEnabled(true);
-        devConnected = true;
-    }
-    msg.append(ui->SpeedCombo->currentText());
-    msg.append(ui->DeviceCombo->currentText());
-
-    send(msg);
-}
-
-void GUI_8AIO_16DIO_COMM::on_SendButton_clicked()
-{
-    QByteArray msg;
-    msg.append(controlMap.value(JSON_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
-    msg.append(REMOTE_CONN_SEND);
-    msg.append(ui->MessageEdit->text());
-    msg.append(REMOTE_CONN_SEND);
-    msg.append(JSON_END);
-
-    send(msg);
-}
-
-void GUI_8AIO_16DIO_COMM::on_ClearRecvButton_clicked()
-{
-    ui->RecvTextBox->clear();
-}
-
-void GUI_8AIO_16DIO_COMM::on_ConnTypeCombo_currentIndexChanged(int)
-{
-    QString currVal = ui->ConnTypeCombo->currentText();
-    uint8_t type = controlMap.value(JSON_REMOTE_CONN)->value(currVal);
-    if (disabledValueSet.value(JSON_REMOTE_CONN)->contains(type)) ui->SpeedCombo->setEnabled(false);
-    else ui->SpeedCombo->setEnabled(true);
-
-    QStringList deviceConns = devSettings.value(currVal);
-    ui->DeviceCombo->clear();
-    ui->DeviceCombo->addItems(deviceConns);
-
-    if (deviceConns.length() == 0) ui->DeviceCombo->setEditable(true);
-    else ui->DeviceCombo->setEditable(false);
 }
 
 void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
@@ -686,20 +704,30 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
     }
 }
 
-void GUI_8AIO_16DIO_COMM::setConTypes(QStringList connTypes, QList<char> mapValues)
+void GUI_8AIO_16DIO_COMM::recordPinValues(PinTypeInfo *pInfo)
 {
-    if (connTypes.length() != mapValues.length()) return;
+    if (logStream == nullptr) return;
 
-    QMap<QString, uint8_t>* pinMap = controlMap.value(JSON_REMOTE_CONN);
-    for (uint8_t i = 0; i < connTypes.length(); i++)
+    *logStream << pInfo->pinType << ",";
+
+    QLineEdit *textValue;
+    uint8_t iend = pInfo->rows-1, jend = pInfo->cols-1;
+    for (uint8_t i = 0; i < pInfo->rows; i++)
     {
-        pinMap->insert(connTypes[i], mapValues[i]);
+        uint8_t colSel = textValuePos;
+        for (uint8_t j = 0; j < pInfo->cols; j++)
+        {
+            getItemWidget((QWidget**) &textValue, pInfo->grid, i, colSel);
+            *logStream << textValue->text();
+
+            if ((i == iend) && (j == jend)) *logStream << "\n";
+            else *logStream << ",";
+
+            colSel += pInfo->numButtons;
+        }
     }
 
-    ui->ConnTypeCombo->clear();
-    ui->ConnTypeCombo->addItems(connTypes);
-
-    on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
+    logStream->flush();
 }
 
 bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
@@ -710,10 +738,10 @@ bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
     // Set ui pin type variables
     switch (pinType)
     {
-        case JSON_AIO:
+        case SUB_KEY_IO_AIO:
             infoPtr->grid = ui->AIO_Grid;
             return true;
-        case JSON_DIO:
+        case SUB_KEY_IO_DIO:
             infoPtr->grid = ui->DIO_Grid;
             return true;
         default:

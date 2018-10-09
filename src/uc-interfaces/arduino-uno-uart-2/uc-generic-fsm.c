@@ -17,8 +17,8 @@
 */
 
 #include "uc-generic-fsm.h"
-#include "../communication/crc-calcs.h"
-#include "../communication/general-comms.h"
+#include "crc-calcs.h"
+#include "general-comms.h"
 
 uint8_t *fsm_buffer;
 

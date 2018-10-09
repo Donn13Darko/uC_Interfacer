@@ -44,7 +44,6 @@ signals:
 public slots:
     void close();
     void write(QByteArray writeData);
-    void write(std::initializer_list<uint8_t> writeData);
 
 private slots:
     void read();

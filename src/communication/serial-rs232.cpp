@@ -98,17 +98,6 @@ void Serial_RS232::write(QByteArray writeData)
     writeLock->unlock();
 }
 
-void Serial_RS232::write(std::initializer_list<uint8_t> writeData)
-{
-    QByteArray data;
-    foreach (char i, writeData)
-    {
-        data.append(i);
-    }
-
-    write(data);
-}
-
 void Serial_RS232::read()
 {
     readLock->lock();

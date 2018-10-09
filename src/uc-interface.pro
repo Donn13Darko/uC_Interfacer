@@ -37,13 +37,11 @@ SOURCES += \
     communication/tcp-server.cpp \
     communication/udp-socket.cpp \
     communication/crc-calcs.c \
-    uc-interfaces/uc-generic-fsm.c
+    gui-helper.cpp
 
 HEADERS += \
     mainwindow.h \
-    communication/json-info.h \
     communication/serial-rs232.h \
-    uc-interfaces/uc-generic-fsm.h \
     user-interfaces/gui-base.h \
     user-interfaces/gui-pin-io-base.h \
     user-interfaces/gui-8aio-16dio-comm.h \
@@ -53,7 +51,10 @@ HEADERS += \
     communication/tcp-client.h \
     communication/tcp-server.h \
     communication/udp-socket.h \
-    communication/crc-calcs.h
+    communication/crc-calcs.h \
+    communication/general-comms.h \
+    gui-helper.h \
+    user-interfaces/gui-pin-io-base-sub-keys.h
 
 FORMS += \
     mainwindow.ui \

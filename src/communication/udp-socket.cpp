@@ -90,17 +90,6 @@ void UDP_SOCKET::write(QByteArray writeData)
     writeLock->unlock();
 }
 
-void UDP_SOCKET::write(std::initializer_list<uint8_t> writeData)
-{
-    QByteArray data;
-    foreach (char i, writeData)
-    {
-        data.append(i);
-    }
-
-    write(data);
-}
-
 void UDP_SOCKET::read()
 {
     readLock->lock();

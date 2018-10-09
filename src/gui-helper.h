@@ -16,46 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TCP_CLIENT_H
-#define TCP_CLIENT_H
+#ifndef GUI_HELPER_H
+#define GUI_HELPER_H
 
 #include <QObject>
-#include <QMutex>
-#include <QTcpSocket>
+#include <QWidget>
+#include <QMap>
+#include <QVariant>
 
-class TCP_CLIENT : public QObject
+class GUI_HELPER : public QObject
 {
     Q_OBJECT
 
 public:
-    TCP_CLIENT(QString ip, int port, QObject *parent = NULL);
-    ~TCP_CLIENT();
+    GUI_HELPER(QObject *parent = 0);
+    ~GUI_HELPER();
 
-    void open();
-    bool isConnected();
+    // Show a message
+    static bool showMessage(QString msg);
 
-signals:
-    void deviceConnected();
-    void deviceDisconnected();
-    void readyRead(QByteArray readData);
+    // Get some file info
+    static bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
+    static bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
+    static bool saveFile(QString filePath, QByteArray data);
+    static QByteArray loadFile(QString filePath);
 
-public slots:
-    void close();
-    void connectClient();
-    void disconnectClient();
-    void write(QByteArray writeData);
-
-private slots:
-    void read();
-
-private:
-    QTcpSocket *client;
-
-    QString server_ip;
-    int server_port;
-
-    QMutex *readLock;
-    QMutex *writeLock;
+    // Read or delete a config INI
+    static QMap<QString, QMap<QString, QVariant>*>* readConfigINI(QString config);
+    static void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*>* configMap);
 };
 
-#endif // TCP_CLIENT_H
+#endif // GUI_HELPER_H

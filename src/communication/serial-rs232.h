@@ -47,7 +47,6 @@ signals:
 
 public slots:
     void write(QByteArray writeData);
-    void write(std::initializer_list<uint8_t> writeData);
     void checkError(QSerialPort::SerialPortError);
 
 private slots:

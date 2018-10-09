@@ -44,7 +44,6 @@ public slots:
     void close();
     void disconnectClient();
     void write(QByteArray writeData);
-    void write(std::initializer_list<uint8_t> writeData);
 
 private slots:
     void read();

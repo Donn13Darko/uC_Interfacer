@@ -35,13 +35,6 @@ GUI_BASE::~GUI_BASE()
 {
 }
 
-bool GUI_BASE::showMessage(QString msg)
-{
-    QMessageBox n;
-    n.setText(msg);
-    return n.exec();
-}
-
 void GUI_BASE::set_chunkSize(size_t chunk)
 {
     chunkSize = chunk;
@@ -60,12 +53,23 @@ void GUI_BASE::send(QString data)
 
 void GUI_BASE::send(QByteArray data)
 {
+    // Append crc before sending
+    data.append((char) get_crc((const uint8_t*) data.data(),
+                               (uint8_t) data.length(), (uint8_t) 0));
+
+    // Emit write command for connected class
     emit write_data(data);
 }
 
 void GUI_BASE::send(std::initializer_list<uint8_t> data)
 {
-    emit write_data(data);
+    QByteArray dataArray;
+    foreach (char i, data)
+    {
+        dataArray.append(i);
+    }
+
+    send(dataArray);
 }
 
 void GUI_BASE::sendFile(QString filePath)
@@ -88,7 +92,7 @@ void GUI_BASE::sendFile(QString filePath)
 
         // Send read chunk size
         send({
-                 JSON_FILE,
+                 GUI_TYPE_DATA_TRANSMIT,
                  (uint8_t) sizeRead,
              });
 
@@ -105,58 +109,15 @@ void GUI_BASE::sendFile(QString filePath)
 
     // Send file done (0 will never be sent above)
     send({
-             JSON_FILE,
+             GUI_TYPE_DATA_TRANSMIT,
              0,
          });
 }
 
-bool GUI_BASE::getOpenFilePath(QString *filePath, QString fileTypes)
-{
-    *filePath = QFileDialog::getOpenFileName(this, tr("Open"),
-                                             "", fileTypes);
-
-    return !filePath->isEmpty();
-}
-
-bool GUI_BASE::getSaveFilePath(QString *filePath, QString fileTypes)
-{
-    *filePath = QFileDialog::getSaveFileName(this, tr("Save Location"),
-                                             "", fileTypes);
-
-    return !filePath->isEmpty();
-}
-
-bool GUI_BASE::saveFile(QString filePath, QByteArray data)
-{
-    uint32_t enumFlags = QIODevice::WriteOnly;
-    QFile sFile(filePath);
-    if (!sFile.open((QIODevice::OpenModeFlag) enumFlags))
-        return false;
-
-    qint64 res = sFile.write(data);
-    sFile.close();
-
-    if (res < 0)
-        return false;
-    return true;
-}
-
-QByteArray GUI_BASE::loadFile(QString filePath)
-{
-    uint32_t enumFlags = QIODevice::ReadOnly;
-    QFile sFile(filePath);
-    if (!sFile.open((QIODevice::OpenModeFlag) enumFlags)) return QByteArray();
-
-    QByteArray data = sFile.readAll();
-    sFile.close();
-
-    return data;
-}
-
 void GUI_BASE::reset_remote()
 {
-    send({JSON_RESET, JSON_RESET});
-    send({JSON_RESET, JSON_RESET});
+    send({MAJOR_KEY_RESET, 0});
+    send({MAJOR_KEY_RESET, 0});
 }
 
 void GUI_BASE::waitForResponse(int len, int msecs)
@@ -180,57 +141,13 @@ void GUI_BASE::waitForResponse(int len, int msecs)
 bool GUI_BASE::checkAck(QByteArray ack)
 {
     // Check ack
-    if ((ack.length() != 2) || (((uint8_t) ack[0]) != JSON_COPY)
-            || (((uint8_t) ack[1]) != JSON_SUCCESS))
+    if ((ack.length() != 2) || (((uint8_t) ack[0]) != MAJOR_KEY_ACK)
+            || (((uint8_t) ack[1]) != MAJOR_KEY_SUCCESS))
     {
-        showMessage("Error: Incorrect ACK, operation failed!");
+        GUI_HELPER::showMessage("Error: Incorrect ACK, operation failed!");
         return false;
     } else
     {
         return true;
     }
-}
-
-QMap<QString, QMap<QString, QVariant>*>* GUI_BASE::readConfigINI(QString config)
-{
-    // Reset & load the GUI settings file
-    QSettings config_settings(config, QSettings::IniFormat);
-
-    QMap<QString, QVariant>* groupMap;
-    QMap<QString, QMap<QString, QVariant>*>* configMap;
-    configMap = new QMap<QString, QMap<QString, QVariant>*>();
-
-    // Loop through all child groups
-    foreach (QString childGroup, config_settings.childGroups())
-    {
-        // Create new group map
-        groupMap = new QMap<QString, QVariant>();
-
-        // Begin GUI group settings
-        config_settings.beginGroup(childGroup);
-        foreach (QString childKey, config_settings.childKeys())
-        {
-            groupMap->insert(childKey, config_settings.value(childKey));
-        }
-
-        // Exit GUI group settings
-        config_settings.endGroup();
-
-        // Add groupMap to configMap
-        configMap->insert(childGroup, groupMap);
-    }
-
-    return configMap;
-}
-
-void GUI_BASE::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *> *configMap)
-{
-    QMap<QString, QVariant>* groupMap;
-    foreach (QString group, configMap->keys())
-    {
-        groupMap = configMap->value(group);
-        configMap->remove(group);
-        delete groupMap;
-    }
-    delete configMap;
 }

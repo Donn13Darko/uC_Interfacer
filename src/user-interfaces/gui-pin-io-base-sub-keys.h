@@ -16,46 +16,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TCP_CLIENT_H
-#define TCP_CLIENT_H
+#ifndef GUI_PIN_BASE_SUB_KEYS_H
+#define GUI_PIN_BASE_SUB_KEYS_H
 
-#include <QObject>
-#include <QMutex>
-#include <QTcpSocket>
+// IO Sub Keys enum
+typedef enum {
+    // Error and reset
+    SUB_KEY_IO_ERROR = 0,
 
-class TCP_CLIENT : public QObject
-{
-    Q_OBJECT
+    // Pin type set
+    SUB_KEY_IO_DIO,
+    SUB_KEY_IO_AIO,
 
-public:
-    TCP_CLIENT(QString ip, int port, QObject *parent = NULL);
-    ~TCP_CLIENT();
+    // Pin type read
+    SUB_KEY_IO_DIO_READ,
+    SUB_KEY_IO_AIO_READ,
 
-    void open();
-    bool isConnected();
+    // Remote Communications
+    SUB_KEY_IO_REMOTE_CONN
+} SUB_KEY_IO;
 
-signals:
-    void deviceConnected();
-    void deviceDisconnected();
-    void readyRead(QByteArray readData);
+typedef enum {
+    IO_INPUT = 0,
+    IO_OUTPUT,
+    IO_PWM,
+    IO_SERVO_DEG,
+    IO_SERVO_US
+} IO_COMBOS;
 
-public slots:
-    void close();
-    void connectClient();
-    void disconnectClient();
-    void write(QByteArray writeData);
+typedef enum {
+    IO_OFF = 0,
+    IO_ON
+} IO_PINS;
 
-private slots:
-    void read();
-
-private:
-    QTcpSocket *client;
-
-    QString server_ip;
-    int server_port;
-
-    QMutex *readLock;
-    QMutex *writeLock;
-};
-
-#endif // TCP_CLIENT_H
+#endif // GUI_PIN_BASE_SUB_KEYS_H

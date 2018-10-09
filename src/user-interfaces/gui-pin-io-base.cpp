@@ -153,7 +153,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
         int newVal = sliderValue->value();
         float tempVAL = (float) newVal / rList->div;
 
-        if (pInfo->pinType == JSON_AIO) tempVAL = qRound(tempVAL);
+        if (pInfo->pinType == SUB_KEY_IO_AIO) tempVAL = qRound(tempVAL);
 
         VAL = QString::number(tempVAL);
         textValue->setText(VAL);
@@ -163,7 +163,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
         VAL = textValue->text();
         float tempVAL = rList->div * VAL.toFloat();
 
-        if (pInfo->pinType != JSON_AIO) tempVAL = qRound(tempVAL);
+        if (pInfo->pinType != SUB_KEY_IO_AIO) tempVAL = qRound(tempVAL);
 
         sliderValue->setSliderPosition(tempVAL);
         VAL = QString::number(tempVAL);
@@ -174,10 +174,17 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
         return;
     }
 
-    // Send request to uC
+    // Send major key
+    send({
+             GUI_TYPE_IO,
+             (uint8_t) 6 // 1 sub-key, 4 data bits, 1 crc
+         });
+
+    // Send sub-key & CMDs to uC
     uint16_t v = (uint16_t) VAL.toInt();
     send({
-             pInfo->pinType,
+             pInfo->pinType, // Sub-key
+             // Data (pin_num, settings, val_high, val_low)
              (uint8_t) pinNum.toInt(),
              IO,
              (uint8_t) ((v >> 8) & 0xFF),
@@ -234,10 +241,10 @@ void GUI_PIN_BASE::setPinNumbers(PinTypeInfo *pInfo, uint8_t start_num)
     // Set global startnum
     switch (pInfo->pinType)
     {
-        case JSON_AIO:
+        case SUB_KEY_IO_AIO:
             num_AIOpins_START = start_num;
             break;
-        case JSON_DIO:
+        case SUB_KEY_IO_DIO:
             num_DIOpins_START = start_num;
             break;
     }
@@ -264,7 +271,7 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
     // Set pin type variables
     switch (pinType)
     {
-        case JSON_AIO:
+        case SUB_KEY_IO_AIO:
             infoPtr->numButtons = num_AIObuttons;
             infoPtr->numPins_GUI = num_AIOpins_GUI;
             infoPtr->numPins_DEV = num_AIOpins_DEV;
@@ -272,7 +279,7 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
             infoPtr->cols = num_AIOcols;
             infoPtr->rows = num_AIOrows;
             return true;
-        case JSON_DIO:
+        case SUB_KEY_IO_DIO:
             infoPtr->numButtons = num_DIObuttons;
             infoPtr->numPins_GUI = num_DIOpins_GUI;
             infoPtr->numPins_DEV = num_DIOpins_DEV;

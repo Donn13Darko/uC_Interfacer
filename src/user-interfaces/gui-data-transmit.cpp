@@ -66,7 +66,7 @@ void GUI_DATA_TRANSMIT::on_BrowseFile_Button_clicked()
 {
     // Select file to send
     QString file;
-    if (getOpenFilePath(&file))
+    if (GUI_HELPER::getOpenFilePath(&file))
         ui->FilePathEdit->setText(file);
 }
 
@@ -74,12 +74,12 @@ void GUI_DATA_TRANSMIT::on_SaveAs_Button_clicked()
 {
     // Select file save location
     QString fileName;
-    if (!getSaveFilePath(&fileName))
+    if (!GUI_HELPER::getSaveFilePath(&fileName))
         return;
 
     // Save file
-    if (!saveFile(fileName, received))
-        showMessage("ERROR: Failed to save file!");
+    if (!GUI_HELPER::saveFile(fileName, received))
+        GUI_HELPER::showMessage("ERROR: Failed to save file!");
 }
 
 void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()

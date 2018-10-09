@@ -28,7 +28,8 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     loadedHex = QByteArray();
 
     // Read config settings
-    QMap<QString, QMap<QString, QVariant>*>* configMap = readConfigINI(":/user-interfaces/gui-programmer.ini");
+    QMap<QString, QMap<QString, QVariant>*>* configMap = \
+            GUI_HELPER::readConfigINI(":/user-interfaces/gui-programmer.ini");
 
     // Add configs to local maps
     QMap<QString, QVariant>* groupMap;
@@ -40,7 +41,7 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     }
 
     // Delete map after use
-    deleteConfigMap(configMap);
+    GUI_HELPER::deleteConfigMap(configMap);
 
     // Setup UI for user
     ui->ReadAll_Radio->setChecked(true);
@@ -114,7 +115,7 @@ void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()
 {
     // Select programmer file
     QString file;
-    if (getOpenFilePath(&file, tr("HEX (*.hex);;All Files (*.*)")))
+    if (GUI_HELPER::getOpenFilePath(&file, tr("HEX (*.hex);;All Files (*.*)")))
     {
         // Set file text
         ui->HexFile_LineEdit->setText(file);
@@ -131,7 +132,7 @@ void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
     if (filePath.isEmpty()) return;
 
     // Reload file if it exists
-    loadedHex = loadFile(filePath);
+    loadedHex = GUI_HELPER::loadFile(filePath);
 
     // Reset preview
     on_HexFormat_Combo_currentIndexChanged(0);
@@ -141,8 +142,8 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 {
     // Send start of programming
     send({
-             JSON_PROGRAM,
-             PROGRAMNING_INFO_START
+             GUI_TYPE_PROGRAMMER,
+             GUI_TYPE_PROGRAMMER
          });
 
     QStringList formattedHexList = ui->HexPreview_Edit->toPlainText().split('\n');
@@ -159,8 +160,8 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
             rcvd.clear();
 
             send({
-                     JSON_PROGRAM,
-                     PROGRAMNING_INFO_ADDRESS,
+                     GUI_TYPE_PROGRAMMER,
+                     GUI_TYPE_PROGRAMMER,
                      2
                  });
             send(QByteArray::fromHex(curr[3].toUtf8()));
@@ -180,8 +181,8 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 
             // Send next program line
             send({
-                     JSON_PROGRAM,
-                     PROGRAMNING_INFO_DATA,
+                     GUI_TYPE_PROGRAMMER,
+                     GUI_TYPE_PROGRAMMER,
                      (uint8_t) (curr[4].length() / 2)
                  });
             send(QByteArray::fromHex(curr[4].toUtf8()));
@@ -196,8 +197,8 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 
     // Send end of programming
     send({
-             JSON_PROGRAM,
-             PROGRAMNING_INFO_END
+             GUI_TYPE_PROGRAMMER,
+             GUI_TYPE_PROGRAMMER
          });
 }
 

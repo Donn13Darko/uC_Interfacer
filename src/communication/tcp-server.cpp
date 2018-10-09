@@ -90,17 +90,6 @@ void TCP_SERVER::write(QByteArray writeData)
     writeLock->unlock();
 }
 
-void TCP_SERVER::write(std::initializer_list<uint8_t> writeData)
-{
-    QByteArray data;
-    foreach (char i, writeData)
-    {
-        data.append(i);
-    }
-
-    write(data);
-}
-
 void TCP_SERVER::read()
 {
     readLock->lock();

@@ -30,7 +30,7 @@
 #include <QCloseEvent>
 #include <QSettings>
 
-#include "communication/json-info.h"
+#include "communication/general-comms.h"
 #include "communication/crc-calcs.h"
 #include "communication/serial-rs232.h"
 #include "communication/tcp-client.h"
@@ -38,15 +38,6 @@
 #include "communication/udp-socket.h"
 
 #include "user-interfaces/gui-welcome.h"
-
-// Order not important (supportedGUIsMap handles)
-typedef enum {
-    GUI_TYPE_ERROR = 0,
-    GUI_TYPE_WELCOME,
-    GUI_TYPE_IO,
-    GUI_TYPE_DATA_TRANSMIT,
-    GUI_TYPE_PROGRAMMER
-} GUI_TYPE;
 
 // Must be in same order as supportedDevicesList
 typedef enum {
@@ -78,11 +69,9 @@ public:
     ~MainWindow();
 
     void closeEvent(QCloseEvent* e);
-    static bool showMessage(QString msg);
 
 signals:
     void write_data(QByteArray data);
-    void write_data(std::initializer_list<uint8_t> data);
 
 public slots:
     void connect_signals(bool connect);
