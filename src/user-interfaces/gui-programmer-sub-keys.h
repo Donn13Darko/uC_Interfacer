@@ -16,30 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_ARDUINO_UNO_UART_SUB_KEYS_H
-#define GUI_ARDUINO_UNO_UART_SUB_KEYS_H
+#ifndef GUI_PROGRAMMER_SUB_KEYS_H
+#define GUI_PROGRAMMER_SUB_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// Used in uC code
+// Programmer Sub Keys enum
 typedef enum {
-    IO_INPUT = 0,
-    IO_OUTPUT,
-    IO_PWM,
-    IO_SERVO_DEG,
-    IO_SERVO_US
-} IO_COMBOS;
+    // Error and reset
+    SUB_KEY_PROGRAMMER_ERROR = 0,
 
-typedef enum {
-    IO_OFF = 0,
-    IO_ON
-} IO_PINS;
+    // Programer Set
+    SUB_KEY_PROGRAMMER_SET,
+
+    // Programmer Transfer
+    SUB_KEY_PROGRAMMER_ADDR,
+    SUB_KEY_PROGRAMMER_DATA
+} SUB_KEY_PROGRAMMER;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GUI_ARDUINO_UNO_UART_SUB_KEYS_H
+#endif // GUI_PROGRAMMER_SUB_KEYS_H

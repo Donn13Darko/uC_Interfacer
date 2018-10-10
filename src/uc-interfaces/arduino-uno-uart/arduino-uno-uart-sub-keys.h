@@ -19,6 +19,11 @@
 #ifndef GUI_ARDUINO_UNO_UART_SUB_KEYS_H
 #define GUI_ARDUINO_UNO_UART_SUB_KEYS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 // Used in uC code
 typedef enum {
     IO_INPUT = 0,
@@ -32,5 +37,9 @@ typedef enum {
     IO_OFF = 0,
     IO_ON
 } IO_PINS;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // GUI_ARDUINO_UNO_UART_SUB_KEYS_H

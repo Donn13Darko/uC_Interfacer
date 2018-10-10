@@ -54,13 +54,15 @@ extern "C"
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "../communication/general-comms.h"
+
 /* FSM Functions */
 void fsm_setup(uint32_t buffer_len);
 void fsm_destroy();
 void fsm_poll();
 void fsm_isr();
 void fsm_run();
-void fsm_ack(uint8_t val1, uint8_t val2);
+void fsm_ack(uint8_t ack_key);
 bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout);
 uint32_t fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
 

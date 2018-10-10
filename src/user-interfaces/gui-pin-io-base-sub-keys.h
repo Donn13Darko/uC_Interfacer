@@ -19,6 +19,11 @@
 #ifndef GUI_PIN_BASE_SUB_KEYS_H
 #define GUI_PIN_BASE_SUB_KEYS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 // IO Sub Keys enum
 typedef enum {
     // Error and reset
@@ -38,11 +43,15 @@ typedef enum {
 
 /* Packet #2 (p2) io key positions enum */
 typedef enum {
-    p2_sub_key_loc = 0,
-    p2_pin_num_loc,
-    p2_combo_loc,
-    p2_value_high_loc,
-    p2_value_low_loc
+    p2_io_pin_num_loc = 1,
+    p2_io_combo_loc,
+    p2_io_value_high_loc,
+    p2_io_value_low_loc,
+    p2_io_crc_loc
 } P2_IO_Settings;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // GUI_PIN_BASE_SUB_KEYS_H

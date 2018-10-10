@@ -17,7 +17,6 @@
 */
 
 #include "uc-generic-io.h"
-#include "../user-interfaces/gui-pin-io-base-sub-keys.h"
 
 void uc_io(const uint8_t* buffer, uint8_t num_bytes)
 {
@@ -27,7 +26,7 @@ void uc_io(const uint8_t* buffer, uint8_t num_bytes)
 
     // Verify & parse bytes
     uint16_t value = 0;
-    if (num_bytes != (p2_value_low_loc+1))
+    if (num_bytes != p2_io_crc_loc)
     {
         // If not enough bytes for command return
         if ((sub_key == SUB_KEY_IO_DIO)
@@ -37,18 +36,18 @@ void uc_io(const uint8_t* buffer, uint8_t num_bytes)
         }
     } else
     {
-        value = ((((uint16_t) buffer[p2_value_high_loc]) << 8)
-                          | ((uint16_t) buffer[p2_value_low_loc]));
+        value = ((((uint16_t) buffer[p2_io_value_high_loc]) << 8)
+                          | ((uint16_t) buffer[p2_io_value_low_loc]));
     }
 
     // Parse and act on sub key
     switch (sub_key)
     {
         case SUB_KEY_IO_DIO:
-            uc_dio(buffer[p2_pin_num_loc], buffer[p2_combo_loc], value);
+            uc_dio(buffer[p2_io_pin_num_loc], buffer[p2_io_combo_loc], value);
             break;
         case SUB_KEY_IO_AIO:
-            uc_aio(buffer[p2_pin_num_loc], buffer[p2_combo_loc], value);
+            uc_aio(buffer[p2_io_pin_num_loc], buffer[p2_io_combo_loc], value);
             break;
         case SUB_KEY_IO_DIO_READ:
             uc_dio_read();

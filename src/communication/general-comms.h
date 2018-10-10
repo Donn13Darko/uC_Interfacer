@@ -19,6 +19,15 @@
 #ifndef GENERAL_COMMS_H
 #define GENERAL_COMMS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#include <stdint.h>
+
+static const uint8_t packet_retries = 2;
+
 // Major Keys enum
 typedef enum {
     // Error and reset
@@ -27,8 +36,6 @@ typedef enum {
 
     // Action confirmations
     MAJOR_KEY_ACK,
-    MAJOR_KEY_SUCCESS,
-    MAJOR_KEY_FAILURE,
 
     // Update Config Settings
     MAJOR_KEY_CONFIG_UPDATE,
@@ -41,10 +48,23 @@ typedef enum {
     GUI_TYPE_PROGRAMMER
 } MAJOR_KEYS;
 
-// Define major key errorcodes
+/* Packet #1 (p1) generic key positions */
 typedef enum {
-    MAJOR_KEY_ERROR_GENERIC = 0,
-    MAJOR_KEY_ERROR_BAD_CRC
-} MAJOR_KEY_ERRORS;
+    p1_major_key_loc = 0,
+    p1_num_p2_bytes_loc,
+    p1_crc_loc
+} P1_Major_Settings;
+static const uint8_t num_p1_bytes = p1_crc_loc + 1;
+
+/* Packet #2 (p2) key positions enum */
+typedef enum {
+    p2_sub_key_loc = 0,
+    p2_data_start_loc
+} P2_Sub_Settings;
+extern uint8_t num_p2_bytes;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // GENERAL_COMMS_H

@@ -88,10 +88,10 @@ void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()
     ui->recv_PlainText->clear();
 }
 
-void GUI_DATA_TRANSMIT::receive(QByteArray recvData)
+void GUI_DATA_TRANSMIT::receive_data_transmit()
 {
-    received.append(recvData);
-    ui->recv_PlainText->appendPlainText(QString(recvData));
+    received.append(rcvd);
+    ui->recv_PlainText->appendPlainText(QString(rcvd));
 }
 
 void GUI_DATA_TRANSMIT::input_select(bool fileIN, bool plainIN)

@@ -18,34 +18,26 @@
 
 #include "uc-generic-fsm.h"
 #include "../communication/crc-calcs.h"
-#include "../communication/general-comms.h"
 
 // Recv buffer
 uint8_t *fsm_buffer;
 uint8_t *fsm_ack_buffer;
 
-// Key & bytes holders
-uint8_t major_key, num_p1_bytes, num_p2_bytes;
-uint8_t curr_packet_num;
-
-/* Packet #1 (p1) generic key positions */
-typedef enum {
-    p1_major_key_loc = 0,
-    p1_num_p2_bytes_loc,
-    p1_crc_loc
-} P1_Major_Settings;
+// Key & packet holders
+uint8_t major_key, curr_packet_num, num_p2_bytes;
 
 void fsm_setup(uint32_t buffer_len)
 {
-    // Malloc buffers
-    fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
-    fsm_ack_buffer = malloc(2*sizeof(fsm_ack_buffer));
-
     // Initialize values
     major_key = MAJOR_KEY_ERROR;
-    num_p1_bytes = p1_crc_loc + 1;
-    num_p2_bytes = 0;
     curr_packet_num = 1;
+
+    // Malloc buffers
+    fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
+    fsm_ack_buffer = malloc(num_p1_bytes*sizeof(fsm_ack_buffer));
+
+    // Reset to start defaults
+    uc_reset();
 }
 
 void fsm_destroy()
@@ -72,32 +64,31 @@ void fsm_poll()
         num_p2_bytes = fsm_buffer[p1_num_p2_bytes_loc];
 
         // Send Packet #1 Ack
-        fsm_ack(major_key, fsm_buffer[p1_crc_loc]);
+        fsm_ack(major_key);
 
         // Read Packet #2 only if its being sent
         if (num_p2_bytes != 0)
         {
             // Read Packet #2 or ACK failed after 1 second
-            // Exit after 5 attempts
+            // Exit after retries attempts
             do
             {
                 // Try reading
                 good_read = fsm_read_bytes(num_p2_bytes, 1000);
 
                 // Check read, increment loop count/check if time to break
-                if (good_read || (++loop_count == 5)) break;
+                if (good_read || (++loop_count == packet_retries)) break;
             } while (!good_read);
 
             // Reset to Packet #1 if still failing
             if (!good_read) continue;
+
+            // Send Packet #2 Ack (minor_key = 0)
+            fsm_ack(fsm_buffer[0]);
+
+            // Ignore Packet #2 crc (already verified)
+            num_p2_bytes -= 1;
         }
-
-        // Ignore Packet #2 crc (already verified)
-        num_p2_bytes -= 1;
-
-        // Send Packet #2 Ack (minor_key = 0, crc = end)
-        // Done after num_p2_bytes subtraction on purpose
-        fsm_ack(fsm_buffer[0], fsm_buffer[num_p2_bytes]);
 
         // Run FSM
         fsm_run();
@@ -120,7 +111,7 @@ void fsm_isr()
                 num_p2_bytes = fsm_buffer[p1_num_p2_bytes_loc];
 
                 // Send Packet #1 Ack
-                fsm_ack(major_key, fsm_buffer[p1_crc_loc]);
+                fsm_ack(major_key);
 
                 // Run FSM if no Packet #2
                 if (num_p2_bytes == 0)
@@ -135,9 +126,6 @@ void fsm_isr()
                     // Move to Packet #2
                     curr_packet_num = 2;
                 }
-            } else
-                // Keep at Packet #1
-                curr_packet_num = 1;
             }
         }
     } else if (curr_packet_num == 2)
@@ -147,22 +135,17 @@ void fsm_isr()
         {
             if (fsm_read_bytes(num_p2_bytes, 0))
             {
+                // Send Packet #2 Ack (minor_key = 0)
+                fsm_ack(fsm_buffer[0]);
+
                 // Ignore Packet #2 crc (already verified)
                 num_p2_bytes -= 1;
-
-                // Send Packet #2 Ack (minor_key = 0, crc = end)
-                // Done after num_p2_bytes subtraction on purpose
-                fsm_ack(fsm_buffer[0], fsm_buffer[num_p2_bytes]);
 
                 // Run FSM
                 fsm_run();
 
                 // Reset to Packet #1
                 curr_packet_num = 1;
-            } else
-            {
-                // Keep at Packet #2
-                curr_packet_num = 2;
             }
         }
     } else
@@ -195,14 +178,15 @@ void fsm_run()
     }
 }
 
-void fsm_ack(uint8_t val1, uint8_t val2)
+void fsm_ack(uint8_t ack_key)
 {
     // Fill buffer
-    fsm_ack_buffer[0] = val1;
-    fsm_ack_buffer[1] = val2;
+    fsm_ack_buffer[p1_major_key_loc] = MAJOR_KEY_ACK;
+    fsm_ack_buffer[p1_num_p2_bytes_loc] = ack_key;
+    fsm_ack_buffer[p1_crc_loc] = get_crc(fsm_ack_buffer, p1_crc_loc, 0);
 
     // Send buffer
-    uc_send(fsm_ack_buffer, 2);
+    uc_send(fsm_ack_buffer, num_p1_bytes);
 }
 
 bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout)
@@ -216,7 +200,7 @@ bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout)
         } else
         {
             // Checksum Failed Ack
-            fsm_ack(MAJOR_KEY_ERROR, get_crc(fsm_buffer, num_bytes_m1));
+            fsm_ack(MAJOR_KEY_ERROR);
 
             // Reset send/receive buffers to prevent sync errors
             uc_reset_buffers();
@@ -228,7 +212,7 @@ bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout)
 uint32_t fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 {
     // Set control variables
-    uint32_t check_delay = 100; // ms
+    uint32_t check_delay = 10; // ms
     uint32_t wait_time = 0;
 
     // Wait for num_bytes to be received

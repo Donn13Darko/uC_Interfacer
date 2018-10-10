@@ -204,14 +204,14 @@ void GUI_8AIO_16DIO_COMM::updateValues()
          });
 }
 
-void GUI_8AIO_16DIO_COMM::io_receive(QByteArray recvData)
+void GUI_8AIO_16DIO_COMM::receive_io()
 {
-    currData.append(recvData);
+    currData = rcvd;
     uint8_t m = currData.length();
     if (m & 1) m = m - 1;
     if (m == 0) return;
 
-    // Search received for valid key,value formations
+    // Search received for valid info formations
     uint8_t key, value;
     for (uint8_t i = 0; i < (m - 1); i++)
     {
@@ -579,7 +579,7 @@ void GUI_8AIO_16DIO_COMM::initialize()
 
 void GUI_8AIO_16DIO_COMM::setupUpdaters()
 {
-//    connect(this, SIGNAL(readyRead()), this, SLOT(io_receive()));
+    connect(this, SIGNAL(readyRead()), this, SLOT(receive_io()));
     connect(&DIO_READ, SIGNAL(timeout()), this, SLOT(updateValues()));
     connect(&AIO_READ, SIGNAL(timeout()), this, SLOT(updateValues()));
     connect(&logTimer, SIGNAL(timeout()), this, SLOT(recordLogData()));
@@ -606,19 +606,25 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         // Connect AIO Combo
         if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
         {
-            connect((QComboBox*) item, SIGNAL(currentIndexChanged(int)), this, SLOT(AIO_ComboChanged()));
+            connect((QComboBox*) item, SIGNAL(currentIndexChanged(int)),
+                    this, SLOT(AIO_ComboChanged()),
+                    Qt::QueuedConnection);
         }
 
         // Connect AIO Slider
         if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
         {
-            connect((QSlider*) item, SIGNAL(valueChanged(int)), this, SLOT(AIO_SliderValueChanged()));
+            connect((QSlider*) item, SIGNAL(valueChanged(int)),
+                    this, SLOT(AIO_SliderValueChanged()),
+                    Qt::QueuedConnection);
         }
 
         // Connect AIO Text
         if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
         {
-            connect((QLineEdit*) item, SIGNAL(editingFinished()), this, SLOT(AIO_TextValueChanged()));
+            connect((QLineEdit*) item, SIGNAL(editingFinished()),
+                    this, SLOT(AIO_TextValueChanged()),
+                    Qt::QueuedConnection);
         }
     }
 
@@ -637,19 +643,25 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         // Connect DIO Combo
         if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
         {
-            connect((QComboBox*) item, SIGNAL(currentIndexChanged(int)), this, SLOT(DIO_ComboChanged()));
+            connect((QComboBox*) item, SIGNAL(currentIndexChanged(int)),
+                    this, SLOT(DIO_ComboChanged()),
+                    Qt::QueuedConnection);
         }
 
         // Connect DIO Slider
         if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
         {
-            connect((QSlider*) item, SIGNAL(valueChanged(int)), this, SLOT(DIO_SliderValueChanged()));
+            connect((QSlider*) item, SIGNAL(valueChanged(int)),
+                    this, SLOT(DIO_SliderValueChanged()),
+                    Qt::QueuedConnection);
         }
 
         // Connect DIO Text
         if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
         {
-            connect((QLineEdit*) item, SIGNAL(editingFinished()), this, SLOT(DIO_TextValueChanged()));
+            connect((QLineEdit*) item, SIGNAL(editingFinished()),
+                    this, SLOT(DIO_TextValueChanged()),
+                    Qt::QueuedConnection);
         }
     }
 }

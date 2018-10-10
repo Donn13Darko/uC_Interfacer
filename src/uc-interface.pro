@@ -54,7 +54,8 @@ HEADERS += \
     communication/crc-calcs.h \
     communication/general-comms.h \
     gui-helper.h \
-    user-interfaces/gui-pin-io-base-sub-keys.h
+    user-interfaces/gui-pin-io-base-sub-keys.h \
+    user-interfaces/gui-programmer-sub-keys.h
 
 FORMS += \
     mainwindow.ui \

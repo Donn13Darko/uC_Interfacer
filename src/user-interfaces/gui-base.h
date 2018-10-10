@@ -23,6 +23,7 @@
 #include <QWidget>
 #include <QMap>
 #include <QVariant>
+#include <QMutex>
 
 #include "../communication/crc-calcs.h"
 #include "../communication/general-comms.h"
@@ -38,11 +39,13 @@ public:
     ~GUI_BASE();
 
     void reset_gui() {/*Default do nothing*/}
+    void reset_remote();
     void set_chunkSize(size_t chunk);
 
 signals:
     void write_data(QByteArray data);
     void connect_signals(bool connect);
+    void ackReady();
     void readyRead();
 
 protected slots:
@@ -58,9 +61,14 @@ protected:
     void send(std::initializer_list<uint8_t> data);
     void sendFile(QString filePath);
 
-    void reset_remote();
-    bool waitForResponse(int len, int msecs = 5000);
-    bool checkAck(uint8_t val1, uint8_t val2, QByteArray ack);
+    void waitForAck(int msecs = 5000);
+    bool checkAck();
+
+private:
+    bool ack_status;
+    uint8_t ack_key;
+    QMutex sendLock;
+    QList<QByteArray> msgList;
 };
 
 #endif // GUI_BASE_H

@@ -261,7 +261,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
 }
 
 void MainWindow::on_DeviceConnected() {
-    // Disconnect signals from device
+    // Disconnect connection signals from device
     QObject* device = getConnObject();
     if (device)
     {
@@ -353,13 +353,6 @@ void MainWindow::on_DeviceConnected() {
 
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
-
-        // Set to connected mode
-        connect2sender(this, true);
-
-        // Reset the remote
-        // (the window must be in connected mode prior to call)
-        reset_remote();
     } else
     {
         GUI_HELPER::showMessage("Error: Unable to connect to target!");
@@ -379,7 +372,7 @@ void MainWindow::on_DeviceDisconnected()
 
 void MainWindow::on_DeviceDisconnect_Button_clicked()
 {
-    // Reset the remote
+    // Reset the remote if connected
     if (deviceConnected()) reset_remote();
 
     // Disconnect any connected slots
@@ -394,7 +387,6 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
 
     // Disconnect connections
     connect2sender(ui->ucOptions->currentWidget(), false);
-    connect2sender(this, false);
 
     // Disconnect from connection
     switch (getConnType())
@@ -480,9 +472,6 @@ void MainWindow::on_ucOptions_currentChanged(int index)
         }
     }
 
-    // Reset the remote
-    reset_remote();
-
     // Connect new signals
     QObject* curr_widget = (QObject*) ui->ucOptions->currentWidget();
     if (curr_widget)
@@ -497,6 +486,9 @@ void MainWindow::on_ucOptions_currentChanged(int index)
 
     // Update previous tab index
     prev_tab = index;
+
+    // Reset the Remote for the new tab (if connected)
+    if (deviceConnected()) reset_remote();
 }
 
 void MainWindow::updateConnInfoCombo()
@@ -590,16 +582,8 @@ void MainWindow::setConnected(bool conn)
 
 void MainWindow::reset_remote()
 {
-    QByteArray reset_array;
-    reset_array.append((char) MAJOR_KEY_RESET);
-    reset_array.append((char) 0);
-    reset_array.append(
-                (char) get_crc((uint8_t*) reset_array.data(),
-                               reset_array.length(), 0)
-                );
-
-    emit write_data(reset_array);
-    emit write_data(reset_array);
+    GUI_BASE* curr = (GUI_BASE*) ui->ucOptions->currentWidget();
+    if (curr) curr->reset_remote();
 }
 
 void MainWindow::connect2sender(QObject* obj, bool conn)
@@ -611,10 +595,12 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
     // Connect or disconnect signals
     if (conn) {
         connect(obj, SIGNAL(write_data(QByteArray)),
-                conn_obj, SLOT(write(QByteArray)));
+                conn_obj, SLOT(write(QByteArray)),
+                Qt::QueuedConnection);
 
         connect(conn_obj, SIGNAL(readyRead(QByteArray)),
-                obj, SLOT(receive(QByteArray)));
+                obj, SLOT(receive(QByteArray)),
+                Qt::QueuedConnection);
     } else {
         disconnect(obj, SIGNAL(write_data(QByteArray)),
                    conn_obj, SLOT(write(QByteArray)));

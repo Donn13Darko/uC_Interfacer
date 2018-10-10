@@ -18,6 +18,7 @@
 
 #include "gui-programmer.h"
 #include "ui_gui-programmer.h"
+#include "gui-programmer-sub-keys.h"
 
 GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     GUI_BASE(parent),
@@ -140,66 +141,52 @@ void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
 
 void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 {
-    // Send start of programming
-    send({
-             GUI_TYPE_PROGRAMMER,
-             GUI_TYPE_PROGRAMMER
-         });
-
-    QStringList formattedHexList = ui->HexPreview_Edit->toPlainText().split('\n');
+    QByteArray data;
     QStringList curr;
+    uint8_t prog_line_length;
+    QStringList formattedHexList = ui->HexPreview_Edit->toPlainText().split('\n');
     foreach (QString i, formattedHexList)
     {
         curr = i.split(' ');
         if (curr.isEmpty() || (curr.length() < 5)) continue;
 
         // Send across address
-        if (!curr[3].isEmpty())// && (curr[3].length() == 4))
+        if (!curr[3].isEmpty() && (curr[3].length() == 4))
         {
-            // Clear buffers
-            rcvd.clear();
-
+            // Send Packet #1
             send({
-                     GUI_TYPE_PROGRAMMER,
                      GUI_TYPE_PROGRAMMER,
                      2
                  });
-            send(QByteArray::fromHex(curr[3].toUtf8()));
 
-            // Wait for ack back
-            //waitForResponse(2, 1000);
-
-            // Check ack
-            //if (!checkAck(rcvd)) break;
+            // Send Packet #2
+            data.clear();
+            data.append((char) SUB_KEY_PROGRAMMER_ADDR);
+            data.append(QByteArray::fromHex(curr[3].toUtf8()));
+            send(data);
         }
 
         // Send across data
-        if (!curr[4].isEmpty())// && (1 < curr[4].length()))
+        if (!curr[4].isEmpty() && (1 < curr[4].length()))
         {
-            // Clear buffers
-            rcvd.clear();
+            // Calculate command length
+            prog_line_length = curr[4].length();
+            prog_line_length = (prog_line_length / 2) + (prog_line_length % 2);
+            prog_line_length += 2; // Sub-key + CRC
 
-            // Send next program line
+            // Send Packet #1
             send({
                      GUI_TYPE_PROGRAMMER,
-                     GUI_TYPE_PROGRAMMER,
-                     (uint8_t) (curr[4].length() / 2)
+                     prog_line_length
                  });
-            send(QByteArray::fromHex(curr[4].toUtf8()));
 
-            // Wait for ack back
-            //waitForResponse(2, 1000);
-
-            // Check ack
-            //if (!checkAck(rcvd)) break;
+            // Send Packet #2
+            data.clear();
+            data.append((char) SUB_KEY_PROGRAMMER_DATA);
+            data.append(QByteArray::fromHex(curr[4].toUtf8()));
+            send(data);
         }
     }
-
-    // Send end of programming
-    send({
-             GUI_TYPE_PROGRAMMER,
-             GUI_TYPE_PROGRAMMER
-         });
 }
 
 void GUI_PROGRAMMER::on_HexFormat_Combo_currentIndexChanged(int)
@@ -233,19 +220,20 @@ QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
     QRegularExpression hexReg = hexFormats.value(ui->HexFormat_Combo->currentText());
 
     QString final;
-    QRegularExpressionMatch hexRegMatch;
+    QStringList captureList;
     foreach (QString i, hexList)
     {
         if (i.isEmpty()) continue;
 
         // Attempt to match with regex
         // Should be in format [nnaaaatt_dd_cc]
-        hexRegMatch = hexReg.match(i.trimmed());
-        foreach (QString capturedText, hexRegMatch.capturedTexts())
+        // Transfer match to capture groups
+        captureList = hexReg.match(i.trimmed()).capturedTexts();
+        if (!captureList.isEmpty())
         {
-            final += capturedText + " ";
+            captureList.removeFirst();
+            final += captureList.join(" ");
         }
-        final.chop(1);
         final += "\n";
     }
 

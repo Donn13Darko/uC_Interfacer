@@ -54,7 +54,7 @@ private slots:
     void AIO_TextValueChanged();
 
     void updateValues();
-    void io_receive(QByteArray recvData);
+    void receive_io();
     void recordLogData();
 
     void on_updateStarter_clicked();

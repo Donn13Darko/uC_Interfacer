@@ -44,7 +44,7 @@ private slots:
 
     void on_ClearReceived_Button_clicked();
 
-    void receive(QByteArray recvData);
+    void receive_data_transmit();
 
 private:
     Ui::GUI_DATA_TRANSMIT *ui;

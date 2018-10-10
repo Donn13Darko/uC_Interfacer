@@ -36,6 +36,9 @@ extern "C"
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "../communication/general-comms.h"
+#include "../user-interfaces/gui-pin-io-base-sub-keys.h"
+
 /* IO Functions */
 /* Parses IO subkeys and calls uc specific code */
 void uc_io(const uint8_t* buffer, uint8_t num_bytes);
