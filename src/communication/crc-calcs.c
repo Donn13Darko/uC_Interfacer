@@ -20,9 +20,9 @@
 
 // Reverse = TRUE for both LUT and polynomials
 
-#if defined __crc_LUT
+#if defined(__crc_LUT)
 // Lookup table method (define tables)
-#if defined __crc_8
+#if defined(__crc_8)
 // Define lookup table as CRC8
 static const uint8_t crc_table[256] =
 {
@@ -60,7 +60,7 @@ static const uint8_t crc_table[256] =
     0xBA, 0x2B, 0x59, 0xC8, 0xBD, 0x2C, 0x5E, 0xCF
 };
 
-#elif defined __crc_16
+#elif defined(__crc_16)
 // Define lookup table as CRC16
 static const uint16_t crc_table[256] = {
     0x0000, 0x1189, 0x2312, 0x329B, 0x4624, 0x57AD,
@@ -108,7 +108,7 @@ static const uint16_t crc_table[256] = {
     0x3DE3, 0x2C6A, 0x1EF1, 0x0F78
 };
 
-#elif defined __crc_32
+#elif defined(__crc_32)
 // Define lookup table as CRC32
 static const uint32_t crc_table[256] = {
     0x00000000, 0xF26B8303, 0xE13B70F7, 0x1350F3F4,
@@ -180,7 +180,7 @@ static const uint32_t crc_table[256] = {
 #endif
 
 // Define get_crc based on lookup table
-crc_t get_crc(const uint8_t *data_array, crc_t data_len, crc_t crc)
+crc_t get_crc(const uint8_t *data_array, uint32_t data_len, crc_t crc)
 {
     const uint8_t *data_p = data_array;
 
@@ -194,15 +194,15 @@ crc_t get_crc(const uint8_t *data_array, crc_t data_len, crc_t crc)
 
 #else
 // Define poly for use
-#if defined __crc_8
+#if defined(__crc_8)
 // Reverse of poly 0x07
 static const uint8_t crc_poly = 0xE0;
 
-#elif defined __crc_16
+#elif defined(__crc_16)
 // Reverse of poly 0x1021
 static const uint16_t crc_poly = 0x8408;
 
-#elif defined __crc_32
+#elif defined(__crc_32)
 // Reverse of poly 0x1EDC6F41
 static const uint32_t crc_poly = 0x105EC76F;
 
@@ -229,6 +229,42 @@ crc_t get_crc(const uint8_t *data_array, uint32_t data_len, crc_t crc)
 }
 
 #endif
+
+// Build byte array from CRC (length change with type)
+uint8_t* build_byte_array(crc_t crc)
+{
+    // Create the new array
+    uint8_t* data_array = malloc(crc_size*sizeof(uint8_t));
+
+    // Add each byte to array
+    uint8_t i = crc_size;
+    do
+    {
+        i -= 1;
+        data_array[i] = (uint8_t) (crc & 0xFF);
+        crc = crc >> 8;
+    } while (0 < i);
+
+    // Return the new array
+    return data_array;
+}
+
+crc_t build_crc(const uint8_t *data_array)
+{
+    // Init holder variable
+    crc_t crc = 0;
+
+    // Add each byte to array
+    uint8_t i = crc_size;
+    do
+    {
+        i -= 1;
+        crc = ((crc << 8) | data_array[i]);
+    } while (0 < i);
+
+    // Return the built crc
+    return crc;
+}
 
 // Check CRC unchanged based on CRC type
 bool check_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_cmp, crc_t crc)

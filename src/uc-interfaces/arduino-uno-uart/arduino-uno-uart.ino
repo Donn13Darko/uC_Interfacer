@@ -16,9 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define __crc_8
-#define __crc_LUT
-
 #include "uc-generic-fsm.h"
 #include "uc-generic-io.h"
 #include "arduino-uno-uart-sub-keys.h"

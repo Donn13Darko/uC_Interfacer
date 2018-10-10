@@ -177,7 +177,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
     // Send major key
     send({
              GUI_TYPE_IO,
-             (uint8_t) 6 // 1 sub-key, 4 data bits, 1 crc
+             (uint8_t) 5 // 1 sub-key, 4 data bytes
          });
 
     // Send sub-key & CMDs to uC

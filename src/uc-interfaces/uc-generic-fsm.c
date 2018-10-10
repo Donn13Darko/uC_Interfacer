@@ -24,6 +24,7 @@ uint8_t *fsm_buffer;
 uint8_t *fsm_ack_buffer;
 
 // Key & packet holders
+uint8_t num_p1_bytes, num_p1_bytes_crc;
 uint8_t major_key, curr_packet_num, num_p2_bytes;
 
 void fsm_setup(uint32_t buffer_len)
@@ -31,6 +32,8 @@ void fsm_setup(uint32_t buffer_len)
     // Initialize values
     major_key = MAJOR_KEY_ERROR;
     curr_packet_num = 1;
+    num_p1_bytes = p1_crc_loc;
+    num_p1_bytes_crc = num_p1_bytes + crc_size;
 
     // Malloc buffers
     fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
@@ -85,9 +88,6 @@ void fsm_poll()
 
             // Send Packet #2 Ack (minor_key = 0)
             fsm_ack(fsm_buffer[0]);
-
-            // Ignore Packet #2 crc (already verified)
-            num_p2_bytes -= 1;
         }
 
         // Run FSM
@@ -131,15 +131,12 @@ void fsm_isr()
     } else if (curr_packet_num == 2)
     {
         // Only read if enough values present to not block
-        if (uc_bytes_available() == num_p2_bytes)
+        if (uc_bytes_available() == (num_p1_bytes_crc))
         {
             if (fsm_read_bytes(num_p2_bytes, 0))
             {
                 // Send Packet #2 Ack (minor_key = 0)
                 fsm_ack(fsm_buffer[0]);
-
-                // Ignore Packet #2 crc (already verified)
-                num_p2_bytes -= 1;
 
                 // Run FSM
                 fsm_run();
@@ -183,18 +180,26 @@ void fsm_ack(uint8_t ack_key)
     // Fill buffer
     fsm_ack_buffer[p1_major_key_loc] = MAJOR_KEY_ACK;
     fsm_ack_buffer[p1_num_p2_bytes_loc] = ack_key;
-    fsm_ack_buffer[p1_crc_loc] = get_crc(fsm_ack_buffer, p1_crc_loc, 0);
+
+    // Get and add crc to buffer
+    crc_t crc = get_crc(fsm_ack_buffer, p1_crc_loc, 0);
+    uint8_t* crc_array = build_byte_array(crc);
+    for (uint8_t i = 0; i < crc_size; i++)
+    {
+        fsm_ack_buffer[p1_crc_loc+i] = crc_array[i];
+    }
+    free(crc_array);
 
     // Send buffer
-    uc_send(fsm_ack_buffer, num_p1_bytes);
+    uc_send(fsm_ack_buffer, num_p1_bytes_crc);
 }
 
 bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout)
 {
-    uint32_t num_bytes_m1 = num_bytes - 1;
-    if (fsm_read_next(fsm_buffer, num_bytes, timeout) == num_bytes)
+    if (fsm_read_next(fsm_buffer, num_bytes+crc_size, timeout) == (num_bytes+crc_size))
     {
-        if (check_crc(fsm_buffer, num_bytes_m1, fsm_buffer[num_bytes_m1], 0))
+        crc_t crc = build_crc((const uint8_t*) fsm_buffer+num_bytes);
+        if (check_crc(fsm_buffer, num_bytes, crc, 0))
         {
             return true;
         } else

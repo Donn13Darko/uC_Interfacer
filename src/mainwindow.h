@@ -19,10 +19,6 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-// Set checksum to CRC8 w/ lookup table
-#define __crc_8
-#define __crc_LUT
-
 #include <QMainWindow>
 #include <QStringList>
 #include <QMap>

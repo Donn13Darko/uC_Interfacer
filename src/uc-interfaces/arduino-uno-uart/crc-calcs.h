@@ -26,17 +26,44 @@ extern "C"
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
-#if defined __crc_8
+/*
+ * CRC type defines: __crc_8, __crc_16, __crc_32, or __crc_cust
+ * For CRC Lookup table add "#define __crc_LUT"
+ * If __crc_cust defined, must do the following
+ * (see crc-calcs.cpp/.h for example definitions):
+ *   1) typdef _____ crc_t to whatever the variable type is
+ *   2) Provide one of the following:
+ *     a) LUT & max address if using __crc_LUT:
+ *       // Used to & the generated LUT address
+ *       // Prevents out of bounds errors
+ *       _____ __crc_LUT_MAX = 0x...;
+ *       -and-
+ *       // LUT with size defined by __crc_LUT_MAX+1
+ *       static const _____ crc_table[...] = {....};
+ *     b) Otherwise provide poly (Reverse=True):
+ *       static const _____ crc_poly = 0x....;
+ *
+*/
+#define __crc_8
+#define __crc_LUT
+
+#if defined(__crc_8)
 typedef uint8_t crc_t;
 
-#elif defined __crc_16
+#elif defined(__crc_16)
 typedef uint16_t crc_t;
 
-#elif defined __crc_32
+#elif defined(__crc_32)
 typedef uint32_t crc_t;
 
-#elif !defined __crc_cust
+#elif defined(__crc_cust)
+extern uint8_t crc_table[];
+// Uncomment & add correct typedef here
+//typedef _____ crc_t;
+
+#else
 // Default to CRC8 with CPU solution
 #define __crc_8
 typedef uint8_t crc_t;
@@ -51,6 +78,10 @@ static const uint8_t __crc_LUT_MAX = 0xFF;
 #endif
 
 crc_t get_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc);
+
+static const uint8_t crc_size = sizeof(crc_t);
+uint8_t* build_byte_array(crc_t crc);
+crc_t build_crc(const uint8_t* data_array);
 bool check_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_cmp, crc_t crc);
 
 #ifdef __cplusplus

@@ -26,6 +26,7 @@
 #include <QEventLoop>
 #include <QSettings>
 
+uint8_t num_p1_bytes = p1_crc_loc + crc_size;
 uint8_t num_p2_bytes;
 
 GUI_BASE::GUI_BASE(QWidget *parent) :
@@ -108,6 +109,8 @@ void GUI_BASE::send(QByteArray data)
 
     // Send all messages in list
     uint8_t i, j;
+    crc_t msg_crc;
+    uint8_t* crcArray;
     QByteArray currData;
     while (!msgList.isEmpty())
     {
@@ -117,8 +120,11 @@ void GUI_BASE::send(QByteArray data)
         ack_status = false;
 
         // Append crc before sending
-        currData.append((char) get_crc((const uint8_t*) currData.data(),
-                                       currData.length(), 0));
+        msg_crc = get_crc((const uint8_t*) currData.data(),
+                          currData.length(), 0);
+        crcArray = build_byte_array(msg_crc);
+        currData.append((const char*) crcArray, crc_size);
+        delete[] crcArray;
 
         // Send data and verify ack
         // Retry packet_retries times

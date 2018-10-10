@@ -23,27 +23,8 @@
  * Create a file that inplements main() to start the program
  * and defines the externs matching descriptions below.
  *
- * To the top of the defining .cpp/.h (before any includes),
- * #define what type of crc to use as well as whether it should
- * use a lookup table or compute on the fly. See below for details.
- *
- * CRC type defines: __crc_8, __crc_16, __crc_32, or __crc_cust
- * For CRC Lookup table add "#define __crc_LUT"
- * If __crc_cust defined, must do the following
- * (see crc-calcs.cpp/.h for example definitions):
- *   1) typdef _____ crc_t to whatever the variable type is
- *   2) Provide one of the following:
- *     a) LUT & max address if using __crc_LUT:
- *       // Used to & the generated LUT address
- *       // Prevents out of bounds errors
- *       _____ __crc_LUT_MAX = 0x...;
- *       -and-
- *       // LUT with size defined by __crc_LUT_MAX+1
- *       static const _____ crc_table[...] = {....};
- *     b) Otherwise provide poly (Reverse=True):
- *       static const _____ crc_poly = 0x....;
- *
 */
+
 
 #ifdef __cplusplus
 extern "C"
