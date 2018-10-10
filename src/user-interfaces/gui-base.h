@@ -45,8 +45,8 @@ public:
 signals:
     void write_data(QByteArray data);
     void connect_signals(bool connect);
-    void ackReady();
     void readyRead();
+    void ackReceived();
 
 protected slots:
     void receive(QByteArray recvData);
@@ -63,6 +63,7 @@ protected:
 
     void waitForAck(int msecs = 5000);
     bool checkAck();
+    bool checkCrc(uint32_t num_bytes);
 
 private:
     bool ack_status;

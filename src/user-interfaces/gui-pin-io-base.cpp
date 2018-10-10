@@ -174,15 +174,11 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
         return;
     }
 
-    // Send major key
-    send({
-             GUI_TYPE_IO,
-             (uint8_t) 5 // 1 sub-key, 4 data bytes
-         });
-
-    // Send sub-key & CMDs to uC
+    // Send major/sub-keys & CMDs to uC
     uint16_t v = (uint16_t) VAL.toInt();
     send({
+             GUI_TYPE_IO,
+             (uint8_t) 5, // 1 sub-key, 4 data bytes
              pInfo->pinType, // Sub-key
              // Data (pin_num, settings, val_high, val_low)
              (uint8_t) pinNum.toInt(),

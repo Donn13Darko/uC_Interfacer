@@ -46,23 +46,23 @@ typedef enum {
     GUI_TYPE_PROGRAMMER
 } MAJOR_KEYS;
 
-/* Packet #1 (p1) generic key positions */
+/* First stage (s1) generic key positions */
 typedef enum {
-    p1_major_key_loc = 0,
-    p1_num_p2_bytes_loc,
-    p1_crc_loc
-} P1_Major_Settings;
+    s1_major_key_loc = 0,
+    s1_num_s2_bytes_loc,
+    s1_crc_loc
+} S1_Major_Settings;
 
-/* Packet #2 (p2) key positions enum */
+/* Second stage (s2) key positions enum */
 typedef enum {
-    p2_sub_key_loc = 0,
-    p2_data_start_loc
-} P2_Sub_Settings;
+    s2_sub_key_loc = 0,
+    s2_data_start_loc
+} S2_Sub_Settings;
 
 // Variables
 static const uint8_t packet_retries = 2;
-extern uint8_t num_p1_bytes;
-extern uint8_t num_p2_bytes;
+extern uint8_t num_s1_bytes;
+extern uint8_t num_s2_bytes;
 
 #ifdef __cplusplus
 }

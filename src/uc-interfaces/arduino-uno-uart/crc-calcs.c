@@ -180,16 +180,16 @@ static const uint32_t crc_table[256] = {
 #endif
 
 // Define get_crc based on lookup table
-crc_t get_crc(const uint8_t *data_array, uint32_t data_len, crc_t crc)
+crc_t get_crc(const uint8_t *data_array, uint32_t data_len, crc_t crc_start)
 {
     const uint8_t *data_p = data_array;
 
     while (data_len--)
     {
-        crc = crc_table[(crc ^ *data_p++) & __crc_LUT_MAX] ^ (crc >> 8);
+        crc_start = crc_table[(crc_start ^ *data_p++) & __crc_LUT_MAX] ^ (crc_start >> 8);
     }
 
-    return crc;
+    return crc_start;
 }
 
 #else
@@ -209,33 +209,30 @@ static const uint32_t crc_poly = 0x105EC76F;
 #endif
 
 // Define get_crc based on CPU calcs
-crc_t get_crc(const uint8_t *data_array, uint32_t data_len, crc_t crc)
+crc_t get_crc(const uint8_t *data_array, uint32_t data_len, crc_t crc_start)
 {
     uint8_t i;
     const uint8_t *data_p = data_array;
 
     while (data_len--)
     {
-        crc ^= *data_p++;
+        crc_start ^= *data_p++;
         for (i = 0; i < 8; i++)
         {
-            if (crc & 0x1)
-                crc ^= crc_poly;
-            crc >>= 1;
+            if (crc_start & 0x1)
+                crc_start ^= crc_poly;
+            crc_start >>= 1;
         }
     }
 
-    return crc;
+    return crc_start;
 }
 
 #endif
 
 // Build byte array from CRC (length change with type)
-uint8_t* build_byte_array(crc_t crc)
+void build_byte_array(crc_t crc, uint8_t* data_array)
 {
-    // Create the new array
-    uint8_t* data_array = malloc(crc_size*sizeof(uint8_t));
-
     // Add each byte to array
     uint8_t i = crc_size;
     do
@@ -244,9 +241,6 @@ uint8_t* build_byte_array(crc_t crc)
         data_array[i] = (uint8_t) (crc & 0xFF);
         crc = crc >> 8;
     } while (0 < i);
-
-    // Return the new array
-    return data_array;
 }
 
 crc_t build_crc(const uint8_t *data_array)
@@ -267,7 +261,7 @@ crc_t build_crc(const uint8_t *data_array)
 }
 
 // Check CRC unchanged based on CRC type
-bool check_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_cmp, crc_t crc)
+bool check_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_cmp, crc_t crc_start)
 {
-    return (get_crc(data_array, data_len, crc) == crc_cmp);
+    return (get_crc(data_array, data_len, crc_start) == crc_cmp);
 }

@@ -43,12 +43,12 @@ typedef enum {
 
 /* Packet #2 (p2) io key positions enum */
 typedef enum {
-    p2_io_pin_num_loc = 1,
-    p2_io_combo_loc,
-    p2_io_value_high_loc,
-    p2_io_value_low_loc,
-    p2_io_crc_loc
-} P2_IO_Settings;
+    s2_io_pin_num_loc = 1,
+    s2_io_combo_loc,
+    s2_io_value_high_loc,
+    s2_io_value_low_loc,
+    s2_io_crc_loc
+} S2_IO_Settings;
 
 #ifdef __cplusplus
 }

@@ -26,7 +26,6 @@ extern "C"
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <stdlib.h>
 
 /*
  * CRC type defines: __crc_8, __crc_16, __crc_32, or __crc_cust
@@ -77,12 +76,18 @@ typedef uint8_t crc_t;
 static const uint8_t __crc_LUT_MAX = 0xFF;
 #endif
 
-crc_t get_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc);
+// Gets CRC for data_array with start value crc
+crc_t get_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_start);
 
+// Size constant
 static const uint8_t crc_size = sizeof(crc_t);
-uint8_t* build_byte_array(crc_t crc);
+
+// CRC helpers
+void build_byte_array(crc_t crc, uint8_t* data_array);
 crc_t build_crc(const uint8_t* data_array);
-bool check_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_cmp, crc_t crc);
+
+// CRC check alg
+bool check_crc(const uint8_t* data_array, uint32_t data_len, crc_t crc_cmp, crc_t crc_start);
 
 #ifdef __cplusplus
 }

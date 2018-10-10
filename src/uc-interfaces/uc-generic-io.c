@@ -22,11 +22,11 @@ void uc_io(const uint8_t* buffer, uint8_t num_bytes)
 {
     // Make sure we have at least one byte for sub_key
     if (num_bytes == 0) return;
-    uint8_t sub_key = buffer[p2_sub_key_loc];
+    uint8_t sub_key = buffer[s2_sub_key_loc];
 
     // Verify & parse bytes
     uint16_t value = 0;
-    if (num_bytes != p2_io_crc_loc)
+    if (num_bytes != s2_io_crc_loc)
     {
         // If not enough bytes for command return
         if ((sub_key == SUB_KEY_IO_DIO)
@@ -36,18 +36,18 @@ void uc_io(const uint8_t* buffer, uint8_t num_bytes)
         }
     } else
     {
-        value = ((((uint16_t) buffer[p2_io_value_high_loc]) << 8)
-                          | ((uint16_t) buffer[p2_io_value_low_loc]));
+        value = ((((uint16_t) buffer[s2_io_value_high_loc]) << 8)
+                          | ((uint16_t) buffer[s2_io_value_low_loc]));
     }
 
     // Parse and act on sub key
     switch (sub_key)
     {
         case SUB_KEY_IO_DIO:
-            uc_dio(buffer[p2_io_pin_num_loc], buffer[p2_io_combo_loc], value);
+            uc_dio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
         case SUB_KEY_IO_AIO:
-            uc_aio(buffer[p2_io_pin_num_loc], buffer[p2_io_combo_loc], value);
+            uc_aio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
         case SUB_KEY_IO_DIO_READ:
             uc_dio_read();

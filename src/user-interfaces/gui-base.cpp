@@ -26,8 +26,8 @@
 #include <QEventLoop>
 #include <QSettings>
 
-uint8_t num_p1_bytes = p1_crc_loc + crc_size;
-uint8_t num_p2_bytes;
+uint8_t num_s1_bytes = s1_crc_loc;
+uint8_t num_s2_bytes;
 
 GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
@@ -50,41 +50,43 @@ void GUI_BASE::receive(QByteArray recvData)
     // Add data to recv
     rcvd.append(recvData);
     uint8_t rcvd_len = rcvd.length();
+    uint8_t expected_len = num_s1_bytes;
 
-    // Check to see if Packet #1 in rcvd
-    if (rcvd_len < num_p1_bytes) return;
+    // Check to see if first stage in rcvd
+    if (rcvd_len < expected_len) return;
 
-    // Check Packet #1 and discard all data if crc_check fails
-    if (!check_crc((uint8_t*) rcvd.data(), p1_crc_loc, rcvd.at(p1_crc_loc), 0))
+    // Check to see if it's an Ack packet (no second stage)
+    if (rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
     {
-        rcvd.clear();
-        return;
-    }
+        // Verify enough bytes
+        if (rcvd_len < (expected_len+crc_size)) return;
 
-    // Check if Ack packet (no Packet #2)
-    if (rcvd.at(p1_major_key_loc) == (char) MAJOR_KEY_ACK)
-    {
-        ack_status = checkAck();
-        emit ackReady();
-        return;
-    }
-
-    // Check if expecting a Packet #2
-    num_p2_bytes = rcvd.at(p1_num_p2_bytes_loc);
-    if (num_p2_bytes != 0)
-    {
-        QByteArray p2 = rcvd;
-        p2.remove(0, num_p1_bytes);
-
-        // Check Packet #2 crc and discard all data if failed
-        if (p2.length() < num_p2_bytes) return;
-
-        // Check crc in Packet #2
-        if (!check_crc((uint8_t*) p2.data(), num_p2_bytes-1, rcvd.at(rcvd_len), 0))
+        // Check crc
+        crc_t crc_cmp = build_crc((const uint8_t*) rcvd.mid(expected_len, crc_size).data());
+        if (!check_crc((const uint8_t*) rcvd.data(), expected_len, crc_cmp, 0))
         {
             rcvd.clear();
             return;
         }
+
+        // Check ack
+        ack_status = checkAck();
+
+        // Emit ack received
+        emit ackReceived();
+        return;
+    }
+
+    // Check if second stage & crc in rcvd
+    expected_len += rcvd.at(s1_num_s2_bytes_loc);
+    if (rcvd_len < (expected_len+crc_size)) return;
+
+    // Check crc in packet
+    crc_t crc_cmp = build_crc((const uint8_t*) rcvd.mid(expected_len, crc_size).data());
+    if (!check_crc((const uint8_t*) rcvd.data(), expected_len, crc_cmp, 0))
+    {
+        rcvd.clear();
+        return;
     }
 
     // Emit readyRead
@@ -110,21 +112,20 @@ void GUI_BASE::send(QByteArray data)
     // Send all messages in list
     uint8_t i, j;
     crc_t msg_crc;
-    uint8_t* crcArray;
     QByteArray currData;
+    uint8_t crcArray[crc_size];
     while (!msgList.isEmpty())
     {
         // Get next data to send
         currData = msgList.takeFirst();
-        ack_key = currData.at(p1_major_key_loc);
+        ack_key = currData.at(s1_major_key_loc);
         ack_status = false;
 
         // Append crc before sending
         msg_crc = get_crc((const uint8_t*) currData.data(),
                           currData.length(), 0);
-        crcArray = build_byte_array(msg_crc);
+        build_byte_array(msg_crc, (uint8_t*) crcArray);
         currData.append((const char*) crcArray, crc_size);
-        delete[] crcArray;
 
         // Send data and verify ack
         // Retry packet_retries times
@@ -210,10 +211,10 @@ void GUI_BASE::waitForAck(int msecs)
     // Setup time keeping
     QEventLoop loop;
     QTimer timer;
-    connect(this, SIGNAL(ackReady()), &loop, SLOT(quit()));
+    connect(this, SIGNAL(ackReceived()), &loop, SLOT(quit()));
     connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
 
-    // Wait for ackReady or timeout
+    // Wait for ackReceived or timeout
     timer.start(msecs);
     loop.exec();
 }
@@ -222,12 +223,12 @@ bool GUI_BASE::checkAck()
 {
     // Check ack against inputs
     bool status = false;
-    if ((rcvd.at(p1_major_key_loc) == (char) MAJOR_KEY_ACK)
-            && (rcvd.at(p1_num_p2_bytes_loc) == (char) ack_key))
+    if ((rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
+            && (rcvd.at(s1_num_s2_bytes_loc) == (char) ack_key))
     {
         status = true;
     }
 
-    rcvd.remove(0, num_p1_bytes);
+    rcvd.remove(0, num_s1_bytes+crc_size);
     return status;
 }

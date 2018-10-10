@@ -44,8 +44,7 @@ void fsm_poll();
 void fsm_isr();
 void fsm_run();
 void fsm_ack(uint8_t ack_key);
-bool fsm_read_bytes(uint32_t num_bytes, uint32_t timeout);
-uint32_t fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
+bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
 
 /*** Following extern functions must be defined on a per uC basis ***/
 
