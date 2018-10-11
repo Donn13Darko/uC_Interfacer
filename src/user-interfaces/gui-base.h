@@ -66,6 +66,8 @@ protected:
     bool checkCrc(uint32_t num_bytes);
 
 private:
+    crc_t crc_cmp;
+    crc_t crc_start;
     bool ack_status;
     uint8_t ack_key;
     QMutex sendLock;

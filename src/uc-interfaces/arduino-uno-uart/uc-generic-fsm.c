@@ -19,29 +19,33 @@
 #include "uc-generic-fsm.h"
 #include "crc-calcs.h"
 
-// Recv buffer
+// Recv buffers
 uint8_t *fsm_buffer;
+uint8_t *fsm_crc_buffer;
 uint8_t *fsm_ack_buffer;
 
 // Key & packet holders
 uint8_t num_s1_bytes, num_s2_bytes;
 uint8_t major_key, curr_packet_stage;
 uint8_t num_s1_bytes_ack;
-crc_t crc_cmp;
+crc_t crc_cmp, crc_start;
 
 // Buffer pointer holder
 uint8_t* fsm_buffer_ptr;
 
 void fsm_setup(uint32_t buffer_len)
 {
-    // Initialize values
+    // Initialize variables
     major_key = MAJOR_KEY_ERROR;
     curr_packet_stage = 1;
     num_s1_bytes = s1_crc_loc;
     num_s1_bytes_ack = num_s1_bytes + crc_size;
+    crc_cmp = 0;
+    crc_start = 0;
 
     // Malloc buffers
     fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
+    fsm_crc_buffer = malloc(crc_size*sizeof(fsm_crc_buffer));
     fsm_ack_buffer = malloc(num_s1_bytes_ack*sizeof(fsm_ack_buffer));
 
     // Reset to start defaults
@@ -52,6 +56,7 @@ void fsm_destroy()
 {
     // Free buffers
     free(fsm_buffer);
+    free(fsm_crc_buffer);
     free(fsm_ack_buffer);
 }
 
@@ -79,10 +84,10 @@ void fsm_poll()
             uc_reset_buffers();
             continue;
         }
-        fsm_buffer_ptr += num_s2_bytes;
+        //fsm_buffer_ptr += num_s2_bytes;
 
         // Read CRC
-        if (!fsm_read_next(fsm_buffer_ptr, crc_size, 1000))
+        if (!fsm_read_next(fsm_crc_buffer, crc_size, 1000))
         {
             fsm_ack(MAJOR_KEY_ERROR);
             uc_reset_buffers();
@@ -90,8 +95,8 @@ void fsm_poll()
         }
 
         // Check CRC
-        crc_cmp = build_crc(fsm_buffer_ptr);
-        if (!check_crc(fsm_buffer, num_s1_bytes+num_s2_bytes, crc_cmp, 0))
+        crc_cmp = build_crc(fsm_crc_buffer);
+        if (!check_crc(fsm_buffer, num_s1_bytes+num_s2_bytes, crc_cmp, crc_start))
         {
             fsm_ack(MAJOR_KEY_ERROR);
             uc_reset_buffers();
@@ -106,7 +111,7 @@ void fsm_poll()
     }
 }
 
-void fsm_isr()
+bool fsm_isr()
 {
     // Select which packet stage we are receiving
     if (curr_packet_stage == 1)
@@ -114,10 +119,15 @@ void fsm_isr()
         // Only read if enough values present to not block
         if (uc_bytes_available() == num_s1_bytes)
         {
+            // Reset fsm_buffer_ptr for first read
             fsm_buffer_ptr = fsm_buffer;
-            // Attempt to read with no timeout
+
+            // Read with 0 timeout
             if (fsm_read_next(fsm_buffer_ptr, num_s1_bytes, 0))
             {
+                // Increment buffer pointer
+                fsm_buffer_ptr += num_s1_bytes;
+
                 // Parse info for first stage
                 major_key = fsm_buffer[s1_major_key_loc];
                 num_s2_bytes = fsm_buffer[s1_num_s2_bytes_loc];
@@ -139,9 +149,12 @@ void fsm_isr()
         // Only read if enough values present to not block
         if (uc_bytes_available() == num_s2_bytes)
         {
-            fsm_buffer_ptr += num_s1_bytes;
+            // Read with 0 timeout
             if (fsm_read_next(fsm_buffer_ptr, num_s2_bytes, 0))
             {
+                // Incremenet buffer pointer
+                //fsm_buffer_ptr += num_s2_bytes;
+
                 // Move to third stage
                 curr_packet_stage = 3;
             }
@@ -151,26 +164,26 @@ void fsm_isr()
         // Only read if enough values present to not block
         if (uc_bytes_available() == crc_size)
         {
-            fsm_buffer_ptr += num_s2_bytes;
-            if (fsm_read_next(fsm_buffer_ptr, crc_size, 1000))
+            // Read with 0 timeout
+            if (fsm_read_next(fsm_crc_buffer, crc_size, 0))
             {
                 // Check CRC
-                crc_cmp = build_crc(fsm_buffer_ptr);
-                if (!check_crc(fsm_buffer, num_s1_bytes+num_s2_bytes, crc_cmp, 0))
+                crc_cmp = build_crc(fsm_crc_buffer);
+                if (!check_crc(fsm_buffer, num_s1_bytes+num_s2_bytes, crc_cmp, crc_start))
                 {
                     fsm_ack(MAJOR_KEY_ERROR);
                     uc_reset_buffers();
-                    return;
+                    return false;
                 }
 
                 // Send Packet Ack
                 fsm_ack(major_key);
 
-                // Run FSM
-                fsm_run();
-
-                // Move to first stage
+                // Return to first stage on next call
                 curr_packet_stage = 1;
+
+                // Ready for fsm call
+                return true;
             }
         }
     } else
@@ -179,12 +192,15 @@ void fsm_isr()
         curr_packet_stage = 1;
         uc_reset_buffers();
     }
+
+    // Not ready for fsm call
+    return false;
 }
 
 void fsm_run()
 {
-    // Remove fsm major buffer info before passing on
-    fsm_buffer_ptr = fsm_buffer+num_s1_bytes;
+    // Remove fsm stage 1 info before passing to function
+    //fsm_buffer_ptr = fsm_buffer+num_s1_bytes;
 
     // Parse and act on major key
     switch (major_key)

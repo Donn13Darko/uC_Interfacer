@@ -32,8 +32,13 @@ uint8_t num_s2_bytes;
 GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
 {
+    // Init Ack variables
     ack_status = false;
     ack_key = MAJOR_KEY_ERROR;
+
+    // Init CRC variables
+    crc_cmp = 0;
+    crc_start = 0;
 }
 
 GUI_BASE::~GUI_BASE()
@@ -62,8 +67,8 @@ void GUI_BASE::receive(QByteArray recvData)
         if (rcvd_len < (expected_len+crc_size)) return;
 
         // Check crc
-        crc_t crc_cmp = build_crc((const uint8_t*) rcvd.mid(expected_len, crc_size).data());
-        if (!check_crc((const uint8_t*) rcvd.data(), expected_len, crc_cmp, 0))
+        crc_cmp = build_crc((const uint8_t*) rcvd.mid(expected_len, crc_size).data());
+        if (!check_crc((const uint8_t*) rcvd.data(), expected_len, crc_cmp, crc_start))
         {
             rcvd.clear();
             return;
@@ -82,8 +87,8 @@ void GUI_BASE::receive(QByteArray recvData)
     if (rcvd_len < (expected_len+crc_size)) return;
 
     // Check crc in packet
-    crc_t crc_cmp = build_crc((const uint8_t*) rcvd.mid(expected_len, crc_size).data());
-    if (!check_crc((const uint8_t*) rcvd.data(), expected_len, crc_cmp, 0))
+    crc_cmp = build_crc((const uint8_t*) rcvd.mid(expected_len, crc_size).data());
+    if (!check_crc((const uint8_t*) rcvd.data(), expected_len, crc_cmp, crc_start))
     {
         rcvd.clear();
         return;
