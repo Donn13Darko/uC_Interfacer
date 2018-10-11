@@ -19,6 +19,7 @@
 #include "gui-helper.h"
 
 #include <QMessageBox>
+#include <QInputDialog>
 #include <QFile>
 #include <QFileDialog>
 #include <QSettings>
@@ -37,6 +38,14 @@ bool GUI_HELPER::showMessage(QString msg)
     QMessageBox n;
     n.setText(msg);
     return n.exec();
+}
+
+bool GUI_HELPER::getUserString(QString *str, QString title, QString label)
+{
+    bool ok;
+    *str = QInputDialog::getText(nullptr, title, label,
+                                 QLineEdit::Normal, *str, &ok);
+    return (ok && !str->isEmpty());
 }
 
 bool GUI_HELPER::getOpenFilePath(QString *filePath, QString fileTypes)

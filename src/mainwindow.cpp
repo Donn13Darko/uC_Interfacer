@@ -126,7 +126,6 @@ void MainWindow::connect_signals(bool conn)
 void MainWindow::on_DeviceCombo_activated(int)
 {
     // Save previous value
-    uint8_t prev_deviceType = deviceType;
     QString prev_deviceINI = deviceINI;
 
     // Get new INI file
@@ -157,13 +156,15 @@ void MainWindow::on_DeviceCombo_activated(int)
                             + prev_deviceINI);
 
         // Revert to previous dev type
-        ui->DeviceCombo->setCurrentIndex(prev_deviceType-1);
+        ui->DeviceCombo->setCurrentIndex(deviceType-1);
         deviceINI = prev_deviceINI;
         return;
+    } else
+    {
+        // Get new device and set welcome tab string
+        deviceType = getDevType();
+        welcome_tab->setMsg("Current Config: " + deviceINI);
     }
-
-    deviceType = getDevType();
-    welcome_tab->setMsg("Current Config: " + deviceINI);
 }
 
 void MainWindow::on_ConnTypeCombo_currentIndexChanged(int)

@@ -45,7 +45,7 @@ private slots:
     void on_BrowseHexFile_Button_clicked();
     void on_RefreshPreview_Button_clicked();
     void on_BurnData_Button_clicked();
-    void on_HexFormat_Combo_currentIndexChanged(int);
+    void on_HexFormat_Combo_activated(int);
     void on_BurnMethod_Combo_currentIndexChanged(int);
 
     void on_readSelect_buttonClicked(int);
@@ -54,6 +54,7 @@ private:
     Ui::GUI_PROGRAMMER *ui;
 
     QByteArray loadedHex;
+    int curr_hexFormat;
 
     QMap<QString, QRegularExpression> hexFormats;
     QMap<QString, QString> burnMethods;

@@ -24,9 +24,10 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_PROGRAMMER)
 {
-    // Create UI and arrays
+    // Init UI and variables
     ui->setupUi(this);
     loadedHex = QByteArray();
+    curr_hexFormat = 0;
 
     // Read config settings
     QMap<QString, QMap<QString, QVariant>*>* configMap = \
@@ -136,7 +137,7 @@ void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
     loadedHex = GUI_HELPER::loadFile(filePath);
 
     // Reset preview
-    on_HexFormat_Combo_currentIndexChanged(0);
+    on_HexFormat_Combo_activated(0);
 }
 
 void GUI_PROGRAMMER::on_BurnData_Button_clicked()
@@ -189,9 +190,34 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
     }
 }
 
-void GUI_PROGRAMMER::on_HexFormat_Combo_currentIndexChanged(int)
+void GUI_PROGRAMMER::on_HexFormat_Combo_activated(int)
 {
-    // Only update format if exists
+    // Check if selection is other and prompt for user input
+    if (ui->HexFormat_Combo->currentText() == "Other")
+    {
+        QString hexRegexStr;
+        QRegularExpression otherRegex = hexFormats["Other"];
+
+        // Set to current other text
+        hexRegexStr = otherRegex.pattern();
+
+        // Get or update the text
+        if (GUI_HELPER::getUserString(&hexRegexStr, "Other Hex Format", "Enter hex format regex:"))
+        {
+            // Only update regex if it changed
+            if (otherRegex.pattern() == hexRegexStr) return;
+            otherRegex.setPattern(hexRegexStr);
+            hexFormats.insert("Other", otherRegex);
+        } else
+        {
+            // Return to previous entry if change canceled
+            ui->HexFormat_Combo->setCurrentIndex(curr_hexFormat);
+            return;
+        }
+    }
+    curr_hexFormat = ui->HexFormat_Combo->currentIndex();
+
+    // Only update format if file loaded
     if (loadedHex.isEmpty()) return;
 
     // Update Hex
@@ -216,7 +242,10 @@ void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
 
 QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
 {
+    // Prepare loaded file for parsing
     QStringList hexList = QString(rawHex).split('\n');
+
+    // Get regex matcher
     QRegularExpression hexReg = hexFormats.value(ui->HexFormat_Combo->currentText());
 
     QString final;

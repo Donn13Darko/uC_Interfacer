@@ -20,7 +20,6 @@
 #define GUI_HELPER_H
 
 #include <QObject>
-#include <QWidget>
 #include <QMap>
 #include <QVariant>
 
@@ -35,7 +34,10 @@ public:
     // Show a message
     static bool showMessage(QString msg);
 
-    // Get some file info
+    // Get user input
+    static bool getUserString(QString *str, QString title, QString label);
+
+    // Get file info
     static bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
     static bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
     static bool saveFile(QString filePath, QByteArray data);
