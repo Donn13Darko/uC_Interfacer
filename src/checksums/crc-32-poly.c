@@ -29,14 +29,13 @@ void get_crc_32_POLY(const uint8_t* data_array, uint32_t data_len, uint8_t* crc_
     
     // Create the start crc number
     uint8_t i;
-    uint32_t crc;
-    for (i = 0; i < __crc_32_LUT_LEN; i++)
+    uint32_t crc = 0;
+    for (i = 0; i < __crc_32_POLY_LEN; i++)
     {
         crc = ((crc << 8) | crc_start[i]);
     }
 
     // Compute crc
-    uint8_t i;
     while (data_len--)
     {
         crc ^= *data_p++;
@@ -54,10 +53,10 @@ void get_crc_32_POLY(const uint8_t* data_array, uint32_t data_len, uint8_t* crc_
     {
         data_crc[i] = (uint8_t) (crc & 0xFF);
         crc = crc >> 8;
-    } while (0 < i--)
+    } while (0 < i--);
 }
 
-bool check_crc_32_POLY(const uint8_t* data_crc, const uint8_t *cmp_crc)
+bool check_crc_32_POLY(const uint8_t* data_crc, const uint8_t* cmp_crc)
 {
     // Check each byte of the crc array
     for (uint8_t i = 0; i < __crc_32_POLY_LEN; i++)

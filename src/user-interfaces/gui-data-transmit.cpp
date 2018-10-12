@@ -27,6 +27,7 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     ui(new Ui::GUI_DATA_TRANSMIT)
 {
     ui->setupUi(this);
+    guiType = GUI_TYPE_DATA_TRANSMIT;
 
     // Set radio values
     ui->File_Radio->setChecked(true);

@@ -22,8 +22,6 @@
 #include <QDateTime>
 #include <QList>
 
-#include "../communication/serial-rs232.h"
-
 GUI_8AIO_16DIO_COMM::GUI_8AIO_16DIO_COMM(QWidget *parent) :
     GUI_PIN_BASE(parent),
     ui(new Ui::GUI_8AIO_16DIO_COMM)

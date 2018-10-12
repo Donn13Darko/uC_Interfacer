@@ -21,6 +21,7 @@
 GUI_PIN_BASE::GUI_PIN_BASE(QWidget *parent) :
     GUI_BASE(parent)
 {
+    guiType = GUI_TYPE_IO;
 }
 
 GUI_PIN_BASE::~GUI_PIN_BASE()

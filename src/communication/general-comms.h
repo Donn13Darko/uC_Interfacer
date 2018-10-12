@@ -32,25 +32,22 @@ typedef enum {
     MAJOR_KEY_ERROR = 0,
     MAJOR_KEY_RESET,
 
-    // Action confirmations
-    MAJOR_KEY_ACK,
-
-    // Update Config Settings
-    MAJOR_KEY_CONFIG_UPDATE,
-
     // GUI Types (Major Keys)
     GUI_TYPE_ERROR,
     GUI_TYPE_WELCOME,
     GUI_TYPE_IO,
     GUI_TYPE_DATA_TRANSMIT,
-    GUI_TYPE_PROGRAMMER
+    GUI_TYPE_PROGRAMMER,
+
+    // Action confirmations
+    MAJOR_KEY_ACK
 } MAJOR_KEYS;
 
 /* First stage (s1) generic key positions */
 typedef enum {
     s1_major_key_loc = 0,
     s1_num_s2_bytes_loc,
-    s1_crc_loc
+    s1_checksum_loc
 } S1_Major_Settings;
 
 /* Second stage (s2) key positions enum */
@@ -61,8 +58,20 @@ typedef enum {
 
 // Variables
 static const uint8_t packet_retries = 2;
-extern uint8_t num_s1_bytes;
+static const uint32_t packet_timeout = 500; // ms
+static const uint8_t num_s1_bytes = s1_checksum_loc;
 extern uint8_t num_s2_bytes;
+
+/*
+ * Struct for settings the checksum functions
+ * Function signatures must match the others (only name differs)
+*/
+
+typedef struct checksum_struct {
+    uint32_t (*get_checksum_size) ();
+    void (*get_checksum) (const uint8_t*, uint32_t, uint8_t*, uint8_t*);
+    bool (*check_checksum) (const uint8_t*, const uint8_t*);
+} checksum_struct;
 
 #ifdef __cplusplus
 }

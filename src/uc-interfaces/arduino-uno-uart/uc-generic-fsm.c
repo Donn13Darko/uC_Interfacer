@@ -17,36 +17,64 @@
 */
 
 #include "uc-generic-fsm.h"
-#include "crc-calcs.h"
+
+/*
+ * Replace the following section with the desired checksum.
+ * This will need to be input as part of the INI file under each
+ * GUI section (gets broken apart based on the GUI tab type).
+ * Multiple instances of the same tab type must have the same checksum.
+ * Default checksum is CRC-8 POLY.
+*/
+#include "crc-8-lut.h"
+
+// GUI checksums
+checksum_struct io_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+checksum_struct data_transfer_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+checksum_struct programmer_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+
+// Default checksum (for acks, errors, and resets);
+checksum_struct default_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 
 // Recv buffers
 uint8_t *fsm_buffer;
-uint8_t *fsm_crc_buffer;
+uint8_t *fsm_checksum_buffer;
+uint8_t *fsm_checksum_cmp_buffer;
 uint8_t *fsm_ack_buffer;
 
 // Key & packet holders
-uint8_t num_s1_bytes, num_s2_bytes;
+uint8_t num_s2_bytes;
 uint8_t major_key, curr_packet_stage;
-uint8_t num_s1_bytes_ack;
-crc_t crc_cmp, crc_start;
+uint32_t checksum_max_size;
 
 // Buffer pointer holder
 uint8_t* fsm_buffer_ptr;
+
+// Function prototypes (local access only)
+void fsm_ack(uint8_t ack_key);
+bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
+bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp);
+checksum_struct* fsm_get_checksum_struct();
 
 void fsm_setup(uint32_t buffer_len)
 {
     // Initialize variables
     major_key = MAJOR_KEY_ERROR;
     curr_packet_stage = 1;
-    num_s1_bytes = s1_crc_loc;
-    num_s1_bytes_ack = num_s1_bytes + crc_size;
-    crc_cmp = 0;
-    crc_start = 0;
+
+    // Select largest checksum for array creation
+    checksum_max_size = default_checksum.get_checksum_size();
+    if (checksum_max_size < io_checksum.get_checksum_size())
+        checksum_max_size = io_checksum.get_checksum_size();
+    if (checksum_max_size < data_transfer_checksum.get_checksum_size())
+        checksum_max_size = data_transfer_checksum.get_checksum_size();
+    if (checksum_max_size < programmer_checksum.get_checksum_size())
+        checksum_max_size = programmer_checksum.get_checksum_size();
 
     // Malloc buffers
     fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
-    fsm_crc_buffer = malloc(crc_size*sizeof(fsm_crc_buffer));
-    fsm_ack_buffer = malloc(num_s1_bytes_ack*sizeof(fsm_ack_buffer));
+    fsm_ack_buffer = malloc(num_s1_bytes*sizeof(fsm_ack_buffer));
+    fsm_checksum_buffer = malloc(checksum_max_size*sizeof(fsm_checksum_buffer));
+    fsm_checksum_cmp_buffer = malloc(checksum_max_size*sizeof(fsm_checksum_cmp_buffer));
 
     // Reset to start defaults
     uc_reset();
@@ -56,8 +84,9 @@ void fsm_destroy()
 {
     // Free buffers
     free(fsm_buffer);
-    free(fsm_crc_buffer);
     free(fsm_ack_buffer);
+    free(fsm_checksum_buffer);
+    free(fsm_checksum_cmp_buffer);
 }
 
 void fsm_poll()
@@ -69,7 +98,7 @@ void fsm_poll()
         fsm_buffer_ptr = fsm_buffer;
 
         // Read first stage or loop after 1 second
-        if (!fsm_read_next(fsm_buffer_ptr, num_s1_bytes, 1000)) continue;
+        if (!fsm_read_next(fsm_buffer_ptr, num_s1_bytes, packet_timeout)) continue;
         fsm_buffer_ptr += num_s1_bytes;
 
         // Store first stage info
@@ -78,25 +107,24 @@ void fsm_poll()
 
         // Read Second stage or ACK failed after 1 second
         // Reset uc buffers and return to first stage if failed
-        if (!fsm_read_next(fsm_buffer_ptr, num_s2_bytes, 1000))
-        {
-            fsm_ack(MAJOR_KEY_ERROR);
-            uc_reset_buffers();
-            continue;
-        }
-        //fsm_buffer_ptr += num_s2_bytes;
-
-        // Read CRC
-        if (!fsm_read_next(fsm_crc_buffer, crc_size, 1000))
+        if (!fsm_read_next(fsm_buffer_ptr, num_s2_bytes, packet_timeout))
         {
             fsm_ack(MAJOR_KEY_ERROR);
             uc_reset_buffers();
             continue;
         }
 
-        // Check CRC
-        crc_cmp = build_crc(fsm_crc_buffer);
-        if (!check_crc(fsm_buffer, num_s1_bytes+num_s2_bytes, crc_cmp, crc_start))
+        // Read Checksum
+        uint32_t checksum_size = fsm_get_checksum_struct()->get_checksum_size();
+        if (!fsm_read_next(fsm_checksum_buffer, checksum_size, packet_timeout))
+        {
+            fsm_ack(MAJOR_KEY_ERROR);
+            uc_reset_buffers();
+            continue;
+        }
+
+        // Check Checksum
+        if (!fsm_check_checksum(fsm_buffer, num_s1_bytes+num_s2_bytes, fsm_checksum_buffer))
         {
             fsm_ack(MAJOR_KEY_ERROR);
             uc_reset_buffers();
@@ -149,12 +177,9 @@ bool fsm_isr()
         // Only read if enough values present to not block
         if (uc_bytes_available() == num_s2_bytes)
         {
-            // Read with 0 timeout
+            // Read second stage with 0 timeout
             if (fsm_read_next(fsm_buffer_ptr, num_s2_bytes, 0))
             {
-                // Incremenet buffer pointer
-                //fsm_buffer_ptr += num_s2_bytes;
-
                 // Move to third stage
                 curr_packet_stage = 3;
             }
@@ -162,14 +187,14 @@ bool fsm_isr()
     } else if (curr_packet_stage == 3)
     {
         // Only read if enough values present to not block
-        if (uc_bytes_available() == crc_size)
+        uint32_t checksum_size = fsm_get_checksum_struct()->get_checksum_size();
+        if (uc_bytes_available() == checksum_size)
         {
-            // Read with 0 timeout
-            if (fsm_read_next(fsm_crc_buffer, crc_size, 0))
+            // Read Checksum with 0 timeout
+            if (fsm_read_next(fsm_checksum_buffer, checksum_size, 0))
             {
-                // Check CRC
-                crc_cmp = build_crc(fsm_crc_buffer);
-                if (!check_crc(fsm_buffer, num_s1_bytes+num_s2_bytes, crc_cmp, crc_start))
+                // Check Checksum
+                if (!fsm_check_checksum(fsm_buffer, num_s1_bytes+num_s2_bytes, fsm_checksum_buffer))
                 {
                     fsm_ack(MAJOR_KEY_ERROR);
                     uc_reset_buffers();
@@ -200,14 +225,11 @@ bool fsm_isr()
 void fsm_run()
 {
     // Remove fsm stage 1 info before passing to function
-    //fsm_buffer_ptr = fsm_buffer+num_s1_bytes;
+    // fsm_buffer_ptr = fsm_buffer+num_s1_bytes;
 
     // Parse and act on major key
     switch (major_key)
     {
-        case MAJOR_KEY_RESET:
-            uc_reset();
-            break;
         case GUI_TYPE_IO:
             uc_io(fsm_buffer_ptr, num_s2_bytes);
             break;
@@ -217,8 +239,9 @@ void fsm_run()
         case GUI_TYPE_PROGRAMMER:
             uc_programmer(fsm_buffer_ptr, num_s2_bytes);
             break;
-        default:
-            return;
+        default: // Will fall threw for MAJOR_KEY_ERROR, MAJOR_KEY_RESET
+            uc_reset();
+            break;
     }
 }
 
@@ -228,12 +251,20 @@ void fsm_ack(uint8_t ack_key)
     fsm_ack_buffer[s1_major_key_loc] = MAJOR_KEY_ACK;
     fsm_ack_buffer[s1_num_s2_bytes_loc] = ack_key;
 
-    // Get and add crc to buffer
-    crc_t crc = get_crc(fsm_ack_buffer, s1_crc_loc, 0);
-    build_byte_array(crc, fsm_ack_buffer+s1_crc_loc);
+    // Send buffer (fsm send transparently adds checksum)
+    fsm_send(fsm_ack_buffer, num_s1_bytes);
+}
 
-    // Send buffer
-    uc_send(fsm_ack_buffer, num_s1_bytes_ack);
+void fsm_send(uint8_t* data, uint32_t data_len)
+{
+    checksum_struct* check = fsm_get_checksum_struct();
+    uint32_t checksum_size = check->get_checksum_size();
+    uint8_t checksum_start[checksum_size];
+    memset(checksum_start, 0, checksum_size);
+    check->get_checksum(data, data_len, checksum_start, fsm_checksum_buffer);
+
+    uc_send(data, data_len);
+    uc_send(fsm_checksum_buffer, checksum_size);
 }
 
 bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
@@ -256,4 +287,30 @@ bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
         data_array[i] = uc_getch();
     }
     return true;
+}
+
+bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp)
+{
+    checksum_struct* check = fsm_get_checksum_struct();
+    uint32_t checksum_size = check->get_checksum_size();
+    uint8_t checksum_start[checksum_size];
+    memset(checksum_start, 0, checksum_size);
+    check->get_checksum(data, data_len, checksum_start, fsm_checksum_cmp_buffer);
+    return check->check_checksum(checksum_cmp, fsm_checksum_cmp_buffer);
+}
+
+checksum_struct* fsm_get_checksum_struct()
+{
+    switch (major_key)
+    {
+        case GUI_TYPE_IO:
+            return &io_checksum;
+        case GUI_TYPE_DATA_TRANSMIT:
+            return &data_transfer_checksum;
+        case GUI_TYPE_PROGRAMMER:
+            return &programmer_checksum;
+        default:
+            return &default_checksum;
+    }
+
 }

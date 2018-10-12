@@ -26,7 +26,8 @@
 #include <QEventLoop>
 #include <QSettings>
 
-uint8_t num_s1_bytes = s1_crc_loc;
+checksum_struct GUI_BASE::generic_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+
 uint8_t num_s2_bytes;
 
 GUI_BASE::GUI_BASE(QWidget *parent) :
@@ -35,19 +36,33 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     // Init Ack variables
     ack_status = false;
     ack_key = MAJOR_KEY_ERROR;
-
-    // Init CRC variables
-    crc_cmp = 0;
-    crc_start = 0;
 }
 
 GUI_BASE::~GUI_BASE()
 {
 }
 
+void GUI_BASE::reset_remote()
+{
+    send({MAJOR_KEY_RESET, 0});
+
+    // Clear buffers (prevents key errors after reset)
+    rcvd.clear();
+}
+
 void GUI_BASE::set_chunkSize(size_t chunk)
 {
     chunkSize = chunk;
+}
+
+void GUI_BASE::set_gui_checksum(checksum_struct new_gui_checksum)
+{
+    gui_checksum = new_gui_checksum;
+}
+
+void GUI_BASE::set_generic_checksum(checksum_struct new_generic_checksum)
+{
+    GUI_BASE::generic_checksum = new_generic_checksum;
 }
 
 void GUI_BASE::receive(QByteArray recvData)
@@ -61,34 +76,37 @@ void GUI_BASE::receive(QByteArray recvData)
     if (rcvd_len < expected_len) return;
 
     // Check to see if it's an Ack packet (no second stage)
+    uint32_t checksum_size;
     if (rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
     {
         // Verify enough bytes
-        if (rcvd_len < (expected_len+crc_size)) return;
+        checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
+        if (rcvd_len < (expected_len+checksum_size)) return;
 
-        // Check crc
-        crc_cmp = build_crc((const uint8_t*) rcvd.mid(expected_len, crc_size).data());
-        if (!check_crc((const uint8_t*) rcvd.data(), expected_len, crc_cmp, crc_start))
+        // Check Checksum
+        if (!check_checksum((const uint8_t*) rcvd.data(), expected_len, &GUI_BASE::generic_checksum))
         {
             rcvd.clear();
             return;
         }
 
-        // Check ack
+        // Check & remove ack
         ack_status = checkAck();
+        rcvd.remove(0, num_s1_bytes+checksum_size);
 
         // Emit ack received
         emit ackReceived();
         return;
     }
+    checksum_size = gui_checksum.get_checksum_size();
 
-    // Check if second stage & crc in rcvd
+    // Check if second stage & checksum in rcvd
     expected_len += rcvd.at(s1_num_s2_bytes_loc);
-    if (rcvd_len < (expected_len+crc_size)) return;
+    if (rcvd_len < (expected_len+checksum_size)) return;
 
     // Check crc in packet
-    crc_cmp = build_crc((const uint8_t*) rcvd.mid(expected_len, crc_size).data());
-    if (!check_crc((const uint8_t*) rcvd.data(), expected_len, crc_cmp, crc_start))
+    // Check Checksum
+    if (!check_checksum((const uint8_t*) rcvd.data(), expected_len, &gui_checksum))
     {
         rcvd.clear();
         return;
@@ -116,9 +134,7 @@ void GUI_BASE::send(QByteArray data)
 
     // Send all messages in list
     uint8_t i, j;
-    crc_t msg_crc;
     QByteArray currData;
-    uint8_t crcArray[crc_size];
     while (!msgList.isEmpty())
     {
         // Get next data to send
@@ -126,11 +142,24 @@ void GUI_BASE::send(QByteArray data)
         ack_key = currData.at(s1_major_key_loc);
         ack_status = false;
 
-        // Append crc before sending
-        msg_crc = get_crc((const uint8_t*) currData.data(),
-                          currData.length(), 0);
-        build_byte_array(msg_crc, (uint8_t*) crcArray);
-        currData.append((const char*) crcArray, crc_size);
+        // Append checksum before sending
+        if (ack_key == (char) guiType)
+        {
+            uint32_t checksum_size = gui_checksum.get_checksum_size();
+            uint8_t checksumArray[checksum_size];
+            uint8_t checksum_start[checksum_size] = {0};
+            gui_checksum.get_checksum((const uint8_t*) currData.data(), currData.length(),
+                                             checksum_start, checksumArray);
+            currData.append((const char*) checksumArray, checksum_size);
+        } else
+        {
+            uint32_t checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
+            uint8_t checksumArray[checksum_size];
+            uint8_t checksum_start[checksum_size] = {0};
+            GUI_BASE::generic_checksum.get_checksum((const uint8_t*) currData.data(), currData.length(),
+                                             checksum_start, checksumArray);
+            currData.append((const char*) checksumArray, checksum_size);
+        }
 
         // Send data and verify ack
         // Retry packet_retries times
@@ -203,14 +232,6 @@ void GUI_BASE::sendFile(QString filePath)
          });
 }
 
-void GUI_BASE::reset_remote()
-{
-    send({MAJOR_KEY_RESET, 0});
-
-    // Clear buffers (prevents key errors after reset)
-    rcvd.clear();
-}
-
 void GUI_BASE::waitForAck(int msecs)
 {
     // Setup time keeping
@@ -234,6 +255,19 @@ bool GUI_BASE::checkAck()
         status = true;
     }
 
-    rcvd.remove(0, num_s1_bytes+crc_size);
     return status;
+}
+
+bool GUI_BASE::check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check)
+{
+    // Create checksum variables
+    uint32_t checksum_size = check->get_checksum_size();
+    uint8_t checksum_start[checksum_size] = {0};
+    uint8_t fsm_checksum_cmp_buffer[checksum_size];
+
+    // Compute checksum on data
+    check->get_checksum(data, data_len, checksum_start, fsm_checksum_cmp_buffer);
+
+    // Compare generated to received checksum
+    return check->check_checksum(data+data_len, fsm_checksum_cmp_buffer);
 }

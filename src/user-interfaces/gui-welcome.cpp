@@ -25,6 +25,7 @@ GUI_WELCOME::GUI_WELCOME(QWidget *parent) :
     ui(new Ui::GUI_WELCOME)
 {
     ui->setupUi(this);
+    guiType = GUI_TYPE_WELCOME;
 }
 
 GUI_WELCOME::~GUI_WELCOME()

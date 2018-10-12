@@ -34,17 +34,17 @@ extern "C"
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "general-comms.h"
 
-/* FSM Functions */
+/* FSM Public Functions */
 void fsm_setup(uint32_t buffer_len);
 void fsm_destroy();
 void fsm_poll();
 bool fsm_isr();
 void fsm_run();
-void fsm_ack(uint8_t ack_key);
-bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
+void fsm_send(uint8_t* data, uint32_t data_len);
 
 /*** Following extern functions must be defined on a per uC basis ***/
 

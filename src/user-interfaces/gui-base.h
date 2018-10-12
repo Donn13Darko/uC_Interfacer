@@ -25,8 +25,8 @@
 #include <QVariant>
 #include <QMutex>
 
-#include "../communication/crc-calcs.h"
 #include "../communication/general-comms.h"
+#include "../checksums/checksums.h"
 #include "../gui-helper.h"
 #include <QDebug>
 
@@ -41,6 +41,8 @@ public:
     void reset_gui() {/*Default do nothing*/}
     void reset_remote();
     void set_chunkSize(size_t chunk);
+    void set_gui_checksum(checksum_struct new_gui_checksum);
+    static void set_generic_checksum(checksum_struct new_generic_checksum);
 
 signals:
     void write_data(QByteArray data);
@@ -55,6 +57,7 @@ protected:
     const float S2MS = 1000.0f;
     QByteArray rcvd;
     uint8_t chunkSize;
+    uint8_t guiType;
 
     void send(QString data);
     void send(QByteArray data);
@@ -63,15 +66,16 @@ protected:
 
     void waitForAck(int msecs = 5000);
     bool checkAck();
-    bool checkCrc(uint32_t num_bytes);
+    bool check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check);
 
 private:
-    crc_t crc_cmp;
-    crc_t crc_start;
     bool ack_status;
     uint8_t ack_key;
     QMutex sendLock;
     QList<QByteArray> msgList;
+
+    checksum_struct gui_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+    static checksum_struct generic_checksum;
 };
 
 #endif // GUI_BASE_H

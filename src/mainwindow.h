@@ -27,7 +27,6 @@
 #include <QSettings>
 
 #include "communication/general-comms.h"
-#include "communication/crc-calcs.h"
 #include "communication/serial-rs232.h"
 #include "communication/tcp-client.h"
 #include "communication/tcp-server.h"

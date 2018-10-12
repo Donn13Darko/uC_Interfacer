@@ -28,6 +28,7 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     ui->setupUi(this);
     loadedHex = QByteArray();
     curr_hexFormat = 0;
+    guiType = GUI_TYPE_PROGRAMMER;
 
     // Read config settings
     QMap<QString, QMap<QString, QVariant>*>* configMap = \
