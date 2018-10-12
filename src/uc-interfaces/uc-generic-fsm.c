@@ -21,7 +21,7 @@
 
 // Recv buffers
 uint8_t *fsm_buffer;
-uint8_t *fsm_crc_buffer;
+uint8_t *fsm_check_buffer;
 uint8_t *fsm_ack_buffer;
 
 // Key & packet holders
@@ -29,6 +29,7 @@ uint8_t num_s1_bytes, num_s2_bytes;
 uint8_t major_key, curr_packet_stage;
 uint8_t num_s1_bytes_ack;
 crc_t crc_cmp, crc_start;
+uint8_t checksum_size;
 
 // Buffer pointer holder
 uint8_t* fsm_buffer_ptr;
@@ -38,15 +39,17 @@ void fsm_setup(uint32_t buffer_len)
     // Initialize variables
     major_key = MAJOR_KEY_ERROR;
     curr_packet_stage = 1;
+    checksum_size = crc_size;
+
     num_s1_bytes = s1_crc_loc;
-    num_s1_bytes_ack = num_s1_bytes + crc_size;
+    num_s1_bytes_ack = num_s1_bytes + checksum_size;
     crc_cmp = 0;
     crc_start = 0;
 
     // Malloc buffers
     fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
-    fsm_crc_buffer = malloc(crc_size*sizeof(fsm_crc_buffer));
     fsm_ack_buffer = malloc(num_s1_bytes_ack*sizeof(fsm_ack_buffer));
+    fsm_checksum_buffer = malloc(checksum_size*sizeof(fsm_checksum_buffer));
 
     // Reset to start defaults
     uc_reset();
@@ -56,8 +59,8 @@ void fsm_destroy()
 {
     // Free buffers
     free(fsm_buffer);
-    free(fsm_crc_buffer);
     free(fsm_ack_buffer);
+    free(fsm_checksum_buffer);
 }
 
 void fsm_poll()
@@ -84,10 +87,9 @@ void fsm_poll()
             uc_reset_buffers();
             continue;
         }
-        //fsm_buffer_ptr += num_s2_bytes;
 
         // Read CRC
-        if (!fsm_read_next(fsm_crc_buffer, crc_size, 1000))
+        if (!fsm_read_next(fsm_checksum_buffer, checksum_size, 1000))
         {
             fsm_ack(MAJOR_KEY_ERROR);
             uc_reset_buffers();
@@ -95,7 +97,7 @@ void fsm_poll()
         }
 
         // Check CRC
-        crc_cmp = build_crc(fsm_crc_buffer);
+        crc_cmp = build_crc(fsm_checksum_buffer);
         if (!check_crc(fsm_buffer, num_s1_bytes+num_s2_bytes, crc_cmp, crc_start))
         {
             fsm_ack(MAJOR_KEY_ERROR);

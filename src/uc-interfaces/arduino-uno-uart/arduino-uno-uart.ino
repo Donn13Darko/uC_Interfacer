@@ -21,7 +21,6 @@
 #include "arduino-uno-uart-sub-keys.h"
 #include "gui-pin-io-base-sub-keys.h"
 #include "general-comms.h"
-#include <Wire.h>
 #include <Servo.h>
 
 // Buffer Variables
@@ -34,10 +33,6 @@ uint16_t DIO_VAL[num_DIO];
 Servo DIO_SERVO[num_DIO];
 float PWM_SCALE = 255.0 / 100.0;
 
-// DIO read arrays
-const uint8_t dio_data_len = 3*num_DIO + 1;
-uint8_t dio_data[dio_data_len];
-
 // Setup pin watch for AIO
 const uint8_t num_AIO = 6;
 // No char array since no Analog outputs
@@ -49,10 +44,10 @@ float AIO_RES = 1024.0;
 float AIO_RANGE = 100.0;
 float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 
-// AIO read arrays
+// Read array (more DIO than AIO)
+const uint8_t dio_data_len = 3*num_DIO + 1;
 const uint8_t aio_data_len = 3*num_AIO + 1;
-uint8_t aio_data[aio_data_len];
-
+uint8_t read_data[dio_data_len];
 
 // Just ignore these functions for now
 void uc_data_transmit(const uint8_t*, uint8_t) {}
@@ -128,7 +123,7 @@ void uc_dio_read()
 {
     uint16_t val;
     uint8_t j = 1;
-    dio_data[0] = SUB_KEY_IO_DIO_READ;
+    read_data[0] = SUB_KEY_IO_DIO_READ;
     for (uint8_t i = 0; i < num_DIO; i++)
     {
         // Iterate over pins
@@ -147,13 +142,13 @@ void uc_dio_read()
                 break;
         }
 
-        dio_data[j++] = i;
-        dio_data[j++] = (uint8_t) ((val >> 8) & 0xFF);
-        dio_data[j++] = (uint8_t) (val & 0xFF);
+        read_data[j++] = i;
+        read_data[j++] = (uint8_t) ((val >> 8) & 0xFF);
+        read_data[j++] = (uint8_t) (val & 0xFF);
     }
 
     // Send data to GUI
-    uc_send((uint8_t*) dio_data, dio_data_len);
+    uc_send((uint8_t*) read_data, dio_data_len);
 }
 
 // Read and return the AIO states
@@ -161,19 +156,19 @@ void uc_aio_read()
 {
     uint8_t j = 1;
     uint16_t val = 0;
-    dio_data[0] = SUB_KEY_IO_AIO_READ;
+    read_data[0] = SUB_KEY_IO_AIO_READ;
     for (uint8_t i = 0; i < num_AIO; i++)
     {
         // Scale value
         val = (uint16_t) (AIO_SCALE * analogRead(i));
 
-        aio_data[j++] = i;
-        aio_data[j++] = (uint8_t) ((val >> 8) & 0xFF);
-        aio_data[j++] = (uint8_t) (val & 0xFF);
+        read_data[j++] = i;
+        read_data[j++] = (uint8_t) ((val >> 8) & 0xFF);
+        read_data[j++] = (uint8_t) (val & 0xFF);
     }
 
     // Send data to GUI
-    uc_send((uint8_t*) aio_data, aio_data_len);
+    uc_send((uint8_t*) read_data, aio_data_len);
 }
 
 // Set the DIO as per the command

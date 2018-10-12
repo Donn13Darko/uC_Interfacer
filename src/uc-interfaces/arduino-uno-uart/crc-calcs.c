@@ -234,13 +234,12 @@ crc_t get_crc(const uint8_t *data_array, uint32_t data_len, crc_t crc_start)
 void build_byte_array(crc_t crc, uint8_t* data_array)
 {
     // Add each byte to array
-    uint8_t i = crc_size;
+    uint8_t i = crc_size - 1;
     do
     {
-        i -= 1;
         data_array[i] = (uint8_t) (crc & 0xFF);
         crc = crc >> 8;
-    } while (0 < i);
+    } while (0 < i--);
 }
 
 crc_t build_crc(const uint8_t *data_array)
@@ -249,12 +248,11 @@ crc_t build_crc(const uint8_t *data_array)
     crc_t crc = 0;
 
     // Add each byte to array
-    uint8_t i = crc_size;
+    uint8_t i = 0;
     do
     {
-        i -= 1;
         crc = ((crc << 8) | data_array[i]);
-    } while (0 < i);
+    } while (++i < crc_size);
 
     // Return the built crc
     return crc;

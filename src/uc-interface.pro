@@ -36,7 +36,6 @@ SOURCES += \
     communication/tcp-client.cpp \
     communication/tcp-server.cpp \
     communication/udp-socket.cpp \
-    communication/crc-calcs.c \
     gui-helper.cpp
 
 HEADERS += \
@@ -51,7 +50,6 @@ HEADERS += \
     communication/tcp-client.h \
     communication/tcp-server.h \
     communication/udp-socket.h \
-    communication/crc-calcs.h \
     communication/general-comms.h \
     gui-helper.h \
     user-interfaces/gui-pin-io-base-sub-keys.h \
