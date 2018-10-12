@@ -100,6 +100,7 @@ private:
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
     static QMap<QString, uint8_t> supportedGUIsMap;
+    static QMap<QString, checksum_struct> supportedChecksums;
 
     QTimer *updateConnInfo;
     Serial_RS232 *serial_rs232;

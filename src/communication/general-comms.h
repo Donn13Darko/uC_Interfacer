@@ -34,6 +34,7 @@ typedef enum {
 
     // GUI Types (Major Keys)
     GUI_TYPE_ERROR,
+    GUI_TYPE_GENERAL_SETTINGS,
     GUI_TYPE_WELCOME,
     GUI_TYPE_IO,
     GUI_TYPE_DATA_TRANSMIT,

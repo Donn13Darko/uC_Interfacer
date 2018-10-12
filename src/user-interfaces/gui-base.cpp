@@ -175,7 +175,7 @@ void GUI_BASE::send(QByteArray data)
             do
             {
                 // Wait for ack back
-                waitForAck(500);
+                waitForAck(packet_timeout);
             } while (!ack_status && (++j < packet_retries));
         } while (!ack_status && (++i < packet_retries));
     }

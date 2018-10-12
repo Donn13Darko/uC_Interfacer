@@ -34,7 +34,19 @@ MainWindow::supportedGUIsMap({
                                  {"IO", GUI_TYPE_IO},
                                  {"Data Transmit", GUI_TYPE_DATA_TRANSMIT},
                                  {"Programmer", GUI_TYPE_PROGRAMMER},
+                                 {"GENERAL SETTINGS", GUI_TYPE_GENERAL_SETTINGS}
                              });
+
+// Setup suported checksums map
+QMap<QString, checksum_struct>
+MainWindow::supportedChecksums({
+                                   {"CRC_8_LUT", {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT}},
+                                   {"CRC_8_POLY", {get_crc_8_POLY_size, get_crc_8_POLY, check_crc_8_POLY}},
+                                   {"CRC_16_LUT", {get_crc_16_LUT_size, get_crc_16_LUT, check_crc_16_LUT}},
+                                   {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY}},
+                                   {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT}},
+                                   {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY}}
+                               });
 
 // Setup static supported devices list
 QStringList
@@ -282,8 +294,11 @@ void MainWindow::on_DeviceConnected() {
         QMap<QString, QMap<QString, QVariant>*>* configMap = \
                 GUI_HELPER::readConfigINI(deviceINI);
 
-        // Setup tabs
+        // Block signals from tab group
         ui->ucOptions->blockSignals(true);
+
+        // Setup tabs
+        bool contains_general_settings = false;
         uint8_t gui_type;
         QMap<QString, QVariant>* groupMap;
         QWidget* tab_holder;
@@ -337,6 +352,10 @@ void MainWindow::on_DeviceConnected() {
                     programmer_holder->addBurnMethods(groupMap->value("burn_methods").toStringList());
                     break;
                 }
+                case GUI_TYPE_GENERAL_SETTINGS:
+                    // Set flag to handle after reading in all other tabs
+                    contains_general_settings = true;
+                    continue;
                 default:
                     continue;
             }
@@ -344,9 +363,32 @@ void MainWindow::on_DeviceConnected() {
             // Set base chunk size to config value or 0 if non-existant
             ((GUI_BASE*) tab_holder)->set_chunkSize(groupMap->value("chunk_size").toInt());
 
+            // Set gui type checksum encoding
+            ((GUI_BASE*) tab_holder)->set_gui_checksum(
+                        supportedChecksums.value(
+                            groupMap->value("gui_checksum_type").toString(),
+                            supportedChecksums.value("CRC_8_LUT")));
+
             // Add new GUI to tabs
             ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());
         }
+        // Handle generic settings now that all tabs are loaded
+        if (contains_general_settings)
+        {
+            groupMap = configMap->value("GENERAL SETTINGS");
+            if (groupMap->contains("generic_checksum_type"))
+            {
+                checksum_struct gen_check = supportedChecksums.value(
+                            groupMap->value("generic_checksum_type").toString(),
+                            supportedChecksums.value("CRC_8_LUT"));
+                for (int i = ui->ucOptions->count(); 0 < i; i--)
+                {
+                    ((GUI_BASE*) ui->ucOptions->widget(i))->set_generic_checksum(gen_check);
+                }
+            }
+        }
+
+        // Enable signals for tab group
         ui->ucOptions->blockSignals(false);
 
         // Delete map after use
@@ -442,8 +484,8 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     setConnected(false);
 
     // Refresh device & conn type combos
-    on_DeviceCombo_activated(0);
-    on_ConnTypeCombo_currentIndexChanged(0);
+//    on_DeviceCombo_activated(0);
+//    on_ConnTypeCombo_currentIndexChanged(0);
 }
 
 void MainWindow::on_MoreOptions_Button_clicked()
@@ -535,6 +577,7 @@ void MainWindow::updateConnInfoCombo()
         default:
         {
             updateConnInfo->stop();
+            ui->ConnInfoCombo->clear();
             ui->ConnInfoCombo->setEditable(true);
             ui->DeviceConnect_Button->setEnabled(true);
             break;
