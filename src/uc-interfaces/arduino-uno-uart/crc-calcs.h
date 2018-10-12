@@ -45,7 +45,7 @@ extern "C"
  *       static const _____ crc_poly = 0x....;
  *
 */
-#define __crc_32
+#define __crc_8
 #define __crc_LUT
 
 #if defined(__crc_8)
