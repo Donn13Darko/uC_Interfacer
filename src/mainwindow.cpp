@@ -46,7 +46,7 @@ MainWindow::supportedChecksums({
                                    {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY}},
                                    {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT}},
                                    {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY}},
-                                   {"OTHER", {get_checksum_OTHER_size, get_checksum_OTHER, check_checksum_OTHER}}
+                                   {"OTHER", {get_checksum_other_size, get_checksum_other, check_checksum_other}}
                                });
 
 // Setup static supported devices list
@@ -365,17 +365,20 @@ void MainWindow::on_DeviceConnected() {
             // Set base chunk size to config value or 0 if non-existant
             ((GUI_BASE*) tab_holder)->set_chunkSize(groupMap->value("chunk_size").toInt());
 
-            // Set gui type checksum encoding (default CRC_8_LUT)
-            checksum_type = groupMap->value("gui_checksum_type").toString();
+            // Get gui type checksum encoding
+            checksum_type = groupMap->value("checksum_type").toString();
+
+            // Set checksum type struct (default CRC_8_LUT)
             ((GUI_BASE*) tab_holder)->set_gui_checksum(
                         supportedChecksums.value(
                             checksum_type,
                             supportedChecksums.value("CRC_8_LUT")));
 
-            // If checksum == "OTHER", set other executable path
+            // If checksum_type == "OTHER", set other executable path
             if (checksum_type == "OTHER")
             {
-                QString checksum_exe = groupMap->value("gui_checksum_exe").toString();
+                ((GUI_BASE*) tab_holder)->set_gui_checksum(
+                            groupMap->value("checksum_exe").toString());
             }
 
             // Add new GUI to tabs
@@ -384,15 +387,28 @@ void MainWindow::on_DeviceConnected() {
         // Handle generic settings now that all tabs are loaded
         if (contains_general_settings)
         {
+            // Get settings group
             groupMap = configMap->value("GENERAL SETTINGS");
-            if (groupMap->contains("generic_checksum_type"))
+
+            // Holder for each setting
+            QString setting;
+
+            // Check general checksum type setting
+            setting = groupMap->contains("checksum_type");
+            if (!setting.isEmpty())
             {
+                // Only need to set one instance (static)
+                // Set checksum type struct
                 checksum_struct gen_check = supportedChecksums.value(
                             groupMap->value("generic_checksum_type").toString(),
                             supportedChecksums.value("CRC_8_LUT"));
-                for (int i = ui->ucOptions->count(); 0 < i; i--)
+                ((GUI_BASE*) ui->ucOptions->widget(0))->set_generic_checksum(gen_check);
+
+                // If checksum_type == "OTHER", set other executable path
+                if (setting == "OTHER")
                 {
-                    ((GUI_BASE*) ui->ucOptions->widget(i))->set_generic_checksum(gen_check);
+                    QString checksum_exe_path = groupMap->value("checksum_exe").toString();
+                    ((GUI_BASE*) ui->ucOptions->widget(0))->set_generic_checksum(checksum_exe_path);
                 }
             }
         }

@@ -25,7 +25,10 @@
 #include <QTextStream>
 #include <QEventLoop>
 #include <QSettings>
+#include <QProcess>
 
+bool GUI_BASE::generic_checksum_is_exe = false;
+QString GUI_BASE::generic_checksum_exe_path = "";
 checksum_struct GUI_BASE::generic_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 
 uint8_t num_s2_bytes;
@@ -58,9 +61,21 @@ void GUI_BASE::set_chunkSize(size_t chunk)
     chunkSize = chunk;
 }
 
+void GUI_BASE::set_gui_checksum(QString new_gui_checksum)
+{
+    gui_checksum_is_exe = true;
+    gui_checksum_exe_path = new_gui_checksum;
+}
+
 void GUI_BASE::set_gui_checksum(checksum_struct new_gui_checksum)
 {
     gui_checksum = new_gui_checksum;
+}
+
+void GUI_BASE::set_generic_checksum(QString new_generic_checksum)
+{
+    GUI_BASE::generic_checksum_is_exe = true;
+    GUI_BASE::generic_checksum_exe_path = new_generic_checksum;
 }
 
 void GUI_BASE::set_generic_checksum(checksum_struct new_generic_checksum)
@@ -82,6 +97,9 @@ void GUI_BASE::receive(QByteArray recvData)
     uint32_t checksum_size;
     if (rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
     {
+        // Set executable if using
+        if (generic_checksum_is_exe) set_executable_checksum_other(generic_checksum_exe_path.toUtf8().constData());
+
         // Verify enough bytes
         checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
         if (rcvd_len < (expected_len+checksum_size)) return;
@@ -101,6 +119,8 @@ void GUI_BASE::receive(QByteArray recvData)
         emit ackReceived();
         return;
     }
+    // Set executable if using
+    if (gui_checksum_is_exe) set_executable_checksum_other(gui_checksum_exe_path.toUtf8().constData());
     checksum_size = gui_checksum.get_checksum_size();
 
     // Check if second stage & checksum in rcvd
@@ -148,19 +168,31 @@ void GUI_BASE::send(QByteArray data)
         // Append checksum before sending
         if (ack_key == (char) guiType)
         {
+            // Set executable if using
+            if (gui_checksum_is_exe) set_executable_checksum_other(gui_checksum_exe_path.toUtf8().constData());
+
+            // Get checksum info
             uint32_t checksum_size = gui_checksum.get_checksum_size();
             uint8_t checksumArray[checksum_size];
             uint8_t checksum_start[checksum_size] = {0};
             gui_checksum.get_checksum((const uint8_t*) currData.data(), currData.length(),
                                              checksum_start, checksumArray);
+
+            // Append checksum
             currData.append((const char*) checksumArray, checksum_size);
         } else
         {
+            // Set executable if using
+            if (generic_checksum_is_exe) set_executable_checksum_other(generic_checksum_exe_path.toUtf8().constData());
+
+            // Get checksum info
             uint32_t checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
             uint8_t checksumArray[checksum_size];
             uint8_t checksum_start[checksum_size] = {0};
             GUI_BASE::generic_checksum.get_checksum((const uint8_t*) currData.data(), currData.length(),
                                              checksum_start, checksumArray);
+
+            // Append checksum
             currData.append((const char*) checksumArray, checksum_size);
         }
 

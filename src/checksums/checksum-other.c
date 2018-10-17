@@ -21,24 +21,17 @@
 // Executable path
 const char* exe_path = "";
 uint32_t exe_len = 0;
-FILE* fp = NULL;
 
-void set_executable(const char* new_exe_path)
+void set_executable_checksum_other(const char* new_exe_path)
 {
     exe_path = new_exe_path;
     exe_len = strlen(exe_path);
 }
 
-void run_cmd(const char* cmd)
-{
-    if (fp != NULL) pclose(fp);
-    fp = popen(cmd, "r");
-}
-
-void get_checksum_OTHER(const uint8_t* data_array, uint32_t data_len, uint8_t* checksum_start, uint8_t* data_checksum)
+void get_checksum_other(const uint8_t* data_array, uint32_t data_len, uint8_t* checksum_start, uint8_t* data_checksum)
 {
     // Get size of checksum
-    uint32_t checksum_size = get_checksum_OTHER_size();
+    uint32_t checksum_size = get_checksum_other_size();
 
     // Build command line argument
     uint32_t cmd_len = exe_len+data_len+sizeof(data_len)+checksum_size+5;
@@ -46,18 +39,20 @@ void get_checksum_OTHER(const uint8_t* data_array, uint32_t data_len, uint8_t* c
     snprintf(cmd, cmd_len, "%s %s %s %s", exe_path, data_array, data_len, checksum_start);
 
     // Compute checksum
-    run_cmd(cmd);
+    FILE* fp = popen(cmd, "r");
     if ((fp == NULL)
             || fgets((char*) data_checksum, checksum_size, fp) == NULL)
     {
+        pclose(fp);
         return;
     }
+    pclose(fp);
 }
 
-bool check_checksum_OTHER(const uint8_t* data_checksum, const uint8_t* cmp_checksum)
+bool check_checksum_other(const uint8_t* data_checksum, const uint8_t* cmp_checksum)
 {
     // Get size of checksum
-    uint32_t checksum_size = get_checksum_OTHER_size();
+    uint32_t checksum_size = get_checksum_other_size();
 
     // Check each byte of the checksum
     for (uint32_t i = 0; i < checksum_size; i++)
@@ -70,7 +65,7 @@ bool check_checksum_OTHER(const uint8_t* data_checksum, const uint8_t* cmp_check
     return true;
 }
 
-uint32_t get_checksum_OTHER_size()
+uint32_t get_checksum_other_size()
 {
     // Build command line argument
     uint32_t cmd_len = exe_len+7;
@@ -79,12 +74,14 @@ uint32_t get_checksum_OTHER_size()
     char checksum_size_str[4];
 
     // Compute size
-    run_cmd(cmd);
+    FILE* fp = popen(cmd, "r");
     if ((fp == NULL)
             || fgets(checksum_size_str, sizeof(checksum_size_str), fp) == NULL)
     {
+        pclose(fp);
         return 0;
     }
+    pclose(fp);
 
     // Convert size into uint32_t
     uint32_t checksum_size = 0;
