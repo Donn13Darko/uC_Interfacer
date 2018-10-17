@@ -57,7 +57,7 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     on_updateStopper_clicked();
 
     // Get AIO pin info
-    QList<uint8_t> pinTypes({SUB_KEY_IO_AIO, SUB_KEY_IO_DIO});
+    QList<uint8_t> pinTypes({MINOR_KEY_IO_AIO, MINOR_KEY_IO_DIO});
     foreach (uint8_t pinType, pinTypes)
     {
         if (getPinTypeInfo(pinType, &pInfo))
@@ -100,21 +100,21 @@ void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
     uint8_t pinType;
 
     // Add DIO controls
-    pinType = SUB_KEY_IO_DIO;
+    pinType = MINOR_KEY_IO_DIO;
     setNumPins(pinType, configMap->value("dio_num").toInt(),
                           configMap->value("dio_start_num").toInt());
     addNewPinSettings(pinType, configMap->value("dio_pin_settings").toStringList());
     setCombos(pinType, configMap->value("dio_combo_settings").toStringList());
 
     // Add AIO controls
-    pinType = SUB_KEY_IO_AIO;
+    pinType = MINOR_KEY_IO_AIO;
     setNumPins(pinType, configMap->value("aio_num").toInt(),
                           configMap->value("aio_start_num").toInt());
     addNewPinSettings(pinType, configMap->value("aio_pin_settings").toStringList());
     setCombos(pinType, configMap->value("aio_combo_settings").toStringList());
 
     // Add Transmit controls
-    pinType = SUB_KEY_IO_REMOTE_CONN;
+    pinType = MINOR_KEY_IO_REMOTE_CONN;
     addNewPinSettings(pinType, configMap->value("remote_pin_settings").toStringList());
     setCombos(pinType, configMap->value("remote_combo_settings").toStringList());
 }
@@ -132,7 +132,7 @@ void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo)) return;
 
     // Set message for clicked button
     inputsChanged(&pInfo, comboPos);
@@ -142,7 +142,7 @@ void GUI_8AIO_16DIO_COMM::DIO_SliderValueChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo)) return;
 
     // Set message for clicked button
     inputsChanged(&pInfo, slideValuePos);
@@ -152,7 +152,7 @@ void GUI_8AIO_16DIO_COMM::DIO_TextValueChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo)) return;
 
     // Set message for clicked button
     inputsChanged(&pInfo, textValuePos);
@@ -162,7 +162,7 @@ void GUI_8AIO_16DIO_COMM::AIO_ComboChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo)) return;
 
     // Send message for edited button
     inputsChanged(&pInfo, comboPos);
@@ -172,7 +172,7 @@ void GUI_8AIO_16DIO_COMM::AIO_SliderValueChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo)) return;
 
     // Send message for edited button
     inputsChanged(&pInfo, slideValuePos);
@@ -182,7 +182,7 @@ void GUI_8AIO_16DIO_COMM::AIO_TextValueChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo)) return;
 
     // Send message for edited button
     inputsChanged(&pInfo, textValuePos);
@@ -192,8 +192,8 @@ void GUI_8AIO_16DIO_COMM::updateValues()
 {
     uint8_t pinType;
     QTimer *caller = (QTimer*) sender();
-    if (caller == &DIO_READ) pinType = SUB_KEY_IO_DIO;
-    else if (caller == &AIO_READ) pinType = SUB_KEY_IO_AIO;
+    if (caller == &DIO_READ) pinType = MINOR_KEY_IO_DIO;
+    else if (caller == &AIO_READ) pinType = MINOR_KEY_IO_AIO;
     else return;
 
     send({
@@ -223,13 +223,13 @@ void GUI_8AIO_16DIO_COMM::receive_io()
                 {
                     switch (value)
                     {
-                        case SUB_KEY_IO_DIO:
+                        case MINOR_KEY_IO_DIO:
                             if ((bytesPerPin*num_DIOpins_DEV) < m)
                                 e = bytesPerPin*num_DIOpins_DEV;
                             else
                                 return;
                             break;
-                        case SUB_KEY_IO_AIO:
+                        case MINOR_KEY_IO_AIO:
                             if ((bytesPerPin*num_AIOpins_DEV) < m)
                                 e = bytesPerPin*num_AIOpins_DEV;
                             else
@@ -263,8 +263,8 @@ void GUI_8AIO_16DIO_COMM::recordLogData()
     if (!logIsRecording) return;
 
     PinTypeInfo pInfo;
-    if (getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo)) recordPinValues(&pInfo);
-    if (getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo)) recordPinValues(&pInfo);
+    if (getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo)) recordPinValues(&pInfo);
+    if (getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo)) recordPinValues(&pInfo);
 
 }
 
@@ -347,18 +347,18 @@ void GUI_8AIO_16DIO_COMM::on_stopLog_clicked()
 void GUI_8AIO_16DIO_COMM::on_ConnectButton_clicked()
 {
     QByteArray msg;
-    msg.append(controlMap.value(SUB_KEY_IO_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
+    msg.append(controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
 
     if (devConnected)
     {
-        msg.append(SUB_KEY_IO_REMOTE_CONN);
+        msg.append(MINOR_KEY_IO_REMOTE_CONN);
 
         ui->ConnectButton->setText("Connect");
         ui->SendButton->setEnabled(false);
         devConnected = false;
     } else
     {
-        msg.append(SUB_KEY_IO_REMOTE_CONN);
+        msg.append(MINOR_KEY_IO_REMOTE_CONN);
 
         ui->ConnectButton->setText("Disconnect");
         ui->SendButton->setEnabled(true);
@@ -373,11 +373,11 @@ void GUI_8AIO_16DIO_COMM::on_ConnectButton_clicked()
 void GUI_8AIO_16DIO_COMM::on_SendButton_clicked()
 {
     QByteArray msg;
-    msg.append(controlMap.value(SUB_KEY_IO_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
-    msg.append(SUB_KEY_IO_REMOTE_CONN);
+    msg.append(controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
+    msg.append(MINOR_KEY_IO_REMOTE_CONN);
     msg.append(ui->MessageEdit->text());
-    msg.append(SUB_KEY_IO_REMOTE_CONN);
-    msg.append(SUB_KEY_IO_REMOTE_CONN);
+    msg.append(MINOR_KEY_IO_REMOTE_CONN);
+    msg.append(MINOR_KEY_IO_REMOTE_CONN);
 
     send(msg);
 }
@@ -390,8 +390,8 @@ void GUI_8AIO_16DIO_COMM::on_ClearRecvButton_clicked()
 void GUI_8AIO_16DIO_COMM::on_ConnTypeCombo_currentIndexChanged(int)
 {
     QString currVal = ui->ConnTypeCombo->currentText();
-    uint8_t type = controlMap.value(SUB_KEY_IO_REMOTE_CONN)->value(currVal);
-    if (disabledValueSet.value(SUB_KEY_IO_REMOTE_CONN)->contains(type)) ui->SpeedCombo->setEnabled(false);
+    uint8_t type = controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(currVal);
+    if (disabledValueSet.value(MINOR_KEY_IO_REMOTE_CONN)->contains(type)) ui->SpeedCombo->setEnabled(false);
     else ui->SpeedCombo->setEnabled(true);
 
     QStringList deviceConns = devSettings.value(currVal);
@@ -410,10 +410,10 @@ void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint
     // Update dev pins
     switch (pInfo.pinType)
     {
-        case SUB_KEY_IO_AIO:
+        case MINOR_KEY_IO_AIO:
             num_AIOpins_DEV = num_dev_pins;
             break;
-        case SUB_KEY_IO_DIO:
+        case MINOR_KEY_IO_DIO:
             num_DIOpins_DEV = num_dev_pins;
             break;
     }
@@ -431,7 +431,7 @@ void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint
 void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
 {
     // Handle remote connection info
-    if (pinType == SUB_KEY_IO_REMOTE_CONN)
+    if (pinType == MINOR_KEY_IO_REMOTE_CONN)
     {
         ui->ConnTypeCombo->blockSignals(true);
         ui->ConnTypeCombo->clear();
@@ -533,7 +533,7 @@ void GUI_8AIO_16DIO_COMM::setConTypes(QStringList connTypes, QList<char> mapValu
 {
     if (connTypes.length() != mapValues.length()) return;
 
-    QMap<QString, uint8_t>* pinMap = controlMap.value(SUB_KEY_IO_REMOTE_CONN);
+    QMap<QString, uint8_t>* pinMap = controlMap.value(MINOR_KEY_IO_REMOTE_CONN);
     for (uint8_t i = 0; i < connTypes.length(); i++)
     {
         pinMap->insert(connTypes[i], mapValues[i]);
@@ -590,7 +590,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     uint8_t rowNum, colNum;
 
     // Get AIO pin info
-    if (!getPinTypeInfo(SUB_KEY_IO_AIO, &pInfo))
+    if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo))
     {
         GUI_HELPER::showMessage("Error: Unable to connect AIO!");
         QTimer::singleShot(0, this, SLOT(close()));
@@ -627,7 +627,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Get DIO pin info
-    if (!getPinTypeInfo(SUB_KEY_IO_DIO, &pInfo))
+    if (!getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo))
     {
         GUI_HELPER::showMessage("Error: Unable to connect DIO!");
         QTimer::singleShot(0, this, SLOT(close()));
@@ -749,10 +749,10 @@ bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
     // Set ui pin type variables
     switch (pinType)
     {
-        case SUB_KEY_IO_AIO:
+        case MINOR_KEY_IO_AIO:
             infoPtr->grid = ui->AIO_Grid;
             return true;
-        case SUB_KEY_IO_DIO:
+        case MINOR_KEY_IO_DIO:
             infoPtr->grid = ui->DIO_Grid;
             return true;
         default:

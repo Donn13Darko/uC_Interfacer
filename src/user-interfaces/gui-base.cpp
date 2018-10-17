@@ -36,6 +36,9 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     // Init Ack variables
     ack_status = false;
     ack_key = MAJOR_KEY_ERROR;
+
+    // Init checksum variables
+
 }
 
 GUI_BASE::~GUI_BASE()
@@ -250,7 +253,7 @@ bool GUI_BASE::checkAck()
     // Check ack against inputs
     bool status = false;
     if ((rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
-            && (rcvd.at(s1_num_s2_bytes_loc) == (char) ack_key))
+            && (rcvd.at(s1_minor_key_loc) == (char) ack_key))
     {
         status = true;
     }

@@ -45,7 +45,8 @@ MainWindow::supportedChecksums({
                                    {"CRC_16_LUT", {get_crc_16_LUT_size, get_crc_16_LUT, check_crc_16_LUT}},
                                    {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY}},
                                    {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT}},
-                                   {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY}}
+                                   {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY}},
+                                   {"OTHER", {get_checksum_OTHER_size, get_checksum_OTHER, check_checksum_OTHER}}
                                });
 
 // Setup static supported devices list
@@ -302,6 +303,7 @@ void MainWindow::on_DeviceConnected() {
         uint8_t gui_type;
         QMap<QString, QVariant>* groupMap;
         QWidget* tab_holder;
+        QString checksum_type;
         foreach (QString childGroup, configMap->keys())
         {
             // Verify that its a known GUI
@@ -363,11 +365,18 @@ void MainWindow::on_DeviceConnected() {
             // Set base chunk size to config value or 0 if non-existant
             ((GUI_BASE*) tab_holder)->set_chunkSize(groupMap->value("chunk_size").toInt());
 
-            // Set gui type checksum encoding
+            // Set gui type checksum encoding (default CRC_8_LUT)
+            checksum_type = groupMap->value("gui_checksum_type").toString();
             ((GUI_BASE*) tab_holder)->set_gui_checksum(
                         supportedChecksums.value(
-                            groupMap->value("gui_checksum_type").toString(),
+                            checksum_type,
                             supportedChecksums.value("CRC_8_LUT")));
+
+            // If checksum == "OTHER", set other executable path
+            if (checksum_type == "OTHER")
+            {
+                QString checksum_exe = groupMap->value("gui_checksum_exe").toString();
+            }
 
             // Add new GUI to tabs
             ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());

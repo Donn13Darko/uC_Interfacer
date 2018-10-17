@@ -30,7 +30,7 @@
 #include <QTimer>
 
 #include "gui-base.h"
-#include "gui-pin-io-base-sub-keys.h"
+#include "gui-pin-io-base-minor-keys.h"
 
 typedef enum {
     PIN_TYPES_DIO = 0,

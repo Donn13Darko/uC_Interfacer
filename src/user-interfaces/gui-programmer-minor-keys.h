@@ -16,25 +16,29 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CHECKSUMS_H
-#define CHECKSUMS_H
+#ifndef GUI_PROGRAMMER_MINOR_KEYS_H
+#define GUI_PROGRAMMER_MINOR_KEYS_H
 
-/*
- * Provides a single file to include in the QT GUI project
- * To include a new checksum in project:
- *  1) Add a new include for the checksums .h below
- *  2) Add a corresponding checksum map entry in MainWindow.cpp
-*/
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-// CRC checksums - LUT = Lookup table, Poly = Live Compute using Polynomial
-#include "crc-8-lut.h"
-#include "crc-8-poly.h"
-#include "crc-16-lut.h"
-#include "crc-16-poly.h"
-#include "crc-32-lut.h"
-#include "crc-32-poly.h"
+// Programmer Minor Keys enum
+typedef enum {
+    // Error and reset
+    MINOR_KEY_PROGRAMMER_ERROR = 0,
 
-// Calls and executabe to produce the checksum
-#include "checksum-other.h"
+    // Programer Set
+    MINOR_KEY_PROGRAMMER_SET,
 
-#endif // CHECKSUMS_H
+    // Programmer Transfer
+    MINOR_KEY_PROGRAMMER_ADDR,
+    MINOR_KEY_PROGRAMMER_DATA
+} MINOR_KEY_PROGRAMMER;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // GUI_PROGRAMMER_MINOR_KEYS_H

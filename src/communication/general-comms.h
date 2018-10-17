@@ -47,20 +47,15 @@ typedef enum {
 /* First stage (s1) generic key positions */
 typedef enum {
     s1_major_key_loc = 0,
+    s1_minor_key_loc,
     s1_num_s2_bytes_loc,
-    s1_checksum_loc
+    s1_end_loc
 } S1_Major_Settings;
-
-/* Second stage (s2) key positions enum */
-typedef enum {
-    s2_sub_key_loc = 0,
-    s2_data_start_loc
-} S2_Sub_Settings;
 
 // Variables
 static const uint8_t packet_retries = 2;
 static const uint32_t packet_timeout = 500; // ms
-static const uint8_t num_s1_bytes = s1_checksum_loc;
+static const uint8_t num_s1_bytes = s1_end_loc;
 extern uint8_t num_s2_bytes;
 
 /*

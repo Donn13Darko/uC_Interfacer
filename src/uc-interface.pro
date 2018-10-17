@@ -42,7 +42,8 @@ SOURCES += \
     checksums/crc-16-lut.c \
     checksums/crc-16-poly.c \
     checksums/crc-32-lut.c \
-    checksums/crc-32-poly.c
+    checksums/crc-32-poly.c \
+    checksums/checksum-other.c
 
 HEADERS += \
     mainwindow.h \
@@ -58,15 +59,16 @@ HEADERS += \
     communication/udp-socket.h \
     communication/general-comms.h \
     gui-helper.h \
-    user-interfaces/gui-pin-io-base-sub-keys.h \
-    user-interfaces/gui-programmer-sub-keys.h \
     checksums/checksums.h \
     checksums/crc-8-lut.h \
     checksums/crc-8-poly.h \
     checksums/crc-16-lut.h \
     checksums/crc-16-poly.h \
     checksums/crc-32-lut.h \
-    checksums/crc-32-poly.h
+    checksums/crc-32-poly.h \
+    user-interfaces/gui-pin-io-base-minor-keys.h \
+    user-interfaces/gui-programmer-minor-keys.h \
+    checksums/checksum-other.h
 
 FORMS += \
     mainwindow.ui \

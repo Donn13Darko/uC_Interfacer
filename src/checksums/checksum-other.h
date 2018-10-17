@@ -16,29 +16,34 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_PROGRAMMER_SUB_KEYS_H
-#define GUI_PROGRAMMER_SUB_KEYS_H
+#ifndef CHECKSUM_OTHER
+#define CHECKSUM_OTHER
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// Programmer Sub Keys enum
-typedef enum {
-    // Error and reset
-    SUB_KEY_PROGRAMMER_ERROR = 0,
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-    // Programer Set
-    SUB_KEY_PROGRAMMER_SET,
+// Sets executable path for next calls
+void set_executable(const char* new_exe_path);
 
-    // Programmer Transfer
-    SUB_KEY_PROGRAMMER_ADDR,
-    SUB_KEY_PROGRAMMER_DATA
-} SUB_KEY_PROGRAMMER;
+// Computes checksum for data_array with start value
+void get_checksum_OTHER(const uint8_t* data_array, uint32_t data_len, uint8_t* checksum_start, uint8_t* data_checksum);
+
+// Checks checksum
+bool check_checksum_OTHER(const uint8_t* data_checksum, const uint8_t* cmp_checksum);
+
+// Gets byte length of checksum
+uint32_t get_checksum_OTHER_size();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GUI_PROGRAMMER_SUB_KEYS_H
+#endif // CHECKSUM_OTHER

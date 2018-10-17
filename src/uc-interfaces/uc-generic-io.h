@@ -37,11 +37,11 @@ extern "C"
 #include <stdlib.h>
 
 #include "../communication/general-comms.h"
-#include "../user-interfaces/gui-pin-io-base-sub-keys.h"
+#include "../user-interfaces/gui-pin-io-base-minor-keys.h"
 
 /* IO Functions */
-/* Parses IO subkeys and calls uc specific code */
-void uc_io(const uint8_t* buffer, uint8_t num_bytes);
+/* Parses IO minor key and calls uc specific code */
+void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
 
 /*** Following extern functions must be defined on a per uC basis ***/
 

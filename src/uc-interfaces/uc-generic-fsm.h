@@ -67,12 +67,12 @@ extern uint8_t uc_send(uint8_t* data, uint8_t data_len);
  * FSM as opposed to reimplimenting the key parsing included (unless
  * space efficiency, speed, or not using (stub it))
 */
-/* Parses IO subkeys and acts */
-extern void uc_io(const uint8_t* buffer, uint8_t num_bytes);
-/* Parses Data Transmit subkeys and acts */
-extern void uc_data_transmit(const uint8_t* buffer, uint8_t num_bytes);
-/* Parses Programmer subkeys and acts */
-extern void uc_programmer(const uint8_t* buffer, uint8_t num_bytes);
+/* Parses IO minor key and acts */
+extern void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+/* Parses Data Transmit minor key and acts */
+extern void uc_data_transmit(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+/* Parses Programmer minor key and acts */
+extern void uc_programmer(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
 
 #ifdef __cplusplus
 }

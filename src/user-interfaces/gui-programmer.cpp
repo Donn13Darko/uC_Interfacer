@@ -18,7 +18,7 @@
 
 #include "gui-programmer.h"
 #include "ui_gui-programmer.h"
-#include "gui-programmer-sub-keys.h"
+#include "gui-programmer-minor-keys.h"
 
 GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     GUI_BASE(parent),
@@ -163,7 +163,7 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 
             // Send Packet #2
             data.clear();
-            data.append((char) SUB_KEY_PROGRAMMER_ADDR);
+            data.append((char) MINOR_KEY_PROGRAMMER_ADDR);
             data.append(QByteArray::fromHex(curr[3].toUtf8()));
             send(data);
         }
@@ -174,17 +174,12 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
             // Calculate command length
             prog_line_length = curr[4].length();
             prog_line_length = (prog_line_length / 2) + (prog_line_length % 2);
-            prog_line_length += 2; // Sub-key + CRC
 
-            // Send Packet #1
-            send({
-                     GUI_TYPE_PROGRAMMER,
-                     prog_line_length
-                 });
-
-            // Send Packet #2
+            // Send Package
             data.clear();
-            data.append((char) SUB_KEY_PROGRAMMER_DATA);
+            data.append((char) GUI_TYPE_PROGRAMMER);
+            data.append((char) prog_line_length);
+            data.append((char) MINOR_KEY_PROGRAMMER_DATA);
             data.append(QByteArray::fromHex(curr[4].toUtf8()));
             send(data);
         }

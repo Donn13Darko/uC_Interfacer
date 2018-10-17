@@ -18,8 +18,8 @@
 
 #include "uc-generic-fsm.h"
 #include "uc-generic-io.h"
-#include "arduino-uno-uart-sub-keys.h"
-#include "gui-pin-io-base-sub-keys.h"
+#include "arduino-uno-uart-minor-keys.h"
+#include "gui-pin-io-base-minor-keys.h"
 #include "general-comms.h"
 #include <Servo.h>
 
@@ -50,8 +50,8 @@ const uint8_t aio_data_len = 3*num_AIO + 1;
 uint8_t read_data[dio_data_len];
 
 // Just ignore these functions for now
-void uc_data_transmit(const uint8_t*, uint8_t) {}
-void uc_programmer(const uint8_t*, uint8_t) {}
+void uc_data_transmit(uint8_t, const uint8_t*, uint8_t) {}
+void uc_programmer(uint8_t, const uint8_t*, uint8_t) {}
 void uc_aio(uint8_t pin_num, uint8_t setting, uint16_t value) {}
 void uc_remote_conn() {}
 
@@ -123,7 +123,7 @@ void uc_dio_read()
 {
     uint16_t val;
     uint8_t j = 1;
-    read_data[0] = SUB_KEY_IO_DIO_READ;
+    read_data[0] = MINOR_KEY_IO_DIO_READ;
     for (uint8_t i = 0; i < num_DIO; i++)
     {
         // Iterate over pins
@@ -156,7 +156,7 @@ void uc_aio_read()
 {
     uint8_t j = 1;
     uint16_t val = 0;
-    read_data[0] = SUB_KEY_IO_AIO_READ;
+    read_data[0] = MINOR_KEY_IO_AIO_READ;
     for (uint8_t i = 0; i < num_AIO; i++)
     {
         // Scale value
