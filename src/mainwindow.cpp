@@ -22,6 +22,7 @@
 #include "user-interfaces/gui-8aio-16dio-comm.h"
 #include "user-interfaces/gui-data-transmit.h"
 #include "user-interfaces/gui-programmer.h"
+#include "user-interfaces/gui-custom-cmd.h"
 #include "gui-helper.h"
 
 #include <QMessageBox>
@@ -30,11 +31,12 @@
 // Setup supported GUIs map
 QMap<QString, uint8_t>
 MainWindow::supportedGUIsMap({
+                                 {"GENERAL SETTINGS", GUI_TYPE_GENERAL_SETTINGS},
                                  {"Welcome", GUI_TYPE_WELCOME},
                                  {"IO", GUI_TYPE_IO},
                                  {"Data Transmit", GUI_TYPE_DATA_TRANSMIT},
                                  {"Programmer", GUI_TYPE_PROGRAMMER},
-                                 {"GENERAL SETTINGS", GUI_TYPE_GENERAL_SETTINGS}
+                                 {"Custom CMD", GUI_TYPE_CUSTOM_CMD}
                              });
 
 // Setup suported checksums map
@@ -316,6 +318,12 @@ void MainWindow::on_DeviceConnected() {
             // Instantiate and add GUI
             switch (gui_type)
             {
+                case GUI_TYPE_GENERAL_SETTINGS:
+                {
+                    // Set flag to handle after reading in all other tabs
+                    contains_general_settings = true;
+                    continue;
+                }
                 case GUI_TYPE_WELCOME:
                 {
                     tab_holder = new GUI_WELCOME(this);
@@ -354,12 +362,15 @@ void MainWindow::on_DeviceConnected() {
                     programmer_holder->addBurnMethods(groupMap->value("burn_methods").toStringList());
                     break;
                 }
-                case GUI_TYPE_GENERAL_SETTINGS:
-                    // Set flag to handle after reading in all other tabs
-                    contains_general_settings = true;
-                    continue;
+                case GUI_TYPE_CUSTOM_CMD:
+                {
+                    tab_holder = new GUI_CUSTOM_CMD(this);
+                    break;
+                }
                 default:
+                {
                     continue;
+                }
             }
 
             // Set base chunk size to config value or 0 if non-existant
