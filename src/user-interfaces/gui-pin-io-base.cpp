@@ -177,15 +177,16 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
 
     // Send major/minor keys & data to uC
     uint16_t v = (uint16_t) VAL.toInt();
-    send({
-             guiType,                       // Major Key
-             pInfo->pinType,                // Minor Key
-             (uint8_t) 4,                   // Data length: 4 data bytes
-             (uint8_t) pinNum.toInt(),      // Pin Num
-             IO,                            // Combo setting
-             (uint8_t) ((v >> 8) & 0xFF),   // Value High
-             (uint8_t) (v & 0xFF)           // Value Low
-         });
+    send_chunk({
+                   guiType,                       // Major Key
+                   pInfo->pinType,                // Minor Key
+               },
+               {
+                   (uint8_t) pinNum.toInt(),      // Pin Num
+                   IO,                            // Combo setting
+                   (uint8_t) ((v >> 8) & 0xFF),   // Value High
+                   (uint8_t) (v & 0xFF)           // Value Low
+               });
 }
 
 void GUI_PIN_BASE::updateSliderRange(QSlider *slider, RangeList *rList)

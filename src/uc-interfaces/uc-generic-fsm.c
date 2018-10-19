@@ -73,7 +73,7 @@ void fsm_setup(uint32_t buffer_len)
         checksum_max_size = programmer_checksum.get_checksum_size();
 
     // Malloc buffers
-    fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
+    fsm_buffer = malloc((num_s1_bytes+buffer_len)*sizeof(fsm_buffer));
     fsm_ack_buffer = malloc(num_s1_bytes*sizeof(fsm_ack_buffer));
     fsm_checksum_buffer = malloc(checksum_max_size*sizeof(fsm_checksum_buffer));
     fsm_checksum_cmp_buffer = malloc(checksum_max_size*sizeof(fsm_checksum_cmp_buffer));

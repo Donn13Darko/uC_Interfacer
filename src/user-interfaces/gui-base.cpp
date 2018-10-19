@@ -156,8 +156,7 @@ void GUI_BASE::send(QString data)
 
 void GUI_BASE::send(QByteArray data)
 {
-    // Feed in empty start array
-    send_chunk(QByteArray(), data);
+    transmit(data);
 }
 
 void GUI_BASE::send(std::initializer_list<uint8_t> data)
