@@ -31,6 +31,7 @@
 checksum_struct io_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 checksum_struct data_transfer_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 checksum_struct programmer_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+checksum_struct custom_cmd_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 
 // Default checksum (for acks, errors, and resets);
 checksum_struct default_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
@@ -242,6 +243,9 @@ void fsm_run()
         case GUI_TYPE_PROGRAMMER:
             uc_programmer(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
+        case GUI_TYPE_CUSTOM_CMD:
+            uc_custom_cmd(minor_key, fsm_buffer_ptr, num_s2_bytes);
+            break;
         default: // Will fall threw for MAJOR_KEY_ERROR, MAJOR_KEY_RESET
             uc_reset();
             break;
@@ -276,6 +280,9 @@ void fsm_send(uint8_t* data, uint32_t data_len)
 
 bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 {
+    // Return true of waiting for 0 bytes
+    if (num_bytes == 0) return true;
+
     // Set control variables
     uint32_t check_delay = 10; // ms
     uint32_t wait_time = 0;
@@ -316,6 +323,8 @@ checksum_struct* fsm_get_checksum_struct()
             return &data_transfer_checksum;
         case GUI_TYPE_PROGRAMMER:
             return &programmer_checksum;
+        case GUI_TYPE_CUSTOM_CMD:
+            return &custom_cmd_checksum;
         default:
             return &default_checksum;
     }

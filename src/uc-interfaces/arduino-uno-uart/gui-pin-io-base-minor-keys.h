@@ -16,29 +16,42 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_PROGRAMMER_SUB_KEYS_H
-#define GUI_PROGRAMMER_SUB_KEYS_H
+#ifndef GUI_PIN_BASE_MINOR_KEYS_H
+#define GUI_PIN_BASE_MINOR_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// Programmer Sub Keys enum
+// IO Minor Keys enum
 typedef enum {
     // Error and reset
-    SUB_KEY_PROGRAMMER_ERROR = 0,
+    MINOR_KEY_IO_ERROR = 0,
 
-    // Programer Set
-    SUB_KEY_PROGRAMMER_SET,
+    // Pin type set
+    MINOR_KEY_IO_DIO,
+    MINOR_KEY_IO_AIO,
 
-    // Programmer Transfer
-    SUB_KEY_PROGRAMMER_ADDR,
-    SUB_KEY_PROGRAMMER_DATA
-} SUB_KEY_PROGRAMMER;
+    // Pin type read
+    MINOR_KEY_IO_DIO_READ,
+    MINOR_KEY_IO_AIO_READ,
+
+    // Remote Communications
+    MINOR_KEY_IO_REMOTE_CONN
+} MINOR_KEY_IO;
+
+/* Stage #2 (s2) io key positions enum */
+typedef enum {
+    s2_io_pin_num_loc = 0,
+    s2_io_combo_loc,
+    s2_io_value_high_loc,
+    s2_io_value_low_loc,
+    s2_io_end_loc
+} S2_IO_Settings;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GUI_PROGRAMMER_SUB_KEYS_H
+#endif // GUI_PIN_BASE_MINOR_KEYS_H

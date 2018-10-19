@@ -31,6 +31,7 @@
 checksum_struct io_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 checksum_struct data_transfer_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 checksum_struct programmer_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+checksum_struct custom_cmd_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 
 // Default checksum (for acks, errors, and resets);
 checksum_struct default_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
@@ -43,8 +44,8 @@ uint8_t *fsm_ack_buffer;
 
 // Key & packet holders
 uint8_t num_s2_bytes;
-uint8_t major_key, curr_packet_stage;
-uint32_t checksum_max_size;
+uint8_t major_key, minor_key;
+uint32_t curr_packet_stage, checksum_max_size;
 
 // Buffer pointer holder
 uint8_t* fsm_buffer_ptr;
@@ -59,6 +60,7 @@ void fsm_setup(uint32_t buffer_len)
 {
     // Initialize variables
     major_key = MAJOR_KEY_ERROR;
+    minor_key = MAJOR_KEY_ERROR; // All errors are 0
     curr_packet_stage = 1;
 
     // Select largest checksum for array creation
@@ -103,6 +105,7 @@ void fsm_poll()
 
         // Store first stage info
         major_key = fsm_buffer[s1_major_key_loc];
+        minor_key = fsm_buffer[s1_minor_key_loc];
         num_s2_bytes = fsm_buffer[s1_num_s2_bytes_loc];
 
         // Read Second stage or ACK failed after 1 second
@@ -158,6 +161,7 @@ bool fsm_isr()
 
                 // Parse info for first stage
                 major_key = fsm_buffer[s1_major_key_loc];
+                minor_key = fsm_buffer[s1_minor_key_loc];
                 num_s2_bytes = fsm_buffer[s1_num_s2_bytes_loc];
 
                 // If no second stage go to stage 4
@@ -204,7 +208,7 @@ bool fsm_isr()
                 // Send Packet Ack
                 fsm_ack(major_key);
 
-                // Return to first stage on next call
+                // Return to first stage for next call
                 curr_packet_stage = 1;
 
                 // Ready for fsm call
@@ -231,13 +235,16 @@ void fsm_run()
     switch (major_key)
     {
         case GUI_TYPE_IO:
-            uc_io(fsm_buffer_ptr, num_s2_bytes);
+            uc_io(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
         case GUI_TYPE_DATA_TRANSMIT:
-            uc_data_transmit(fsm_buffer_ptr, num_s2_bytes);
+            uc_data_transmit(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
         case GUI_TYPE_PROGRAMMER:
-            uc_programmer(fsm_buffer_ptr, num_s2_bytes);
+            uc_programmer(minor_key, fsm_buffer_ptr, num_s2_bytes);
+            break;
+        case GUI_TYPE_CUSTOM_CMD:
+            uc_custom_cmd(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
         default: // Will fall threw for MAJOR_KEY_ERROR, MAJOR_KEY_RESET
             uc_reset();
@@ -249,26 +256,33 @@ void fsm_ack(uint8_t ack_key)
 {
     // Fill buffer
     fsm_ack_buffer[s1_major_key_loc] = MAJOR_KEY_ACK;
-    fsm_ack_buffer[s1_num_s2_bytes_loc] = ack_key;
+    fsm_ack_buffer[s1_minor_key_loc] = ack_key;
+    fsm_ack_buffer[s1_num_s2_bytes_loc] = 0;
 
-    // Send buffer (fsm send transparently adds checksum)
+    // Send buffer (fsm send attaches checksum)
     fsm_send(fsm_ack_buffer, num_s1_bytes);
 }
 
 void fsm_send(uint8_t* data, uint32_t data_len)
 {
+    // Construct checksum for data
     checksum_struct* check = fsm_get_checksum_struct();
     uint32_t checksum_size = check->get_checksum_size();
     uint8_t checksum_start[checksum_size];
     memset(checksum_start, 0, checksum_size);
     check->get_checksum(data, data_len, checksum_start, fsm_checksum_buffer);
 
+    // Send data followed by checksum
+    // Checksum needs to be sent right after data
     uc_send(data, data_len);
     uc_send(fsm_checksum_buffer, checksum_size);
 }
 
 bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 {
+    // Return true of waiting for 0 bytes
+    if (num_bytes == 0) return true;
+    
     // Set control variables
     uint32_t check_delay = 10; // ms
     uint32_t wait_time = 0;
@@ -309,6 +323,8 @@ checksum_struct* fsm_get_checksum_struct()
             return &data_transfer_checksum;
         case GUI_TYPE_PROGRAMMER:
             return &programmer_checksum;
+        case GUI_TYPE_CUSTOM_CMD:
+            return &custom_cmd_checksum;
         default:
             return &default_checksum;
     }

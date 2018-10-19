@@ -73,6 +73,8 @@ extern void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
 extern void uc_data_transmit(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
 /* Parses Programmer minor key and acts */
 extern void uc_programmer(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+/* Parses Custom CMD minor key and acts */
+extern void uc_custom_cmd(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
 
 #ifdef __cplusplus
 }

@@ -180,7 +180,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
     send({
              GUI_TYPE_IO,                   // Major Key
              pInfo->pinType,                // Minor Key
-             (uint8_t) 5,                   // Data length: 4 data bytes
+             (uint8_t) 4,                   // Data length: 4 data bytes
              (uint8_t) pinNum.toInt(),      // Pin Num
              IO,                            // Combo setting
              (uint8_t) ((v >> 8) & 0xFF),   // Value High

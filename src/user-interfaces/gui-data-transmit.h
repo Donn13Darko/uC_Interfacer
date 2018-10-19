@@ -49,8 +49,6 @@ private slots:
 private:
     Ui::GUI_DATA_TRANSMIT *ui;
 
-    QByteArray received;
-
     void input_select(bool fileIN, bool plainIN);
 };
 

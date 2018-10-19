@@ -373,9 +373,6 @@ void MainWindow::on_DeviceConnected() {
                 }
             }
 
-            // Set base chunk size to config value or 0 if non-existant
-            ((GUI_BASE*) tab_holder)->set_chunkSize(groupMap->value("chunk_size").toInt());
-
             // Get gui type checksum encoding
             checksum_type = groupMap->value("checksum_type").toString();
 
@@ -395,6 +392,7 @@ void MainWindow::on_DeviceConnected() {
             // Add new GUI to tabs
             ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());
         }
+
         // Handle generic settings now that all tabs are loaded
         if (contains_general_settings)
         {
@@ -413,15 +411,18 @@ void MainWindow::on_DeviceConnected() {
                 checksum_struct gen_check = supportedChecksums.value(
                             groupMap->value("generic_checksum_type").toString(),
                             supportedChecksums.value("CRC_8_LUT"));
-                ((GUI_BASE*) ui->ucOptions->widget(0))->set_generic_checksum(gen_check);
+                GUI_BASE::set_generic_checksum(gen_check);
 
                 // If checksum_type == "OTHER", set other executable path
                 if (setting == "OTHER")
                 {
                     QString checksum_exe_path = groupMap->value("checksum_exe").toString();
-                    ((GUI_BASE*) ui->ucOptions->widget(0))->set_generic_checksum(checksum_exe_path);
+                    GUI_BASE::set_generic_checksum(checksum_exe_path);
                 }
             }
+
+            // Set base chunk size to config value or 0 if non-existant
+            GUI_BASE::set_chunkSize(groupMap->value("chunk_size").toInt());
         }
 
         // Enable signals for tab group

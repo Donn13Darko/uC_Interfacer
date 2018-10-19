@@ -33,12 +33,24 @@ public:
     explicit GUI_CUSTOM_CMD(QWidget *parent = 0);
     ~GUI_CUSTOM_CMD();
 
+    void reset_gui();
+
 private slots:
-    void on_send_customCMD_Button_clicked();
+    void on_SaveFeedback_Button_clicked();
+    void on_BrowseFile_Button_clicked();
+    void on_ClearFeedback_Button_clicked();
+
+    void on_sendCustomCMD_Button_clicked();
+
+    void on_cmdSelect_buttonClicked(int);
+
+    void receive_data_transmit();
 
 private:
     Ui::GUI_CUSTOM_CMD *ui;
 
+    void input_select(bool fileIN, bool manualIN);
+    void send_custom_cmd(QString minorKey_str, uint8_t minorKey_base, QStringList customCMD_lst, uint8_t customCMD_base);
 };
 
 #endif // GUI_CUSTOM_CMD_H

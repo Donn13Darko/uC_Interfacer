@@ -40,11 +40,12 @@ public:
 
     void reset_gui() {/*Default do nothing*/}
     void reset_remote();
-    void set_chunkSize(size_t chunk);
 
     void set_gui_checksum(QString new_gui_checksum);
     void set_gui_checksum(checksum_struct new_gui_checksum);
 
+    // Static functions
+    static void set_chunkSize(size_t chunk);
     static void set_generic_checksum(QString new_generic_checksum);
     static void set_generic_checksum(checksum_struct new_generic_checksum);
 
@@ -60,7 +61,6 @@ protected slots:
 protected:
     const float S2MS = 1000.0f;
     QByteArray rcvd;
-    uint8_t chunkSize;
     uint8_t guiType;
 
     void send(QString data);
@@ -74,14 +74,16 @@ protected:
 
 private:
     bool ack_status;
-    uint8_t ack_key;
     QMutex sendLock;
+    uint8_t ack_key;
     QList<QByteArray> msgList;
 
     bool gui_checksum_is_exe = false;
     QString gui_checksum_exe_path = "";
     checksum_struct gui_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 
+    // Static class members
+    static uint8_t chunkSize;
     static bool generic_checksum_is_exe;
     static QString generic_checksum_exe_path;
     static checksum_struct generic_checksum;

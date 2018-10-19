@@ -41,6 +41,8 @@ GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
 
 void GUI_DATA_TRANSMIT::reset_gui()
 {
+    ui->recv_PlainText->clear();
+
     // Set radio values
     ui->File_Radio->setChecked(true);
     on_MSG_Sel_buttonClicked(0);
@@ -57,10 +59,10 @@ void GUI_DATA_TRANSMIT::on_MSG_Sel_buttonClicked(int)
 void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
 {
     // Find which radio button selected
-    if (ui->Input_Radio->isChecked())
-        send(ui->msg_PlainText->toPlainText());
-    else if (ui->File_Radio->isChecked())
+    if (ui->File_Radio->isChecked())
         sendFile(ui->FilePathEdit->text());
+    else if (ui->Input_Radio->isChecked())
+        send(ui->msg_PlainText->toPlainText());
 }
 
 void GUI_DATA_TRANSMIT::on_BrowseFile_Button_clicked()
@@ -79,19 +81,17 @@ void GUI_DATA_TRANSMIT::on_SaveAs_Button_clicked()
         return;
 
     // Save file
-    if (!GUI_HELPER::saveFile(fileName, received))
+    if (!GUI_HELPER::saveFile(fileName, ui->recv_PlainText->toPlainText().toUtf8()))
         GUI_HELPER::showMessage("ERROR: Failed to save file!");
 }
 
 void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()
 {
-    received.clear();
     ui->recv_PlainText->clear();
 }
 
 void GUI_DATA_TRANSMIT::receive_data_transmit()
 {
-    received.append(rcvd);
     ui->recv_PlainText->appendPlainText(QString(rcvd));
 }
 

@@ -13,5 +13,6 @@
         <file>uc-interfaces/uc-generic-io.c</file>
         <file>uc-interfaces/uc-generic-io.h</file>
         <file>user-interfaces/gui-custom-cmd.ini</file>
+        <file>uc-interfaces/arduino-uno-uart-minor-keys.h</file>
     </qresource>
 </RCC>

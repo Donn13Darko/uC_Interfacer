@@ -18,19 +18,15 @@
 
 #include "uc-generic-io.h"
 
-void uc_io(const uint8_t* buffer, uint8_t num_bytes)
+void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
 {
-    // Make sure we have at least one byte for sub_key
-    if (num_bytes == 0) return;
-    uint8_t sub_key = buffer[s2_sub_key_loc];
-
     // Verify & parse bytes
     uint16_t value = 0;
-    if (num_bytes != s2_io_crc_loc)
+    if (buffer_len != s2_io_end_loc)
     {
         // If not enough bytes for command return
-        if ((sub_key == SUB_KEY_IO_DIO)
-                || (sub_key == SUB_KEY_IO_AIO))
+        if ((minor_key == MINOR_KEY_IO_DIO)
+                || (minor_key == MINOR_KEY_IO_AIO))
         {
             return;
         }
@@ -40,22 +36,22 @@ void uc_io(const uint8_t* buffer, uint8_t num_bytes)
                           | ((uint16_t) buffer[s2_io_value_low_loc]));
     }
 
-    // Parse and act on sub key
-    switch (sub_key)
+    // Parse and act on minor key
+    switch (minor_key)
     {
-        case SUB_KEY_IO_DIO:
+        case MINOR_KEY_IO_DIO:
             uc_dio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
-        case SUB_KEY_IO_AIO:
+        case MINOR_KEY_IO_AIO:
             uc_aio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
-        case SUB_KEY_IO_DIO_READ:
+        case MINOR_KEY_IO_DIO_READ:
             uc_dio_read();
             break;
-        case SUB_KEY_IO_AIO_READ:
+        case MINOR_KEY_IO_AIO_READ:
             uc_aio_read();
             break;
-        case SUB_KEY_IO_REMOTE_CONN:
+        case MINOR_KEY_IO_REMOTE_CONN:
             uc_remote_conn();
             break;
         default:

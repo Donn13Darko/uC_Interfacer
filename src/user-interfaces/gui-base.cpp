@@ -27,6 +27,7 @@
 #include <QSettings>
 #include <QProcess>
 
+uint8_t GUI_BASE::chunkSize = 0;
 bool GUI_BASE::generic_checksum_is_exe = false;
 QString GUI_BASE::generic_checksum_exe_path = "";
 checksum_struct GUI_BASE::generic_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
@@ -50,7 +51,7 @@ GUI_BASE::~GUI_BASE()
 
 void GUI_BASE::reset_remote()
 {
-    send({MAJOR_KEY_RESET, 0});
+    send({MAJOR_KEY_RESET, 0, 0});
 
     // Clear buffers (prevents key errors after reset)
     rcvd.clear();
@@ -58,7 +59,7 @@ void GUI_BASE::reset_remote()
 
 void GUI_BASE::set_chunkSize(size_t chunk)
 {
-    chunkSize = chunk;
+    GUI_BASE::chunkSize = chunk;
 }
 
 void GUI_BASE::set_gui_checksum(QString new_gui_checksum)

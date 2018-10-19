@@ -52,6 +52,7 @@ uint8_t read_data[dio_data_len];
 // Just ignore these functions for now
 void uc_data_transmit(uint8_t, const uint8_t*, uint8_t) {}
 void uc_programmer(uint8_t, const uint8_t*, uint8_t) {}
+void uc_custom_cmd(uint8_t, const uint8_t*, uint8_t) {}
 void uc_aio(uint8_t pin_num, uint8_t setting, uint16_t value) {}
 void uc_remote_conn() {}
 
