@@ -63,11 +63,22 @@ protected:
     QByteArray rcvd;
     uint8_t guiType;
 
+    // Direct sends
     void send(QString data);
     void send(QByteArray data);
     void send(std::initializer_list<uint8_t> data);
-    void sendFile(QString filePath);
 
+    // File sending
+    void send_file(QByteArray start, QString filePath);
+    void send_file_chunked(QByteArray start, QString filePath, char sep);
+
+    // Chunk sending
+    void send_chunk(QByteArray start, QByteArray chunk);
+    void send_chunk(std::initializer_list<uint8_t> start, QByteArray chunk);
+    void send_chunk(QByteArray start, std::initializer_list<uint8_t> chunk);
+    void send_chunk(std::initializer_list<uint8_t> start, std::initializer_list<uint8_t> chunk);
+
+    // Ack
     void waitForAck(int msecs = 5000);
     bool checkAck();
     bool check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check);
@@ -87,6 +98,9 @@ private:
     static bool generic_checksum_is_exe;
     static QString generic_checksum_exe_path;
     static checksum_struct generic_checksum;
+
+    // Send to device
+    void transmit(QByteArray data);
 };
 
 #endif // GUI_BASE_H

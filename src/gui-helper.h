@@ -46,6 +46,9 @@ public:
     // Read or delete a config INI
     static QMap<QString, QMap<QString, QVariant>*>* readConfigINI(QString config);
     static void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*>* configMap);
+
+    // Transform init list to qbytearray
+    static QByteArray initList2ByteArray(std::initializer_list<uint8_t> initList);
 };
 
 #endif // GUI_HELPER_H

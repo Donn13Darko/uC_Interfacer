@@ -18,7 +18,6 @@
 
 #include "gui-programmer.h"
 #include "ui_gui-programmer.h"
-#include "gui-programmer-minor-keys.h"
 
 GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     GUI_BASE(parent),
@@ -178,8 +177,8 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
             // Send Package
             data.clear();
             data.append((char) GUI_TYPE_PROGRAMMER);
-            data.append((char) prog_line_length);
             data.append((char) MINOR_KEY_PROGRAMMER_DATA);
+            data.append((char) prog_line_length);
             data.append(QByteArray::fromHex(curr[4].toUtf8()));
             send(data);
         }

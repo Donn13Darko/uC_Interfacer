@@ -32,6 +32,10 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     // Set radio values
     ui->File_Radio->setChecked(true);
     on_MSG_Sel_buttonClicked(0);
+
+    // Connect signals
+    connect(this, SIGNAL(readyRead()),
+            this, SLOT(receive_data_transmit()));
 }
 
 GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
@@ -58,11 +62,19 @@ void GUI_DATA_TRANSMIT::on_MSG_Sel_buttonClicked(int)
 
 void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
 {
+    // Create Key array (Major & Minor)
+    QByteArray keys;
+    keys.append((char) guiType);
+    keys.append((char) MINOR_KEY_DATA_TRANSMIT_DATA);
+
     // Find which radio button selected
     if (ui->File_Radio->isChecked())
-        sendFile(ui->FilePathEdit->text());
-    else if (ui->Input_Radio->isChecked())
-        send(ui->msg_PlainText->toPlainText());
+    {
+        send_file(keys, ui->FilePathEdit->text());
+    } else if (ui->Input_Radio->isChecked())
+    {
+        send_chunk(keys, ui->msg_PlainText->toPlainText().toUtf8());
+    }
 }
 
 void GUI_DATA_TRANSMIT::on_BrowseFile_Button_clicked()
@@ -92,7 +104,17 @@ void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()
 
 void GUI_DATA_TRANSMIT::receive_data_transmit()
 {
-    ui->recv_PlainText->appendPlainText(QString(rcvd));
+    // Remove Major key, minor key, and byte length
+    rcvd.remove(0, s1_end_loc);
+
+    // Insert plaintext at end
+    QTextCursor prev_cursor = ui->recv_PlainText->textCursor();
+    ui->recv_PlainText->moveCursor(QTextCursor::End);
+    ui->recv_PlainText->insertPlainText(QString(rcvd));
+    ui->recv_PlainText->setTextCursor(prev_cursor);
+
+    // Clear byte array
+    rcvd.clear();
 }
 
 void GUI_DATA_TRANSMIT::input_select(bool fileIN, bool plainIN)

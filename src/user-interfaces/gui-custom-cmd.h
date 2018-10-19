@@ -44,13 +44,13 @@ private slots:
 
     void on_cmdSelect_buttonClicked(int);
 
-    void receive_data_transmit();
+    void receive_custom_cmd();
 
 private:
     Ui::GUI_CUSTOM_CMD *ui;
 
     void input_select(bool fileIN, bool manualIN);
-    void send_custom_cmd(QString minorKey_str, uint8_t minorKey_base, QStringList customCMD_lst, uint8_t customCMD_base);
+    void send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QByteArray customCMD_bytes, uint8_t customCMD_base);
 };
 
 #endif // GUI_CUSTOM_CMD_H

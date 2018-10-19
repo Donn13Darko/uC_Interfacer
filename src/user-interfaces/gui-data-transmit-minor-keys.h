@@ -16,41 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_DATA_TRANSMIT_H
-#define GUI_DATA_TRANSMIT_H
+#ifndef GUI_DATA_TRANSMIT_MINOR_KEYS_H
+#define GUI_DATA_TRANSMIT_MINOR_KEYS_H
 
-#include "gui-base.h"
-#include "gui-data-transmit-minor-keys.h"
-
-namespace Ui {
-class GUI_DATA_TRANSMIT;
-}
-
-class GUI_DATA_TRANSMIT : public GUI_BASE
+#ifdef __cplusplus
+extern "C"
 {
-    Q_OBJECT
+#endif
 
-public:
-    explicit GUI_DATA_TRANSMIT(QWidget *parent = 0);
-    ~GUI_DATA_TRANSMIT();
+// Data Transmit Minor Keys enum
+typedef enum {
+    // Error and reset
+    MINOR_KEY_DATA_TRANSMIT_ERROR = 0,
 
-    void reset_gui();
+    // Data Transmit Transfer
+    MINOR_KEY_DATA_TRANSMIT_DATA
+} MINOR_KEY_DATA_TRANSMIT;
 
-private slots:
-    void on_MSG_Sel_buttonClicked(int);
-    void on_SendMSG_Button_clicked();
+#ifdef __cplusplus
+}
+#endif
 
-    void on_BrowseFile_Button_clicked();
-    void on_SaveAs_Button_clicked();
-
-    void on_ClearReceived_Button_clicked();
-
-    void receive_data_transmit();
-
-private:
-    Ui::GUI_DATA_TRANSMIT *ui;
-
-    void input_select(bool fileIN, bool plainIN);
-};
-
-#endif // GUI_DATA_TRANSMIT_H
+#endif // GUI_DATA_TRANSMIT_MINOR_KEYS_H

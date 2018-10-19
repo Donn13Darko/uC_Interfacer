@@ -421,8 +421,8 @@ void MainWindow::on_DeviceConnected() {
                 }
             }
 
-            // Set base chunk size to config value or 0 if non-existant
-            GUI_BASE::set_chunkSize(groupMap->value("chunk_size").toInt());
+            // Set base chunk size to config value or 32 if non-existant
+            GUI_BASE::set_chunkSize(groupMap->value("chunk_size", "32").toInt());
         }
 
         // Enable signals for tab group
@@ -522,7 +522,7 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
 
     // Refresh device & conn type combos
 //    on_DeviceCombo_activated(0);
-//    on_ConnTypeCombo_currentIndexChanged(0);
+    on_ConnTypeCombo_currentIndexChanged(0);
 }
 
 void MainWindow::on_MoreOptions_Button_clicked()
@@ -613,10 +613,14 @@ void MainWindow::updateConnInfoCombo()
         }
         default:
         {
+            // Stop timer and set connect enabled
             updateConnInfo->stop();
+            ui->DeviceConnect_Button->setEnabled(true);
+
+            // If changing from autofill, clear and make editable
             ui->ConnInfoCombo->clear();
             ui->ConnInfoCombo->setEditable(true);
-            ui->DeviceConnect_Button->setEnabled(true);
+
             break;
         }
     }

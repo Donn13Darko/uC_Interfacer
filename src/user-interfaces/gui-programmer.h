@@ -23,6 +23,7 @@
 #include <QRegularExpressionMatch>
 
 #include "gui-base.h"
+#include "gui-programmer-minor-keys.h"
 
 namespace Ui {
 class GUI_PROGRAMMER;

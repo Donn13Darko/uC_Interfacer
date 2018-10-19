@@ -19,9 +19,6 @@
 #include "gui-custom-cmd.h"
 #include "ui_gui-custom-cmd.h"
 
-#include <QFile>
-#include <QTextStream>
-
 GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_CUSTOM_CMD)
@@ -34,8 +31,13 @@ GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :
     on_cmdSelect_buttonClicked(0);
 
     // Set default base
-    ui->MinorKeyBase_LineEdit->setText("16");
+    ui->MajorKey_LineEdit->setText(QString::number(guiType));
+    ui->KeyBase_LineEdit->setText("16");
     ui->customCMDBase_LineEdit->setText("16");
+
+    // Connect signals
+    connect(this, SIGNAL(readyRead()),
+            this, SLOT(receive_custom_cmd()));
 }
 
 GUI_CUSTOM_CMD::~GUI_CUSTOM_CMD()
@@ -80,38 +82,40 @@ void GUI_CUSTOM_CMD::on_ClearFeedback_Button_clicked()
 void GUI_CUSTOM_CMD::on_sendCustomCMD_Button_clicked()
 {
     // Get bases for conversion
-    uint8_t minorKeyBase = ui->MinorKeyBase_LineEdit->text().toUInt(nullptr, 10);
+    uint8_t keyBase = ui->KeyBase_LineEdit->text().toUInt(nullptr, 10);
     uint8_t customCMDBase = ui->customCMDBase_LineEdit->text().toUInt(nullptr, 10);
-    if (((minorKeyBase < 2) && (ui->MinorKeyBase_LineEdit->text() != "0"))
+    if (((keyBase < 2) && (ui->KeyBase_LineEdit->text() != "0"))
             || ((customCMDBase < 2) && (ui->customCMDBase_LineEdit->text() != "0")))
         return;
 
     // Select cmd based on radio
     if (ui->File_Radio->isChecked())
     {
-        // Open file
-        QFile customCMD_file(ui->FilePath_LineEdit->text());
-        if (!customCMD_file.open(QIODevice::ReadOnly)) return;
+        // Read entire file
+        QByteArray customCMD_bytes = GUI_HELPER::loadFile(ui->FilePath_LineEdit->text());
 
         // Parse custom file line by line
-        QStringList customCMD_line;
-        QTextStream customCMD_stream(&customCMD_file);
-        while (!customCMD_stream.atEnd())
+        foreach (QByteArray customCMD_line, customCMD_bytes.split('\n'))
         {
-            // Read next line
-            customCMD_line = customCMD_stream.readLine().split(" ");
-            if (customCMD_line.length() == 0) continue;
-
-            // First char is minor key
-            send_custom_cmd(customCMD_line.takeFirst(), minorKeyBase,
-                            customCMD_line, customCMDBase);
+            QList<QByteArray> customCMD = customCMD_line.split(' ');
+            // Major key, Minor key, data bytes
+            send_custom_cmd(
+                            customCMD.takeFirst(),
+                            customCMD.takeFirst(),
+                            keyBase,
+                            customCMD.join(' '),
+                            customCMDBase
+                        );
         }
-
-        // Close file
-        customCMD_file.close();
     } else if (ui->Manual_Radio->isChecked())
     {
-        send_custom_cmd(ui->MinorKeyBase_LineEdit->text(), minorKeyBase, ui->customCMDBase_LineEdit->text().split(" "), customCMDBase);
+        send_custom_cmd(
+                    ui->MajorKey_LineEdit->text(),
+                    ui->MinorKey_LineEdit->text(),
+                    keyBase,
+                    ui->customCMDBase_LineEdit->text().toUtf8(),
+                    customCMDBase
+                );
     }
 }
 
@@ -123,9 +127,19 @@ void GUI_CUSTOM_CMD::on_cmdSelect_buttonClicked(int)
         input_select(false, true);
 }
 
-void GUI_CUSTOM_CMD::receive_data_transmit()
+void GUI_CUSTOM_CMD::receive_custom_cmd()
 {
-    ui->Feedback_PlainText->appendPlainText(QString(rcvd));
+    // Remove Major key, minor key, and byte length
+    rcvd.remove(0, s1_end_loc);
+
+    // Insert plaintext at end
+    QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
+    ui->Feedback_PlainText->moveCursor(QTextCursor::End);
+    ui->Feedback_PlainText->insertPlainText(QString(rcvd));
+    ui->Feedback_PlainText->setTextCursor(prev_cursor);
+
+    // Clear byte array
+    rcvd.clear();
 }
 
 void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)
@@ -136,40 +150,41 @@ void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)
     ui->MinorKey_LineEdit->setEnabled(manualIN);
 }
 
-void GUI_CUSTOM_CMD::send_custom_cmd(QString minorKey_str, uint8_t minorKey_base, QStringList customCMD_lst, uint8_t customCMD_base)
+void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QByteArray customCMD_bytes, uint8_t customCMD_base)
 {
-    // Build custom command
-    QByteArray data;
-    data.append((char) guiType);
+    // Build custom command keys
+    QByteArray keys;
 
-    // Read, parse, and add minor key
-    if (minorKey_base == 0)
+    // Read, parse, and add Major/Minor keys
+    if (key_base < 2)
     {
-        data.append((char) ui->MinorKey_LineEdit->text().toUtf8()[0]);
+        // Add directly
+        keys.append(majorKey_char.at(0).row());
+        keys.append(minorKey_char.at(0).row());
     } else
     {
-        uint8_t minorKey = minorKey_str.toUInt(nullptr, minorKey_base);
-        if ((minorKey == 0) && (minorKey_str != "0")) return;
-        data.append((char) minorKey);
+        // Convert keys to correct base
+        uint8_t majorKey = majorKey_char.toInt(nullptr, key_base);
+        uint8_t minorKey = minorKey_char.toInt(nullptr, key_base);
+
+        // Add converted value
+        keys.append((char) majorKey);
+        keys.append((char) minorKey);
     }
 
     // Read, parse, and add custom CMD
-    if (customCMD_base == 0)
+    if (customCMD_base < 2)
     {
-        QByteArray customCMD_bytes = customCMD_lst.join(" ").toUtf8();
-        data.append((char) customCMD_bytes.length());
-        data.append(customCMD_bytes);
+        send_chunk(keys, customCMD_bytes);
     } else
     {
-        data.append((char) customCMD_lst.length());
-        QByteArray byte_num;
-        foreach (QString data, customCMD_lst)
+        // Modify cmd bytes into correct format
+        QByteArray byte_num, data;
+        foreach (QByteArray cmd_byte, customCMD_bytes.split(' '))
         {
-            byte_num.setNum(data.toInt(nullptr, customCMD_base));
+            byte_num.setNum(QString(cmd_byte).toInt(nullptr, customCMD_base));
             data.append(byte_num);
         }
+        send_chunk(keys, data);
     }
-
-    // Send command across
-    send(data);
 }

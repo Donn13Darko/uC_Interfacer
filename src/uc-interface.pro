@@ -70,7 +70,8 @@ HEADERS += \
     user-interfaces/gui-pin-io-base-minor-keys.h \
     user-interfaces/gui-programmer-minor-keys.h \
     checksums/checksum-other.h \
-    user-interfaces/gui-custom-cmd.h
+    user-interfaces/gui-custom-cmd.h \
+    user-interfaces/gui-data-transmit-minor-keys.h
 
 FORMS += \
     mainwindow.ui \

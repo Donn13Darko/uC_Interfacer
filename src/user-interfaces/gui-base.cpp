@@ -27,7 +27,7 @@
 #include <QSettings>
 #include <QProcess>
 
-uint8_t GUI_BASE::chunkSize = 0;
+uint8_t GUI_BASE::chunkSize = 32;
 bool GUI_BASE::generic_checksum_is_exe = false;
 QString GUI_BASE::generic_checksum_exe_path = "";
 checksum_struct GUI_BASE::generic_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
@@ -128,13 +128,22 @@ void GUI_BASE::receive(QByteArray recvData)
     expected_len += rcvd.at(s1_num_s2_bytes_loc);
     if (rcvd_len < (expected_len+checksum_size)) return;
 
-    // Check crc in packet
-    // Check Checksum
+    // Check Checksum & remove if valid
     if (!check_checksum((const uint8_t*) rcvd.data(), expected_len, &gui_checksum))
     {
         rcvd.clear();
         return;
+    } else
+    {
+        rcvd.remove(expected_len, checksum_size);
     }
+
+    // Ack back
+    send({
+             MAJOR_KEY_ACK,
+             (uint8_t) rcvd.at(0),
+             0
+         });
 
     // Emit readyRead
     emit readyRead();
@@ -146,6 +155,118 @@ void GUI_BASE::send(QString data)
 }
 
 void GUI_BASE::send(QByteArray data)
+{
+    // Feed in empty start array
+    send_chunk(QByteArray(), data);
+}
+
+void GUI_BASE::send(std::initializer_list<uint8_t> data)
+{
+    send(GUI_HELPER::initList2ByteArray(data));
+}
+
+void GUI_BASE::send_file(QByteArray start, QString filePath)
+{
+    send_chunk(start, GUI_HELPER::loadFile(filePath));
+}
+
+void GUI_BASE::send_file_chunked(QByteArray start, QString filePath, char sep)
+{
+    foreach (QByteArray chunk, GUI_HELPER::loadFile(filePath).split(sep))
+    {
+        send_chunk(start, chunk);
+    }
+}
+
+void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
+{
+    QByteArray data, curr;
+    uint32_t pos = 0;
+    uint32_t end_pos = chunk.length();
+    while (pos < end_pos)
+    {
+        // Clear data and add start array
+        data.clear();
+        data.append(start);
+
+        // Get next data chunk and add info
+        curr = chunk.mid(pos, chunkSize);
+        data.append((char) curr.length());
+        data.append(curr);
+
+        // transmit data to device
+        transmit(data);
+
+        // Increment position counter
+        pos += chunkSize;
+    }
+}
+
+void GUI_BASE::send_chunk(std::initializer_list<uint8_t> start, QByteArray chunk)
+{
+    send_chunk(
+                GUI_HELPER::initList2ByteArray(start),
+                chunk
+                );
+}
+
+void GUI_BASE::send_chunk(QByteArray start, std::initializer_list<uint8_t> chunk)
+{
+    send_chunk(
+                start,
+                GUI_HELPER::initList2ByteArray(chunk)
+                );
+}
+
+void GUI_BASE::send_chunk(std::initializer_list<uint8_t> start, std::initializer_list<uint8_t> chunk)
+{
+    send_chunk(
+                GUI_HELPER::initList2ByteArray(start),
+                GUI_HELPER::initList2ByteArray(chunk)
+                );
+}
+
+void GUI_BASE::waitForAck(int msecs)
+{
+    // Setup time keeping
+    QEventLoop loop;
+    QTimer timer;
+    connect(this, SIGNAL(ackReceived()), &loop, SLOT(quit()));
+    connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
+
+    // Wait for ackReceived or timeout
+    timer.start(msecs);
+    loop.exec();
+}
+
+bool GUI_BASE::checkAck()
+{
+    // Check ack against inputs
+    bool status = false;
+    if ((rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
+            && (rcvd.at(s1_minor_key_loc) == (char) ack_key))
+    {
+        status = true;
+    }
+
+    return status;
+}
+
+bool GUI_BASE::check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check)
+{
+    // Create checksum variables
+    uint32_t checksum_size = check->get_checksum_size();
+    uint8_t checksum_start[checksum_size] = {0};
+    uint8_t fsm_checksum_cmp_buffer[checksum_size];
+
+    // Compute checksum on data
+    check->get_checksum(data, data_len, checksum_start, fsm_checksum_cmp_buffer);
+
+    // Compare generated to received checksum
+    return check->check_checksum(data+data_len, fsm_checksum_cmp_buffer);
+}
+
+void GUI_BASE::transmit(QByteArray data)
 {
     // Exit if empty data array sent
     if (data.isEmpty()) return;
@@ -197,6 +318,13 @@ void GUI_BASE::send(QByteArray data)
             currData.append((const char*) checksumArray, checksum_size);
         }
 
+        // If sending an ack, just send and continue
+        if (currData.at(0) == MAJOR_KEY_ACK)
+        {
+            emit write_data(currData);
+            continue;
+        }
+
         // Send data and verify ack
         // Retry packet_retries times
         i = 0;
@@ -218,92 +346,4 @@ void GUI_BASE::send(QByteArray data)
 
     // Unlock send
     sendLock.unlock();
-}
-
-void GUI_BASE::send(std::initializer_list<uint8_t> data)
-{
-    QByteArray dataArray;
-    foreach (char i, data)
-    {
-        dataArray.append(i);
-    }
-
-    send(dataArray);
-}
-
-void GUI_BASE::sendFile(QString filePath)
-{
-    uint32_t enumFlags = QIODevice::ReadOnly;
-    QFile sFile(filePath);
-    if (!sFile.open((QIODevice::OpenModeFlag) enumFlags)) return;
-
-    int sizeRead;
-    char chunkRead[chunkSize];
-    while (!sFile.atEnd())
-    {
-        // Zero array then read next chunk
-        memset(chunkRead, 0, chunkSize);
-        sizeRead = sFile.readLine(chunkRead, chunkSize);
-
-        // Ensure no error and read is greater than zero
-        if (0 < sizeRead) continue;
-
-        // Send read chunk size
-        send({
-                 GUI_TYPE_DATA_TRANSMIT,
-                 (uint8_t) sizeRead,
-             });
-
-        // Get read chunck ack
-
-        // Send next chunk
-        send(QString(chunkRead));
-    }
-    sFile.close();
-
-    // Send file done (0 will never be sent above)
-    send({
-             GUI_TYPE_DATA_TRANSMIT,
-             0,
-         });
-}
-
-void GUI_BASE::waitForAck(int msecs)
-{
-    // Setup time keeping
-    QEventLoop loop;
-    QTimer timer;
-    connect(this, SIGNAL(ackReceived()), &loop, SLOT(quit()));
-    connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
-
-    // Wait for ackReceived or timeout
-    timer.start(msecs);
-    loop.exec();
-}
-
-bool GUI_BASE::checkAck()
-{
-    // Check ack against inputs
-    bool status = false;
-    if ((rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
-            && (rcvd.at(s1_minor_key_loc) == (char) ack_key))
-    {
-        status = true;
-    }
-
-    return status;
-}
-
-bool GUI_BASE::check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check)
-{
-    // Create checksum variables
-    uint32_t checksum_size = check->get_checksum_size();
-    uint8_t checksum_start[checksum_size] = {0};
-    uint8_t fsm_checksum_cmp_buffer[checksum_size];
-
-    // Compute checksum on data
-    check->get_checksum(data, data_len, checksum_start, fsm_checksum_cmp_buffer);
-
-    // Compare generated to received checksum
-    return check->check_checksum(data+data_len, fsm_checksum_cmp_buffer);
 }

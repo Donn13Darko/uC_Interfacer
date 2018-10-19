@@ -134,3 +134,14 @@ void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *> *confi
     }
     delete configMap;
 }
+
+QByteArray GUI_HELPER::initList2ByteArray(std::initializer_list<uint8_t> initList)
+{
+    QByteArray init_array;
+    foreach (char i, initList)
+    {
+        init_array.append(i);
+    }
+
+    return init_array;
+}

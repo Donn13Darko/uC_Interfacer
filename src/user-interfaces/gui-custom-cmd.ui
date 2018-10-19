@@ -16,7 +16,7 @@
   <widget class="QLabel" name="MinorKey_Label">
    <property name="geometry">
     <rect>
-     <x>140</x>
+     <x>280</x>
      <y>60</y>
      <width>51</width>
      <height>20</height>
@@ -42,24 +42,24 @@
   <widget class="QLineEdit" name="MinorKey_LineEdit">
    <property name="geometry">
     <rect>
-     <x>200</x>
+     <x>340</x>
      <y>60</y>
      <width>101</width>
      <height>20</height>
     </rect>
    </property>
   </widget>
-  <widget class="QLabel" name="MinorKeyBase_Label">
+  <widget class="QLabel" name="KeyBase_Label">
    <property name="geometry">
     <rect>
      <x>30</x>
      <y>370</y>
-     <width>81</width>
+     <width>61</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Minor Key Base:</string>
+    <string>Key Base:</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_4">
@@ -67,7 +67,7 @@
     <rect>
      <x>30</x>
      <y>410</y>
-     <width>81</width>
+     <width>61</width>
      <height>20</height>
     </rect>
    </property>
@@ -255,12 +255,12 @@
     <string notr="true">cmdSelect</string>
    </attribute>
   </widget>
-  <widget class="QLineEdit" name="MinorKeyBase_LineEdit">
+  <widget class="QLineEdit" name="KeyBase_LineEdit">
    <property name="geometry">
     <rect>
-     <x>120</x>
+     <x>90</x>
      <y>370</y>
-     <width>91</width>
+     <width>121</width>
      <height>20</height>
     </rect>
    </property>
@@ -268,9 +268,32 @@
   <widget class="QLineEdit" name="customCMDBase_LineEdit">
    <property name="geometry">
     <rect>
-     <x>120</x>
+     <x>90</x>
      <y>410</y>
-     <width>91</width>
+     <width>121</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="MajorKey_Label">
+   <property name="geometry">
+    <rect>
+     <x>100</x>
+     <y>60</y>
+     <width>51</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Major Key:</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="MajorKey_LineEdit">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>60</y>
+     <width>101</width>
      <height>20</height>
     </rect>
    </property>
