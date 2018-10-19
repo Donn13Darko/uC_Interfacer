@@ -384,7 +384,7 @@ void GUI_8AIO_16DIO_COMM::on_SendButton_clicked()
 
 void GUI_8AIO_16DIO_COMM::on_ClearRecvButton_clicked()
 {
-    ui->RecvTextBox->clear();
+    ui->Recv_PlainText->clear();
 }
 
 void GUI_8AIO_16DIO_COMM::on_ConnTypeCombo_currentIndexChanged(int)

@@ -191,7 +191,7 @@
     <rect>
      <x>30</x>
      <y>20</y>
-     <width>228</width>
+     <width>237</width>
      <height>241</height>
     </rect>
    </property>
@@ -1000,7 +1000,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="RecvTextBox">
+  <widget class="QPlainTextEdit" name="Recv_PlainText">
    <property name="geometry">
     <rect>
      <x>790</x>

@@ -59,10 +59,10 @@ GUI_PROGRAMMER::~GUI_PROGRAMMER()
 void GUI_PROGRAMMER::reset_gui()
 {
     ui->HexFile_LineEdit->setText("");
-    ui->HexPreview_Edit->clear();
-    ui->HexPreview_Edit->appendPlainText("");
-    ui->ReadData_Edit->clear();
-    ui->ReadData_Edit->appendPlainText("");
+    ui->HexPreview_PlainText->clear();
+    ui->HexPreview_PlainText->appendPlainText("");
+    ui->ReadData_PlainText->clear();
+    ui->ReadData_PlainText->appendPlainText("");
 }
 
 void GUI_PROGRAMMER::addHexFormats(QStringList hexFormatsMap)
@@ -146,7 +146,7 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
     QByteArray data;
     QStringList curr;
     uint8_t prog_line_length;
-    QStringList formattedHexList = ui->HexPreview_Edit->toPlainText().split('\n');
+    QStringList formattedHexList = ui->HexPreview_PlainText->toPlainText().split('\n');
     foreach (QString i, formattedHexList)
     {
         curr = i.split(' ');
@@ -217,18 +217,18 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_activated(int)
     if (loadedHex.isEmpty()) return;
 
     // Update Hex
-    ui->HexPreview_Edit->clear();
-    ui->HexPreview_Edit->appendPlainText(format_hex(loadedHex));
+    ui->HexPreview_PlainText->clear();
+    ui->HexPreview_PlainText->appendPlainText(format_hex(loadedHex));
 
     // Set cursor to top
-    ui->HexPreview_Edit->moveCursor(QTextCursor::Start);
+    ui->HexPreview_PlainText->moveCursor(QTextCursor::Start);
 }
 
 void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
 {
-    ui->Instructions_TextEdit->clear();
-    ui->Instructions_TextEdit->appendPlainText(burnMethods.value(ui->BurnMethod_Combo->currentText()));
-    ui->Instructions_TextEdit->moveCursor(QTextCursor::Start);
+    ui->Instructions_PlainText->clear();
+    ui->Instructions_PlainText->appendPlainText(burnMethods.value(ui->BurnMethod_Combo->currentText()));
+    ui->Instructions_PlainText->moveCursor(QTextCursor::Start);
 }
 
 void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)

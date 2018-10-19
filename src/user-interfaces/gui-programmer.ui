@@ -62,7 +62,7 @@
     <string>Save Read Data</string>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="ReadData_Edit">
+  <widget class="QPlainTextEdit" name="ReadData_PlainText">
    <property name="geometry">
     <rect>
      <x>460</x>
@@ -117,7 +117,7 @@
     <string>Read Data:</string>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="HexPreview_Edit">
+  <widget class="QPlainTextEdit" name="HexPreview_PlainText">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -266,7 +266,7 @@
     <string>Instructions:</string>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="Instructions_TextEdit">
+  <widget class="QPlainTextEdit" name="Instructions_PlainText">
    <property name="geometry">
     <rect>
      <x>900</x>
