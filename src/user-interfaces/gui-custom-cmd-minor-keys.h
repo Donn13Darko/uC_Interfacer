@@ -16,25 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_DATA_TRANSMIT_MINOR_KEYS_H
-#define GUI_DATA_TRANSMIT_MINOR_KEYS_H
+#ifndef GUI_CUSTOM_CMD_MINOR_KEYS_H
+#define GUI_CUSTOM_CMD_MINOR_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// Data Transmit Minor Keys enum
+// Custom CMD Minor Keys enum
 typedef enum {
     // Error and reset
-    MINOR_KEY_DATA_TRANSMIT_ERROR = 0,
-
-    // Data Transmit Transfer
-    MINOR_KEY_DATA_TRANSMIT_DATA
-} MINOR_KEYS_DATA_TRANSMIT;
+    MINOR_KEY_CUSTOM_CMD_ERROR = 0
+} MINOR_KEYS_CUSTOM_CMD;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GUI_DATA_TRANSMIT_MINOR_KEYS_H
+#endif // GUI_CUSTOM_CMD_MINOR_KEYS_H

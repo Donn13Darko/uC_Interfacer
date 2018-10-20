@@ -71,7 +71,11 @@ HEADERS += \
     user-interfaces/gui-programmer-minor-keys.h \
     checksums/checksum-other.h \
     user-interfaces/gui-custom-cmd.h \
-    user-interfaces/gui-data-transmit-minor-keys.h
+    user-interfaces/gui-data-transmit-minor-keys.h \
+    user-interfaces/gui-8aio-16dio-comm-minor-keys.h \
+    user-interfaces/gui-base-minor-keys.h \
+    user-interfaces/gui-custom-cmd-minor-keys.h \
+    user-interfaces/gui-welcome-minor-keys.h
 
 FORMS += \
     mainwindow.ui \

@@ -1,7 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>uc-interfaces/gui-arduino-uno.ini</file>
-        <file>user-interfaces/gui-8io-16io-comm.ini</file>
         <file>user-interfaces/gui-base.ini</file>
         <file>user-interfaces/gui-data-transmit.ini</file>
         <file>user-interfaces/gui-pin-io-base.ini</file>
@@ -14,5 +13,6 @@
         <file>uc-interfaces/uc-generic-io.h</file>
         <file>user-interfaces/gui-custom-cmd.ini</file>
         <file>uc-interfaces/arduino-uno-uart-minor-keys.h</file>
+        <file>user-interfaces/gui-8aio-16dio-comm.ini</file>
     </qresource>
 </RCC>
