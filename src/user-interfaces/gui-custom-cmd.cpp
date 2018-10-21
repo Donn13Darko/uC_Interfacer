@@ -34,10 +34,6 @@ GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :
     ui->MajorKey_LineEdit->setText(QString::number(guiType));
     ui->KeyBase_LineEdit->setText("16");
     ui->customCMDBase_LineEdit->setText("16");
-
-    // Connect signals
-    connect(this, SIGNAL(readyRead()),
-            this, SLOT(receive_custom_cmd()));
 }
 
 GUI_CUSTOM_CMD::~GUI_CUSTOM_CMD()
@@ -47,7 +43,7 @@ GUI_CUSTOM_CMD::~GUI_CUSTOM_CMD()
 
 void GUI_CUSTOM_CMD::reset_gui()
 {
-    ui->Feedback_PlainText->clear();
+    on_ClearFeedback_Button_clicked();
 
     // Set radio values
     ui->File_Radio->setChecked(true);
@@ -56,14 +52,7 @@ void GUI_CUSTOM_CMD::reset_gui()
 
 void GUI_CUSTOM_CMD::on_SaveFeedback_Button_clicked()
 {
-    // Select file save location
-    QString fileName;
-    if (!GUI_HELPER::getSaveFilePath(&fileName))
-        return;
-
-    // Save file
-    if (!GUI_HELPER::saveFile(fileName, ui->Feedback_PlainText->toPlainText().toUtf8()))
-        GUI_HELPER::showMessage("ERROR: Failed to save file!");
+    save_rcvd_formatted();
 }
 
 void GUI_CUSTOM_CMD::on_BrowseFile_Button_clicked()
@@ -77,6 +66,7 @@ void GUI_CUSTOM_CMD::on_BrowseFile_Button_clicked()
 void GUI_CUSTOM_CMD::on_ClearFeedback_Button_clicked()
 {
     ui->Feedback_PlainText->clear();
+    rcvd_formatted.clear();
 }
 
 void GUI_CUSTOM_CMD::on_sendCustomCMD_Button_clicked()
@@ -127,19 +117,22 @@ void GUI_CUSTOM_CMD::on_cmdSelect_buttonClicked(int)
         input_select(false, true);
 }
 
-void GUI_CUSTOM_CMD::receive_custom_cmd()
+void GUI_CUSTOM_CMD::receive_gui()
 {
     // Remove Major key, minor key, and byte length
-    rcvd.remove(0, s1_end_loc);
+    rcvd_raw.remove(0, s1_end_loc);
+
+    // Insert into global array (for saving in original format)
+    rcvd_formatted.append(rcvd_raw);
 
     // Insert plaintext at end
     QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
     ui->Feedback_PlainText->moveCursor(QTextCursor::End);
-    ui->Feedback_PlainText->insertPlainText(QString(rcvd));
+    ui->Feedback_PlainText->insertPlainText(QString(rcvd_raw));
     ui->Feedback_PlainText->setTextCursor(prev_cursor);
 
     // Clear byte array
-    rcvd.clear();
+    rcvd_raw.clear();
 }
 
 void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)

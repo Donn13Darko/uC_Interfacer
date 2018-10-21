@@ -32,10 +32,6 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     // Set radio values
     ui->File_Radio->setChecked(true);
     on_MSG_Sel_buttonClicked(0);
-
-    // Connect signals
-    connect(this, SIGNAL(readyRead()),
-            this, SLOT(receive_data_transmit()));
 }
 
 GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
@@ -45,7 +41,7 @@ GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
 
 void GUI_DATA_TRANSMIT::reset_gui()
 {
-    ui->recv_PlainText->clear();
+    on_ClearReceived_Button_clicked();
 
     // Set radio values
     ui->File_Radio->setChecked(true);
@@ -87,34 +83,28 @@ void GUI_DATA_TRANSMIT::on_BrowseFile_Button_clicked()
 
 void GUI_DATA_TRANSMIT::on_SaveAs_Button_clicked()
 {
-    // Select file save location
-    QString fileName;
-    if (!GUI_HELPER::getSaveFilePath(&fileName))
-        return;
-
-    // Save file
-    if (!GUI_HELPER::saveFile(fileName, ui->recv_PlainText->toPlainText().toUtf8()))
-        GUI_HELPER::showMessage("ERROR: Failed to save file!");
+    save_rcvd_formatted();
 }
 
 void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()
 {
     ui->recv_PlainText->clear();
+    rcvd_formatted.clear();
 }
 
-void GUI_DATA_TRANSMIT::receive_data_transmit()
+void GUI_DATA_TRANSMIT::receive_gui()
 {
     // Remove Major key, minor key, and byte length
-    rcvd.remove(0, s1_end_loc);
+    rcvd_raw.remove(0, s1_end_loc);
 
     // Insert plaintext at end
     QTextCursor prev_cursor = ui->recv_PlainText->textCursor();
     ui->recv_PlainText->moveCursor(QTextCursor::End);
-    ui->recv_PlainText->insertPlainText(QString(rcvd));
+    ui->recv_PlainText->insertPlainText(QString(rcvd_raw));
     ui->recv_PlainText->setTextCursor(prev_cursor);
 
     // Clear byte array
-    rcvd.clear();
+    rcvd_raw.clear();
 }
 
 void GUI_DATA_TRANSMIT::input_select(bool fileIN, bool plainIN)

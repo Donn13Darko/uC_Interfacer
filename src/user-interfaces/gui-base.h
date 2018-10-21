@@ -38,7 +38,6 @@ public:
     GUI_BASE(QWidget *parent = 0);
     ~GUI_BASE();
 
-    void reset_gui() {/*Default do nothing*/}
     void reset_remote();
 
     void set_gui_checksum(QString new_gui_checksum);
@@ -49,6 +48,9 @@ public:
     static void set_generic_checksum(QString new_generic_checksum);
     static void set_generic_checksum(checksum_struct new_generic_checksum);
 
+    // Virtual functions
+    virtual void reset_gui();
+
 signals:
     void write_data(QByteArray data);
     void connect_signals(bool connect);
@@ -58,10 +60,17 @@ signals:
 protected slots:
     void receive(QByteArray recvData);
 
+    // Virtual slots
+    virtual void receive_gui();
+
 protected:
+    // Local variables
     const float S2MS = 1000.0f;
-    QByteArray rcvd;
     uint8_t guiType;
+
+    // Receive arrays
+    QByteArray rcvd_raw;
+    QByteArray rcvd_formatted;
 
     // Direct sends
     void send(QString data);
@@ -82,6 +91,9 @@ protected:
     void waitForAck(int msecs = 5000);
     bool checkAck();
     bool check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check);
+
+    // Save to file
+    void save_rcvd_formatted();
 
 private:
     bool ack_status;

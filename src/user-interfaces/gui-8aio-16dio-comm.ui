@@ -195,7 +195,7 @@
      <height>241</height>
     </rect>
    </property>
-   <layout class="QVBoxLayout" name="AIVertLayout">
+   <layout class="QVBoxLayout" name="AIOVertLayout">
     <item>
      <widget class="QLabel" name="AIOLabel">
       <property name="text">
@@ -971,7 +971,7 @@
   <widget class="QPushButton" name="ClearRecvButton">
    <property name="geometry">
     <rect>
-     <x>870</x>
+     <x>820</x>
      <y>340</y>
      <width>71</width>
      <height>21</height>
@@ -2247,6 +2247,22 @@
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="SaveButton">
+   <property name="geometry">
+    <rect>
+     <x>930</x>
+     <y>340</y>
+     <width>71</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Clear</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>

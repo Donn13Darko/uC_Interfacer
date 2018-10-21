@@ -35,6 +35,9 @@ public:
 
     void reset_gui();
 
+protected slots:
+    void receive_gui();
+
 private slots:
     void on_SaveFeedback_Button_clicked();
     void on_BrowseFile_Button_clicked();
@@ -43,8 +46,6 @@ private slots:
     void on_sendCustomCMD_Button_clicked();
 
     void on_cmdSelect_buttonClicked(int);
-
-    void receive_custom_cmd();
 
 private:
     Ui::GUI_CUSTOM_CMD *ui;

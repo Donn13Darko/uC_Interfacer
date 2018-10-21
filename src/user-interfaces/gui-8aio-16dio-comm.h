@@ -42,6 +42,9 @@ public:
     void reset_gui();
     void parseConfigMap(QMap<QString, QVariant>* configMap);
 
+protected slots:
+    void receive_gui();
+
 private slots:
     void on_RESET_BUTTON_clicked();
 
@@ -54,7 +57,6 @@ private slots:
     void AIO_TextValueChanged();
 
     void updateValues();
-    void receive_io();
     void recordLogData();
 
     void on_updateStarter_clicked();

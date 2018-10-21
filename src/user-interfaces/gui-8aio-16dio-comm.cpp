@@ -88,7 +88,7 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
         }
     }
 
-    currData.clear();
+    rcvd_formatted.clear();
 
     // Reconnect sending slot
     emit connect_signals(true);
@@ -202,10 +202,10 @@ void GUI_8AIO_16DIO_COMM::updateValues()
          });
 }
 
-void GUI_8AIO_16DIO_COMM::receive_io()
+void GUI_8AIO_16DIO_COMM::receive_gui()
 {
-    currData = rcvd;
-    uint8_t m = currData.length();
+    rcvd_formatted = rcvd_raw;
+    uint8_t m = rcvd_formatted.length();
     if (m & 1) m = m - 1;
     if (m == 0) return;
 
@@ -213,8 +213,8 @@ void GUI_8AIO_16DIO_COMM::receive_io()
     uint8_t key, value;
     for (uint8_t i = 0; i < (m - 1); i++)
     {
-        key = (uint8_t) currData[0];
-        value = (uint8_t) currData[1];
+        key = (uint8_t) rcvd_formatted[0];
+        value = (uint8_t) rcvd_formatted[1];
 
         uint8_t e = 0;
         switch (key)
@@ -236,15 +236,15 @@ void GUI_8AIO_16DIO_COMM::receive_io()
                                 return;
                             break;
                         default:
-                            currData = currData.mid(1);
+                            rcvd_formatted = rcvd_formatted.mid(1);
                             return;
                     }
 
                     if (e != 0)
                     {
                         // Update the value set & update i to remove from buffer
-                        setValues(value, currData.mid(2, e));
-                        currData = currData.mid(e+4);
+                        setValues(value, rcvd_formatted.mid(2, e));
+                        rcvd_formatted = rcvd_formatted.mid(e+4);
                         return;
                     }
                 }
@@ -254,7 +254,7 @@ void GUI_8AIO_16DIO_COMM::receive_io()
         }
 
         // Remove ignored tokens
-        currData = currData.mid(e + 1);
+        rcvd_formatted = rcvd_formatted.mid(e + 1);
     }
 }
 
@@ -463,9 +463,8 @@ void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
 
     foreach (QString comboStr, combos)
     {
-        // Reset Arrays
+        // Reset pinNums array
         pinNums.clear();
-        listValues.clear();
 
         // Parse inputs
         comboStr_split = comboStr.split('-');
@@ -577,7 +576,6 @@ void GUI_8AIO_16DIO_COMM::initialize()
 
 void GUI_8AIO_16DIO_COMM::setupUpdaters()
 {
-    connect(this, SIGNAL(readyRead()), this, SLOT(receive_io()));
     connect(&DIO_READ, SIGNAL(timeout()), this, SLOT(updateValues()));
     connect(&AIO_READ, SIGNAL(timeout()), this, SLOT(updateValues()));
     connect(&logTimer, SIGNAL(timeout()), this, SLOT(recordLogData()));

@@ -17,10 +17,9 @@
 */
 
 #include "tcp-server.h"
-#include <QDebug>
 
 TCP_SERVER::TCP_SERVER(int port, QObject *parent) :
-    QObject(parent)
+    COMMS_BASE(parent)
 {
     server = new QTcpServer(this);
     server->setMaxPendingConnections(1);
@@ -31,19 +30,14 @@ TCP_SERVER::TCP_SERVER(int port, QObject *parent) :
     connecting_msg->setText("Waiting for connection...");
     connecting_msg->addButton(QMessageBox::Cancel);
     connecting_msg->setModal(true);
-
-    readLock = new QMutex(QMutex::Recursive);
-    writeLock = new QMutex(QMutex::Recursive);
 }
 
 TCP_SERVER::~TCP_SERVER()
 {
     if (isConnected()) close();
-    if (server_client) delete server_client;
 
+    if (server_client) delete server_client;
     delete server;
-    delete readLock;
-    delete writeLock;
     delete connecting_msg;
 }
 

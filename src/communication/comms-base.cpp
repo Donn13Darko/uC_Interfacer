@@ -16,44 +16,60 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef UDP_SOCKET_H
-#define UDP_SOCKET_H
-
 #include "comms-base.h"
-#include <QUdpSocket>
-#include <QHostAddress>
 
-class UDP_SOCKET : public COMMS_BASE
+COMMS_BASE::COMMS_BASE(QObject *parent) :
+    QObject(parent)
 {
-    Q_OBJECT
+    readLock = new QMutex(QMutex::Recursive);
+    writeLock = new QMutex(QMutex::Recursive);
+}
 
-public:
-    UDP_SOCKET(QString client_ip, int client_port, int server_port, QObject *parent = NULL);
-    ~UDP_SOCKET();
+COMMS_BASE::~COMMS_BASE()
+{
+    delete readLock;
+    delete writeLock;
+}
 
-    void open();
-    bool isConnected();
+void COMMS_BASE::open()
+{
+    connected = true;
 
-signals:
-    void deviceConnected();
-    void deviceDisconnected();
-    void readyRead(QByteArray readData);
+    if (connected)
+    {
+        emit deviceConnected();
+    } else
+    {
+        emit deviceDisconnected();
+    }
+}
 
-public slots:
-    void close();
-    void disconnectClient();
-    void write(QByteArray writeData);
+void COMMS_BASE::close()
+{
+    connected = false;
+}
 
-private slots:
-    void read();
+bool COMMS_BASE::isConnected()
+{
+    return connected;
+}
 
-private:
-    QUdpSocket *client;
-    QUdpSocket *server;
+void COMMS_BASE::write(QByteArray writeData)
+{
+    writeLock->lock();
 
-    QHostAddress udp_client_ip;
-    int udp_client_port;
-    int udp_server_port;
-};
+    qDebug() << "S: " << writeData;
 
-#endif // UDP_SOCKET_H
+    writeLock->unlock();
+}
+
+void COMMS_BASE::read()
+{
+    readLock->lock();
+
+    QByteArray recvData;
+    emit readyRead(recvData);
+    qDebug() << "R: " << recvData;
+
+    readLock->unlock();
+}

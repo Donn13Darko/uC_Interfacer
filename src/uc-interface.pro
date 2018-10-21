@@ -44,7 +44,8 @@ SOURCES += \
     checksums/crc-32-lut.c \
     checksums/crc-32-poly.c \
     checksums/checksum-other.c \
-    user-interfaces/gui-custom-cmd.cpp
+    user-interfaces/gui-custom-cmd.cpp \
+    communication/comms-base.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -75,7 +76,8 @@ HEADERS += \
     user-interfaces/gui-8aio-16dio-comm-minor-keys.h \
     user-interfaces/gui-base-minor-keys.h \
     user-interfaces/gui-custom-cmd-minor-keys.h \
-    user-interfaces/gui-welcome-minor-keys.h
+    user-interfaces/gui-welcome-minor-keys.h \
+    communication/comms-base.h
 
 FORMS += \
     mainwindow.ui \

@@ -52,7 +52,7 @@
   <widget class="QPushButton" name="SaveReadData_Button">
    <property name="geometry">
     <rect>
-     <x>720</x>
+     <x>760</x>
      <y>370</y>
      <width>121</width>
      <height>41</height>
@@ -91,7 +91,7 @@
   <widget class="QPushButton" name="ReadData_Button">
    <property name="geometry">
     <rect>
-     <x>490</x>
+     <x>610</x>
      <y>370</y>
      <width>131</width>
      <height>41</height>
@@ -289,6 +289,19 @@
    </property>
    <property name="backgroundVisible">
     <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="ClearReadData_Button">
+   <property name="geometry">
+    <rect>
+     <x>470</x>
+     <y>370</y>
+     <width>121</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Clear Read Data</string>
    </property>
   </widget>
  </widget>

@@ -19,13 +19,11 @@
 #ifndef SERIAL_RS232_H
 #define SERIAL_RS232_H
 
-#include <QObject>
-#include <QMutex>
+#include "comms-base.h"
 #include <QSerialPort>
 #include <QSerialPortInfo>
-#include <QTimer>
 
-class Serial_RS232 : public QObject
+class Serial_RS232 : public COMMS_BASE
 {
     Q_OBJECT
 
@@ -40,11 +38,6 @@ public:
     static QStringList* getDevices();
     static QStringList Baudrate_Defaults;
 
-signals:
-    void deviceConnected();
-    void deviceDisconnected();
-    void readyRead(QByteArray readData);
-
 public slots:
     void write(QByteArray writeData);
     void checkError(QSerialPort::SerialPortError);
@@ -54,10 +47,6 @@ private slots:
 
 private:
     QSerialPort *rs232;
-    QMutex *readLock;
-    QMutex *writeLock;
-
-    bool connected;
 };
 
 #endif // SERIAL_RS232_H

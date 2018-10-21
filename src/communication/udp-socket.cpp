@@ -17,20 +17,16 @@
 */
 
 #include "udp-socket.h"
-#include <QDebug>
 #include <QNetworkDatagram>
 
 UDP_SOCKET::UDP_SOCKET(QString client_ip, int client_port, int server_port, QObject *parent) :
-    QObject(parent)
+    COMMS_BASE(parent)
 {
     client = new QUdpSocket(this);
     server = new QUdpSocket(this);
     udp_client_ip = QHostAddress(client_ip);
     udp_client_port = client_port;
     udp_server_port = server_port;
-
-    readLock = new QMutex(QMutex::Recursive);
-    writeLock = new QMutex(QMutex::Recursive);
 
     connect(server, SIGNAL(readyRead()),
             this, SLOT(read()));
@@ -44,8 +40,6 @@ UDP_SOCKET::~UDP_SOCKET()
 
     delete client;
     delete server;
-    delete readLock;
-    delete writeLock;
 }
 
 void UDP_SOCKET::open()

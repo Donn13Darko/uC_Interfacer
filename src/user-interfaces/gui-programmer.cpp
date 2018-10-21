@@ -57,11 +57,10 @@ GUI_PROGRAMMER::~GUI_PROGRAMMER()
 
 void GUI_PROGRAMMER::reset_gui()
 {
-    ui->HexFile_LineEdit->setText("");
+    on_ClearReadData_Button_clicked();
+
+    ui->HexFile_LineEdit->clear();
     ui->HexPreview_PlainText->clear();
-    ui->HexPreview_PlainText->appendPlainText("");
-    ui->ReadData_PlainText->clear();
-    ui->ReadData_PlainText->appendPlainText("");
 }
 
 void GUI_PROGRAMMER::addHexFormats(QStringList hexFormatsMap)
@@ -111,6 +110,24 @@ void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
 
     // Update instructions text
     on_BurnMethod_Combo_currentIndexChanged(0);
+}
+
+void GUI_PROGRAMMER::receive_gui()
+{
+    // Remove Major key, minor key, and byte length
+    rcvd_raw.remove(0, s1_end_loc);
+
+    // Insert into global array (for saving in original format)
+    rcvd_formatted.append(rcvd_raw);
+
+    // Insert plaintext at end
+    QTextCursor prev_cursor = ui->ReadData_PlainText->textCursor();
+    ui->ReadData_PlainText->moveCursor(QTextCursor::End);
+    ui->ReadData_PlainText->insertPlainText(QString(rcvd_raw));
+    ui->ReadData_PlainText->setTextCursor(prev_cursor);
+
+    // Clear byte array
+    rcvd_raw.clear();
 }
 
 void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()
@@ -233,6 +250,22 @@ void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
 void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
 {
     ui->ReadAddr_Edit->setEnabled(ui->ReadAddr_Radio->isChecked());
+}
+
+void GUI_PROGRAMMER::on_ClearReadData_Button_clicked()
+{
+    ui->ReadData_PlainText->clear();
+    rcvd_formatted.clear();
+}
+
+void GUI_PROGRAMMER::on_ReadData_Button_clicked()
+{
+    // FixMe - Request read operation here
+}
+
+void GUI_PROGRAMMER::on_SaveReadData_Button_clicked()
+{
+    save_rcvd_formatted();
 }
 
 QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)

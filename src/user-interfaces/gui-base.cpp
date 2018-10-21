@@ -41,8 +41,9 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     ack_status = false;
     ack_key = MAJOR_KEY_ERROR;
 
-    // Init checksum variables
-
+    // Connect signals
+    connect(this, SIGNAL(readyRead()),
+            this, SLOT(receive_gui()));
 }
 
 GUI_BASE::~GUI_BASE()
@@ -54,7 +55,8 @@ void GUI_BASE::reset_remote()
     send({MAJOR_KEY_RESET, 0, 0});
 
     // Clear buffers (prevents key errors after reset)
-    rcvd.clear();
+    rcvd_raw.clear();
+    rcvd_formatted.clear();
 }
 
 void GUI_BASE::set_chunkSize(size_t chunk)
@@ -84,11 +86,16 @@ void GUI_BASE::set_generic_checksum(checksum_struct new_generic_checksum)
     GUI_BASE::generic_checksum = new_generic_checksum;
 }
 
+void GUI_BASE::reset_gui()
+{
+    // Default do nothing
+}
+
 void GUI_BASE::receive(QByteArray recvData)
 {
     // Add data to recv
-    rcvd.append(recvData);
-    uint8_t rcvd_len = rcvd.length();
+    rcvd_raw.append(recvData);
+    uint8_t rcvd_len = rcvd_raw.length();
     uint8_t expected_len = num_s1_bytes;
 
     // Check to see if first stage in rcvd
@@ -96,7 +103,7 @@ void GUI_BASE::receive(QByteArray recvData)
 
     // Check to see if it's an Ack packet (no second stage)
     uint32_t checksum_size;
-    if (rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
+    if (rcvd_raw.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
     {
         // Set executable if using
         if (generic_checksum_is_exe) set_executable_checksum_other(generic_checksum_exe_path.toUtf8().constData());
@@ -106,15 +113,15 @@ void GUI_BASE::receive(QByteArray recvData)
         if (rcvd_len < (expected_len+checksum_size)) return;
 
         // Check Checksum
-        if (!check_checksum((const uint8_t*) rcvd.data(), expected_len, &GUI_BASE::generic_checksum))
+        if (!check_checksum((const uint8_t*) rcvd_raw.data(), expected_len, &GUI_BASE::generic_checksum))
         {
-            rcvd.clear();
+            rcvd_raw.clear();
             return;
         }
 
         // Check & remove ack
         ack_status = checkAck();
-        rcvd.remove(0, num_s1_bytes+checksum_size);
+        rcvd_raw.remove(0, num_s1_bytes+checksum_size);
 
         // Emit ack received
         emit ackReceived();
@@ -125,28 +132,34 @@ void GUI_BASE::receive(QByteArray recvData)
     checksum_size = gui_checksum.get_checksum_size();
 
     // Check if second stage & checksum in rcvd
-    expected_len += rcvd.at(s1_num_s2_bytes_loc);
+    expected_len += rcvd_raw.at(s1_num_s2_bytes_loc);
     if (rcvd_len < (expected_len+checksum_size)) return;
 
     // Check Checksum & remove if valid
-    if (!check_checksum((const uint8_t*) rcvd.data(), expected_len, &gui_checksum))
+    if (!check_checksum((const uint8_t*) rcvd_raw.data(), expected_len, &gui_checksum))
     {
-        rcvd.clear();
+        rcvd_raw.clear();
         return;
     } else
     {
-        rcvd.remove(expected_len, checksum_size);
+        rcvd_raw.remove(expected_len, checksum_size);
     }
 
     // Ack back
     send({
              MAJOR_KEY_ACK,
-             (uint8_t) rcvd.at(0),
+             (uint8_t) rcvd_raw.at(0),
              0
          });
 
     // Emit readyRead
     emit readyRead();
+}
+
+void GUI_BASE::receive_gui()
+{
+    // Default just clear rcvd_raw
+    rcvd_raw.clear();
 }
 
 void GUI_BASE::send(QString data)
@@ -193,7 +206,7 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
         data.append((char) curr.length());
         data.append(curr);
 
-        // transmit data to device
+        // Transmit data to device
         transmit(data);
 
         // Increment position counter
@@ -242,8 +255,8 @@ bool GUI_BASE::checkAck()
 {
     // Check ack against inputs
     bool status = false;
-    if ((rcvd.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
-            && (rcvd.at(s1_minor_key_loc) == (char) ack_key))
+    if ((rcvd_raw.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
+            && (rcvd_raw.at(s1_minor_key_loc) == (char) ack_key))
     {
         status = true;
     }
@@ -263,6 +276,18 @@ bool GUI_BASE::check_checksum(const uint8_t* data, uint32_t data_len, checksum_s
 
     // Compare generated to received checksum
     return check->check_checksum(data+data_len, fsm_checksum_cmp_buffer);
+}
+
+void GUI_BASE::save_rcvd_formatted()
+{
+    // Select file save location
+    QString fileName;
+    if (!GUI_HELPER::getSaveFilePath(&fileName))
+        return;
+
+    // Save file
+    if (!GUI_HELPER::saveFile(fileName, rcvd_formatted))
+        GUI_HELPER::showMessage("ERROR: Failed to save file!");
 }
 
 void GUI_BASE::transmit(QByteArray data)

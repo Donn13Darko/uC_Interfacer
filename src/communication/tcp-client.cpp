@@ -17,17 +17,13 @@
 */
 
 #include "tcp-client.h"
-#include <QDebug>
 
 TCP_CLIENT::TCP_CLIENT(QString ip, int port, QObject *parent) :
-    QObject(parent)
+    COMMS_BASE(parent)
 {
     client = new QTcpSocket(this);
     server_ip = ip;
     server_port = port;
-
-    readLock = new QMutex(QMutex::Recursive);
-    writeLock = new QMutex(QMutex::Recursive);
 
     connect(client, SIGNAL(readyRead()),
             this, SLOT(read()));
@@ -40,8 +36,6 @@ TCP_CLIENT::~TCP_CLIENT()
     if (isConnected()) close();
 
     delete client;
-    delete readLock;
-    delete writeLock;
 }
 
 void TCP_CLIENT::open()

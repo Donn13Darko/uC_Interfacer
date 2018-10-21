@@ -103,10 +103,7 @@ private:
     static QMap<QString, checksum_struct> supportedChecksums;
 
     QTimer *updateConnInfo;
-    Serial_RS232 *serial_rs232;
-    TCP_CLIENT *tcp_client;
-    TCP_SERVER *tcp_server;
-    UDP_SOCKET *udp_socket;
+    COMMS_BASE *device;
 
     void updateSpeedCombo();
     void setConnected(bool conn);
@@ -119,7 +116,6 @@ private:
     uint8_t getConnType();
     uint8_t getGUIType(QString type);
     QStringList getConnSpeeds();
-    QObject* getConnObject(int type = -1);
 };
 
 #endif // MAINWINDOW_H

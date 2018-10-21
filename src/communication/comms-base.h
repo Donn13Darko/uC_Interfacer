@@ -16,44 +16,39 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef UDP_SOCKET_H
-#define UDP_SOCKET_H
+#ifndef COMMS_BASE_H
+#define COMMS_BASE_H
 
-#include "comms-base.h"
-#include <QUdpSocket>
-#include <QHostAddress>
+#include <QObject>
+#include <QMutex>
+#include <QDebug>
 
-class UDP_SOCKET : public COMMS_BASE
+class COMMS_BASE : public QObject
 {
     Q_OBJECT
 
 public:
-    UDP_SOCKET(QString client_ip, int client_port, int server_port, QObject *parent = NULL);
-    ~UDP_SOCKET();
+    COMMS_BASE(QObject *parent = NULL);
+    ~COMMS_BASE();
 
-    void open();
-    bool isConnected();
+    virtual void open();
+    virtual void close();
+    virtual bool isConnected();
 
 signals:
     void deviceConnected();
     void deviceDisconnected();
     void readyRead(QByteArray readData);
 
-public slots:
-    void close();
-    void disconnectClient();
-    void write(QByteArray writeData);
+protected slots:
+    virtual void write(QByteArray writeData);
+    virtual void read();
 
-private slots:
-    void read();
+protected:
+    QMutex *readLock;
+    QMutex *writeLock;
 
-private:
-    QUdpSocket *client;
-    QUdpSocket *server;
-
-    QHostAddress udp_client_ip;
-    int udp_client_port;
-    int udp_server_port;
+    bool connected;
 };
 
-#endif // UDP_SOCKET_H
+#endif // COMMS_BASE_H

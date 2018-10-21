@@ -42,6 +42,9 @@ public:
     void removeHexFormats(QStringList hexFormatsList);
     void addBurnMethods(QStringList burnMethodsMap);
 
+protected slots:
+    void receive_gui();
+
 private slots:
     void on_BrowseHexFile_Button_clicked();
     void on_RefreshPreview_Button_clicked();
@@ -50,6 +53,9 @@ private slots:
     void on_BurnMethod_Combo_currentIndexChanged(int);
 
     void on_readSelect_buttonClicked(int);
+    void on_ClearReadData_Button_clicked();
+    void on_ReadData_Button_clicked();
+    void on_SaveReadData_Button_clicked();
 
 private:
     Ui::GUI_PROGRAMMER *ui;

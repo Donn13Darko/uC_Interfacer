@@ -36,6 +36,9 @@ public:
 
     void reset_gui();
 
+protected slots:
+    void receive_gui();
+
 private slots:
     void on_MSG_Sel_buttonClicked(int);
     void on_SendMSG_Button_clicked();
@@ -44,8 +47,6 @@ private slots:
     void on_SaveAs_Button_clicked();
 
     void on_ClearReceived_Button_clicked();
-
-    void receive_data_transmit();
 
 private:
     Ui::GUI_DATA_TRANSMIT *ui;

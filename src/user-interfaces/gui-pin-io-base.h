@@ -87,7 +87,6 @@ protected:
     bool devConnected;
     QMap<QString, QStringList> devSettings;
 
-    QByteArray currData;
     uint8_t bytesPerPin;
 
     uint8_t num_AIOpins_GUI;

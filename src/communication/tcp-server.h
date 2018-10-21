@@ -19,13 +19,12 @@
 #ifndef TCP_SERVER_H
 #define TCP_SERVER_H
 
-#include <QObject>
-#include <QMutex>
+#include "comms-base.h"
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QMessageBox>
 
-class TCP_SERVER : public QObject
+class TCP_SERVER : public COMMS_BASE
 {
     Q_OBJECT
 
@@ -35,11 +34,6 @@ public:
 
     void open();
     bool isConnected();
-
-signals:
-    void deviceConnected();
-    void deviceDisconnected();
-    void readyRead(QByteArray readData);
 
 public slots:
     void close();
@@ -57,9 +51,6 @@ private:
     QMessageBox *connecting_msg;
 
     int listen_port;
-
-    QMutex *readLock;
-    QMutex *writeLock;
 };
 
 #endif // TCP_SERVER_H

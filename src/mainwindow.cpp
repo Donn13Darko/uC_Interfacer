@@ -79,10 +79,7 @@ MainWindow::MainWindow(QWidget *parent) :
     welcome_tab_text = "Welcome";
 
     // Set base parameters
-    serial_rs232 = nullptr;
-    tcp_client = nullptr;
-    tcp_server = nullptr;
-    udp_socket = nullptr;
+    device = nullptr;
     prev_tab = -1;
 
     // Add specified values to combos
@@ -204,16 +201,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
         case CONN_TYPE_RS_232:
         {
             // Create new object
-            serial_rs232 = new Serial_RS232(connInfo, speed);
-
-            // Connect signals and slots
-            connect(serial_rs232, SIGNAL(deviceConnected()),
-                       this, SLOT(on_DeviceConnected()));
-            connect(serial_rs232, SIGNAL(deviceDisconnected()),
-                       this, SLOT(on_DeviceDisconnected()));
-
-            // Try to connect
-            serial_rs232->open();
+            device = new Serial_RS232(connInfo, speed);
             break;
         }
         case CONN_TYPE_TCP_CLIENT:
@@ -223,31 +211,13 @@ void MainWindow::on_DeviceConnect_Button_clicked()
             if (conn.length() != 2) break;
 
             // Create new object
-            tcp_client = new TCP_CLIENT(conn[0], conn[1].toInt());
-
-            // Connect signals and slots
-            connect(tcp_client, SIGNAL(deviceConnected()),
-                       this, SLOT(on_DeviceConnected()));
-            connect(tcp_client, SIGNAL(deviceDisconnected()),
-                       this, SLOT(on_DeviceDisconnected()));
-
-            // Try to connect
-            tcp_client->open();
+            device = new TCP_CLIENT(conn[0], conn[1].toInt());
             break;
         }
         case CONN_TYPE_TCP_SERVER:
         {
             // Create new object
-            tcp_server = new TCP_SERVER(connInfo.toInt());
-
-            // Connect signals and slots
-            connect(tcp_server, SIGNAL(deviceConnected()),
-                       this, SLOT(on_DeviceConnected()));
-            connect(tcp_server, SIGNAL(deviceDisconnected()),
-                       this, SLOT(on_DeviceDisconnected()));
-
-            // Try to connect
-            tcp_server->open();
+            device = new TCP_SERVER(connInfo.toInt());
             break;
         }
         case CONN_TYPE_UDP_SOCKET:
@@ -257,16 +227,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
             if (conn.length() != 3) break;
 
             // Create new object
-            udp_socket = new UDP_SOCKET(conn[0], conn[1].toInt(), conn[2].toInt());
-
-            // Connect signals and slots
-            connect(udp_socket, SIGNAL(deviceConnected()),
-                       this, SLOT(on_DeviceConnected()));
-            connect(udp_socket, SIGNAL(deviceDisconnected()),
-                       this, SLOT(on_DeviceDisconnected()));
-
-            // Try to connect
-            udp_socket->open();
+            device = new UDP_SOCKET(conn[0], conn[1].toInt(), conn[2].toInt());
             break;
         }
         default:
@@ -274,11 +235,25 @@ void MainWindow::on_DeviceConnect_Button_clicked()
             return;
         }
     }
+
+    if (!device)
+    {
+        setConnected(false);
+        return;
+    }
+
+    // Connect signals and slots
+    connect(device, SIGNAL(deviceConnected()),
+               this, SLOT(on_DeviceConnected()));
+    connect(device, SIGNAL(deviceDisconnected()),
+               this, SLOT(on_DeviceDisconnected()));
+
+    // Try to connect
+    device->open();
 }
 
 void MainWindow::on_DeviceConnected() {
     // Disconnect connection signals from device
-    QObject* device = getConnObject();
     if (device)
     {
         disconnect(device, SIGNAL(deviceConnected()),
@@ -460,7 +435,6 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     if (deviceConnected()) reset_remote();
 
     // Disconnect any connected slots
-    QObject* device = getConnObject();
     if (device)
     {
         disconnect(device, SIGNAL(deviceConnected()),
@@ -472,43 +446,11 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     // Disconnect connections
     connect2sender(ui->ucOptions->currentWidget(), false);
 
-    // Disconnect from connection
-    switch (getConnType())
+    if (device)
     {
-        case CONN_TYPE_RS_232:
-        {
-            if (!serial_rs232) break;
-            serial_rs232->close();
-            serial_rs232->deleteLater();
-            serial_rs232 = nullptr;
-            break;
-        }
-        case CONN_TYPE_TCP_CLIENT:
-        {
-            if (!tcp_client) break;
-            tcp_client->close();
-            tcp_client->deleteLater();
-            tcp_client = nullptr;
-            break;
-        }
-        case CONN_TYPE_TCP_SERVER:
-        {
-            if (!tcp_server) break;
-            tcp_server->close();
-            tcp_server->deleteLater();
-            tcp_server = nullptr;
-            break;
-        }
-        case CONN_TYPE_UDP_SOCKET:
-        {
-            if (!udp_socket) break;
-            udp_socket->close();
-            udp_socket->deleteLater();
-            udp_socket = nullptr;
-            break;
-        }
-        default:
-            break;
+        device->close();
+        device->deleteLater();
+        device = nullptr;
     }
 
     // Remove widgets
@@ -521,7 +463,6 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     setConnected(false);
 
     // Refresh device & conn type combos
-//    on_DeviceCombo_activated(0);
     on_ConnTypeCombo_currentIndexChanged(0);
 }
 
@@ -549,10 +490,8 @@ void MainWindow::on_ucOptions_currentChanged(int index)
             disconnect(prev_widget, SIGNAL(connect_signals(bool)),
                        this, SLOT(connect_signals(bool)));
 
-            // Reset the previous GUI (qobject_cast returns null if cast not possible)
-            if (qobject_cast<GUI_8AIO_16DIO_COMM*>(prev_widget)) ((GUI_8AIO_16DIO_COMM*) prev_widget)->reset_gui();
-            else if (qobject_cast<GUI_DATA_TRANSMIT*>(prev_widget)) ((GUI_DATA_TRANSMIT*) prev_widget)->reset_gui();
-            else if (qobject_cast<GUI_PROGRAMMER*>(prev_widget)) ((GUI_PROGRAMMER*) prev_widget)->reset_gui();
+            // Reset the previous GUI (uses virtual function)
+            ((GUI_BASE*) prev_widget)->reset_gui();
         }
     }
 
@@ -678,23 +617,22 @@ void MainWindow::reset_remote()
 void MainWindow::connect2sender(QObject* obj, bool conn)
 {
     // Get connection type & verify connection
-    QObject* conn_obj = getConnObject();
-    if (!obj || !conn_obj) return;
+    if (!obj || !device) return;
 
     // Connect or disconnect signals
     if (conn) {
         connect(obj, SIGNAL(write_data(QByteArray)),
-                conn_obj, SLOT(write(QByteArray)),
+                device, SLOT(write(QByteArray)),
                 Qt::QueuedConnection);
 
-        connect(conn_obj, SIGNAL(readyRead(QByteArray)),
+        connect(device, SIGNAL(readyRead(QByteArray)),
                 obj, SLOT(receive(QByteArray)),
                 Qt::QueuedConnection);
     } else {
         disconnect(obj, SIGNAL(write_data(QByteArray)),
-                   conn_obj, SLOT(write(QByteArray)));
+                   device, SLOT(write(QByteArray)));
 
-        disconnect(conn_obj, SIGNAL(readyRead(QByteArray)),
+        disconnect(device, SIGNAL(readyRead(QByteArray)),
                    obj, SLOT(receive(QByteArray)));
     }
 }
@@ -717,17 +655,8 @@ void MainWindow::ucOptionsClear()
 bool MainWindow::deviceConnected()
 {
     // Verify connection object exists
-    if (!getConnObject()) return false;
-
-    // Select connection object
-    switch (getConnType())
-    {
-        case CONN_TYPE_RS_232: return serial_rs232->isConnected();
-        case CONN_TYPE_TCP_CLIENT: return tcp_client->isConnected();
-        case CONN_TYPE_TCP_SERVER: return tcp_server->isConnected();
-        case CONN_TYPE_UDP_SOCKET: return udp_socket->isConnected();
-        default: return false;
-    }
+    if (!device) return false;
+    else return device->isConnected();
 }
 
 uint8_t MainWindow::getConnType()
@@ -747,28 +676,11 @@ uint8_t MainWindow::getGUIType(QString type)
     return supportedGUIsMap.value(type, GUI_TYPE_ERROR);
 }
 
-
 QStringList MainWindow::getConnSpeeds()
 {
     switch (getConnType())
     {
         case CONN_TYPE_RS_232: return Serial_RS232::Baudrate_Defaults;
         default: return {};
-    }
-}
-
-QObject* MainWindow::getConnObject(int type)
-{
-    // Find type if not provided
-    if (type == -1) type = getConnType();
-
-    // Select connection object
-    switch (type)
-    {
-        case CONN_TYPE_RS_232: return serial_rs232;
-        case CONN_TYPE_TCP_CLIENT: return tcp_client;
-        case CONN_TYPE_TCP_SERVER: return tcp_server;
-        case CONN_TYPE_UDP_SOCKET: return udp_socket;
-        default: return nullptr;
     }
 }

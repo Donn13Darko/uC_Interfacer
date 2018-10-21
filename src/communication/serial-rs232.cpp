@@ -17,7 +17,6 @@
 */
 
 #include "serial-rs232.h"
-#include <QDebug>
 
 QStringList
 Serial_RS232::Baudrate_Defaults({
@@ -27,15 +26,12 @@ Serial_RS232::Baudrate_Defaults({
                                 });
 
 Serial_RS232::Serial_RS232(QString port, QString baudrate, QObject *parent) :
-    QObject(parent)
+    COMMS_BASE(parent)
 {
     rs232 = new QSerialPort(this);
     rs232->setPortName(port);
     rs232->setBaudRate(baudrate.toInt());
     rs232->setDataBits(QSerialPort::Data8);
-
-    readLock = new QMutex(QMutex::Recursive);
-    writeLock = new QMutex(QMutex::Recursive);
 
     connect(rs232, SIGNAL(readyRead()),
             this, SLOT(read()));
@@ -44,9 +40,8 @@ Serial_RS232::Serial_RS232(QString port, QString baudrate, QObject *parent) :
 Serial_RS232::~Serial_RS232()
 {
     if (isConnected()) close();
+
     delete rs232;
-    delete readLock;
-    delete writeLock;
 }
 
 void Serial_RS232::open()
