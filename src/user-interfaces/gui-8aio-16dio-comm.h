@@ -46,7 +46,7 @@ protected slots:
     void receive_gui();
 
 private slots:
-    void on_RESET_BUTTON_clicked();
+    void on_ResetGUI_Button_clicked();
 
     void DIO_ComboChanged();
     void DIO_SliderValueChanged();
@@ -59,18 +59,19 @@ private slots:
     void updateValues();
     void recordLogData();
 
-    void on_updateStarter_clicked();
-    void on_updateStopper_clicked();
+    void on_StartUpdater_Button_clicked();
+    void on_StopUpdater_Button_clicked();
 
-    void on_selectSaveLocation_clicked();
-    void on_startLog_clicked();
-    void on_stopLog_clicked();
+    void on_LogSaveLocSelect_Button_clicked();
+    void on_StartLog_Button_clicked();
+    void on_StopLog_Button_clicked();
 
-    void on_ConnectButton_clicked();
-    void on_SendButton_clicked();
-    void on_ClearRecvButton_clicked();
+    void on_ConnConnect_Button_clicked();
+    void on_ConnSend_Button_clicked();
+    void on_ConnClearRecv_Button_clicked();
+    void on_ConnSaveRecv_Button_clicked();
 
-    void on_ConnTypeCombo_currentIndexChanged(int);
+    void on_ConnType_Combo_currentIndexChanged(int);
 
 protected:
     Ui::GUI_8AIO_16DIO_COMM *ui;

@@ -83,15 +83,15 @@ MainWindow::MainWindow(QWidget *parent) :
     prev_tab = -1;
 
     // Add specified values to combos
-    ui->DeviceCombo->clear();
-    ui->DeviceCombo->addItems(MainWindow::supportedDevicesList);
-    ui->ConnTypeCombo->clear();
-    ui->ConnTypeCombo->addItems(MainWindow::supportedProtocolsList);
+    ui->Device_Combo->clear();
+    ui->Device_Combo->addItems(MainWindow::supportedDevicesList);
+    ui->ConnType_Combo->clear();
+    ui->ConnType_Combo->addItems(MainWindow::supportedProtocolsList);
 
     // Set Initial values
     setConnected(false);
-    on_DeviceCombo_activated(ui->DeviceCombo->currentIndex());
-    on_ConnTypeCombo_currentIndexChanged(0);
+    on_Device_Combo_activated(ui->Device_Combo->currentIndex());
+    on_ConnType_Combo_currentIndexChanged(0);
     ui->ucOptions->addTab(welcome_tab, welcome_tab_text);
 
     // Add connections
@@ -135,7 +135,7 @@ void MainWindow::connect_signals(bool conn)
     connect2sender(curr_widget, conn);
 }
 
-void MainWindow::on_DeviceCombo_activated(int)
+void MainWindow::on_Device_Combo_activated(int)
 {
     // Save previous value
     QString prev_deviceINI = deviceINI;
@@ -163,12 +163,12 @@ void MainWindow::on_DeviceCombo_activated(int)
     {
         // Update welcome tab msg with failure
         welcome_tab->setMsg("Failed to load config for "
-                            + ui->DeviceCombo->currentText()
+                            + ui->Device_Combo->currentText()
                             + "!\nReverted to Previous Config: "
                             + prev_deviceINI);
 
         // Revert to previous dev type
-        ui->DeviceCombo->setCurrentIndex(deviceType-1);
+        ui->Device_Combo->setCurrentIndex(deviceType-1);
         deviceINI = prev_deviceINI;
         return;
     } else
@@ -179,7 +179,7 @@ void MainWindow::on_DeviceCombo_activated(int)
     }
 }
 
-void MainWindow::on_ConnTypeCombo_currentIndexChanged(int)
+void MainWindow::on_ConnType_Combo_currentIndexChanged(int)
 {
     // Process changes to the speed & info combos
     updateSpeedCombo();
@@ -192,8 +192,8 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     setConnected(true);
 
     // Update selected info
-    QString connInfo = ui->ConnInfoCombo->currentText();
-    QString speed = ui->SpeedCombo->currentText();
+    QString connInfo = ui->ConnInfo_Combo->currentText();
+    QString speed = ui->Speed_Combo->currentText();
 
     // Try to connect to the device
     switch (getConnType())
@@ -463,7 +463,7 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     setConnected(false);
 
     // Refresh device & conn type combos
-    on_ConnTypeCombo_currentIndexChanged(0);
+    on_ConnType_Combo_currentIndexChanged(0);
 }
 
 void MainWindow::on_MoreOptions_Button_clicked()
@@ -531,20 +531,20 @@ void MainWindow::updateConnInfoCombo()
         {
             if (!updateConnInfo->isActive()) {
                 updateConnInfo->start(1000);
-                ui->ConnInfoCombo->setEditable(false);
+                ui->ConnInfo_Combo->setEditable(false);
             }
 
             QStringList* avail = Serial_RS232::getDevices();
             if (avail->length() != 0)
             {
-                QString curr = ui->ConnInfoCombo->currentText();
-                ui->ConnInfoCombo->clear();
-                ui->ConnInfoCombo->addItems(*avail);
-                ui->ConnInfoCombo->setCurrentText(curr);
+                QString curr = ui->ConnInfo_Combo->currentText();
+                ui->ConnInfo_Combo->clear();
+                ui->ConnInfo_Combo->addItems(*avail);
+                ui->ConnInfo_Combo->setCurrentText(curr);
                 ui->DeviceConnect_Button->setEnabled(true);
             } else
             {
-                ui->ConnInfoCombo->clear();
+                ui->ConnInfo_Combo->clear();
                 ui->DeviceConnect_Button->setEnabled(false);
             }
             delete avail;
@@ -557,8 +557,8 @@ void MainWindow::updateConnInfoCombo()
             ui->DeviceConnect_Button->setEnabled(true);
 
             // If changing from autofill, clear and make editable
-            ui->ConnInfoCombo->clear();
-            ui->ConnInfoCombo->setEditable(true);
+            ui->ConnInfo_Combo->clear();
+            ui->ConnInfo_Combo->setEditable(true);
 
             break;
         }
@@ -573,22 +573,22 @@ void MainWindow::updateSpeedCombo()
     // Load into combo
     if (newItems.length() == 0)
     {
-        ui->SpeedCombo->clear();
-        ui->SpeedCombo->setEnabled(false);
+        ui->Speed_Combo->clear();
+        ui->Speed_Combo->setEnabled(false);
     } else
     {
         // Save previous speed
-        QString prevSpeed = ui->SpeedCombo->currentText();
+        QString prevSpeed = ui->Speed_Combo->currentText();
 
         // Clear and load new speed list in
-        ui->SpeedCombo->clear();
-        ui->SpeedCombo->setEnabled(true);
-        ui->SpeedCombo->addItems(newItems);
+        ui->Speed_Combo->clear();
+        ui->Speed_Combo->setEnabled(true);
+        ui->Speed_Combo->addItems(newItems);
 
         // Set to previous speed if in new items
         if (newItems.contains(prevSpeed))
         {
-            ui->SpeedCombo->setCurrentText(prevSpeed);
+            ui->Speed_Combo->setCurrentText(prevSpeed);
         }
     }
 }
@@ -598,10 +598,10 @@ void MainWindow::setConnected(bool conn)
     bool op_conn = !conn;
 
     // Set Combos Enabled
-    ui->DeviceCombo->setEnabled(op_conn);
-    ui->ConnTypeCombo->setEnabled(op_conn);
-    ui->SpeedCombo->setEnabled(op_conn);
-    ui->ConnInfoCombo->setEnabled(op_conn);
+    ui->Device_Combo->setEnabled(op_conn);
+    ui->ConnType_Combo->setEnabled(op_conn);
+    ui->Speed_Combo->setEnabled(op_conn);
+    ui->ConnInfo_Combo->setEnabled(op_conn);
 
     // Set Buttons Enabled
     ui->DeviceConnect_Button->setEnabled(op_conn);
@@ -662,13 +662,13 @@ bool MainWindow::deviceConnected()
 uint8_t MainWindow::getConnType()
 {
     // currentIndex() returns -1 on error which maps to CONN_TYPE_ERROR
-    return (uint8_t) (ui->ConnTypeCombo->currentIndex()+1);
+    return (uint8_t) (ui->ConnType_Combo->currentIndex()+1);
 }
 
 uint8_t MainWindow::getDevType()
 {
     // currentIndex() returns -1 on error which maps to DEV_TYPE_ERROR
-    return (uint8_t) (ui->DeviceCombo->currentIndex()+1);
+    return (uint8_t) (ui->Device_Combo->currentIndex()+1);
 }
 
 uint8_t MainWindow::getGUIType(QString type)

@@ -83,6 +83,7 @@ void GUI_CUSTOM_CMD::on_sendCustomCMD_Button_clicked()
     {
         // Read entire file
         QByteArray customCMD_bytes = GUI_HELPER::loadFile(ui->FilePath_LineEdit->text());
+        if (customCMD_bytes.length() == 0) return;
 
         // Parse custom file line by line
         foreach (QByteArray customCMD_line, customCMD_bytes.split('\n'))
@@ -103,7 +104,7 @@ void GUI_CUSTOM_CMD::on_sendCustomCMD_Button_clicked()
                     ui->MajorKey_LineEdit->text(),
                     ui->MinorKey_LineEdit->text(),
                     keyBase,
-                    ui->customCMDBase_LineEdit->text().toUtf8(),
+                    ui->customCMD_PlainText->toPlainText().toUtf8(),
                     customCMDBase
                 );
     }
@@ -139,8 +140,9 @@ void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)
 {
     ui->FilePath_LineEdit->setEnabled(fileIN);
     ui->BrowseFile_Button->setEnabled(fileIN);
-    ui->customCMD_PlainText->setEnabled(manualIN);
+    ui->MajorKey_LineEdit->setEnabled(manualIN);
     ui->MinorKey_LineEdit->setEnabled(manualIN);
+    ui->customCMD_PlainText->setEnabled(manualIN);
 }
 
 void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QByteArray customCMD_bytes, uint8_t customCMD_base)
@@ -166,17 +168,16 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
     }
 
     // Read, parse, and add custom CMD
-    if (customCMD_base < 2)
+    if ((customCMD_base < 2) || (customCMD_bytes.length() == 0))
     {
         send_chunk(keys, customCMD_bytes);
     } else
     {
         // Modify cmd bytes into correct format
-        QByteArray byte_num, data;
+        QByteArray data;
         foreach (QByteArray cmd_byte, customCMD_bytes.split(' '))
         {
-            byte_num.setNum(QString(cmd_byte).toInt(nullptr, customCMD_base));
-            data.append(byte_num);
+            data.append((char) QString(cmd_byte).toInt(nullptr, customCMD_base));
         }
         send_chunk(keys, data);
     }

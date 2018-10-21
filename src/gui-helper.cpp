@@ -66,28 +66,39 @@ bool GUI_HELPER::getSaveFilePath(QString *filePath, QString fileTypes)
 
 bool GUI_HELPER::saveFile(QString filePath, QByteArray data)
 {
-    uint32_t enumFlags = QIODevice::WriteOnly;
-    QFile sFile(filePath);
-    if (!sFile.open((QIODevice::OpenModeFlag) enumFlags))
+    // Check to make sure path valid
+    if (filePath.isEmpty())
         return false;
 
+    // Open file
+    QFile sFile(filePath);
+    if (!sFile.open(QIODevice::WriteOnly))
+        return false;
+
+    // Write data to file
     qint64 res = sFile.write(data);
     sFile.close();
 
-    if (res < 0)
-        return false;
-    return true;
+    // Check result
+    return (0 <= res);
 }
 
 QByteArray GUI_HELPER::loadFile(QString filePath)
 {
-    uint32_t enumFlags = QIODevice::ReadOnly;
-    QFile sFile(filePath);
-    if (!sFile.open((QIODevice::OpenModeFlag) enumFlags)) return QByteArray();
+    // Check to make sure path valid
+    if (filePath.isEmpty())
+        return QByteArray();
 
+    // Open file
+    QFile sFile(filePath);
+    if (!sFile.open(QIODevice::ReadOnly))
+        return QByteArray();
+
+    // Read file
     QByteArray data = sFile.readAll();
     sFile.close();
 
+    // Return read data
     return data;
 }
 

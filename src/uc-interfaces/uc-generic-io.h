@@ -36,7 +36,7 @@ extern "C"
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "../communication/general-comms.h"
+#include "../communication/comms-general.h"
 #include "../user-interfaces/gui-pin-io-base-minor-keys.h"
 
 /* IO Functions */

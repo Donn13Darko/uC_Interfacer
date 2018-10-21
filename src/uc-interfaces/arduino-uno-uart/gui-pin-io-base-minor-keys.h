@@ -39,7 +39,7 @@ typedef enum {
 
     // Remote Communications
     MINOR_KEY_IO_REMOTE_CONN
-} MINOR_KEY_IO;
+} MINOR_KEYS_IO;
 
 /* Stage #2 (s2) io key positions enum */
 typedef enum {

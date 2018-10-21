@@ -20,7 +20,7 @@
 #include "uc-generic-io.h"
 #include "arduino-uno-uart-minor-keys.h"
 #include "gui-pin-io-base-minor-keys.h"
-#include "general-comms.h"
+#include "comms-general.h"
 #include <Servo.h>
 
 // Buffer Variables

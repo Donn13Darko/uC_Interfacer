@@ -25,7 +25,7 @@
 #include <QVariant>
 #include <QMutex>
 
-#include "../communication/general-comms.h"
+#include "../communication/comms-general.h"
 #include "../checksums/checksums.h"
 #include "../gui-helper.h"
 #include <QDebug>

@@ -26,7 +26,7 @@
 #include <QCloseEvent>
 #include <QSettings>
 
-#include "communication/general-comms.h"
+#include "communication/comms-general.h"
 #include "communication/serial-rs232.h"
 #include "communication/tcp-client.h"
 #include "communication/tcp-server.h"
@@ -72,8 +72,8 @@ public slots:
     void connect_signals(bool connect);
 
 private slots:
-    void on_DeviceCombo_activated(int);
-    void on_ConnTypeCombo_currentIndexChanged(int);
+    void on_Device_Combo_activated(int);
+    void on_ConnType_Combo_currentIndexChanged(int);
 
     void on_DeviceConnect_Button_clicked();
     void on_DeviceDisconnect_Button_clicked();

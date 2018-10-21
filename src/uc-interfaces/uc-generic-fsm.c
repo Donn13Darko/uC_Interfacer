@@ -270,7 +270,7 @@ void fsm_send(uint8_t* data, uint32_t data_len)
     uint32_t checksum_size = check->get_checksum_size();
     uint8_t checksum_send_buffer[checksum_size];
     memset(checksum_send_buffer, 0, checksum_size);
-    check->get_checksum(data, data_len, &checksum_send_buffer, &checksum_send_buffer);
+    check->get_checksum(data, data_len, (uint8_t*) &checksum_send_buffer, (uint8_t*) &checksum_send_buffer);
 
     // Try to send packet across
     uint8_t i = 0;
@@ -279,7 +279,7 @@ void fsm_send(uint8_t* data, uint32_t data_len)
         // Send data followed by checksum
         // Checksum needs to be sent right after data
         uc_send(data, data_len);
-        uc_send(&checksum_send_buffer, checksum_size);
+        uc_send((uint8_t*) &checksum_send_buffer, checksum_size);
 
         // Not expecting an ack back so return
         if (data[0] == MAJOR_KEY_ACK) return;
@@ -323,7 +323,7 @@ bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp)
     uint32_t checksum_size = check->get_checksum_size();
     uint8_t checksum_start[checksum_size];
     memset(checksum_start, 0, checksum_size);
-    check->get_checksum(data, data_len, &checksum_start, fsm_checksum_cmp_buffer);
+    check->get_checksum(data, data_len, (uint8_t*) &checksum_start, fsm_checksum_cmp_buffer);
     return check->check_checksum(checksum_cmp, fsm_checksum_cmp_buffer);
 }
 

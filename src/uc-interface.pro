@@ -59,7 +59,6 @@ HEADERS += \
     communication/tcp-client.h \
     communication/tcp-server.h \
     communication/udp-socket.h \
-    communication/general-comms.h \
     gui-helper.h \
     checksums/checksums.h \
     checksums/crc-8-lut.h \
@@ -77,7 +76,8 @@ HEADERS += \
     user-interfaces/gui-base-minor-keys.h \
     user-interfaces/gui-custom-cmd-minor-keys.h \
     user-interfaces/gui-welcome-minor-keys.h \
-    communication/comms-base.h
+    communication/comms-base.h \
+    communication/comms-general.h
 
 FORMS += \
     mainwindow.ui \

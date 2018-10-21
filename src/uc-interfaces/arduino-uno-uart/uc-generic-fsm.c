@@ -73,7 +73,7 @@ void fsm_setup(uint32_t buffer_len)
         checksum_max_size = programmer_checksum.get_checksum_size();
 
     // Malloc buffers
-    fsm_buffer = malloc(buffer_len*sizeof(fsm_buffer));
+    fsm_buffer = malloc((num_s1_bytes+buffer_len)*sizeof(fsm_buffer));
     fsm_ack_buffer = malloc(num_s1_bytes*sizeof(fsm_ack_buffer));
     fsm_checksum_buffer = malloc(checksum_max_size*sizeof(fsm_checksum_buffer));
     fsm_checksum_cmp_buffer = malloc(checksum_max_size*sizeof(fsm_checksum_cmp_buffer));
@@ -268,21 +268,35 @@ void fsm_send(uint8_t* data, uint32_t data_len)
     // Construct checksum for data
     checksum_struct* check = fsm_get_checksum_struct();
     uint32_t checksum_size = check->get_checksum_size();
-    uint8_t checksum_start[checksum_size];
-    memset(checksum_start, 0, checksum_size);
-    check->get_checksum(data, data_len, checksum_start, fsm_checksum_buffer);
+    uint8_t checksum_send_buffer[checksum_size];
+    memset(checksum_send_buffer, 0, checksum_size);
+    check->get_checksum(data, data_len, (uint8_t*) &checksum_send_buffer, (uint8_t*) &checksum_send_buffer);
 
-    // Send data followed by checksum
-    // Checksum needs to be sent right after data
-    uc_send(data, data_len);
-    uc_send(fsm_checksum_buffer, checksum_size);
+    // Try to send packet across
+    uint8_t i = 0;
+    do
+    {
+        // Send data followed by checksum
+        // Checksum needs to be sent right after data
+        uc_send(data, data_len);
+        uc_send((uint8_t*) &checksum_send_buffer, checksum_size);
+
+        // Not expecting an ack back so return
+        if (data[0] == MAJOR_KEY_ACK) return;
+
+        // Read ack (happens only if if not sending an ack)
+        fsm_read_next(fsm_ack_buffer, num_s1_bytes, packet_timeout);
+        fsm_read_next(fsm_checksum_buffer, checksum_size, packet_timeout);
+        if (fsm_check_checksum(fsm_buffer, num_s1_bytes, fsm_checksum_buffer))
+            return;
+    } while (++i < packet_retries);
 }
 
 bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 {
     // Return true of waiting for 0 bytes
     if (num_bytes == 0) return true;
-    
+
     // Set control variables
     uint32_t check_delay = 10; // ms
     uint32_t wait_time = 0;
@@ -309,7 +323,7 @@ bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp)
     uint32_t checksum_size = check->get_checksum_size();
     uint8_t checksum_start[checksum_size];
     memset(checksum_start, 0, checksum_size);
-    check->get_checksum(data, data_len, checksum_start, fsm_checksum_cmp_buffer);
+    check->get_checksum(data, data_len, (uint8_t*) &checksum_start, fsm_checksum_cmp_buffer);
     return check->check_checksum(checksum_cmp, fsm_checksum_cmp_buffer);
 }
 

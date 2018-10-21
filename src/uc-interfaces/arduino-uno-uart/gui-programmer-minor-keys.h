@@ -35,7 +35,7 @@ typedef enum {
     // Programmer Transfer
     MINOR_KEY_PROGRAMMER_ADDR,
     MINOR_KEY_PROGRAMMER_DATA
-} MINOR_KEY_PROGRAMMER;
+} MINOR_KEYS_PROGRAMMER;
 
 #ifdef __cplusplus
 }

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1070</width>
-    <height>517</height>
+    <height>510</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,7 +27,7 @@
      <number>-1</number>
     </property>
    </widget>
-   <widget class="QLabel" name="DeviceLabel">
+   <widget class="QLabel" name="Device_Label">
     <property name="geometry">
      <rect>
       <x>30</x>
@@ -40,7 +40,7 @@
      <string>Device:</string>
     </property>
    </widget>
-   <widget class="QLabel" name="SpeedLabel">
+   <widget class="QLabel" name="Speed_Label">
     <property name="geometry">
      <rect>
       <x>440</x>
@@ -53,7 +53,7 @@
      <string>Speed:</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="ConnTypeCombo">
+   <widget class="QComboBox" name="ConnType_Combo">
     <property name="geometry">
      <rect>
       <x>300</x>
@@ -63,7 +63,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QComboBox" name="SpeedCombo">
+   <widget class="QComboBox" name="Speed_Combo">
     <property name="geometry">
      <rect>
       <x>480</x>
@@ -92,7 +92,7 @@
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QComboBox" name="DeviceCombo">
+   <widget class="QComboBox" name="Device_Combo">
     <property name="geometry">
      <rect>
       <x>70</x>
@@ -102,7 +102,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QLabel" name="ConnTypeLabel">
+   <widget class="QLabel" name="ConnType_Label">
     <property name="geometry">
      <rect>
       <x>210</x>
@@ -115,7 +115,7 @@
      <string>Connection Type:</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="ConnInfoCombo">
+   <widget class="QComboBox" name="ConnInfo_Combo">
     <property name="geometry">
      <rect>
       <x>680</x>
@@ -125,7 +125,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QLabel" name="ConnInfoEditLabel">
+   <widget class="QLabel" name="ConnInfo_Label">
     <property name="geometry">
      <rect>
       <x>620</x>

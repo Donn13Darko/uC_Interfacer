@@ -27,8 +27,8 @@ GUI_8AIO_16DIO_COMM::GUI_8AIO_16DIO_COMM(QWidget *parent) :
     ui(new Ui::GUI_8AIO_16DIO_COMM)
 {
     ui->setupUi(this);
-    ui->updateStarter->setText("Start");
-    ui->startLog->setText("Start Log");
+    ui->StartUpdater_Button->setText("Start");
+    ui->StartLog_Button->setText("Start Log");
 
     initialize();
     connectUniversalSlots();
@@ -38,7 +38,7 @@ GUI_8AIO_16DIO_COMM::GUI_8AIO_16DIO_COMM(QWidget *parent) :
 
 GUI_8AIO_16DIO_COMM::~GUI_8AIO_16DIO_COMM()
 {
-    on_stopLog_clicked();
+    on_StopLog_Button_clicked();
 
     delete ui;
 }
@@ -53,8 +53,8 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     emit connect_signals(false);
 
     // Stop logging and updating if running
-    on_stopLog_clicked();
-    on_updateStopper_clicked();
+    on_StopLog_Button_clicked();
+    on_StopUpdater_Button_clicked();
 
     // Get AIO pin info
     QList<uint8_t> pinTypes({MINOR_KEY_IO_AIO, MINOR_KEY_IO_DIO});
@@ -119,7 +119,7 @@ void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
     setCombos(pinType, configMap->value("remote_combo_settings").toStringList());
 }
 
-void GUI_8AIO_16DIO_COMM::on_RESET_BUTTON_clicked()
+void GUI_8AIO_16DIO_COMM::on_ResetGUI_Button_clicked()
 {
     // Reset the GUI
     reset_gui();
@@ -268,63 +268,62 @@ void GUI_8AIO_16DIO_COMM::recordLogData()
 
 }
 
-void GUI_8AIO_16DIO_COMM::on_updateStarter_clicked()
+void GUI_8AIO_16DIO_COMM::on_StartUpdater_Button_clicked()
 {
-    ui->updateStarter->setText("Reset");
+    ui->StartUpdater_Button->setText("Reset");
 
-    DIO_READ.start((int) (S2MS * ui->DIO_UREdit->text().toFloat()));
-    AIO_READ.start((int) (S2MS * ui->AIO_UREdit->text().toFloat()));
+    DIO_READ.start((int) (S2MS * ui->DIO_UR_LineEdit->text().toFloat()));
+    AIO_READ.start((int) (S2MS * ui->AIO_UR_LineEdit->text().toFloat()));
 }
 
-void GUI_8AIO_16DIO_COMM::on_updateStopper_clicked()
+void GUI_8AIO_16DIO_COMM::on_StopUpdater_Button_clicked()
 {
-    ui->updateStarter->setText("Start");
+    ui->StartUpdater_Button->setText("Start");
 
     DIO_READ.stop();
     AIO_READ.stop();
 }
 
-void GUI_8AIO_16DIO_COMM::on_selectSaveLocation_clicked()
+void GUI_8AIO_16DIO_COMM::on_LogSaveLocSelect_Button_clicked()
 {
     // Get file
     QString filePath;
     if (GUI_HELPER::getSaveFilePath(&filePath))
-        ui->saveLocEdit->setText(filePath);
+        ui->LogSaveLoc_LineEdit->setText(filePath);
 }
 
-void GUI_8AIO_16DIO_COMM::on_startLog_clicked()
+void GUI_8AIO_16DIO_COMM::on_StartLog_Button_clicked()
 {
     bool error = false;
     if (logIsRecording)
         error = GUI_HELPER::showMessage("Error: Already recording!");
-    else if (ui->saveLocEdit->text().isEmpty())
+    else if (ui->LogSaveLoc_LineEdit->text().isEmpty())
         error = GUI_HELPER::showMessage("Error: Must provide log file!");
     if (error) return;
 
     uint32_t enumFlags = QIODevice::WriteOnly | QIODevice::Text;
-    if (ui->appendLog->isChecked()) enumFlags |= QIODevice::Append;
+    if (ui->AppendLog_CheckBox->isChecked()) enumFlags |= QIODevice::Append;
     else enumFlags |= QIODevice::Truncate;
 
-    logFile = new QFile(ui->saveLocEdit->text());
+    logFile = new QFile(ui->LogSaveLoc_LineEdit->text());
     if (!logFile->open((QIODevice::OpenModeFlag) enumFlags))
         error = GUI_HELPER::showMessage("Error: Couldn't open log file!");
     if (error) return;
 
     logStream = new QTextStream(logFile);
     *logStream << "Started: " << QDateTime::currentDateTimeUtc().toString() << " ";
-    *logStream << "with update rate " << ui->LOG_UREdit->text() << " seconds\n";
+    *logStream << "with update rate " << ui->LOG_UR_LineEdit->text() << " seconds\n";
     logStream->flush();
 
-    logTimer.start((int) (S2MS * ui->LOG_UREdit->text().toFloat()));
-    ui->startLog->setText("Running");
-    ui->startLog->setEnabled(false);
-    ui->appendLog->setEnabled(false);
-    ui->LOG_UREdit->setEnabled(false);
-    ui->logURLabel->setEnabled(false);
+    logTimer.start((int) (S2MS * ui->LOG_UR_LineEdit->text().toFloat()));
+    ui->StartLog_Button->setText("Running");
+    ui->StartLog_Button->setEnabled(false);
+    ui->AppendLog_CheckBox->setEnabled(false);
+    ui->LOG_UR_LineEdit->setEnabled(false);
     logIsRecording = true;
 }
 
-void GUI_8AIO_16DIO_COMM::on_stopLog_clicked()
+void GUI_8AIO_16DIO_COMM::on_StopLog_Button_clicked()
 {
     if (!logIsRecording) return;
     logTimer.stop();
@@ -336,70 +335,75 @@ void GUI_8AIO_16DIO_COMM::on_stopLog_clicked()
     logStream = NULL;
     logFile = NULL;
 
-    ui->startLog->setText("Start Log");
-    ui->startLog->setEnabled(true);
-    ui->appendLog->setEnabled(true);
-    ui->LOG_UREdit->setEnabled(true);
-    ui->logURLabel->setEnabled(true);
+    ui->StartLog_Button->setText("Start Log");
+    ui->StartLog_Button->setEnabled(true);
+    ui->AppendLog_CheckBox->setEnabled(true);
+    ui->LOG_UR_LineEdit->setEnabled(true);
     logIsRecording = false;
 }
 
-void GUI_8AIO_16DIO_COMM::on_ConnectButton_clicked()
+void GUI_8AIO_16DIO_COMM::on_ConnConnect_Button_clicked()
 {
     QByteArray msg;
-    msg.append(controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
+    msg.append(controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(ui->ConnType_Combo->currentText()));
 
     if (devConnected)
     {
         msg.append(MINOR_KEY_IO_REMOTE_CONN);
 
-        ui->ConnectButton->setText("Connect");
-        ui->SendButton->setEnabled(false);
+        ui->ConnConnect_Button->setText("Connect");
+        ui->ConnSend_Button->setEnabled(false);
         devConnected = false;
     } else
     {
         msg.append(MINOR_KEY_IO_REMOTE_CONN);
 
-        ui->ConnectButton->setText("Disconnect");
-        ui->SendButton->setEnabled(true);
+        ui->ConnConnect_Button->setText("Disconnect");
+        ui->ConnSend_Button->setEnabled(true);
         devConnected = true;
     }
-    msg.append(ui->SpeedCombo->currentText());
-    msg.append(ui->DeviceCombo->currentText());
+    msg.append(ui->ConnSpeed_Combo->currentText());
+    msg.append(ui->ConnAddr_Combo->currentText());
 
     send(msg);
 }
 
-void GUI_8AIO_16DIO_COMM::on_SendButton_clicked()
+void GUI_8AIO_16DIO_COMM::on_ConnSend_Button_clicked()
 {
     QByteArray msg;
-    msg.append(controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(ui->ConnTypeCombo->currentText()));
+    msg.append(controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(ui->ConnType_Combo->currentText()));
     msg.append(MINOR_KEY_IO_REMOTE_CONN);
-    msg.append(ui->MessageEdit->text());
+    msg.append(ui->ConnMsg_LineEdit->text());
     msg.append(MINOR_KEY_IO_REMOTE_CONN);
     msg.append(MINOR_KEY_IO_REMOTE_CONN);
 
     send(msg);
 }
 
-void GUI_8AIO_16DIO_COMM::on_ClearRecvButton_clicked()
+void GUI_8AIO_16DIO_COMM::on_ConnClearRecv_Button_clicked()
 {
-    ui->Recv_PlainText->clear();
+    ui->ConnRecv_PlainText->clear();
+    rcvd_formatted.clear();
 }
 
-void GUI_8AIO_16DIO_COMM::on_ConnTypeCombo_currentIndexChanged(int)
+void GUI_8AIO_16DIO_COMM::on_ConnSaveRecv_Button_clicked()
 {
-    QString currVal = ui->ConnTypeCombo->currentText();
+    save_rcvd_formatted();
+}
+
+void GUI_8AIO_16DIO_COMM::on_ConnType_Combo_currentIndexChanged(int)
+{
+    QString currVal = ui->ConnType_Combo->currentText();
     uint8_t type = controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(currVal);
-    if (disabledValueSet.value(MINOR_KEY_IO_REMOTE_CONN)->contains(type)) ui->SpeedCombo->setEnabled(false);
-    else ui->SpeedCombo->setEnabled(true);
+    if (disabledValueSet.value(MINOR_KEY_IO_REMOTE_CONN)->contains(type)) ui->ConnSpeed_Combo->setEnabled(false);
+    else ui->ConnSpeed_Combo->setEnabled(true);
 
     QStringList deviceConns = devSettings.value(currVal);
-    ui->DeviceCombo->clear();
-    ui->DeviceCombo->addItems(deviceConns);
+    ui->ConnAddr_Combo->clear();
+    ui->ConnAddr_Combo->addItems(deviceConns);
 
-    if (deviceConns.length() == 0) ui->DeviceCombo->setEditable(true);
-    else ui->DeviceCombo->setEditable(false);
+    if (deviceConns.length() == 0) ui->ConnAddr_Combo->setEditable(true);
+    else ui->ConnAddr_Combo->setEditable(false);
 }
 
 void GUI_8AIO_16DIO_COMM::setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint8_t start_num)
@@ -433,10 +437,10 @@ void GUI_8AIO_16DIO_COMM::setCombos(uint8_t pinType, QList<QString> combos)
     // Handle remote connection info
     if (pinType == MINOR_KEY_IO_REMOTE_CONN)
     {
-        ui->ConnTypeCombo->blockSignals(true);
-        ui->ConnTypeCombo->clear();
-        ui->ConnTypeCombo->addItems(combos);
-        ui->ConnTypeCombo->blockSignals(false);
+        ui->ConnType_Combo->blockSignals(true);
+        ui->ConnType_Combo->clear();
+        ui->ConnType_Combo->addItems(combos);
+        ui->ConnType_Combo->blockSignals(false);
         return;
     }
 
@@ -538,10 +542,10 @@ void GUI_8AIO_16DIO_COMM::setConTypes(QStringList connTypes, QList<char> mapValu
         pinMap->insert(connTypes[i], mapValues[i]);
     }
 
-    ui->ConnTypeCombo->clear();
-    ui->ConnTypeCombo->addItems(connTypes);
+    ui->ConnType_Combo->clear();
+    ui->ConnType_Combo->addItems(connTypes);
 
-    on_ConnTypeCombo_currentIndexChanged(ui->ConnTypeCombo->currentIndex());
+    on_ConnType_Combo_currentIndexChanged(ui->ConnType_Combo->currentIndex());
 }
 
 void GUI_8AIO_16DIO_COMM::initialize()
