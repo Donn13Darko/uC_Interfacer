@@ -33,10 +33,10 @@ public:
     explicit GUI_CUSTOM_CMD(QWidget *parent = 0);
     ~GUI_CUSTOM_CMD();
 
-    void reset_gui();
+    virtual void reset_gui();
 
 protected slots:
-    void receive_gui(QByteArray recvData);
+    virtual void receive_gui(QByteArray recvData);
 
 private slots:
     void on_SaveFeedback_Button_clicked();

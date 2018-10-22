@@ -26,7 +26,7 @@
 #include <QTimer>
 #include <QEventLoop>
 
-#include "../communication/comms-general.h"
+#include "gui-base-major-keys.h"
 #include "../checksums/checksums.h"
 #include "../gui-helper.h"
 #include <QDebug>

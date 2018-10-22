@@ -48,7 +48,7 @@ void Serial_RS232::open()
 {
     connected = rs232->open(QIODevice::ReadWrite);
 
-    if (connected)
+    if (isConnected())
     {
         connect(rs232, SIGNAL(errorOccurred(QSerialPort::SerialPortError)),
                 this, SLOT(checkError(QSerialPort::SerialPortError)));
@@ -57,12 +57,6 @@ void Serial_RS232::open()
     {
         emit deviceDisconnected();
     }
-}
-
-void Serial_RS232::close()
-{
-    rs232->close();
-    connected = false;
 }
 
 bool Serial_RS232::isConnected()
@@ -80,6 +74,12 @@ QStringList* Serial_RS232::getDevices()
     }
 
     return portNames;
+}
+
+void Serial_RS232::close()
+{
+    rs232->close();
+    connected = false;
 }
 
 void Serial_RS232::write(QByteArray writeData)

@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "uc-generic-fsm.h"
-#include "uc-generic-io.h"
+#include "gui-base-major-keys.h"
 #include "arduino-uno-uart-minor-keys.h"
 #include "gui-pin-io-base-minor-keys.h"
-#include "comms-general.h"
+#include "uc-generic-fsm.h"
+#include "uc-generic-io.h"
 #include <Servo.h>
 
 // Buffer Variables

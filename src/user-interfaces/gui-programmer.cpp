@@ -136,6 +136,15 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
     ui->ReadData_PlainText->setTextCursor(prev_cursor);
 }
 
+bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
+{
+    switch (minorKey)
+    {
+        default:
+            return GUI_BASE::isDataRequest(minorKey);
+    }
+}
+
 void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()
 {
     // Select programmer file

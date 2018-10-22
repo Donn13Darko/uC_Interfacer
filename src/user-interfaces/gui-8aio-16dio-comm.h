@@ -20,6 +20,7 @@
 #define GUI_8AIO_16DIO_COMM_H
 
 #include "gui-pin-io-base.h"
+#include "gui-8aio-16dio-comm-minor-keys.h"
 
 #include <QObject>
 #include <QTimer>
@@ -39,7 +40,7 @@ public:
     explicit GUI_8AIO_16DIO_COMM(QWidget *parent = 0);
     ~GUI_8AIO_16DIO_COMM();
 
-    void reset_gui();
+    virtual void reset_gui();
     void parseConfigMap(QMap<QString, QVariant>* configMap);
 
 private slots:

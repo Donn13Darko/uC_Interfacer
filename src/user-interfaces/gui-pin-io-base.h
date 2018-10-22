@@ -118,6 +118,7 @@ protected:
     void setCombos(PinTypeInfo *pInfo, QList<QString> combos);
     void addNewPinSettings(PinTypeInfo *pInfo, QList<QString> newSettings);
 
+    virtual bool isDataRequest(uint8_t minorKey);
     virtual void setValues(uint8_t pinType, QByteArray values);
     virtual bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 

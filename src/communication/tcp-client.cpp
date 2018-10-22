@@ -47,6 +47,11 @@ void TCP_CLIENT::open()
     client->connectToHost(server_ip, server_port, QIODevice::ReadWrite);
 }
 
+bool TCP_CLIENT::isConnected()
+{
+    return (client && (client->state() == QTcpSocket::ConnectedState));
+}
+
 void TCP_CLIENT::close()
 {
     // Remove close slot to prevent infinite loop
@@ -55,11 +60,6 @@ void TCP_CLIENT::close()
 
     // Disconnect
     client->disconnectFromHost();
-}
-
-bool TCP_CLIENT::isConnected()
-{
-    return (client && (client->state() == QTcpSocket::ConnectedState));
 }
 
 void TCP_CLIENT::connectClient()

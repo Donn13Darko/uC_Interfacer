@@ -34,10 +34,10 @@ public:
     explicit GUI_DATA_TRANSMIT(QWidget *parent = 0);
     ~GUI_DATA_TRANSMIT();
 
-    void reset_gui();
+    virtual void reset_gui();
 
 protected slots:
-    void receive_gui(QByteArray recvData);
+    virtual void receive_gui(QByteArray recvData);
 
 private slots:
     void on_MSG_Sel_buttonClicked(int);

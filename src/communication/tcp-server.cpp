@@ -54,6 +54,11 @@ void TCP_SERVER::open()
     connecting_msg->show();
 }
 
+bool TCP_SERVER::isConnected()
+{
+    return (server_client && (server_client->state() == QTcpSocket::ConnectedState));
+}
+
 void TCP_SERVER::close()
 {
     // Disconnect server_client
@@ -66,11 +71,6 @@ void TCP_SERVER::close()
 
     // Disconnect server
     server->close();
-}
-
-bool TCP_SERVER::isConnected()
-{
-    return (server_client && (server_client->state() == QTcpSocket::ConnectedState));
 }
 
 void TCP_SERVER::write(QByteArray writeData)

@@ -26,12 +26,12 @@
 #include <QCloseEvent>
 #include <QSettings>
 
-#include "communication/comms-general.h"
 #include "communication/serial-rs232.h"
 #include "communication/tcp-client.h"
 #include "communication/tcp-server.h"
 #include "communication/udp-socket.h"
 
+#include "user-interfaces/gui-base-major-keys.h"
 #include "user-interfaces/gui-welcome.h"
 
 // Must be in same order as supportedDevicesList

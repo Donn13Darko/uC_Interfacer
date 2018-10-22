@@ -30,17 +30,17 @@ public:
     TCP_CLIENT(QString ip, int port, QObject *parent = NULL);
     ~TCP_CLIENT();
 
-    void open();
-    bool isConnected();
+    virtual void open();
+    virtual bool isConnected();
 
 public slots:
-    void close();
+    virtual void close();
     void connectClient();
     void disconnectClient();
-    void write(QByteArray writeData);
+    virtual void write(QByteArray writeData);
 
 private slots:
-    void read();
+    virtual void read();
 
 private:
     QTcpSocket *client;

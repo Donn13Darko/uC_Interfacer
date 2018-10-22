@@ -52,6 +52,11 @@ void UDP_SOCKET::open()
         emit deviceConnected();
 }
 
+bool UDP_SOCKET::isConnected()
+{
+    return (server && (server->state() == QUdpSocket::BoundState));
+}
+
 void UDP_SOCKET::close()
 {
     // Remove close slot to prevent infinite loop
@@ -60,11 +65,6 @@ void UDP_SOCKET::close()
 
     // Disconnect
     server->disconnectFromHost();
-}
-
-bool UDP_SOCKET::isConnected()
-{
-    return (server && (server->state() == QUdpSocket::BoundState));
 }
 
 void UDP_SOCKET::disconnectClient()

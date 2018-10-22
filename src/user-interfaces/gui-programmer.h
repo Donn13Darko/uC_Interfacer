@@ -37,13 +37,16 @@ public:
     explicit GUI_PROGRAMMER(QWidget *parent = 0);
     ~GUI_PROGRAMMER();
 
-    void reset_gui();
+    virtual void reset_gui();
     void addHexFormats(QStringList hexFormatsMap);
     void removeHexFormats(QStringList hexFormatsList);
     void addBurnMethods(QStringList burnMethodsMap);
 
 protected slots:
-    void receive_gui(QByteArray recvData);
+    virtual void receive_gui(QByteArray recvData);
+
+protected:
+    virtual bool isDataRequest(uint8_t minorKey);
 
 private slots:
     void on_BrowseHexFile_Button_clicked();

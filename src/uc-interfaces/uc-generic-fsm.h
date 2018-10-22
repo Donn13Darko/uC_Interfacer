@@ -36,7 +36,7 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 
-#include "../communication/comms-general.h"
+#include "../user-interfaces/gui-base-major-keys.h"
 
 /* FSM Public Functions */
 void fsm_setup(uint32_t buffer_len);

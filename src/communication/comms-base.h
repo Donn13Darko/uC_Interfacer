@@ -32,7 +32,6 @@ public:
     ~COMMS_BASE();
 
     virtual void open();
-    virtual void close();
     virtual bool isConnected();
 
 signals:
@@ -40,8 +39,11 @@ signals:
     void deviceDisconnected();
     void readyRead(QByteArray readData);
 
-protected slots:
+public slots:
+    virtual void close();
     virtual void write(QByteArray writeData);
+
+protected slots:
     virtual void read();
 
 protected:

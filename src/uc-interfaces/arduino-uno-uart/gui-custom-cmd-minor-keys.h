@@ -16,22 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_BASE_MINOR_KEYS_H
-#define GUI_BASE_MINOR_KEYS_H
+#ifndef GUI_CUSTOM_CMD_MINOR_KEYS_H
+#define GUI_CUSTOM_CMD_MINOR_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// Base Minor Keys enum
+// Custom CMD Minor Keys enum
 typedef enum {
     // Error and reset
-    MINOR_KEY_BASE_ERROR = 0
-} MINOR_KEYS_BASE;
+    MINOR_KEY_CUSTOM_CMD_ERROR = 0
+} MINOR_KEYS_CUSTOM_CMD;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GUI_BASE_MINOR_KEYS_H
+#endif // GUI_CUSTOM_CMD_MINOR_KEYS_H

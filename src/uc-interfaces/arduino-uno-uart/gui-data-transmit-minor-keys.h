@@ -16,44 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_PIN_BASE_MINOR_KEYS_H
-#define GUI_PIN_BASE_MINOR_KEYS_H
+#ifndef GUI_DATA_TRANSMIT_MINOR_KEYS_H
+#define GUI_DATA_TRANSMIT_MINOR_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// IO Minor Keys enum
+// Data Transmit Minor Keys enum
 typedef enum {
     // Error and reset
-    MINOR_KEY_IO_ERROR = 0,
+    MINOR_KEY_DATA_TRANSMIT_ERROR = 0,
 
-    // AIO Keys
-    MINOR_KEY_IO_AIO,
-    MINOR_KEY_IO_AIO_SET,
-    MINOR_KEY_IO_DIO_READ,
-
-    // DIO Keys
-    MINOR_KEY_IO_DIO,
-    MINOR_KEY_IO_DIO_SET,
-    MINOR_KEY_IO_AIO_READ,
-
-    // Leave this key at end (used for child GUI keys)
-    MINOR_KEY_IO_MAIN_END
-} MINOR_KEYS_IO;
-
-/* Stage #2 (s2) io key positions enum */
-typedef enum {
-    s2_io_pin_num_loc = 0,
-    s2_io_combo_loc,
-    s2_io_value_high_loc,
-    s2_io_value_low_loc,
-    s2_io_end_loc
-} S2_IO_Settings;
+    // Data Transmit Transfer
+    MINOR_KEY_DATA_TRANSMIT_DATA
+} MINOR_KEYS_DATA_TRANSMIT;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GUI_PIN_BASE_MINOR_KEYS_H
+#endif // GUI_DATA_TRANSMIT_MINOR_KEYS_H

@@ -31,21 +31,16 @@ public:
     UDP_SOCKET(QString client_ip, int client_port, int server_port, QObject *parent = NULL);
     ~UDP_SOCKET();
 
-    void open();
-    bool isConnected();
-
-signals:
-    void deviceConnected();
-    void deviceDisconnected();
-    void readyRead(QByteArray readData);
+    virtual void open();
+    virtual bool isConnected();
 
 public slots:
-    void close();
+    virtual void close();
     void disconnectClient();
-    void write(QByteArray writeData);
+    virtual void write(QByteArray writeData);
 
 private slots:
-    void read();
+    virtual void read();
 
 private:
     QUdpSocket *client;

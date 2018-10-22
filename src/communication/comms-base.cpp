@@ -35,7 +35,7 @@ void COMMS_BASE::open()
 {
     connected = true;
 
-    if (connected)
+    if (isConnected())
     {
         emit deviceConnected();
     } else
@@ -44,14 +44,14 @@ void COMMS_BASE::open()
     }
 }
 
-void COMMS_BASE::close()
-{
-    connected = false;
-}
-
 bool COMMS_BASE::isConnected()
 {
     return connected;
+}
+
+void COMMS_BASE::close()
+{
+    connected = false;
 }
 
 void COMMS_BASE::write(QByteArray writeData)

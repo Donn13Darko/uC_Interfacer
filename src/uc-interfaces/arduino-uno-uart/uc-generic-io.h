@@ -36,8 +36,9 @@ extern "C"
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "comms-general.h"
+#include "gui-base-major-keys.h"
 #include "gui-pin-io-base-minor-keys.h"
+#include "gui-8aio-16dio-comm-minor-keys.h"
 
 /* IO Functions */
 /* Parses IO minor key and calls uc specific code */

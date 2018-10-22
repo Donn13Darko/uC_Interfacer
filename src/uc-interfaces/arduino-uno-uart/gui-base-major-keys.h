@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GENERAL_COMMS_H
-#define GENERAL_COMMS_H
+#ifndef GUI_BASE_MAJOR_KEYS_H
+#define GUI_BASE_MAJOR_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
@@ -46,7 +46,7 @@ typedef enum {
 
     // Action confirmations
     MAJOR_KEY_ACK
-} MAJOR_KEYS;
+} GUI_BASE_MAJOR_KEYS;
 
 /* First stage (s1) generic key positions */
 typedef enum {
@@ -77,4 +77,4 @@ typedef struct checksum_struct {
 }
 #endif
 
-#endif // GENERAL_COMMS_H
+#endif // GUI_BASE_MAJOR_KEYS_H

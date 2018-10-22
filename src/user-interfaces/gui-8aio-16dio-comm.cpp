@@ -511,6 +511,7 @@ bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
         case MINOR_KEY_IO_REMOTE_CONN:
         case MINOR_KEY_IO_REMOTE_CONN_SET:
         case MINOR_KEY_IO_REMOTE_CONN_READ:
+            infoPtr->pinType = MINOR_KEY_IO_REMOTE_CONN;
             return true;
         default:
             return false;
@@ -521,11 +522,10 @@ bool GUI_8AIO_16DIO_COMM::isDataRequest(uint8_t minorKey)
 {
     switch (minorKey)
     {
-        case MINOR_KEY_IO_AIO_READ:
-        case MINOR_KEY_IO_DIO_READ:
+        case MINOR_KEY_IO_REMOTE_CONN_READ:
             return true;
         default:
-            return false;
+            return GUI_PIN_BASE::isDataRequest(minorKey);
     }
 }
 

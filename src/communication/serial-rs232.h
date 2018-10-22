@@ -31,19 +31,19 @@ public:
     Serial_RS232(QString port, QString baudrate = "9600", QObject *parent = NULL);
     ~Serial_RS232();
 
-    void open();
-    void close();
-    bool isConnected();
+    virtual void open();
+    virtual void close();
+    virtual bool isConnected();
 
     static QStringList* getDevices();
     static QStringList Baudrate_Defaults;
 
 public slots:
-    void write(QByteArray writeData);
-    void checkError(QSerialPort::SerialPortError);
+    virtual void write(QByteArray writeData);
 
 private slots:
-    void read();
+    virtual void read();
+    void checkError(QSerialPort::SerialPortError);
 
 private:
     QSerialPort *rs232;

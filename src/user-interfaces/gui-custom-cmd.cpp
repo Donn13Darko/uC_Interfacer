@@ -48,6 +48,7 @@ void GUI_CUSTOM_CMD::reset_gui()
     ui->MinorKey_LineEdit->setText("0");
     ui->KeyBase_LineEdit->setText("10");
     ui->CustomCMDBase_LineEdit->setText("0");
+    ui->CustomCMD_PlainText->clear();
 
     // Reset radio selection
     ui->File_Radio->setChecked(true);

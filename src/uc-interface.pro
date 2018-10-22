@@ -73,11 +73,10 @@ HEADERS += \
     user-interfaces/gui-custom-cmd.h \
     user-interfaces/gui-data-transmit-minor-keys.h \
     user-interfaces/gui-8aio-16dio-comm-minor-keys.h \
-    user-interfaces/gui-base-minor-keys.h \
     user-interfaces/gui-custom-cmd-minor-keys.h \
     user-interfaces/gui-welcome-minor-keys.h \
     communication/comms-base.h \
-    communication/comms-general.h
+    user-interfaces/gui-base-major-keys.h
 
 FORMS += \
     mainwindow.ui \

@@ -409,6 +409,18 @@ void GUI_PIN_BASE::addNewPinSettings(PinTypeInfo *pInfo, QList<QString> newSetti
     }
 }
 
+bool GUI_PIN_BASE::isDataRequest(uint8_t minorKey)
+{
+    switch (minorKey)
+    {
+        case MINOR_KEY_IO_AIO_READ:
+        case MINOR_KEY_IO_DIO_READ:
+            return true;
+        default:
+            return GUI_BASE::isDataRequest(minorKey);
+    }
+}
+
 void GUI_PIN_BASE::setValues(uint8_t, QByteArray)
 {
     // Default do nothing
@@ -442,11 +454,6 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
             infoPtr->cols = num_DIOcols;
             infoPtr->rows = num_DIOrows;
             infoPtr->pinType = MINOR_KEY_IO_DIO;
-            return true;
-        case MINOR_KEY_IO_REMOTE_CONN:
-        case MINOR_KEY_IO_REMOTE_CONN_SET:
-        case MINOR_KEY_IO_REMOTE_CONN_READ:
-            infoPtr->pinType = MINOR_KEY_IO_REMOTE_CONN;
             return true;
         default:
             delete infoPtr;

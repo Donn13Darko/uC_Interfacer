@@ -32,15 +32,15 @@ public:
     TCP_SERVER(int port, QObject *parent = NULL);
     ~TCP_SERVER();
 
-    void open();
-    bool isConnected();
+    virtual void open();
+    virtual bool isConnected();
 
 public slots:
-    void close();
-    void write(QByteArray writeData);
+    virtual void close();
+    virtual void write(QByteArray writeData);
 
 private slots:
-    void read();
+    virtual void read();
     void connectClient();
     void disconnectClient();
     void connecting_finished(int res);
