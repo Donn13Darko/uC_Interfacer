@@ -86,8 +86,6 @@ private slots:
 
     void updateConnInfoCombo();
 
-    void receive(QByteArray) {/*Default do nothing*/}
-
 private:
     Ui::MainWindow *ui;
     GUI_WELCOME* welcome_tab;

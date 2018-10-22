@@ -25,8 +25,8 @@ void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
     if (buffer_len != s2_io_end_loc)
     {
         // If not enough bytes for command return
-        if ((minor_key == MINOR_KEY_IO_DIO)
-                || (minor_key == MINOR_KEY_IO_AIO))
+        if ((minor_key == MINOR_KEY_IO_DIO_SET)
+                || (minor_key == MINOR_KEY_IO_AIO_SET))
         {
             return;
         }
@@ -39,10 +39,10 @@ void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
     // Parse and act on minor key
     switch (minor_key)
     {
-        case MINOR_KEY_IO_DIO:
+        case MINOR_KEY_IO_DIO_SET:
             uc_dio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
-        case MINOR_KEY_IO_AIO:
+        case MINOR_KEY_IO_AIO_SET:
             uc_aio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
         case MINOR_KEY_IO_DIO_READ:

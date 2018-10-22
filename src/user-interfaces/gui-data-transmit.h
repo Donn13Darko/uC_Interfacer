@@ -37,7 +37,7 @@ public:
     void reset_gui();
 
 protected slots:
-    void receive_gui();
+    void receive_gui(QByteArray recvData);
 
 private slots:
     void on_MSG_Sel_buttonClicked(int);

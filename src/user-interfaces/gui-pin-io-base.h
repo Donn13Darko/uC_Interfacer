@@ -32,12 +32,6 @@
 #include "gui-base.h"
 #include "gui-pin-io-base-minor-keys.h"
 
-typedef enum {
-    PIN_TYPES_DIO = 0,
-    PIN_TYPES_AIO,
-    PIN_TYPES_REMOTE
-} PIN_TYPES;
-
 struct RangeList {
     int min;
     int max;
@@ -49,6 +43,7 @@ struct RangeList {
 struct PinTypeInfo {
     QGridLayout *grid;
     uint8_t pinType;
+    uint8_t minorKey;
     uint8_t cols;
     uint8_t rows;
     uint8_t numButtons;
@@ -57,7 +52,7 @@ struct PinTypeInfo {
     uint8_t numPins_START;
 };
 #define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=nullptr, .pinType=0, \
-    .cols=0, .rows=0, .numButtons=0, \
+    .minorKey=0, .cols=0, .rows=0, .numButtons=0, \
     .numPins_GUI=0, .numPins_DEV=0, .numPins_START=0}
 
 
@@ -69,7 +64,9 @@ public:
     GUI_PIN_BASE(QWidget *parent = 0);
     ~GUI_PIN_BASE();
 
-    void addNewPinSettings(uint8_t pinType, QList<QString> newSettings);
+protected slots:
+    void recordPinValues(PinTypeInfo *pInfo);
+    virtual void receive_gui(QByteArray recvData);
 
 protected:
     QMap<uint8_t, QMap<QString, uint8_t>*> controlMap;
@@ -111,12 +108,18 @@ protected:
     void inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset);
     void updateSliderRange(QSlider *slider, RangeList *rList);
 
+    void setNumPins(PinTypeInfo *pInfo, uint8_t num_dev_pins, uint8_t start_num);
     void setPinAttribute(PinTypeInfo *pInfo, uint8_t pinNum, Qt::WidgetAttribute attribute, bool on);
     void setPinNumbers(PinTypeInfo *pInfo, uint8_t start_num);
 
     bool getItemWidget(QWidget** itemWidget, QGridLayout *grid, uint8_t row, uint8_t col);
     void getPinLocation(uint8_t *row, uint8_t* col, PinTypeInfo *pInfo, uint8_t pin);
-    bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
+
+    void setCombos(PinTypeInfo *pInfo, QList<QString> combos);
+    void addNewPinSettings(PinTypeInfo *pInfo, QList<QString> newSettings);
+
+    virtual void setValues(uint8_t pinType, QByteArray values);
+    virtual bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 
 private:
     RangeList* makeRangeList(QString rangeInfo);

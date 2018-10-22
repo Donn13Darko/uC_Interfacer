@@ -29,16 +29,23 @@ typedef enum {
     // Error and reset
     MINOR_KEY_IO_ERROR = 0,
 
-    // Pin type set
-    MINOR_KEY_IO_DIO,
+    // Pin Types
     MINOR_KEY_IO_AIO,
+    MINOR_KEY_IO_DIO,
+    MINOR_KEY_IO_REMOTE_CONN,
+
+    // Pin type set
+    MINOR_KEY_IO_AIO_SET,
+    MINOR_KEY_IO_DIO_SET,
+    MINOR_KEY_IO_REMOTE_CONN_SET,
 
     // Pin type read
     MINOR_KEY_IO_DIO_READ,
     MINOR_KEY_IO_AIO_READ,
+    MINOR_KEY_IO_REMOTE_CONN_READ,
 
     // Remote Communications
-    MINOR_KEY_IO_REMOTE_CONN
+    MINOR_KEY_IO_REMOTE_CONN_SEND
 } MINOR_KEYS_IO;
 
 /* Stage #2 (s2) io key positions enum */

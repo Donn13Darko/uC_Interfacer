@@ -54,7 +54,7 @@
     <rect>
      <x>760</x>
      <y>370</y>
-     <width>121</width>
+     <width>111</width>
      <height>41</height>
     </rect>
    </property>
@@ -93,7 +93,7 @@
     <rect>
      <x>610</x>
      <y>370</y>
-     <width>131</width>
+     <width>121</width>
      <height>41</height>
     </rect>
    </property>
@@ -296,12 +296,28 @@
     <rect>
      <x>470</x>
      <y>370</y>
-     <width>121</width>
+     <width>111</width>
      <height>41</height>
     </rect>
    </property>
    <property name="text">
     <string>Clear Read Data</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="ResetGUI_Button">
+   <property name="geometry">
+    <rect>
+     <x>950</x>
+     <y>380</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>RESET</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
    </property>
   </widget>
  </widget>

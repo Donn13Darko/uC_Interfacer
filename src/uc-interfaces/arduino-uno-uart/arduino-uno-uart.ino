@@ -45,9 +45,9 @@ float AIO_RANGE = 100.0;
 float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 
 // Read array (more DIO than AIO)
-const uint8_t dio_data_len = 3*num_DIO + 1;
-const uint8_t aio_data_len = 3*num_AIO + 1;
-uint8_t read_data[dio_data_len];
+const uint8_t dio_data_len = 2*num_DIO;
+const uint8_t aio_data_len = 2*num_AIO;
+uint8_t read_data[dio_data_len+3];
 
 // Just ignore these functions for now
 void uc_data_transmit(uint8_t, const uint8_t*, uint8_t) {}
@@ -59,8 +59,15 @@ void uc_remote_conn() {}
 // Arduino setup function
 void setup()
 {
+    // Set ADC to fast mode
+    ADCSRA |= 0x02; // Set bit 2
+    ADCSRA &= 0xFC; // Clear bits 1 & 0
+    
+    // Init Serial transfer
     Serial.setTimeout(5000);
     Serial.begin(115200);
+
+    // Init fsm
     fsm_setup(len);
 }
 
@@ -75,14 +82,17 @@ void loop()
 // Reset all internal values, for use with new connections
 void uc_reset()
 {
-    // Set all DIO to INPUTs
+    // Detach any servos
     uint8_t VALUE;
     for (int i = 0; i < num_DIO; i++)
     {
         VALUE = DIO_SET[i];
         if ((VALUE == IO_SERVO_US) || (VALUE == IO_SERVO_DEG)) DIO_SERVO[i].detach();
-        pinMode(i, INPUT);
     }
+    
+    // Set DIOs to INPUTS
+    DDRD &= 0x00;
+    DDRB &= 0xC0;
 
     // Reset buffered data
     memset(DIO_SET, IO_INPUT, sizeof(DIO_SET));
@@ -122,116 +132,129 @@ uint8_t uc_send(uint8_t* data, uint8_t data_len)
 // Read and return the DIO states
 void uc_dio_read()
 {
+    // Setup variables
     uint16_t val;
-    uint8_t j = 1;
-    read_data[0] = MINOR_KEY_IO_DIO_READ;
+    uint8_t j = 0;
+
+    // Compose stage 1
+    read_data[j++] = MAJOR_KEY_READ_RESPONSE; // Major Key
+    read_data[j++] = MINOR_KEY_IO_DIO_READ;   // Minor Key
+    read_data[j++] = dio_data_len;            // Num s2 bytes
+    
+
+    // Compose stage 2
     for (uint8_t i = 0; i < num_DIO; i++)
-    {
+    {        
         // Iterate over pins
         switch (DIO_SET[i])
         {
             case IO_INPUT:
-                val = (digitalRead(i)) ? IO_ON : IO_OFF;
-                break;
-            case IO_SERVO_US:
-            case IO_SERVO_DEG:
-                val = DIO_SERVO[i].read();
+                if (i < 8) val = (PIND & (1 << i)) ? IO_ON : IO_OFF;
+                else val = (PINB & (1 << (i - 8))) ? IO_ON : IO_OFF;
                 break;
             case IO_PWM:
             case IO_OUTPUT:
+            case IO_SERVO_US:
+            case IO_SERVO_DEG:
                 val = DIO_VAL[i];
+                break;
+            default:
+                val = 0;
                 break;
         }
 
-        read_data[j++] = i;
-        read_data[j++] = (uint8_t) ((val >> 8) & 0xFF);
-        read_data[j++] = (uint8_t) (val & 0xFF);
+        // Add pin value to list (convert to big endian)
+        *((uint16_t*)(read_data + j)) = __builtin_bswap16(val);
+        j += 2;
     }
 
-    // Send data to GUI
-    uc_send((uint8_t*) read_data, dio_data_len);
+    // Send data to GUI (use fsm_send to add checksum)
+    fsm_send((uint8_t*) read_data, j);
 }
 
 // Read and return the AIO states
 void uc_aio_read()
 {
-    uint8_t j = 1;
-    uint16_t val = 0;
-    read_data[0] = MINOR_KEY_IO_AIO_READ;
+    // Setup variables
+    uint16_t val;
+    uint8_t j = 0;
+    
+    // Compose stage 1
+    read_data[j++] = MAJOR_KEY_READ_RESPONSE; // Major Key
+    read_data[j++] = MINOR_KEY_IO_AIO_READ;   // Minor Key
+    read_data[j++] = aio_data_len;            // Num s2 bytes
+
+    // Compose stage 2
     for (uint8_t i = 0; i < num_AIO; i++)
     {
         // Scale value
         val = (uint16_t) (AIO_SCALE * analogRead(i));
 
-        read_data[j++] = i;
-        read_data[j++] = (uint8_t) ((val >> 8) & 0xFF);
-        read_data[j++] = (uint8_t) (val & 0xFF);
+        // Add pin value to list (convert to big endian)
+        *((uint16_t*)(read_data + j)) = __builtin_bswap16(val);
+        j += 2;
     }
 
-    // Send data to GUI
-    uc_send((uint8_t*) read_data, aio_data_len);
+    // Send data to GUI (use fsm_send to add checksum)
+    fsm_send((uint8_t*) read_data, j);
 }
 
 // Set the DIO as per the command
 void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
 {
-    // Set follow up packets to IO and pin val
-    uint8_t PIN = pin_num;
-    uint8_t IO = setting;
-    uint16_t PIN_VAL = value;
-
-    if (DIO_SET[PIN] != IO)
+    if (DIO_SET[pin_num] != setting)
     {
-        switch (DIO_SET[PIN])
+        switch (DIO_SET[pin_num])
         {
             case IO_SERVO_US:
             case IO_SERVO_DEG:
-                DIO_SERVO[PIN].detach();
+                DIO_SERVO[pin_num].detach();
                 break;
             default:
                 break;
         }
         
-        switch (IO)
+        switch (setting)
         {
             case IO_INPUT:
-                pinMode(PIN, INPUT);
+                if (pin_num < 8) DDRD &= ~(1 << pin_num);
+                else DDRB &= ~(1 << (pin_num - 8));
                 break;
             case IO_OUTPUT:
-                pinMode(PIN, OUTPUT);
-                break;
             case IO_PWM:
-                pinMode(PIN, OUTPUT);
+                if (pin_num < 8) DDRD |= (1 << pin_num);
+                else DDRB |= (1 << (pin_num - 8));
                 break;
             case IO_SERVO_US:
             case IO_SERVO_DEG:
-                DIO_SERVO[PIN].attach(PIN);
+                DIO_SERVO[pin_num].attach(pin_num);
                 break;
             default:
                 return;
         }
         
-        DIO_SET[PIN] = IO;
+        DIO_SET[pin_num] = setting;
     }
 
-    switch (DIO_SET[PIN])
+    switch (DIO_SET[pin_num])
     {
         case IO_OUTPUT:
-            digitalWrite(PIN, PIN_VAL);
+            if (pin_num < 8) PORTD = (PORTD & ~(1 << pin_num)) | (value << pin_num);
+            else PORTB = (PORTB & ~(1 << (pin_num - 8))) | (value << (pin_num - 8));
             break;
         case IO_PWM:
-            analogWrite(PIN, (int) (PWM_SCALE * (float) PIN_VAL));
+            analogWrite(pin_num, (int) (PWM_SCALE * (float) value));
             break;
         case IO_SERVO_US:
-            DIO_SERVO[PIN].writeMicroseconds(PIN_VAL);
+            DIO_SERVO[pin_num].writeMicroseconds(value);
             break;
         case IO_SERVO_DEG:
-            DIO_SERVO[PIN].write(PIN_VAL);
+            DIO_SERVO[pin_num].write(value);
             break;
-        default:
+        default: // Do nothing for IO_INPUT
             return;
     }
 
-    DIO_VAL[PIN] = PIN_VAL;
+    DIO_VAL[pin_num] = value;
 }
 

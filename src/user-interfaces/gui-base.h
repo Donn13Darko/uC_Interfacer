@@ -19,11 +19,12 @@
 #ifndef GUI_BASE_H
 #define GUI_BASE_H
 
-#include <QObject>
 #include <QWidget>
 #include <QMap>
 #include <QVariant>
 #include <QMutex>
+#include <QTimer>
+#include <QEventLoop>
 
 #include "../communication/comms-general.h"
 #include "../checksums/checksums.h"
@@ -53,15 +54,18 @@ public:
 
 signals:
     void write_data(QByteArray data);
+    void ackReceived(QByteArray ack);
+    void readyRead(QByteArray data);
     void connect_signals(bool connect);
-    void readyRead();
-    void ackReceived();
+    void ackChecked(bool ackStatus);
 
 protected slots:
     void receive(QByteArray recvData);
+    void checkAck(QByteArray ack);
 
     // Virtual slots
-    virtual void receive_gui();
+    virtual void receive_gui(QByteArray recvData);
+    virtual void on_ResetGUI_Button_clicked();
 
 protected:
     // Local variables
@@ -69,7 +73,6 @@ protected:
     uint8_t guiType;
 
     // Receive arrays
-    QByteArray rcvd_raw;
     QByteArray rcvd_formatted;
 
     // Direct sends
@@ -88,18 +91,37 @@ protected:
     void send_chunk(std::initializer_list<uint8_t> start, std::initializer_list<uint8_t> chunk);
 
     // Ack
+    void send_ack(uint8_t majorKey);
     void waitForAck(int msecs = 5000);
-    bool checkAck();
     bool check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check);
+
+    // Wait for data
+    void waitForData(int msecs = 5000);
+    virtual bool isDataRequest(uint8_t minorKey);
 
     // Save to file
     void save_rcvd_formatted();
 
 private:
-    bool ack_status;
+    // Send helper variables
     QMutex sendLock;
-    uint8_t ack_key;
     QList<QByteArray> msgList;
+
+    // Recv helper variables
+    QMutex recvLock;
+    QByteArray rcvd_raw;
+
+    // Ack helper variables
+    bool ack_status;
+    uint8_t ack_key;
+    QTimer ackTimer;
+    QEventLoop ackLoop;
+
+    // Data helper variables
+    bool data_status;
+    uint8_t data_key;
+    QTimer dataTimer;
+    QEventLoop dataLoop;
 
     bool gui_checksum_is_exe = false;
     QString gui_checksum_exe_path = "";
@@ -113,6 +135,9 @@ private:
 
     // Send to device
     void transmit(QByteArray data);
+    void getChecksum(const uint8_t* data, uint8_t data_len,
+                     uint8_t checksum_key, uint8_t* checksum_start,
+                     uint8_t** checksum_array, uint32_t* checksum_size);
 };
 
 #endif // GUI_BASE_H

@@ -41,6 +41,9 @@ typedef enum {
     GUI_TYPE_PROGRAMMER,
     GUI_TYPE_CUSTOM_CMD,
 
+    // Responses
+    MAJOR_KEY_READ_RESPONSE,
+
     // Action confirmations
     MAJOR_KEY_ACK
 } MAJOR_KEYS;

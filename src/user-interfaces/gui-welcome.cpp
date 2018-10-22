@@ -24,7 +24,11 @@ GUI_WELCOME::GUI_WELCOME(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_WELCOME)
 {
+    // Setup UI
     ui->setupUi(this);
+    ui->ResetGUI_Button->hide();
+
+    // Set GUI Type
     guiType = GUI_TYPE_WELCOME;
 }
 

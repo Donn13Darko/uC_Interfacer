@@ -246,8 +246,11 @@ void fsm_run()
         case GUI_TYPE_CUSTOM_CMD:
             uc_custom_cmd(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
-        default: // Will fall threw for MAJOR_KEY_ERROR, MAJOR_KEY_RESET
+        case MAJOR_KEY_RESET:
             uc_reset();
+            break;
+        default: // Will fall through for MAJOR_KEY_ERROR
+            uc_reset_buffers();
             break;
     }
 }

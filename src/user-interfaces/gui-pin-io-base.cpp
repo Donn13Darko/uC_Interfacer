@@ -21,6 +21,7 @@
 GUI_PIN_BASE::GUI_PIN_BASE(QWidget *parent) :
     GUI_BASE(parent)
 {
+    // Set GUI Type
     guiType = GUI_TYPE_IO;
 }
 
@@ -51,38 +52,41 @@ GUI_PIN_BASE::~GUI_PIN_BASE()
     }
 }
 
-void GUI_PIN_BASE::addNewPinSettings(uint8_t pinType, QList<QString> newSettings)
+void GUI_PIN_BASE::recordPinValues(PinTypeInfo *pInfo)
 {
-    QList<QString> settingValues;
-    QList<QString> pinCombos = {}, pinSetDisabled = {};
-    QList<RangeList*> pinRanges = {};
-    foreach (QString i, newSettings)
+    if (logStream == nullptr) return;
+
+    *logStream << pInfo->pinType;
+
+    QLineEdit *textValue;
+    uint8_t rowNum, colNum;
+    for (uint8_t i = 0; i < pInfo->numPins_DEV; i++)
     {
-        // Split settings string into values [name,setEnabled,rangeList]
-        settingValues = (i).split(',');
+        // Add comma
+        *logStream << ",";
 
-        pinCombos.append(settingValues[0]);
+        // Get pin location and line edit widget
+        getPinLocation(&rowNum, &colNum, pInfo, i);
+        getItemWidget((QWidget**) &textValue, pInfo->grid, rowNum, colNum+textValuePos);
 
-        if (settingValues[1].toLower() == "true")
-            pinSetDisabled.append(settingValues[0]);
-
-        pinRanges.append(makeRangeList(settingValues[2]));
+        // Append pin value
+        *logStream << textValue->text();
     }
+    // Add new line
+    *logStream << "\n";
 
-    // Add new pinTypes (if relevant)
-    if (!controlMap.contains(pinType)) controlMap.insert(pinType, new QMap<QString, uint8_t>());
-    if (!disabledValueSet.contains(pinType)) disabledValueSet.insert(pinType, new QList<uint8_t>());
-    if (!rangeMap.contains(pinType)) rangeMap.insert(pinType, new QMap<uint8_t, RangeList*>());
+    // Flush data to file
+    logStream->flush();
+}
 
-    addPinControls(pinType, pinCombos);
-    addPinRangeMap(pinType, pinCombos, pinRanges);
+void GUI_PIN_BASE::receive_gui(QByteArray recvData)
+{
+    // Check known major key
+    if (recvData.at(s1_major_key_loc) != (char) MAJOR_KEY_READ_RESPONSE)
+        return;
 
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
-    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pinType);
-    foreach (QString i, pinSetDisabled)
-    {
-        pinDisabledSet->append(pinMap->value(i));
-    }
+    // Set values with minor key
+    setValues(recvData.at(s1_minor_key_loc), recvData.right(recvData.at(s1_num_s2_bytes_loc)));
 }
 
 void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
@@ -154,7 +158,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
         int newVal = sliderValue->value();
         float tempVAL = (float) newVal / rList->div;
 
-        if (pInfo->pinType == MINOR_KEY_IO_AIO) tempVAL = qRound(tempVAL);
+        if (pInfo->pinType != MINOR_KEY_IO_AIO) tempVAL = qRound(tempVAL);
 
         VAL = QString::number(tempVAL);
         textValue->setText(VAL);
@@ -178,14 +182,14 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
     // Send major/minor keys & data to uC
     uint16_t v = (uint16_t) VAL.toInt();
     send_chunk({
-                   guiType,                       // Major Key
-                   pInfo->pinType,                // Minor Key
+                   guiType,                     // Major Key
+                   pInfo->minorKey,             // Minor Key
                },
                {
-                   (uint8_t) pinNum.toInt(),      // Pin Num
-                   IO,                            // Combo setting
-                   (uint8_t) ((v >> 8) & 0xFF),   // Value High
-                   (uint8_t) (v & 0xFF)           // Value Low
+                   (uint8_t) pinNum.toInt(),    // Pin Num
+                   IO,                          // Combo setting
+                   (uint8_t) ((v >> 8) & 0xFF), // Value High
+                   (uint8_t) (v & 0xFF)         // Value Low
                });
 }
 
@@ -200,6 +204,29 @@ void GUI_PIN_BASE::updateSliderRange(QSlider *slider, RangeList *rList)
     if (0 < rList->min) slider->setSliderPosition(rList->min);
     else if (rList->max < 0) slider->setSliderPosition(rList->max);
     else slider->setSliderPosition(0);
+}
+
+void GUI_PIN_BASE::setNumPins(PinTypeInfo *pInfo, uint8_t num_dev_pins, uint8_t start_num)
+{
+    // Update dev pins
+    switch (pInfo->pinType)
+    {
+        case MINOR_KEY_IO_AIO:
+            num_AIOpins_DEV = num_dev_pins;
+            break;
+        case MINOR_KEY_IO_DIO:
+            num_DIOpins_DEV = num_dev_pins;
+            break;
+    }
+
+    // Disable each button set not in the list
+    for (uint8_t i = (pInfo->numPins_GUI-1); num_dev_pins <= i; i--)
+    {
+        setPinAttribute(pInfo, i, Qt::WA_Disabled, true);
+    }
+
+    // Set pin numbering
+    setPinNumbers(pInfo, start_num);
 }
 
 void GUI_PIN_BASE::setPinAttribute(PinTypeInfo *pInfo, uint8_t pinNum, Qt::WidgetAttribute attribute, bool on)
@@ -261,28 +288,165 @@ void GUI_PIN_BASE::getPinLocation(uint8_t *row, uint8_t *col, PinTypeInfo *pInfo
     *col = pInfo->numButtons * (pin % pInfo->cols);
 }
 
+void GUI_PIN_BASE::setCombos(PinTypeInfo *pInfo, QList<QString> combos)
+{
+    // Retrieve & verify pin type maps
+    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo->pinType);
+    QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pInfo->pinType);
+    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo->pinType);
+    if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
+
+    // Setup arrays & constructs for use in the loop
+    uint8_t IO;
+    uint8_t rowNum, colNum;
+    QList<uint8_t> pinNums;
+    QList<QString> listValues;
+    QStringList comboStr_split;
+
+    // Setup widget holders
+    QComboBox *itemCombo;
+    QWidget *sliderWidget, *textWidget;
+
+    foreach (QString comboStr, combos)
+    {
+        // Reset pinNums array
+        pinNums.clear();
+
+        // Parse inputs
+        comboStr_split = comboStr.split('-');
+        if ((comboStr[0] == '-') && (comboStr_split.length() == 2)
+                && comboStr_split[0].isEmpty())
+        {
+            // Apply combo values to all pins
+            for (uint8_t pinNum = 0; pinNum < pInfo->numPins_DEV; pinNum++)
+            {
+                pinNums.append(pinNum);
+            }
+        } else if (comboStr_split.length() == 2)
+        {
+            // Apply combo values to supplied pins
+            foreach (QString pinNum, comboStr_split[0].split(','))
+            {
+                pinNums.append(pinNum.toInt());
+            }
+        } else
+        {
+            // Malformed so skip
+            continue;
+        }
+        listValues = comboStr_split[1].split(',');
+
+        // Set combo for each pin in the list
+        foreach (uint8_t pin, pinNums)
+        {
+            // Find row & column of desired combo
+            getPinLocation(&rowNum, &colNum, pInfo, pin);
+
+            // Replace combo options
+            if (getItemWidget((QWidget**) &itemCombo, pInfo->grid, rowNum, colNum+comboPos))
+            {
+                itemCombo->blockSignals(true);
+
+                itemCombo->clear();
+                itemCombo->addItems(listValues);
+
+                IO = pinMap->value(itemCombo->currentText());
+                if (getItemWidget(&sliderWidget, pInfo->grid, rowNum, colNum+slideValuePos)
+                        && getItemWidget(&textWidget, pInfo->grid, rowNum, colNum+textValuePos))
+                {
+                    if (pinDisabledSet->contains(IO))
+                    {
+                        sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+                        textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+                    } else
+                    {
+                        sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+                        textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+                    }
+
+                    RangeList* rList = pinRangeMap->value(IO);
+                    updateSliderRange((QSlider*) sliderWidget, rList);
+                }
+
+                itemCombo->blockSignals(false);
+            }
+        }
+    }
+}
+
+void GUI_PIN_BASE::addNewPinSettings(PinTypeInfo *pInfo, QList<QString> newSettings)
+{
+    QList<QString> settingValues;
+    QList<QString> pinCombos = {}, pinSetDisabled = {};
+    QList<RangeList*> pinRanges = {};
+    foreach (QString i, newSettings)
+    {
+        // Split settings string into values [name,setEnabled,rangeList]
+        settingValues = (i).split(',');
+
+        pinCombos.append(settingValues[0]);
+
+        if (settingValues[1].toLower() == "true")
+            pinSetDisabled.append(settingValues[0]);
+
+        pinRanges.append(makeRangeList(settingValues[2]));
+    }
+
+    // Add new pinTypes (if relevant)
+    uint8_t pinType = pInfo->pinType;
+    if (!controlMap.contains(pinType)) controlMap.insert(pinType, new QMap<QString, uint8_t>());
+    if (!disabledValueSet.contains(pinType)) disabledValueSet.insert(pinType, new QList<uint8_t>());
+    if (!rangeMap.contains(pinType)) rangeMap.insert(pinType, new QMap<uint8_t, RangeList*>());
+
+    addPinControls(pinType, pinCombos);
+    addPinRangeMap(pinType, pinCombos, pinRanges);
+
+    QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
+    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pinType);
+    foreach (QString i, pinSetDisabled)
+    {
+        pinDisabledSet->append(pinMap->value(i));
+    }
+}
+
+void GUI_PIN_BASE::setValues(uint8_t, QByteArray)
+{
+    // Default do nothing
+}
+
 bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
 {
-    infoPtr->pinType = pinType;
+    infoPtr->minorKey = pinType;
 
     // Set pin type variables
     switch (pinType)
     {
         case MINOR_KEY_IO_AIO:
+        case MINOR_KEY_IO_AIO_SET:
+        case MINOR_KEY_IO_AIO_READ:
             infoPtr->numButtons = num_AIObuttons;
             infoPtr->numPins_GUI = num_AIOpins_GUI;
             infoPtr->numPins_DEV = num_AIOpins_DEV;
             infoPtr->numPins_START = num_AIOpins_START;
             infoPtr->cols = num_AIOcols;
             infoPtr->rows = num_AIOrows;
+            infoPtr->pinType = MINOR_KEY_IO_AIO;
             return true;
         case MINOR_KEY_IO_DIO:
+        case MINOR_KEY_IO_DIO_SET:
+        case MINOR_KEY_IO_DIO_READ:
             infoPtr->numButtons = num_DIObuttons;
             infoPtr->numPins_GUI = num_DIOpins_GUI;
             infoPtr->numPins_DEV = num_DIOpins_DEV;
             infoPtr->numPins_START = num_DIOpins_START;
             infoPtr->cols = num_DIOcols;
             infoPtr->rows = num_DIOrows;
+            infoPtr->pinType = MINOR_KEY_IO_DIO;
+            return true;
+        case MINOR_KEY_IO_REMOTE_CONN:
+        case MINOR_KEY_IO_REMOTE_CONN_SET:
+        case MINOR_KEY_IO_REMOTE_CONN_READ:
+            infoPtr->pinType = MINOR_KEY_IO_REMOTE_CONN;
             return true;
         default:
             delete infoPtr;

@@ -26,12 +26,14 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_DATA_TRANSMIT)
 {
+    // Setup UI
     ui->setupUi(this);
+
+    // Set GUI Type
     guiType = GUI_TYPE_DATA_TRANSMIT;
 
-    // Set radio values
-    ui->File_Radio->setChecked(true);
-    on_MSG_Sel_buttonClicked(0);
+    // Reset GUI
+    reset_gui();
 }
 
 GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
@@ -41,9 +43,13 @@ GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
 
 void GUI_DATA_TRANSMIT::reset_gui()
 {
+    // Clear received data
     on_ClearReceived_Button_clicked();
 
-    // Set radio values
+    // Clear entered data
+    ui->FilePath_LineEdit->clear();
+
+    // Reset radio selection
     ui->File_Radio->setChecked(true);
     on_MSG_Sel_buttonClicked(0);
 }
@@ -66,7 +72,7 @@ void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
     // Find which radio button selected
     if (ui->File_Radio->isChecked())
     {
-        send_file(keys, ui->FilePathEdit->text());
+        send_file(keys, ui->FilePath_LineEdit->text());
     } else if (ui->Input_Radio->isChecked())
     {
         send_chunk(keys, ui->msg_PlainText->toPlainText().toUtf8());
@@ -78,7 +84,7 @@ void GUI_DATA_TRANSMIT::on_BrowseFile_Button_clicked()
     // Select file to send
     QString file;
     if (GUI_HELPER::getOpenFilePath(&file))
-        ui->FilePathEdit->setText(file);
+        ui->FilePath_LineEdit->setText(file);
 }
 
 void GUI_DATA_TRANSMIT::on_SaveAs_Button_clicked()
@@ -92,24 +98,24 @@ void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()
     rcvd_formatted.clear();
 }
 
-void GUI_DATA_TRANSMIT::receive_gui()
+void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
 {
     // Remove Major key, minor key, and byte length
-    rcvd_raw.remove(0, s1_end_loc);
+    recvData.remove(0, s1_end_loc);
+
+    // Insert into global array (for saving in original format)
+    rcvd_formatted.append(recvData);
 
     // Insert plaintext at end
     QTextCursor prev_cursor = ui->recv_PlainText->textCursor();
     ui->recv_PlainText->moveCursor(QTextCursor::End);
-    ui->recv_PlainText->insertPlainText(QString(rcvd_raw));
+    ui->recv_PlainText->insertPlainText(QString(recvData));
     ui->recv_PlainText->setTextCursor(prev_cursor);
-
-    // Clear byte array
-    rcvd_raw.clear();
 }
 
 void GUI_DATA_TRANSMIT::input_select(bool fileIN, bool plainIN)
 {
-    ui->FilePathEdit->setEnabled(fileIN);
+    ui->FilePath_LineEdit->setEnabled(fileIN);
     ui->BrowseFile_Button->setEnabled(fileIN);
     ui->msg_PlainText->setEnabled(plainIN);
 }

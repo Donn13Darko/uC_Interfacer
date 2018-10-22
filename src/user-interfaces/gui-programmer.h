@@ -43,7 +43,7 @@ public:
     void addBurnMethods(QStringList burnMethodsMap);
 
 protected slots:
-    void receive_gui();
+    void receive_gui(QByteArray recvData);
 
 private slots:
     void on_BrowseHexFile_Button_clicked();

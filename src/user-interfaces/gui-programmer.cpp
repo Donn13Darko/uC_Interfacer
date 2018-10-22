@@ -23,11 +23,14 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_PROGRAMMER)
 {
-    // Init UI and variables
+    // Setup UI
     ui->setupUi(this);
-    loadedHex = QByteArray();
-    curr_hexFormat = 0;
+
+    // Set GUI Type
     guiType = GUI_TYPE_PROGRAMMER;
+
+    // Init variables
+    curr_hexFormat = 0;
 
     // Read config settings
     QMap<QString, QMap<QString, QVariant>*>* configMap = \
@@ -45,9 +48,8 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     // Delete map after use
     GUI_HELPER::deleteConfigMap(configMap);
 
-    // Setup UI for user
-    ui->ReadAll_Radio->setChecked(true);
-    on_readSelect_buttonClicked(0);
+    // Reset GUI
+    reset_gui();
 }
 
 GUI_PROGRAMMER::~GUI_PROGRAMMER()
@@ -57,10 +59,17 @@ GUI_PROGRAMMER::~GUI_PROGRAMMER()
 
 void GUI_PROGRAMMER::reset_gui()
 {
+    // Clear received data
     on_ClearReadData_Button_clicked();
 
+    // Clear entered data
     ui->HexFile_LineEdit->clear();
     ui->HexPreview_PlainText->clear();
+    loadedHex.clear();
+
+    // Reset radio selection
+    ui->ReadAll_Radio->setChecked(true);
+    on_readSelect_buttonClicked(0);
 }
 
 void GUI_PROGRAMMER::addHexFormats(QStringList hexFormatsMap)
@@ -112,22 +121,19 @@ void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
     on_BurnMethod_Combo_currentIndexChanged(0);
 }
 
-void GUI_PROGRAMMER::receive_gui()
+void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
 {
     // Remove Major key, minor key, and byte length
-    rcvd_raw.remove(0, s1_end_loc);
+    recvData.remove(0, s1_end_loc);
 
     // Insert into global array (for saving in original format)
-    rcvd_formatted.append(rcvd_raw);
+    rcvd_formatted.append(recvData);
 
     // Insert plaintext at end
     QTextCursor prev_cursor = ui->ReadData_PlainText->textCursor();
     ui->ReadData_PlainText->moveCursor(QTextCursor::End);
-    ui->ReadData_PlainText->insertPlainText(QString(rcvd_raw));
+    ui->ReadData_PlainText->insertPlainText(QString(recvData));
     ui->ReadData_PlainText->setTextCursor(prev_cursor);
-
-    // Clear byte array
-    rcvd_raw.clear();
 }
 
 void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()

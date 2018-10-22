@@ -42,19 +42,14 @@ public:
     void reset_gui();
     void parseConfigMap(QMap<QString, QVariant>* configMap);
 
-protected slots:
-    void receive_gui();
-
 private slots:
-    void on_ResetGUI_Button_clicked();
-
     void DIO_ComboChanged();
     void DIO_SliderValueChanged();
-    void DIO_TextValueChanged();
+    void DIO_LineEditValueChanged();
 
     void AIO_ComboChanged();
     void AIO_SliderValueChanged();
-    void AIO_TextValueChanged();
+    void AIO_LineEditValueChanged();
 
     void updateValues();
     void recordLogData();
@@ -76,22 +71,17 @@ private slots:
 protected:
     Ui::GUI_8AIO_16DIO_COMM *ui;
 
-    void setNumPins(uint8_t pinType, uint8_t num_dev_pins, uint8_t start_num);
-    void setCombos(uint8_t pinTypes, QList<QString> combos);
-
     void setConTypes(QStringList connTypes, QList<char> mapValues);
+
+    virtual bool isDataRequest(uint8_t minorKey);
+    virtual void setValues(uint8_t pinType, QByteArray values);
+    virtual bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 
 private:
     void initialize();
     void setupUpdaters();
 
     void connectUniversalSlots();
-
-    void setValues(uint8_t pinType, QByteArray values);
-
-    void recordPinValues(PinTypeInfo *pInfo);
-
-    bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 };
 
 #endif // GUI_8AIO_16DIO_COMM_H

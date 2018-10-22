@@ -36,14 +36,14 @@ public:
     void reset_gui();
 
 protected slots:
-    void receive_gui();
+    void receive_gui(QByteArray recvData);
 
 private slots:
     void on_SaveFeedback_Button_clicked();
     void on_BrowseFile_Button_clicked();
     void on_ClearFeedback_Button_clicked();
 
-    void on_sendCustomCMD_Button_clicked();
+    void on_SendCustomCMD_Button_clicked();
 
     void on_cmdSelect_buttonClicked(int);
 
