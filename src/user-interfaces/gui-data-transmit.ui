@@ -58,8 +58,14 @@
      <height>191</height>
     </rect>
    </property>
+   <property name="undoRedoEnabled">
+    <bool>false</bool>
+   </property>
    <property name="readOnly">
     <bool>true</bool>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
    </property>
   </widget>
   <widget class="QPushButton" name="ClearReceived_Button">

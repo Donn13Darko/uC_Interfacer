@@ -25,7 +25,7 @@
 #include <QSettings>
 #include <QProcess>
 
-uint8_t GUI_BASE::chunkSize = 32;
+uint8_t GUI_BASE::chunk_size = GUI_BASE::default_chunk_size;
 bool GUI_BASE::generic_checksum_is_exe = false;
 QString GUI_BASE::generic_checksum_exe_path = "";
 checksum_struct GUI_BASE::generic_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
@@ -78,9 +78,9 @@ void GUI_BASE::reset_remote()
     rcvd_formatted.clear();
 }
 
-void GUI_BASE::set_chunkSize(size_t chunk)
+void GUI_BASE::set_chunk_size(size_t chunk)
 {
-    GUI_BASE::chunkSize = chunk;
+    GUI_BASE::chunk_size = chunk;
 }
 
 void GUI_BASE::set_gui_checksum(QString new_gui_checksum)
@@ -110,6 +110,11 @@ void GUI_BASE::reset_gui()
     // Default do nothing
 }
 
+uint8_t GUI_BASE::get_GUI_type()
+{
+    return gui_type;
+}
+
 void GUI_BASE::receive(QByteArray recvData)
 {
     // Add data to recv
@@ -133,7 +138,7 @@ void GUI_BASE::receive(QByteArray recvData)
         {
             // Set generic checksum executable if using
             if (generic_checksum_is_exe)
-                set_executable_checksum_other(generic_checksum_exe_path.toUtf8().constData());
+                set_executable_checksum_exe(generic_checksum_exe_path.toUtf8().constData());
 
             // Verify enough bytes
             checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
@@ -154,7 +159,7 @@ void GUI_BASE::receive(QByteArray recvData)
         } else
         {
             // Set gui checksum executable if using
-            if (gui_checksum_is_exe) set_executable_checksum_other(gui_checksum_exe_path.toUtf8().constData());
+            if (gui_checksum_is_exe) set_executable_checksum_exe(gui_checksum_exe_path.toUtf8().constData());
             checksum_size = gui_checksum.get_checksum_size();
 
             // Check if second stage & checksum in rcvd
@@ -235,6 +240,10 @@ void GUI_BASE::send_file_chunked(QByteArray start, QString filePath, char sep)
 
 void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
 {
+    // Verify this will terminate
+    if (chunk_size == 0) return;
+
+    // Parse and send data
     QByteArray data, curr;
     uint32_t pos = 0;
     uint32_t end_pos = chunk.length();
@@ -245,7 +254,7 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
         data.append(start);
 
         // Get next data chunk and add info
-        curr = chunk.mid(pos, chunkSize);
+        curr = chunk.mid(pos, chunk_size);
         data.append((char) curr.length());
         data.append(curr);
 
@@ -253,7 +262,7 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
         transmit(data);
 
         // Increment position counter
-        pos += chunkSize;
+        pos += chunk_size;
     }
 }
 
@@ -434,11 +443,11 @@ void GUI_BASE::getChecksum(const uint8_t* data, uint8_t data_len,
 {
     // Get checksum
     checksum_struct check;
-    if (checksum_key == (char) guiType)
+    if (checksum_key == (char) gui_type)
     {
         // Set executable if using
         if (gui_checksum_is_exe)
-            set_executable_checksum_other(gui_checksum_exe_path.toUtf8().constData());
+            set_executable_checksum_exe(gui_checksum_exe_path.toUtf8().constData());
 
         // Set checksum info
         check = gui_checksum;
@@ -446,7 +455,7 @@ void GUI_BASE::getChecksum(const uint8_t* data, uint8_t data_len,
     {
         // Set executable if using
         if (generic_checksum_is_exe)
-            set_executable_checksum_other(generic_checksum_exe_path.toUtf8().constData());
+            set_executable_checksum_exe(generic_checksum_exe_path.toUtf8().constData());
 
         // Set checksum info
         check = GUI_BASE::generic_checksum;

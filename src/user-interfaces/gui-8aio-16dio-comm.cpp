@@ -202,7 +202,7 @@ void GUI_8AIO_16DIO_COMM::updateValues()
     else return;
 
     send({
-             guiType,
+             gui_type,
              requestType,
              0
          });

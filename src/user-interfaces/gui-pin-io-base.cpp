@@ -22,7 +22,7 @@ GUI_PIN_BASE::GUI_PIN_BASE(QWidget *parent) :
     GUI_BASE(parent)
 {
     // Set GUI Type
-    guiType = GUI_TYPE_IO;
+    gui_type = GUI_TYPE_IO;
 }
 
 GUI_PIN_BASE::~GUI_PIN_BASE()
@@ -182,7 +182,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset)
     // Send major/minor keys & data to uC
     uint16_t v = (uint16_t) VAL.toInt();
     send_chunk({
-                   guiType,                     // Major Key
+                   gui_type,                    // Major Key
                    pInfo->minorKey,             // Minor Key
                },
                {

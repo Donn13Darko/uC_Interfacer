@@ -33,15 +33,9 @@ COMMS_BASE::~COMMS_BASE()
 
 void COMMS_BASE::open()
 {
-    connected = true;
-
-    if (isConnected())
-    {
-        emit deviceConnected();
-    } else
-    {
-        emit deviceDisconnected();
-    }
+    // Default never allow connection
+    connected = false;
+    emit deviceDisconnected();
 }
 
 bool COMMS_BASE::isConnected()
@@ -58,7 +52,7 @@ void COMMS_BASE::write(QByteArray writeData)
 {
     writeLock->lock();
 
-    qDebug() << "S: " << writeData;
+    qDebug() << "DS: " << writeData;
 
     writeLock->unlock();
 }
@@ -69,7 +63,7 @@ void COMMS_BASE::read()
 
     QByteArray recvData;
     emit readyRead(recvData);
-    qDebug() << "R: " << recvData;
+    qDebug() << "DR: " << recvData;
 
     readLock->unlock();
 }

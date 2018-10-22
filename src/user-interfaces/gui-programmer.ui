@@ -49,19 +49,6 @@
     <string>Browse</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="SaveReadData_Button">
-   <property name="geometry">
-    <rect>
-     <x>760</x>
-     <y>370</y>
-     <width>111</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Save Read Data</string>
-   </property>
-  </widget>
   <widget class="QPlainTextEdit" name="ReadData_PlainText">
    <property name="geometry">
     <rect>
@@ -71,37 +58,14 @@
      <height>291</height>
     </rect>
    </property>
+   <property name="undoRedoEnabled">
+    <bool>false</bool>
+   </property>
    <property name="readOnly">
     <bool>true</bool>
    </property>
-  </widget>
-  <widget class="QPushButton" name="BurnData_Button">
-   <property name="geometry">
-    <rect>
-     <x>280</x>
-     <y>370</y>
-     <width>131</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Burn to Device</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="ReadData_Button">
-   <property name="geometry">
-    <rect>
-     <x>610</x>
-     <y>370</y>
-     <width>121</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="toolTip">
-    <string/>
-   </property>
-   <property name="text">
-    <string>Read from Device</string>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
    </property>
   </widget>
   <widget class="QLabel" name="ReadData_Label">
@@ -138,12 +102,12 @@
     <rect>
      <x>20</x>
      <y>80</y>
-     <width>211</width>
+     <width>71</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>Hex Preview: [NN Addr TT Data CC]</string>
+    <string>Hex Preview</string>
    </property>
   </widget>
   <widget class="QLabel" name="BurnMethod_Label">
@@ -180,19 +144,6 @@
      <width>131</width>
      <height>22</height>
     </rect>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="RefreshPreview_Button">
-   <property name="geometry">
-    <rect>
-     <x>50</x>
-     <y>370</y>
-     <width>131</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Refresh Preview</string>
    </property>
   </widget>
   <widget class="QComboBox" name="BurnMethod_Combo">
@@ -285,23 +236,10 @@
     <bool>false</bool>
    </property>
    <property name="textInteractionFlags">
-    <set>Qt::LinksAccessibleByMouse</set>
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
    </property>
    <property name="backgroundVisible">
     <bool>false</bool>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="ClearReadData_Button">
-   <property name="geometry">
-    <rect>
-     <x>470</x>
-     <y>370</y>
-     <width>111</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Clear Read Data</string>
    </property>
   </widget>
   <widget class="QPushButton" name="ResetGUI_Button">
@@ -317,6 +255,127 @@
     <string>RESET</string>
    </property>
    <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="SaveReadData_Button">
+   <property name="geometry">
+    <rect>
+     <x>770</x>
+     <y>370</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save Read</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="ReadData_Button">
+   <property name="geometry">
+    <rect>
+     <x>640</x>
+     <y>370</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Read Data</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="ClearReadData_Button">
+   <property name="geometry">
+    <rect>
+     <x>500</x>
+     <y>370</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Clear Read</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="BurnData_Button">
+   <property name="geometry">
+    <rect>
+     <x>360</x>
+     <y>370</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Burn Hex</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="RefreshPreview_Button">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>370</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Refresh Hex</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="HexFormat_Label_2">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>360</y>
+     <width>71</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Hex Regex:</string>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="HexRegex_PlainText">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>90</x>
+     <y>360</y>
+     <width>161</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Sunken</enum>
+   </property>
+   <property name="undoRedoEnabled">
+    <bool>false</bool>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+   </property>
+   <property name="backgroundVisible">
     <bool>false</bool>
    </property>
   </widget>

@@ -34,7 +34,7 @@
 #include "crc-32-lut.h"
 #include "crc-32-poly.h"
 
-// Calls and executabe to produce the checksum
-#include "checksum-other.h"
+// Calls an executabe to produce the checksum
+#include "checksum-exe.h"
 
 #endif // CHECKSUMS_H

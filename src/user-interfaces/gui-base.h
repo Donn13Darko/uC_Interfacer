@@ -45,12 +45,16 @@ public:
     void set_gui_checksum(checksum_struct new_gui_checksum);
 
     // Static functions
-    static void set_chunkSize(size_t chunk);
+    static void set_chunk_size(size_t chunk);
     static void set_generic_checksum(QString new_generic_checksum);
     static void set_generic_checksum(checksum_struct new_generic_checksum);
 
     // Virtual functions
     virtual void reset_gui();
+    virtual uint8_t get_GUI_type();
+
+    // Static members
+    static const uint8_t default_chunk_size = 32;
 
 signals:
     void write_data(QByteArray data);
@@ -70,7 +74,7 @@ protected slots:
 protected:
     // Local variables
     const float S2MS = 1000.0f;
-    uint8_t guiType;
+    uint8_t gui_type;
 
     // Receive arrays
     QByteArray rcvd_formatted;
@@ -128,7 +132,7 @@ private:
     checksum_struct gui_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
 
     // Static class members
-    static uint8_t chunkSize;
+    static uint8_t chunk_size;
     static bool generic_checksum_is_exe;
     static QString generic_checksum_exe_path;
     static checksum_struct generic_checksum;

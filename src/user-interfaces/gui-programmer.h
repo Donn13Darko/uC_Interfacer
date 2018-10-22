@@ -63,12 +63,11 @@ private slots:
 private:
     Ui::GUI_PROGRAMMER *ui;
 
-    QByteArray loadedHex;
-    int curr_hexFormat;
-
+    QString curr_hexFormat;
     QMap<QString, QRegularExpression> hexFormats;
     QMap<QString, QString> burnMethods;
 
+    QByteArray loadedHex;
     QString format_hex(QByteArray rawHex);
 };
 

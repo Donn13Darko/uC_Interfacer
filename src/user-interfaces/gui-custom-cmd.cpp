@@ -27,7 +27,7 @@ GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :
     ui->setupUi(this);
 
     // Set GUI Type
-    guiType = GUI_TYPE_CUSTOM_CMD;
+    gui_type = GUI_TYPE_CUSTOM_CMD;
 
     // Reset GUI
     reset_gui();
@@ -44,7 +44,7 @@ void GUI_CUSTOM_CMD::reset_gui()
     on_ClearFeedback_Button_clicked();
 
     // Set default entered values
-    ui->MajorKey_LineEdit->setText(QString::number(guiType));
+    ui->MajorKey_LineEdit->setText(QString::number(gui_type));
     ui->MinorKey_LineEdit->setText("0");
     ui->KeyBase_LineEdit->setText("10");
     ui->CustomCMDBase_LineEdit->setText("0");

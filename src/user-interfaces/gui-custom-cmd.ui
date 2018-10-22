@@ -119,8 +119,14 @@
      <height>301</height>
     </rect>
    </property>
+   <property name="undoRedoEnabled">
+    <bool>false</bool>
+   </property>
    <property name="readOnly">
     <bool>true</bool>
+   </property>
+   <property name="textInteractionFlags">
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
    </property>
   </widget>
   <widget class="QLabel" name="Instructions_Label">
@@ -155,7 +161,7 @@
     <bool>false</bool>
    </property>
    <property name="textInteractionFlags">
-    <set>Qt::LinksAccessibleByMouse</set>
+    <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
    </property>
    <property name="backgroundVisible">
     <bool>false</bool>

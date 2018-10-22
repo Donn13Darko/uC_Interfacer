@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef CHECKSUM_OTHER
-#define CHECKSUM_OTHER
+#ifndef CHECKSUM_EXE_H
+#define CHECKSUM_EXE_H
 
 #ifdef __cplusplus
 extern "C"
@@ -30,20 +30,33 @@ extern "C"
 #include <stdio.h>
 #include <string.h>
 
+/*
+ * Instructions: Uses command line arguments to
+ * retrieve the checksum.
+ *
+ * 1) ./checksum.exe -get_checksum data data_len checksum_start
+ *  The exe must print the checksum to stdout
+ * 2) ./checksum.exe -check_checksum data_checksum cmp_checksum
+ *  The exe must print 0 for false or 1 for true to stdout
+ * 3) ./checksum.exe -get_checksum_size
+ *  The exe must print the size as 4 bytes to stdout
+ *
+*/
+
 // Sets executable path for next calls
-void set_executable_checksum_other(const char* new_exe_path);
+void set_executable_checksum_exe(const char* new_exe_path);
 
 // Computes checksum for data_array with start value
-void get_checksum_other(const uint8_t* data_array, uint32_t data_len, uint8_t* checksum_start, uint8_t* data_checksum);
+void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, uint8_t* checksum_start, uint8_t* data_checksum);
 
 // Checks checksum
-bool check_checksum_other(const uint8_t* data_checksum, const uint8_t* cmp_checksum);
+bool check_checksum_exe(const uint8_t* data_checksum, const uint8_t* cmp_checksum);
 
 // Gets byte length of checksum
-uint32_t get_checksum_other_size();
+uint32_t get_checksum_exe_size();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // CHECKSUM_OTHER
+#endif // CHECKSUM_EXE_H

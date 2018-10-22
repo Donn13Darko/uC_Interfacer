@@ -27,10 +27,7 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     ui->setupUi(this);
 
     // Set GUI Type
-    guiType = GUI_TYPE_PROGRAMMER;
-
-    // Init variables
-    curr_hexFormat = 0;
+    gui_type = GUI_TYPE_PROGRAMMER;
 
     // Read config settings
     QMap<QString, QMap<QString, QVariant>*>* configMap = \
@@ -70,6 +67,11 @@ void GUI_PROGRAMMER::reset_gui()
     // Reset radio selection
     ui->ReadAll_Radio->setChecked(true);
     on_readSelect_buttonClicked(0);
+
+    // Reset hex format selection
+    ui->HexFormat_Combo->setCurrentIndex(0);
+    curr_hexFormat = ui->HexFormat_Combo->currentText();
+    on_HexFormat_Combo_activated(0);
 }
 
 void GUI_PROGRAMMER::addHexFormats(QStringList hexFormatsMap)
@@ -140,6 +142,9 @@ bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
 {
     switch (minorKey)
     {
+        case MINOR_KEY_PROGRAMMER_READ_ALL:
+        case MINOR_KEY_PROGRAMMER_READ_ADDR:
+            return true;
         default:
             return GUI_BASE::isDataRequest(minorKey);
     }
@@ -174,6 +179,7 @@ void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
 
 void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 {
+    //  [NN Addr TT Data CC]
     QByteArray data;
     QStringList curr;
     uint8_t prog_line_length;
@@ -188,13 +194,13 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
         {
             // Send Packet #1
             send({
-                     GUI_TYPE_PROGRAMMER,
+                     gui_type,
                      2
                  });
 
             // Send Packet #2
             data.clear();
-            data.append((char) MINOR_KEY_PROGRAMMER_ADDR);
+            data.append((char) MINOR_KEY_PROGRAMMER_SET_ADDR);
             data.append(QByteArray::fromHex(curr[3].toUtf8()));
             send(data);
         }
@@ -208,7 +214,7 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 
             // Send Package
             data.clear();
-            data.append((char) GUI_TYPE_PROGRAMMER);
+            data.append((char) gui_type);
             data.append((char) MINOR_KEY_PROGRAMMER_DATA);
             data.append((char) prog_line_length);
             data.append(QByteArray::fromHex(curr[4].toUtf8()));
@@ -238,11 +244,15 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_activated(int)
         } else
         {
             // Return to previous entry if change canceled
-            ui->HexFormat_Combo->setCurrentIndex(curr_hexFormat);
+            ui->HexFormat_Combo->setCurrentText(curr_hexFormat);
             return;
         }
     }
-    curr_hexFormat = ui->HexFormat_Combo->currentIndex();
+    curr_hexFormat = ui->HexFormat_Combo->currentText();
+
+    // Update regex string
+    ui->HexRegex_PlainText->setPlainText(hexFormats.value(curr_hexFormat).pattern());
+    ui->HexRegex_PlainText->moveCursor(QTextCursor::Start);
 
     // Only update format if file loaded
     if (loadedHex.isEmpty()) return;

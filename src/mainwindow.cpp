@@ -28,6 +28,17 @@
 #include <QMessageBox>
 #include <QFileDialog>
 
+// Setup supported GUIs list
+QStringList
+MainWindow::supportedGUIsList({
+                                  "GENERAL SETTINGS",
+                                  "Welcome",
+                                  "IO",
+                                  "Data Transmit",
+                                  "Programmer",
+                                  "Custom CMD"
+                             });
+
 // Setup supported GUIs map
 QMap<QString, uint8_t>
 MainWindow::supportedGUIsMap({
@@ -48,7 +59,7 @@ MainWindow::supportedChecksums({
                                    {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY}},
                                    {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT}},
                                    {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY}},
-                                   {"OTHER", {get_checksum_other_size, get_checksum_other, check_checksum_other}}
+                                   {"CHECKSUM_EXE", {get_checksum_exe_size, get_checksum_exe, check_checksum_exe}}
                                });
 
 // Setup static supported devices list
@@ -56,6 +67,7 @@ QStringList
 MainWindow::supportedDevicesList({
                                      "Arduino Uno",
                                      "PC",
+                                     "Local Programmer",
                                      "Other"
                                  });
 
@@ -72,15 +84,25 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-    // Setup base GUI items
+    // Setup ui
     ui->setupUi(this);
-    updateConnInfo = new QTimer();
+    setWindowFlags(windowFlags()
+                   | Qt::MSWindowsFixedSizeDialogHint);
+
+    // Setup Welcome widget
     welcome_tab = new GUI_WELCOME(this);
     welcome_tab_text = "Welcome";
 
+    // Setup More Options Dialog
+    more_options_settings.reset_on_tab_switch = true;
+    more_options_settings.send_little_endian = false;
+    more_options_settings.chunk_size = GUI_BASE::default_chunk_size;
+    more_options = new GUI_MORE_OPTIONS(&more_options_settings, supportedGUIsList, supportedChecksums.keys());
+
     // Set base parameters
-    device = nullptr;
     prev_tab = -1;
+    device = nullptr;
+    updateConnInfo = new QTimer();
 
     // Add specified values to combos
     ui->Device_Combo->clear();
@@ -109,6 +131,7 @@ MainWindow::~MainWindow()
     updateConnInfo->stop();
     delete updateConnInfo;
     delete welcome_tab;
+    delete more_options;
     delete ui;
 }
 
@@ -162,9 +185,9 @@ void MainWindow::on_Device_Combo_activated(int)
     if (deviceINI.isEmpty())
     {
         // Update welcome tab msg with failure
-        welcome_tab->setMsg("Failed to load config for "
+        welcome_tab->setMsg("Failed to locate config for "
                             + ui->Device_Combo->currentText()
-                            + "!\nReverted to Previous Config: "
+                            + "!\nReverted to previous config: "
                             + prev_deviceINI);
 
         // Revert to previous dev type
@@ -357,8 +380,8 @@ void MainWindow::on_DeviceConnected() {
                             checksum_type,
                             supportedChecksums.value("CRC_8_LUT")));
 
-            // If checksum_type == "OTHER", set other executable path
-            if (checksum_type == "OTHER")
+            // If checksum_type == "CHECKSUM_EXE", set executable path
+            if (checksum_type == "CHECKSUM_EXE")
             {
                 ((GUI_BASE*) tab_holder)->set_gui_checksum(
                             groupMap->value("checksum_exe").toString());
@@ -368,18 +391,24 @@ void MainWindow::on_DeviceConnected() {
             ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());
         }
 
+        // Handle any changes in more options
+        update_more_options();
+
         // Handle generic settings now that all tabs are loaded
         if (contains_general_settings)
         {
             // Get settings group
-            groupMap = configMap->value("GENERAL SETTINGS");
+            QString gui_name = getGUIName(GUI_TYPE_GENERAL_SETTINGS);
+            groupMap = configMap->value(gui_name);
 
             // Holder for each setting
             QString setting;
 
             // Check general checksum type setting
-            setting = groupMap->contains("checksum_type");
-            if (!setting.isEmpty())
+            // (only sets if not set at runtime in more options)
+            setting = groupMap->value("checksum_type").toString();
+            if (!setting.isEmpty()
+                    && !more_options_settings.checksum_map.contains(gui_name))
             {
                 // Only need to set one instance (static)
                 // Set checksum type struct
@@ -388,16 +417,32 @@ void MainWindow::on_DeviceConnected() {
                             supportedChecksums.value("CRC_8_LUT"));
                 GUI_BASE::set_generic_checksum(gen_check);
 
-                // If checksum_type == "OTHER", set other executable path
-                if (setting == "OTHER")
+                // If checksum_type == "CHECKSUM_EXE", set executable path
+                if (setting == "CHECKSUM_EXE")
                 {
                     QString checksum_exe_path = groupMap->value("checksum_exe").toString();
                     GUI_BASE::set_generic_checksum(checksum_exe_path);
                 }
             }
 
-            // Set base chunk size to config value or 32 if non-existant
-            GUI_BASE::set_chunkSize(groupMap->value("chunk_size", "32").toInt());
+            // Check reset tab setting (forces false from INI)
+            if (!groupMap->value("reset_tabs_on_switch", "true").toBool())
+            {
+                more_options_settings.reset_on_tab_switch = false;
+            }
+
+            // Check little endian setting (forces a true from INI)
+            if (groupMap->value("send_little_endian", "false").toBool())
+            {
+                more_options_settings.send_little_endian = true;
+            }
+
+            // Update chunk only if not changed from the default
+            if (more_options_settings.chunk_size == GUI_BASE::default_chunk_size)
+            {
+                // Set base chunk size to config value or default value if non-existant
+                GUI_BASE::set_chunk_size(groupMap->value("chunk_size", QString::number(GUI_BASE::default_chunk_size)).toInt());
+            }
         }
 
         // Enable signals for tab group
@@ -409,8 +454,9 @@ void MainWindow::on_DeviceConnected() {
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
 
-        // Call reset remote again (called first during freshen tabs)
+        // Call reset remote twice
         // Reseting generally fails the first time after new connection
+        reset_remote();
         reset_remote();
     } else
     {
@@ -468,10 +514,14 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
 
 void MainWindow::on_MoreOptions_Button_clicked()
 {
-    QMessageBox moreOptions(this);
+    // Reset More Options dialog
+    more_options->reset_gui();
 
-    moreOptions.exec();
-    return;
+    // Run dialog and set values if connected
+    if (more_options->exec() && deviceConnected())
+    {
+        update_more_options();
+    }
 }
 
 void MainWindow::on_ucOptions_currentChanged(int index)
@@ -511,7 +561,11 @@ void MainWindow::on_ucOptions_currentChanged(int index)
     prev_tab = index;
 
     // Reset the Remote for the new tab (if connected)
-    if (deviceConnected()) reset_remote();
+    if (deviceConnected()
+            && more_options_settings.reset_on_tab_switch)
+    {
+        reset_remote();
+    }
 }
 
 void MainWindow::updateConnInfoCombo()
@@ -676,11 +730,61 @@ uint8_t MainWindow::getGUIType(QString type)
     return supportedGUIsMap.value(type, GUI_TYPE_ERROR);
 }
 
+QString MainWindow::getGUIName(uint8_t type)
+{
+    return supportedGUIsList.at(type-(GUI_TYPE_ERROR+1));
+}
+
 QStringList MainWindow::getConnSpeeds()
 {
     switch (getConnType())
     {
         case CONN_TYPE_RS_232: return Serial_RS232::Baudrate_Defaults;
         default: return {};
+    }
+}
+
+void MainWindow::update_more_options()
+{
+    // Set global runtime values
+    // Set chunk size
+    GUI_BASE::set_chunk_size(more_options_settings.chunk_size);
+
+    // Set generic checksum
+    QStringList checksum_info;
+    QString gui_name = getGUIName(GUI_TYPE_GENERAL_SETTINGS);
+    if (more_options_settings.checksum_map.contains(gui_name))
+    {
+        // Get checksum setting
+        checksum_info = more_options_settings.checksum_map.value(gui_name);
+
+        // Set the new generic checksum
+        GUI_BASE::set_generic_checksum(checksum_info.at(1));
+        GUI_BASE::set_generic_checksum(supportedChecksums.value(checksum_info.at(0)));
+    }
+
+    // Set class values
+    QStringList checksum_changes = more_options_settings.checksum_map.keys();
+
+    // Iterate over each tab and apply any changes
+    GUI_BASE* tab_holder;
+    uint8_t num_tabs = ui->ucOptions->count();
+    for (uint8_t i = 0; i < num_tabs; i++)
+    {
+        // Get tab
+        tab_holder = (GUI_BASE*) ui->ucOptions->widget(i);
+        if (tab_holder == 0) continue;
+
+        // Set gui checksum
+        gui_name = getGUIName(tab_holder->get_GUI_type());
+        if (checksum_changes.contains(gui_name))
+        {
+            // Get checksum setting
+            checksum_info = more_options_settings.checksum_map.value(gui_name);
+
+            // Set the new gui checksum
+            tab_holder->set_gui_checksum(checksum_info.at(1));
+            tab_holder->set_gui_checksum(supportedChecksums.value(checksum_info.at(0)));
+        }
     }
 }

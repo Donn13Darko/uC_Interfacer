@@ -30,11 +30,14 @@ typedef enum {
     MINOR_KEY_PROGRAMMER_ERROR = 0,
 
     // Programer Set
-    MINOR_KEY_PROGRAMMER_SET,
+    MINOR_KEY_PROGRAMMER_SET_ADDR,
 
-    // Programmer Transfer
-    MINOR_KEY_PROGRAMMER_ADDR,
-    MINOR_KEY_PROGRAMMER_DATA
+    // Programmer Send
+    MINOR_KEY_PROGRAMMER_DATA,
+
+    // Programmer Read
+    MINOR_KEY_PROGRAMMER_READ_ALL,
+    MINOR_KEY_PROGRAMMER_READ_ADDR
 } MINOR_KEYS_PROGRAMMER;
 
 #ifdef __cplusplus

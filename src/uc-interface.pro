@@ -43,9 +43,10 @@ SOURCES += \
     checksums/crc-16-poly.c \
     checksums/crc-32-lut.c \
     checksums/crc-32-poly.c \
-    checksums/checksum-other.c \
     user-interfaces/gui-custom-cmd.cpp \
-    communication/comms-base.cpp
+    communication/comms-base.cpp \
+    checksums/checksum-exe.c \
+    gui-more-options.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -69,14 +70,15 @@ HEADERS += \
     checksums/crc-32-poly.h \
     user-interfaces/gui-pin-io-base-minor-keys.h \
     user-interfaces/gui-programmer-minor-keys.h \
-    checksums/checksum-other.h \
     user-interfaces/gui-custom-cmd.h \
     user-interfaces/gui-data-transmit-minor-keys.h \
     user-interfaces/gui-8aio-16dio-comm-minor-keys.h \
     user-interfaces/gui-custom-cmd-minor-keys.h \
     user-interfaces/gui-welcome-minor-keys.h \
     communication/comms-base.h \
-    user-interfaces/gui-base-major-keys.h
+    user-interfaces/gui-base-major-keys.h \
+    checksums/checksum-exe.h \
+    gui-more-options.h
 
 FORMS += \
     mainwindow.ui \
@@ -84,7 +86,8 @@ FORMS += \
     user-interfaces/gui-data-transmit.ui \
     user-interfaces/gui-programmer.ui \
     user-interfaces/gui-welcome.ui \
-    user-interfaces/gui-custom-cmd.ui
+    user-interfaces/gui-custom-cmd.ui \
+    gui-more-options.ui
 
 DISTFILES += \
     uc-interfaces/arduino_uno_uart/arduino_uno_uart.ino

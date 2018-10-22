@@ -26,6 +26,8 @@
 #include <QCloseEvent>
 #include <QSettings>
 
+#include "gui-more-options.h"
+
 #include "communication/serial-rs232.h"
 #include "communication/tcp-client.h"
 #include "communication/tcp-server.h"
@@ -39,6 +41,7 @@ typedef enum {
     DEV_TYPE_ERROR = 0,
     DEV_TYPE_ARDUINO_UNO,
     DEV_TYPE_PC,
+    DEV_TYPE_LOCAL_PROGRAMMER,
     DEV_TYPE_OTHER
 } DEV_TYPE;
 
@@ -87,14 +90,25 @@ private slots:
     void updateConnInfoCombo();
 
 private:
+    // Main GUI
     Ui::MainWindow *ui;
+
+    // Default Welcome tab
     GUI_WELCOME* welcome_tab;
     QString welcome_tab_text;
+
+    // More options dialog
+    GUI_MORE_OPTIONS* more_options;
+    MoreOptions_struct more_options_settings;
+
+    // Tab holder
     int prev_tab;
 
+    // Device helpers
     uint8_t deviceType;
     QString deviceINI;
 
+    static QStringList supportedGUIsList;
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
     static QMap<QString, uint8_t> supportedGUIsMap;
@@ -113,7 +127,10 @@ private:
     uint8_t getDevType();
     uint8_t getConnType();
     uint8_t getGUIType(QString type);
+    QString getGUIName(uint8_t type);
     QStringList getConnSpeeds();
+
+    void update_more_options();
 };
 
 #endif // MAINWINDOW_H
