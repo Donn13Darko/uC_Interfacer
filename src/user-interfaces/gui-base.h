@@ -41,17 +41,21 @@ public:
 
     void reset_remote();
 
-    void set_gui_checksum(QString new_gui_checksum);
-    void set_gui_checksum(checksum_struct new_gui_checksum);
+    // GUI Checksum functions
+    void set_gui_checksum(QStringList new_gui_checksum);
 
-    // Static functions
+    // Static checksum functions
+    static QStringList get_supported_checksums();
+    static void set_generic_checksum(QStringList new_generic_checksum);
+
+    // Other static functions
     static void set_chunk_size(size_t chunk);
-    static void set_generic_checksum(QString new_generic_checksum);
-    static void set_generic_checksum(checksum_struct new_generic_checksum);
+    static void parseGenericConfigMap(QMap<QString, QVariant>* configMap);
 
     // Virtual functions
     virtual void reset_gui();
     virtual uint8_t get_GUI_type();
+    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
     // Static members
     static const uint8_t default_chunk_size = 32;
@@ -127,15 +131,19 @@ private:
     QTimer dataTimer;
     QEventLoop dataLoop;
 
+    // GUI Checksum helpers
     bool gui_checksum_is_exe = false;
     QString gui_checksum_exe_path = "";
     checksum_struct gui_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+    QByteArray gui_checksum_start;
 
     // Static class members
     static uint8_t chunk_size;
     static bool generic_checksum_is_exe;
     static QString generic_checksum_exe_path;
     static checksum_struct generic_checksum;
+    static QByteArray generic_checksum_start;
+    static QMap<QString, checksum_struct> supportedChecksums;
 
     // Send to device
     void transmit(QByteArray data);

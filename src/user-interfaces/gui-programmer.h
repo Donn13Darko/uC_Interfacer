@@ -38,6 +38,8 @@ public:
     ~GUI_PROGRAMMER();
 
     virtual void reset_gui();
+    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+
     void addHexFormats(QStringList hexFormatsMap);
     void removeHexFormats(QStringList hexFormatsList);
     void addBurnMethods(QStringList burnMethodsMap);

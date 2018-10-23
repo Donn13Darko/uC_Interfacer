@@ -55,6 +55,12 @@ void GUI_CUSTOM_CMD::reset_gui()
     on_cmdSelect_buttonClicked(0);
 }
 
+void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant>* configMap)
+{
+    // Pass to parent for additional parsing
+    GUI_BASE::parseConfigMap(configMap);
+}
+
 void GUI_CUSTOM_CMD::on_SaveFeedback_Button_clicked()
 {
     save_rcvd_formatted();

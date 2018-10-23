@@ -54,6 +54,12 @@ void GUI_DATA_TRANSMIT::reset_gui()
     on_MSG_Sel_buttonClicked(0);
 }
 
+void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant>* configMap)
+{
+    // Pass to parent for additional parsing
+    GUI_BASE::parseConfigMap(configMap);
+}
+
 void GUI_DATA_TRANSMIT::on_MSG_Sel_buttonClicked(int)
 {
     if (ui->File_Radio->isChecked())

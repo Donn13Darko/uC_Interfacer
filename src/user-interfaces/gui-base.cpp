@@ -28,7 +28,20 @@
 uint8_t GUI_BASE::chunk_size = GUI_BASE::default_chunk_size;
 bool GUI_BASE::generic_checksum_is_exe = false;
 QString GUI_BASE::generic_checksum_exe_path = "";
-checksum_struct GUI_BASE::generic_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+checksum_struct GUI_BASE::generic_checksum = DEFAULT_CHECKSUM_STRUCT;
+QByteArray GUI_BASE::generic_checksum_start = QByteArray();
+
+// Setup suported checksums map
+QMap<QString, checksum_struct>
+GUI_BASE::supportedChecksums({
+                                 {"CRC_8_LUT", {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT}},
+                                 {"CRC_8_POLY", {get_crc_8_POLY_size, get_crc_8_POLY, check_crc_8_POLY}},
+                                 {"CRC_16_LUT", {get_crc_16_LUT_size, get_crc_16_LUT, check_crc_16_LUT}},
+                                 {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY}},
+                                 {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT}},
+                                 {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY}},
+                                 {"CHECKSUM_EXE", {get_checksum_exe_size, get_checksum_exe, check_checksum_exe}}
+                             });
 
 uint8_t num_s2_bytes;
 
@@ -78,31 +91,72 @@ void GUI_BASE::reset_remote()
     rcvd_formatted.clear();
 }
 
+void GUI_BASE::set_gui_checksum(QStringList new_gui_checksum)
+{
+    gui_checksum_exe_path = new_gui_checksum.at(checksum_exe_pos);
+    gui_checksum = supportedChecksums.value(
+                new_gui_checksum.at(checksum_name_pos),
+                DEFAULT_CHECKSUM_STRUCT
+                );
+    gui_checksum_is_exe = (gui_checksum.get_checksum == get_checksum_exe);
+
+    gui_checksum_start.clear();
+    uint8_t base = new_gui_checksum.at(checksum_start_base_pos).toInt();
+    QStringList new_gui_checksum_start = new_gui_checksum.at(checksum_start_pos).split(',');
+    for (auto byte = new_gui_checksum_start.cbegin(); byte != new_gui_checksum_start.cend(); byte++)
+    {
+        gui_checksum_start.append((char) byte->toInt(nullptr, base));
+    }
+}
+
+QStringList GUI_BASE::get_supported_checksums()
+{
+    return supportedChecksums.keys();
+}
+
+void GUI_BASE::set_generic_checksum(QStringList new_generic_checksum)
+{
+    GUI_BASE::generic_checksum_exe_path = new_generic_checksum.at(checksum_exe_pos);
+    GUI_BASE::generic_checksum = supportedChecksums.value(
+                new_generic_checksum.at(checksum_name_pos),
+                DEFAULT_CHECKSUM_STRUCT
+                );
+    GUI_BASE::generic_checksum_is_exe = (GUI_BASE::generic_checksum.get_checksum == get_checksum_exe);
+
+    GUI_BASE::generic_checksum_start.clear();
+    uint8_t base = new_generic_checksum.at(checksum_start_base_pos).toInt();
+    QStringList new_generic_checksum_start = new_generic_checksum.at(checksum_start_pos).split(',');
+    for (auto byte = new_generic_checksum_start.cbegin(); byte != new_generic_checksum_start.cend(); byte++)
+    {
+        GUI_BASE::generic_checksum_start.append((char) byte->toInt(nullptr, base));
+    }
+}
+
+void GUI_BASE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
+{
+    // Holder for each setting
+    QVariant setting;
+
+    // Check general checksum type setting
+    // (only sets if not set at runtime in more options)
+    setting = configMap->value("checksum_set");
+    if (!setting.isNull())
+    {
+        // Set generic checksum type
+        GUI_BASE::set_generic_checksum(setting.toStringList());
+    }
+
+    // Set chunk size
+    setting = configMap->value("chunk_size");
+    if (!setting.isNull())
+    {
+        GUI_BASE::set_chunk_size(setting.toUInt());
+    }
+}
+
 void GUI_BASE::set_chunk_size(size_t chunk)
 {
     GUI_BASE::chunk_size = chunk;
-}
-
-void GUI_BASE::set_gui_checksum(QString new_gui_checksum)
-{
-    gui_checksum_is_exe = true;
-    gui_checksum_exe_path = new_gui_checksum;
-}
-
-void GUI_BASE::set_gui_checksum(checksum_struct new_gui_checksum)
-{
-    gui_checksum = new_gui_checksum;
-}
-
-void GUI_BASE::set_generic_checksum(QString new_generic_checksum)
-{
-    GUI_BASE::generic_checksum_is_exe = true;
-    GUI_BASE::generic_checksum_exe_path = new_generic_checksum;
-}
-
-void GUI_BASE::set_generic_checksum(checksum_struct new_generic_checksum)
-{
-    GUI_BASE::generic_checksum = new_generic_checksum;
 }
 
 void GUI_BASE::reset_gui()
@@ -113,6 +167,20 @@ void GUI_BASE::reset_gui()
 uint8_t GUI_BASE::get_GUI_type()
 {
     return gui_type;
+}
+
+void GUI_BASE::parseConfigMap(QMap<QString, QVariant>* configMap)
+{
+    // Default variable for holding each setting
+    QVariant setting;
+
+    // Get gui type checksum
+    setting = configMap->value("checksum_set");
+    if (!setting.isNull())
+    {
+        // Set checksum type struct
+        set_gui_checksum(setting.toStringList());
+    }
 }
 
 void GUI_BASE::receive(QByteArray recvData)

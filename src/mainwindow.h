@@ -95,11 +95,12 @@ private:
 
     // Default Welcome tab
     GUI_WELCOME* welcome_tab;
-    QString welcome_tab_text;
+    QString welcome_tab_label;
 
     // More options dialog
     GUI_MORE_OPTIONS* more_options;
-    MoreOptions_struct more_options_settings;
+    MoreOptions_struct main_options_settings;
+    MoreOptions_struct* local_options_settings;
 
     // Tab holder
     int prev_tab;
@@ -112,7 +113,6 @@ private:
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
     static QMap<QString, uint8_t> supportedGUIsMap;
-    static QMap<QString, checksum_struct> supportedChecksums;
 
     QTimer *updateConnInfo;
     COMMS_BASE *device;
@@ -130,7 +130,7 @@ private:
     QString getGUIName(uint8_t type);
     QStringList getConnSpeeds();
 
-    void update_more_options();
+    void update_options(MoreOptions_struct *options);
 };
 
 #endif // MAINWINDOW_H

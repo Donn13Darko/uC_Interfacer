@@ -35,6 +35,7 @@ public:
     ~GUI_DATA_TRANSMIT();
 
     virtual void reset_gui();
+    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
 protected slots:
     virtual void receive_gui(QByteArray recvData);

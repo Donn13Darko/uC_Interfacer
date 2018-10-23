@@ -41,7 +41,7 @@ public:
     ~GUI_8AIO_16DIO_COMM();
 
     virtual void reset_gui();
-    void parseConfigMap(QMap<QString, QVariant>* configMap);
+    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
 private slots:
     void DIO_ComboChanged();

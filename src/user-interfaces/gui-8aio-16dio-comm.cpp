@@ -67,37 +67,23 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
         if (getPinTypeInfo(pinType, &pInfo))
         {
             // Set combo to start
-            for (uint8_t i = 0; i < pInfo.numPins_GUI; i++)
+            for (uint8_t i = 0; i < pInfo.numPins_DEV; i++)
             {
                 getPinLocation(&rowNum, &colNum, &pInfo, i);
 
-                // Set Combo
-                if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
+                // Reset Combo
+                if (getItemWidget(&item, pInfo.grid, rowNum, colNum+io_combo_pos))
                 {
                     item->blockSignals(true);
                     ((QComboBox*) item)->setCurrentIndex(0);
-                    item->blockSignals(false);
-                }
-
-                // Set Slider
-                if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
-                {
-                    item->blockSignals(true);
-                    ((QSlider*) item)->setValue(0);
-                    item->blockSignals(false);
-                }
-
-                // Set Text
-                if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
-                {
-                    item->blockSignals(true);
-                    ((QLineEdit*) item)->setText("0");
+                    inputsChanged(&pInfo, item, io_combo_pos);
                     item->blockSignals(false);
                 }
             }
         }
     }
 
+    // Clear any rcvd data
     rcvd_formatted.clear();
 
     // Reconnect sending slot
@@ -131,6 +117,9 @@ void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
     ui->ConnType_Combo->clear();
     ui->ConnType_Combo->addItems(controlMap.value(pInfo.pinType)->keys());
     ui->ConnType_Combo->blockSignals(false);
+
+    // Pass to parent for additional parsing
+    GUI_PIN_BASE::parseConfigMap(configMap);
 }
 
 void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()
@@ -139,8 +128,12 @@ void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()
     PinTypeInfo pInfo;
     if (!getPinTypeInfo(MINOR_KEY_IO_DIO_SET, &pInfo)) return;
 
-    // Set message for clicked button
-    inputsChanged(&pInfo, comboPos);
+    // Propogate updates
+    QByteArray data;
+    inputsChanged(&pInfo, sender(), io_combo_pos, &data);
+
+    // Send update
+    send_io(&pInfo, data);
 }
 
 void GUI_8AIO_16DIO_COMM::DIO_SliderValueChanged()
@@ -150,7 +143,11 @@ void GUI_8AIO_16DIO_COMM::DIO_SliderValueChanged()
     if (!getPinTypeInfo(MINOR_KEY_IO_DIO_SET, &pInfo)) return;
 
     // Set message for clicked button
-    inputsChanged(&pInfo, slideValuePos);
+    QByteArray data;
+    inputsChanged(&pInfo, sender(), io_slider_pos, &data);
+
+    // Send update
+    send_io(&pInfo, data);
 }
 
 void GUI_8AIO_16DIO_COMM::DIO_LineEditValueChanged()
@@ -160,7 +157,11 @@ void GUI_8AIO_16DIO_COMM::DIO_LineEditValueChanged()
     if (!getPinTypeInfo(MINOR_KEY_IO_DIO_SET, &pInfo)) return;
 
     // Set message for clicked button
-    inputsChanged(&pInfo, textValuePos);
+    QByteArray data;
+    inputsChanged(&pInfo, sender(), io_line_edit_pos, &data);
+
+    // Send update
+    send_io(&pInfo, data);
 }
 
 void GUI_8AIO_16DIO_COMM::AIO_ComboChanged()
@@ -170,7 +171,11 @@ void GUI_8AIO_16DIO_COMM::AIO_ComboChanged()
     if (!getPinTypeInfo(MINOR_KEY_IO_AIO_SET, &pInfo)) return;
 
     // Send message for edited button
-    inputsChanged(&pInfo, comboPos);
+    QByteArray data;
+    inputsChanged(&pInfo, sender(), io_combo_pos, &data);
+
+    // Send update
+    send_io(&pInfo, data);
 }
 
 void GUI_8AIO_16DIO_COMM::AIO_SliderValueChanged()
@@ -180,7 +185,11 @@ void GUI_8AIO_16DIO_COMM::AIO_SliderValueChanged()
     if (!getPinTypeInfo(MINOR_KEY_IO_AIO_SET, &pInfo)) return;
 
     // Send message for edited button
-    inputsChanged(&pInfo, slideValuePos);
+    QByteArray data;
+    inputsChanged(&pInfo, sender(), io_slider_pos, &data);
+
+    // Send update
+    send_io(&pInfo, data);
 }
 
 void GUI_8AIO_16DIO_COMM::AIO_LineEditValueChanged()
@@ -190,7 +199,11 @@ void GUI_8AIO_16DIO_COMM::AIO_LineEditValueChanged()
     if (!getPinTypeInfo(MINOR_KEY_IO_AIO_SET, &pInfo)) return;
 
     // Send message for edited button
-    inputsChanged(&pInfo, textValuePos);
+    QByteArray data;
+    inputsChanged(&pInfo, sender(), io_line_edit_pos, &data);
+
+    // Send update
+    send_io(&pInfo, data);
 }
 
 void GUI_8AIO_16DIO_COMM::updateValues()
@@ -391,11 +404,6 @@ void GUI_8AIO_16DIO_COMM::initialize()
     num_DIObuttons = 4;
     num_DIOpins_START = 0;
 
-    labelPos = 0;
-    comboPos = 1;
-    slideValuePos = 2;
-    textValuePos = 3;
-
     // Set log file parameters
     logFile = NULL;
     logStream = NULL;
@@ -428,7 +436,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         getPinLocation(&rowNum, &colNum, &pInfo, i);
 
         // Connect AIO Combo
-        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
+        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+io_combo_pos))
         {
             connect((QComboBox*) item, SIGNAL(currentIndexChanged(int)),
                     this, SLOT(AIO_ComboChanged()),
@@ -436,7 +444,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         }
 
         // Connect AIO Slider
-        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
+        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+io_slider_pos))
         {
             connect((QSlider*) item, SIGNAL(valueChanged(int)),
                     this, SLOT(AIO_SliderValueChanged()),
@@ -444,7 +452,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         }
 
         // Connect AIO Text
-        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
+        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+io_line_edit_pos))
         {
             connect((QLineEdit*) item, SIGNAL(editingFinished()),
                     this, SLOT(AIO_LineEditValueChanged()),
@@ -465,7 +473,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         getPinLocation(&rowNum, &colNum, &pInfo, i);
 
         // Connect DIO Combo
-        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+comboPos))
+        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+io_combo_pos))
         {
             connect((QComboBox*) item, SIGNAL(currentIndexChanged(int)),
                     this, SLOT(DIO_ComboChanged()),
@@ -473,7 +481,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         }
 
         // Connect DIO Slider
-        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+slideValuePos))
+        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+io_slider_pos))
         {
             connect((QSlider*) item, SIGNAL(valueChanged(int)),
                     this, SLOT(DIO_SliderValueChanged()),
@@ -481,7 +489,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         }
 
         // Connect DIO Text
-        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+textValuePos))
+        if (getItemWidget(&item, pInfo.grid, rowNum, colNum+io_line_edit_pos))
         {
             connect((QLineEdit*) item, SIGNAL(editingFinished()),
                     this, SLOT(DIO_LineEditValueChanged()),
@@ -559,12 +567,12 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
 
         getPinLocation(&rowNum, &colNum, &pInfo, pin_num++);
 
-        if (getItemWidget((QWidget**) &comboBox, pInfo.grid, rowNum, colNum+comboPos))
+        if (getItemWidget((QWidget**) &comboBox, pInfo.grid, rowNum, colNum+io_combo_pos))
         {
             comboVal = pinMap->value(comboBox->currentText());
             if (pinDisabledSet->contains(comboVal)
-                    && getItemWidget((QWidget**) &sliderValue, pInfo.grid, rowNum, colNum+slideValuePos)
-                    && getItemWidget((QWidget**) &textValue, pInfo.grid, rowNum, colNum+textValuePos))
+                    && getItemWidget((QWidget**) &sliderValue, pInfo.grid, rowNum, colNum+io_slider_pos)
+                    && getItemWidget((QWidget**) &textValue, pInfo.grid, rowNum, colNum+io_line_edit_pos))
             {
                 sliderValue->blockSignals(true);
                 textValue->blockSignals(true);

@@ -19,7 +19,6 @@
 #include "gui-welcome.h"
 #include "ui_gui-welcome.h"
 
-
 GUI_WELCOME::GUI_WELCOME(QWidget *parent) :
     GUI_BASE(parent),
     ui(new Ui::GUI_WELCOME)
@@ -55,4 +54,14 @@ void GUI_WELCOME::setMsg(QString text)
 QString GUI_WELCOME::getMsg()
 {
     return ui->msg_label->text();
+}
+
+void GUI_WELCOME::parseConfigMap(QMap<QString, QVariant>* configMap)
+{
+    // Parse individual values
+    setHeader(configMap->value("header", "Welcome").toString());
+    setMsg(configMap->value("msg").toString());
+
+    // Pass to parent for additional parsing
+    GUI_BASE::parseConfigMap(configMap);
 }

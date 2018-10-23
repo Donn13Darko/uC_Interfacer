@@ -39,9 +39,10 @@ public:
     void setMsg(QString text);
     QString getMsg();
 
+    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+
 private:
     Ui::GUI_WELCOME *ui;
-
 };
 
 #endif // GUI_WELCOME_H

@@ -11,8 +11,11 @@ typedef struct MoreOptions_struct {
     bool reset_on_tab_switch;
     bool send_little_endian;
     uint32_t chunk_size;
+    // (1) checksum_name, (2) checksum_start, (3) checksum_exe
     QMap<QString, QStringList> checksum_map;
 } MoreOptions_struct;
+
+#define DEFAULT_CHECKSUM QStringList({"CRC_8_LUT", "", "", ""})
 
 namespace Ui {
 class GUI_MORE_OPTIONS;
@@ -23,7 +26,7 @@ class GUI_MORE_OPTIONS : public QDialog
     Q_OBJECT
 
 public:
-    explicit GUI_MORE_OPTIONS(MoreOptions_struct* main_options, QStringList GUIs, QStringList checksums, QWidget *parent = 0);
+    explicit GUI_MORE_OPTIONS(MoreOptions_struct* main_options, MoreOptions_struct** local_options_ptr, QStringList GUIs, QStringList checksums, QWidget *parent = 0);
     ~GUI_MORE_OPTIONS();
 
     void reset_gui();
@@ -34,6 +37,7 @@ private slots:
     void on_ChecksumSet_Button_clicked();
     void on_BrowseEXE_Button_clicked();
 
+    void on_Undo_Button_clicked();
     void on_Apply_Button_clicked();
     void on_Cancel_Button_clicked();
     void on_OK_Button_clicked();
@@ -43,8 +47,10 @@ private:
     bool updated;
 
     MoreOptions_struct* main_options_ptr;
+    MoreOptions_struct local_options;
 
     void save_updates();
+    void reset_updates();
 };
 
 #endif // GUI_MORE_OPTIONS_H

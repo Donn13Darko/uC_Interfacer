@@ -72,6 +72,10 @@ typedef struct checksum_struct {
     void (*get_checksum) (const uint8_t*, uint32_t, uint8_t*, uint8_t*);
     bool (*check_checksum) (const uint8_t*, const uint8_t*);
 } checksum_struct;
+#define DEFAULT_CHECKSUM_STRUCT checksum_struct{ \
+    .get_checksum_size=get_crc_8_LUT_size, \
+    .get_checksum=get_crc_8_LUT, \
+    .check_checksum=check_crc_8_LUT}
 
 #ifdef __cplusplus
 }

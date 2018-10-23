@@ -64,6 +64,8 @@ public:
     GUI_PIN_BASE(QWidget *parent = 0);
     ~GUI_PIN_BASE();
 
+    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+
 protected slots:
     void recordPinValues(PinTypeInfo *pInfo);
     virtual void receive_gui(QByteArray recvData);
@@ -100,12 +102,15 @@ protected:
     uint8_t num_DIObuttons;
     uint8_t num_DIOpins_START;
 
-    uint8_t labelPos;
-    uint8_t comboPos;
-    uint8_t slideValuePos;
-    uint8_t textValuePos;
+    typedef enum {
+        io_label_pos = 0,
+        io_combo_pos,
+        io_slider_pos,
+        io_line_edit_pos
+    } io_gui_positions;
 
-    void inputsChanged(PinTypeInfo *pInfo, uint8_t colOffset);
+    void send_io(PinTypeInfo *pInfo, QByteArray data);
+    void inputsChanged(PinTypeInfo *pInfo, QObject* caller, uint8_t io_pos, QByteArray* data = nullptr);
     void updateSliderRange(QSlider *slider, RangeList *rList);
 
     void setNumPins(PinTypeInfo *pInfo, uint8_t num_dev_pins, uint8_t start_num);

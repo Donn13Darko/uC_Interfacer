@@ -181,7 +181,7 @@
    <property name="geometry">
     <rect>
      <x>240</x>
-     <y>140</y>
+     <y>170</y>
      <width>121</width>
      <height>20</height>
     </rect>
@@ -191,7 +191,7 @@
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>140</y>
+     <y>170</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -206,14 +206,76 @@
   <widget class="QLabel" name="ChecksumEXE_Label">
    <property name="geometry">
     <rect>
-     <x>170</x>
+     <x>180</x>
+     <y>170</y>
+     <width>51</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>EXE Path:</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="Undo_Button">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>260</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Undo</string>
+   </property>
+   <property name="autoDefault">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ChecksumStart_Label">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
      <y>140</y>
+     <width>81</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Checksum Start:</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="ChecksumStart_LineEdit">
+   <property name="geometry">
+    <rect>
+     <x>110</x>
+     <y>140</y>
+     <width>331</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="ChecksumStartBase_LineEdit">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>170</y>
+     <width>81</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ChecksumStartBase_Label">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>170</y>
      <width>61</width>
      <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>EXE Path:</string>
+    <string>Start Base:</string>
    </property>
   </widget>
  </widget>

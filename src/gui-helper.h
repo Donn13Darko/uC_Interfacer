@@ -23,6 +23,13 @@
 #include <QMap>
 #include <QVariant>
 
+typedef enum {
+    checksum_name_pos = 0,
+    checksum_start_pos,
+    checksum_start_base_pos,
+    checksum_exe_pos
+} checksum_locations;
+
 class GUI_HELPER : public QObject
 {
     Q_OBJECT

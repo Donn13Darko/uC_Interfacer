@@ -34,6 +34,7 @@ public:
     ~GUI_CUSTOM_CMD();
 
     virtual void reset_gui();
+    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
 protected slots:
     virtual void receive_gui(QByteArray recvData);

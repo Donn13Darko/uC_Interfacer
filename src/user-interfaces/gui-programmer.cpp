@@ -74,6 +74,17 @@ void GUI_PROGRAMMER::reset_gui()
     on_HexFormat_Combo_activated(0);
 }
 
+void GUI_PROGRAMMER::parseConfigMap(QMap<QString, QVariant>* configMap)
+{
+    // Parse individual values
+    addHexFormats(configMap->value("hex_formats").toStringList());
+    removeHexFormats(configMap->value("hex_formats_rm").toStringList());
+    addBurnMethods(configMap->value("burn_methods").toStringList());
+
+    // Pass to parent for additional parsing
+    GUI_BASE::parseConfigMap(configMap);
+}
+
 void GUI_PROGRAMMER::addHexFormats(QStringList hexFormatsMap)
 {
     QStringList hexFormat;
