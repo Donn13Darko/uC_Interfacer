@@ -292,7 +292,7 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
     switch (setting)
     {
         case IO_PWM:
-            if ((value != 0) && (value != 100))
+            if (value && (value != 100))
             {
                 value = (int) (PWM_SCALE * (float) value);
                 switch(pin_num)
@@ -318,8 +318,8 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
                 }
                 break;
             }
-            value = !!value;
-            // Fall through if 0 or 100 to set as digital pin
+            // Handle edge cases of 0 and 100
+            return uc_dio(pin_num, IO_OUTPUT, !!value);
         case IO_OUTPUT:
             if (pin_num < 8) PORTD = (PORTD & ~(1 << pin_num)) | (value << pin_num);
             else PORTB = (PORTB & ~(1 << (pin_num - 8))) | (value << (pin_num - 8));

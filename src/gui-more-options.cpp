@@ -79,6 +79,9 @@ void GUI_MORE_OPTIONS::on_Checksum_Combo_activated(int)
 
         // Update start value
         ui->ChecksumStart_LineEdit->setText(checksum_info.at(checksum_start_pos));
+
+        // Update start value
+        ui->ChecksumStartBase_LineEdit->setText(checksum_info.at(checksum_start_base_pos));
     }
 
     // Enable or disable EXE features
@@ -104,9 +107,10 @@ void GUI_MORE_OPTIONS::on_ChecksumSet_Button_clicked()
 
     // Save to local checksum info
     local_options.checksum_map.insert(gui, {checksum,
-                                           ui->ChecksumStart_LineEdit->text(),
-                                           exe}
-                                     );
+                                            ui->ChecksumStart_LineEdit->text(),
+                                            ui->ChecksumStartBase_LineEdit->text(),
+                                            exe}
+                                      );
 }
 
 void GUI_MORE_OPTIONS::on_BrowseEXE_Button_clicked()

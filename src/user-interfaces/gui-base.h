@@ -136,7 +136,7 @@ private:
     // GUI Checksum helpers
     bool gui_checksum_is_exe = false;
     QString gui_checksum_exe_path = "";
-    checksum_struct gui_checksum{get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+    checksum_struct gui_checksum = DEFAULT_CHECKSUM_STRUCT;
     QByteArray gui_checksum_start;
 
     // Static class members
@@ -149,8 +149,7 @@ private:
 
     // Send to device
     void transmit(QByteArray data);
-    void getChecksum(const uint8_t* data, uint8_t data_len,
-                     uint8_t checksum_key, uint8_t* checksum_start,
+    void getChecksum(const uint8_t* data, uint8_t data_len, uint8_t checksum_key,
                      uint8_t** checksum_array, uint32_t* checksum_size);
 };
 

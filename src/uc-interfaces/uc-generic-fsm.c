@@ -28,13 +28,13 @@
 #include "../checksums/crc-8-lut.h"
 
 // GUI checksums
-checksum_struct io_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
-checksum_struct data_transfer_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
-checksum_struct programmer_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
-checksum_struct custom_cmd_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+checksum_struct io_checksum = DEFAULT_CHECKSUM_STRUCT;
+checksum_struct data_transfer_checksum = DEFAULT_CHECKSUM_STRUCT;
+checksum_struct programmer_checksum = DEFAULT_CHECKSUM_STRUCT;
+checksum_struct custom_cmd_checksum = DEFAULT_CHECKSUM_STRUCT;
 
 // Default checksum (for acks, errors, and resets);
-checksum_struct default_checksum = {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT};
+checksum_struct default_checksum = DEFAULT_CHECKSUM_STRUCT;
 
 // Recv buffers
 uint8_t *fsm_buffer;
@@ -270,7 +270,7 @@ void fsm_send(uint8_t* data, uint32_t data_len)
     uint32_t checksum_size = check->get_checksum_size();
     uint8_t checksum_send_buffer[checksum_size];
     memset(checksum_send_buffer, 0, checksum_size);
-    check->get_checksum(data, data_len, (uint8_t*) &checksum_send_buffer, (uint8_t*) &checksum_send_buffer);
+    check->get_checksum(data, data_len, check->checksum_start, (uint8_t*) &checksum_send_buffer);
 
     // Try to send packet across
     do
@@ -335,9 +335,7 @@ bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp)
 {
     checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc]);
     uint32_t checksum_size = check->get_checksum_size();
-    uint8_t checksum_start[checksum_size];
-    memset(checksum_start, 0, checksum_size);
-    check->get_checksum(data, data_len, (uint8_t*) &checksum_start, fsm_checksum_cmp_buffer);
+    check->get_checksum(data, data_len, check->checksum_start, fsm_checksum_cmp_buffer);
     return check->check_checksum(checksum_cmp, fsm_checksum_cmp_buffer);
 }
 

@@ -68,13 +68,12 @@ extern uint8_t num_s2_bytes;
 
 typedef struct checksum_struct {
     uint32_t (*get_checksum_size) ();
-    void (*get_checksum) (const uint8_t*, uint32_t, uint8_t*, uint8_t*);
+    void (*get_checksum) (const uint8_t*, uint32_t, const uint8_t*, uint8_t*);
     bool (*check_checksum) (const uint8_t*, const uint8_t*);
+    const uint8_t* checksum_start;
+    const char* checksum_exe;
 } checksum_struct;
-#define DEFAULT_CHECKSUM_STRUCT checksum_struct{ \
-    .get_checksum_size=get_crc_8_LUT_size, \
-    .get_checksum=get_crc_8_LUT, \
-    .check_checksum=check_crc_8_LUT}
+#define DEFAULT_CHECKSUM_STRUCT {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT, 0, 0}
 
 #ifdef __cplusplus
 }

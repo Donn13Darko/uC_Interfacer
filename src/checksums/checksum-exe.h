@@ -47,7 +47,7 @@ extern "C"
 void set_executable_checksum_exe(const char* new_exe_path);
 
 // Computes checksum for data_array with start value
-void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, uint8_t* checksum_start, uint8_t* data_checksum);
+void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, const uint8_t* checksum_start, uint8_t* data_checksum);
 
 // Checks checksum
 bool check_checksum_exe(const uint8_t* data_checksum, const uint8_t* cmp_checksum);

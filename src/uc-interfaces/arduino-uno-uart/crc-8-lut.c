@@ -58,11 +58,12 @@ static const uint8_t __crc_8_LUT[256] =
     0xBA, 0x2B, 0x59, 0xC8, 0xBD, 0x2C, 0x5E, 0xCF
 };
 
-void get_crc_8_LUT(const uint8_t* data_array, uint32_t data_len, uint8_t* crc_start, uint8_t* data_crc)
+void get_crc_8_LUT(const uint8_t* data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t* data_crc)
 {
     // Make a copy of the pointer
     const uint8_t* data_p = data_array;
-    uint8_t crc = crc_start[0];
+    uint8_t crc = 0;
+    if (crc_start) crc = crc_start[0];
 
     // Compute the CRC based on the LUT
     while (data_len--)

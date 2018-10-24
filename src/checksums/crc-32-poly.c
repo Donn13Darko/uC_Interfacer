@@ -22,7 +22,7 @@
 static const uint32_t __crc_32_POLY = 0x105EC76F;
 static const uint8_t __crc_32_POLY_LEN = sizeof(uint32_t);
 
-void get_crc_32_POLY(const uint8_t* data_array, uint32_t data_len, uint8_t* crc_start, uint8_t* data_crc)
+void get_crc_32_POLY(const uint8_t* data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t* data_crc)
 {
     // Make a copy of the pointer
     const uint8_t *data_p = data_array;
@@ -30,9 +30,12 @@ void get_crc_32_POLY(const uint8_t* data_array, uint32_t data_len, uint8_t* crc_
     // Create the start crc number
     uint8_t i;
     uint32_t crc = 0;
-    for (i = 0; i < __crc_32_POLY_LEN; i++)
+    if (crc_start)
     {
-        crc = ((crc << 8) | crc_start[i]);
+        for (i = 0; i < __crc_32_POLY_LEN; i++)
+        {
+            crc = ((crc << 8) | crc_start[i]);
+        }
     }
 
     // Compute crc

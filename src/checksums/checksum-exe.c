@@ -28,7 +28,7 @@ void set_executable_checksum_exe(const char* new_exe_path)
     exe_len = strlen(exe_path);
 }
 
-void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, uint8_t* checksum_start, uint8_t* data_checksum)
+void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, const uint8_t *checksum_start, uint8_t* data_checksum)
 {
     // Get size of checksum
     uint32_t checksum_size = get_checksum_exe_size();
