@@ -200,6 +200,11 @@ void GUI_BASE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
     }
 }
 
+size_t GUI_BASE::get_chunk_size()
+{
+    return GUI_BASE::chunk_size;
+}
+
 void GUI_BASE::set_chunk_size(size_t chunk)
 {
     GUI_BASE::chunk_size = chunk;
@@ -341,8 +346,7 @@ void GUI_BASE::send(std::initializer_list<uint8_t> data)
 
 void GUI_BASE::send_file(QByteArray start, QString filePath)
 {
-    QByteArray fileData = GUI_HELPER::loadFile(filePath);
-    send_chunk(start, fileData);
+    send_chunk(start, GUI_HELPER::loadFile(filePath));
 }
 
 void GUI_BASE::send_file_chunked(QByteArray start, QString filePath, char sep)
@@ -358,10 +362,21 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
     // Verify this will terminate
     if (chunk_size == 0) return;
 
-    // Parse and send data
+    // Setup base variables
     QByteArray data, curr;
     uint32_t pos = 0;
     uint32_t end_pos = chunk.length();
+
+    // Send start of data chunk
+    // (if multiple packets are required)
+    if (chunk_size < end_pos)
+    {
+        data.append(start);
+        data.append((char) 0);
+        transmit(data);
+    }
+
+    // Send data chunk
     while (pos < end_pos)
     {
         // Clear data and add start array
@@ -378,6 +393,16 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
 
         // Increment position counter
         pos += chunk_size;
+    }
+
+    // Send end of data chunk
+    // (if multiple packets were required)
+    if (chunk_size < end_pos)
+    {
+        data.clear();
+        data.append(start);
+        data.append((char) 0);
+        transmit(data);
     }
 }
 

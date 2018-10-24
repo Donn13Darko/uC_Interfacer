@@ -483,10 +483,8 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
 
 void GUI_PIN_BASE::send_io(PinTypeInfo *pInfo, QByteArray data)
 {
-    send_chunk({
-                   gui_type,                    // Major Key
-                   pInfo->minorKey,             // Minor Key
-               }, data);
+    // Send msg (should only require a single send)
+    send_chunk({gui_type, pInfo->minorKey}, data);
 }
 
 RangeList* GUI_PIN_BASE::makeRangeList(QString rangeInfo)

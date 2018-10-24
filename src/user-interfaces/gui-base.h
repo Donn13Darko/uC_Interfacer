@@ -49,6 +49,7 @@ public:
     static void set_generic_checksum(QStringList new_generic_checksum);
 
     // Other static functions
+    static size_t get_chunk_size();
     static void set_chunk_size(size_t chunk);
     static void parseGenericConfigMap(QMap<QString, QVariant>* configMap);
 

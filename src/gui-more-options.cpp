@@ -151,10 +151,15 @@ void GUI_MORE_OPTIONS::on_OK_Button_clicked()
 
 void GUI_MORE_OPTIONS::save_updates()
 {
+    // Overwrite members of local_options
+    local_options.reset_on_tab_switch = ui->ResetOnTabSwitch_CheckBox->isChecked();
+    local_options.send_little_endian = ui->SendLittleEndian_CheckBox->isChecked();
+    local_options.chunk_size = ui->ChunkSize_LineEdit->text().toInt();
+
     // Overwrite members of main_options_ptr
-    main_options_ptr->reset_on_tab_switch = ui->ResetOnTabSwitch_CheckBox->isChecked();
-    main_options_ptr->send_little_endian = ui->SendLittleEndian_CheckBox->isChecked();
-    main_options_ptr->chunk_size = ui->ChunkSize_LineEdit->text().toInt();
+    main_options_ptr->reset_on_tab_switch = local_options.reset_on_tab_switch;
+    main_options_ptr->send_little_endian = local_options.send_little_endian;
+    main_options_ptr->chunk_size = local_options.chunk_size;
 
     // Save local checksum map
     foreach (QString key, local_options.checksum_map.keys())
