@@ -23,6 +23,9 @@
 #include "uc-generic-io.h"
 #include <Servo.h>
 
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+
 // Buffer Variables
 const int len = 32;
 
@@ -202,6 +205,7 @@ void uc_aio_read()
 // Set the DIO as per the command
 void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
 {
+    // If setting changed
     if (DIO_SET[pin_num] != setting)
     {
         switch (DIO_SET[pin_num])
@@ -210,26 +214,27 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
                 switch (pin_num)
                 {
                     case 3:
-                        TCCR2A &= ~(1 << COM2B1);
+                        cbi(TCCR2A, COM2B1);
                         break;
                     case 5:
-                        TCCR0A &= ~(1 << COM0B1);
+                        cbi(TCCR0A, COM0B1);
                         break;
                     case 6:
-                        TCCR0A &= ~(1 << COM0A1);
+                        cbi(TCCR0A, COM0A1);
                         break;
                     case 9:
-                        TCCR1A &= ~(1 << COM1A1);
+                        cbi(TCCR1A, COM1A1);
                         break;
                     case 10:
-                        TCCR1A &= ~(1 << COM1B1);
+                        cbi(TCCR1A, COM1B1);
                         break;
                     case 11:
-                        TCCR2A &= ~(1 << COM2A1);
+                        cbi(TCCR2A, COM2A1);
                         break;
                     default:
                         break;
                 }
+                break;
             case IO_SERVO_US:
             case IO_SERVO_DEG:
                 DIO_SERVO[pin_num].detach();
@@ -241,33 +246,34 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
         switch (setting)
         {
             case IO_INPUT:
-                if (pin_num < 8) DDRD &= ~(1 << pin_num);
-                else DDRB &= ~(1 << (pin_num - 8));
+                if (pin_num < 8) cbi(DDRD, pin_num);
+                else cbi(DDRD, pin_num - 8);
                 break;
             case IO_PWM:
                 switch (pin_num)
                 {
                     case 3:
-                        TCCR2A |= (1 << COM2B1);
+                        sbi(TCCR2A, COM2B1);
                         break;
                     case 5:
-                        TCCR0A |= (1 << COM0B1);
+                        sbi(TCCR0A, COM0B1);
                         break;
                     case 6:
-                        TCCR0A |= (1 << COM0A1);
+                        sbi(TCCR0A, COM0A1);
                         break;
                     case 9:
-                        TCCR1A |= (1 << COM1A1);
+                        sbi(TCCR1A, COM1A1);
                         break;
                     case 10:
-                        TCCR1A |= (1 << COM1B1);
+                        sbi(TCCR1A, COM1B1);
                         break;
                     case 11:
-                        TCCR2A |= (1 << COM2A1);
+                        sbi(TCCR2A, COM2A1);
                         break;
                     default:
                         break;
                 }
+                break;
             case IO_OUTPUT:
                 if (pin_num < 8) DDRD |= (1 << pin_num);
                 else DDRB |= (1 << (pin_num - 8));
@@ -312,10 +318,7 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
                 }
                 break;
             }
-            if (value == 100)
-            {
-              value = 1;
-            }
+            value = !!value;
             // Fall through if 0 or 100 to set as digital pin
         case IO_OUTPUT:
             if (pin_num < 8) PORTD = (PORTD & ~(1 << pin_num)) | (value << pin_num);
