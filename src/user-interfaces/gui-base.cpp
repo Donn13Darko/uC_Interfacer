@@ -465,6 +465,7 @@ void GUI_BASE::transmit(QByteArray data)
     // Exit if empty data array sent or performing reset
     if (data.isEmpty()) return;
 
+    // Don't load message if resetting and it isn't a reset
     bool isReset = (data.at(s1_major_key_loc) == (char) MAJOR_KEY_RESET);
     if (reset_dev && !isReset) return;
 
@@ -484,6 +485,7 @@ void GUI_BASE::transmit(QByteArray data)
         currData = msgList.takeFirst();
         ack_key = currData.at(s1_major_key_loc);
         ack_status = false;
+        data_status = false;
         isReset = (currData.at(s1_major_key_loc) == (char) MAJOR_KEY_RESET);
 
         // Get checksum
@@ -512,7 +514,6 @@ void GUI_BASE::transmit(QByteArray data)
                 && isDataRequest(currData.at(s1_minor_key_loc))
                 && !reset_dev)
         {
-            data_status = false;
             do
             {
                 // Wait for data packet back

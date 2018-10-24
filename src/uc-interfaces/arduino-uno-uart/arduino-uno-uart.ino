@@ -247,7 +247,7 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
         {
             case IO_INPUT:
                 if (pin_num < 8) cbi(DDRD, pin_num);
-                else cbi(DDRD, pin_num - 8);
+                else cbi(DDRB, pin_num - 8);
                 break;
             case IO_PWM:
                 switch (pin_num)
