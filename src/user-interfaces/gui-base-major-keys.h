@@ -57,7 +57,6 @@ typedef enum {
 } S1_Major_Settings;
 
 // Variables
-static const uint8_t packet_retries = 2;
 static const uint32_t packet_timeout = 500; // ms
 static const uint8_t num_s1_bytes = s1_end_loc;
 extern uint8_t num_s2_bytes;

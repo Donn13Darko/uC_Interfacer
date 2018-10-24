@@ -66,6 +66,7 @@ signals:
     void readyRead(QByteArray data);
     void connect_signals(bool connect);
     void ackChecked(bool ackStatus);
+    void resetting();
 
 protected slots:
     void receive(QByteArray recvData);
@@ -114,6 +115,7 @@ private:
     // Send helper variables
     QMutex sendLock;
     QList<QByteArray> msgList;
+    bool reset_dev;
 
     // Recv helper variables
     QMutex recvLock;

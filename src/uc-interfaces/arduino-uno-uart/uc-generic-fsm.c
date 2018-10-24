@@ -54,7 +54,7 @@ uint8_t* fsm_buffer_ptr;
 void fsm_ack(uint8_t ack_key);
 bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
 bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp);
-checksum_struct* fsm_get_checksum_struct();
+checksum_struct* fsm_get_checksum_struct(uint8_t gui_key);
 
 void fsm_setup(uint32_t buffer_len)
 {
@@ -118,7 +118,7 @@ void fsm_poll()
         }
 
         // Read Checksum
-        uint32_t checksum_size = fsm_get_checksum_struct()->get_checksum_size();
+        uint32_t checksum_size = fsm_get_checksum_struct(major_key)->get_checksum_size();
         if (!fsm_read_next(fsm_checksum_buffer, checksum_size, packet_timeout))
         {
             fsm_ack(MAJOR_KEY_ERROR);
@@ -191,7 +191,7 @@ bool fsm_isr()
     } else if (curr_packet_stage == 3)
     {
         // Only read if enough values present to not block
-        uint32_t checksum_size = fsm_get_checksum_struct()->get_checksum_size();
+        uint32_t checksum_size = fsm_get_checksum_struct(major_key)->get_checksum_size();
         if (uc_bytes_available() == checksum_size)
         {
             // Read Checksum with 0 timeout
@@ -228,9 +228,6 @@ bool fsm_isr()
 
 void fsm_run()
 {
-    // Remove fsm stage 1 info before passing to function
-    // fsm_buffer_ptr = fsm_buffer+num_s1_bytes;
-
     // Parse and act on major key
     switch (major_key)
     {
@@ -269,14 +266,13 @@ void fsm_ack(uint8_t ack_key)
 void fsm_send(uint8_t* data, uint32_t data_len)
 {
     // Construct checksum for data
-    checksum_struct* check = fsm_get_checksum_struct();
+    checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc]);
     uint32_t checksum_size = check->get_checksum_size();
     uint8_t checksum_send_buffer[checksum_size];
     memset(checksum_send_buffer, 0, checksum_size);
     check->get_checksum(data, data_len, (uint8_t*) &checksum_send_buffer, (uint8_t*) &checksum_send_buffer);
 
     // Try to send packet across
-    uint8_t i = 0;
     do
     {
         // Send data followed by checksum
@@ -290,9 +286,24 @@ void fsm_send(uint8_t* data, uint32_t data_len)
         // Read ack (happens only if if not sending an ack)
         fsm_read_next(fsm_ack_buffer, num_s1_bytes, packet_timeout);
         fsm_read_next(fsm_checksum_buffer, checksum_size, packet_timeout);
-        if (fsm_check_checksum(fsm_buffer, num_s1_bytes, fsm_checksum_buffer))
-            return;
-    } while (++i < packet_retries);
+        if (fsm_check_checksum(fsm_ack_buffer, num_s1_bytes, fsm_checksum_buffer))
+        {
+            // Handle ack errors or resets
+            switch (fsm_ack_buffer[s1_major_key_loc])
+            {
+                case MAJOR_KEY_ACK: // If keys match exit otherwise send again
+                    if (fsm_ack_buffer[s1_minor_key_loc] == data[s1_major_key_loc])
+                        return;
+                    break;
+                case MAJOR_KEY_RESET: // Reset and exit if reset received
+                    uc_reset();
+                    return;
+                default: // Default reset buffers and send again
+                    uc_reset_buffers();
+                    break;
+            }
+        }
+    } while (true);
 }
 
 bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
@@ -322,7 +333,7 @@ bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 
 bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp)
 {
-    checksum_struct* check = fsm_get_checksum_struct();
+    checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc]);
     uint32_t checksum_size = check->get_checksum_size();
     uint8_t checksum_start[checksum_size];
     memset(checksum_start, 0, checksum_size);
@@ -330,9 +341,9 @@ bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp)
     return check->check_checksum(checksum_cmp, fsm_checksum_cmp_buffer);
 }
 
-checksum_struct* fsm_get_checksum_struct()
+checksum_struct* fsm_get_checksum_struct(uint8_t gui_key)
 {
-    switch (major_key)
+    switch (gui_key)
     {
         case GUI_TYPE_IO:
             return &io_checksum;

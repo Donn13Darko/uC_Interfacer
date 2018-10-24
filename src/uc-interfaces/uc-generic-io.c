@@ -32,8 +32,8 @@ void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
         }
     } else
     {
-        value = ((((uint16_t) buffer[s2_io_value_high_loc]) << 8)
-                          | ((uint16_t) buffer[s2_io_value_low_loc]));
+        value = (buffer[s2_io_value_high_loc] << 8)
+                          | buffer[s2_io_value_low_loc];
     }
 
     // Parse and act on minor key

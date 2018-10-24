@@ -31,7 +31,7 @@ const uint8_t num_DIO = 14;
 uint8_t DIO_SET[num_DIO];
 uint16_t DIO_VAL[num_DIO];
 Servo DIO_SERVO[num_DIO];
-float PWM_SCALE = 255.0 / 100.0;
+float PWM_SCALE = (float) 255.0 / (float) 100.0;
 
 // Setup pin watch for AIO
 const uint8_t num_AIO = 6;
@@ -64,7 +64,7 @@ void setup()
     ADCSRA &= 0xFC; // Clear bits 1 & 0
     
     // Init Serial transfer
-    Serial.setTimeout(5000);
+    Serial.setTimeout(packet_timeout);
     Serial.begin(115200);
 
     // Init fsm
@@ -206,6 +206,30 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
     {
         switch (DIO_SET[pin_num])
         {
+            case IO_PWM:
+                switch (pin_num)
+                {
+                    case 3:
+                        TCCR2A &= ~(1 << COM2B1);
+                        break;
+                    case 5:
+                        TCCR0A &= ~(1 << COM0B1);
+                        break;
+                    case 6:
+                        TCCR0A &= ~(1 << COM0A1);
+                        break;
+                    case 9:
+                        TCCR1A &= ~(1 << COM1A1);
+                        break;
+                    case 10:
+                        TCCR1A &= ~(1 << COM1B1);
+                        break;
+                    case 11:
+                        TCCR2A &= ~(1 << COM2A1);
+                        break;
+                    default:
+                        break;
+                }
             case IO_SERVO_US:
             case IO_SERVO_DEG:
                 DIO_SERVO[pin_num].detach();
@@ -220,8 +244,31 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
                 if (pin_num < 8) DDRD &= ~(1 << pin_num);
                 else DDRB &= ~(1 << (pin_num - 8));
                 break;
-            case IO_OUTPUT:
             case IO_PWM:
+                switch (pin_num)
+                {
+                    case 3:
+                        TCCR2A |= (1 << COM2B1);
+                        break;
+                    case 5:
+                        TCCR0A |= (1 << COM0B1);
+                        break;
+                    case 6:
+                        TCCR0A |= (1 << COM0A1);
+                        break;
+                    case 9:
+                        TCCR1A |= (1 << COM1A1);
+                        break;
+                    case 10:
+                        TCCR1A |= (1 << COM1B1);
+                        break;
+                    case 11:
+                        TCCR2A |= (1 << COM2A1);
+                        break;
+                    default:
+                        break;
+                }
+            case IO_OUTPUT:
                 if (pin_num < 8) DDRD |= (1 << pin_num);
                 else DDRB |= (1 << (pin_num - 8));
                 break;
@@ -232,18 +279,47 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
             default:
                 return;
         }
-        
+
         DIO_SET[pin_num] = setting;
     }
 
-    switch (DIO_SET[pin_num])
+    switch (setting)
     {
+        case IO_PWM:
+            if ((value != 0) && (value != 100))
+            {
+                value = (int) (PWM_SCALE * (float) value);
+                switch(pin_num)
+                {
+                    case 3:
+                        OCR2B = value;
+                        break;
+                    case 5:
+                        OCR0B = value;
+                        break;
+                    case 6:
+                        OCR0A = value;
+                        break;
+                    case 9:
+                        OCR1A = value;
+                        break;
+                    case 10:
+                        OCR1B = value;
+                        break;
+                    case 11:
+                        OCR2A = value;
+                        break;
+                }
+                break;
+            }
+            if (value == 100)
+            {
+              value = 1;
+            }
+            // Fall through if 0 or 100 to set as digital pin
         case IO_OUTPUT:
             if (pin_num < 8) PORTD = (PORTD & ~(1 << pin_num)) | (value << pin_num);
             else PORTB = (PORTB & ~(1 << (pin_num - 8))) | (value << (pin_num - 8));
-            break;
-        case IO_PWM:
-            analogWrite(pin_num, (int) (PWM_SCALE * (float) value));
             break;
         case IO_SERVO_US:
             DIO_SERVO[pin_num].writeMicroseconds(value);

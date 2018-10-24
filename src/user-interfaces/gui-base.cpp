@@ -48,6 +48,9 @@ uint8_t num_s2_bytes;
 GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
 {
+    // Init general variables
+    reset_dev = false;
+
     // Init Ack variables
     ack_status = false;
     ack_key = MAJOR_KEY_ERROR;
@@ -65,12 +68,16 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
             &dataLoop, SLOT(quit()));
     connect(&dataTimer, SIGNAL(timeout()),
             &dataLoop, SLOT(quit()));
+    connect(this, SIGNAL(resetting()),
+            &dataLoop, SLOT(quit()));
 
     connect(this, SIGNAL(ackReceived(QByteArray)),
             this, SLOT(checkAck(QByteArray)));
     connect(this, SIGNAL(ackChecked(bool)),
             &ackLoop, SLOT(quit()));
     connect(&ackTimer, SIGNAL(timeout()),
+            &ackLoop, SLOT(quit()));
+    connect(this, SIGNAL(resetting()),
             &ackLoop, SLOT(quit()));
 }
 
@@ -80,8 +87,14 @@ GUI_BASE::~GUI_BASE()
 
 void GUI_BASE::reset_remote()
 {
+    // Enter reset
+    reset_dev = true;
+
     // Clear msg list
     msgList.clear();
+
+    // Emit resetting to break out of sends
+    emit resetting();
 
     // Send reset command
     send({MAJOR_KEY_RESET, 0, 0});
@@ -89,6 +102,9 @@ void GUI_BASE::reset_remote()
     // Clear buffers (prevents key errors after reset)
     rcvd_raw.clear();
     rcvd_formatted.clear();
+
+    // Exit reset
+    reset_dev = false;
 }
 
 void GUI_BASE::set_gui_checksum(QStringList new_gui_checksum)
@@ -295,7 +311,8 @@ void GUI_BASE::send(std::initializer_list<uint8_t> data)
 
 void GUI_BASE::send_file(QByteArray start, QString filePath)
 {
-    send_chunk(start, GUI_HELPER::loadFile(filePath));
+    QByteArray fileData = GUI_HELPER::loadFile(filePath);
+    send_chunk(start, fileData);
 }
 
 void GUI_BASE::send_file_chunked(QByteArray start, QString filePath, char sep)
@@ -445,8 +462,11 @@ void GUI_BASE::save_rcvd_formatted()
 
 void GUI_BASE::transmit(QByteArray data)
 {
-    // Exit if empty data array sent
+    // Exit if empty data array sent or performing reset
     if (data.isEmpty()) return;
+
+    bool isReset = (data.at(s1_major_key_loc) == (char) MAJOR_KEY_RESET);
+    if (reset_dev && !isReset) return;
 
     // Append to msgList
     msgList.append(data);
@@ -455,7 +475,6 @@ void GUI_BASE::transmit(QByteArray data)
     if (!sendLock.tryLock()) return;
 
     // Send all messages in list
-    uint8_t i;
     QByteArray currData;
     uint8_t* checksum_array;
     uint32_t checksum_size = 0;
@@ -465,6 +484,7 @@ void GUI_BASE::transmit(QByteArray data)
         currData = msgList.takeFirst();
         ack_key = currData.at(s1_major_key_loc);
         ack_status = false;
+        isReset = (currData.at(s1_major_key_loc) == (char) MAJOR_KEY_RESET);
 
         // Get checksum
         getChecksum((const uint8_t*) currData.data(), currData.length(),
@@ -477,8 +497,6 @@ void GUI_BASE::transmit(QByteArray data)
         delete[] checksum_array;
 
         // Send data and verify ack
-        // Retry packet_retries times
-        i = 0;
         do
         {
             // Emit write command to connected device
@@ -486,18 +504,20 @@ void GUI_BASE::transmit(QByteArray data)
 
             // Wait for CMD ack back
             waitForAck(packet_timeout);
-        } while (!ack_status && (++i < packet_retries));
+        } while (!ack_status && (!reset_dev || isReset));
 
-        // Wait for data read if CMD success and was request
-        if (ack_status && isDataRequest(currData.at(s1_minor_key_loc)))
+        // Wait for data read if CMD success and was data request
+        // Resets will never request data back (only an ack)
+        if (ack_status
+                && isDataRequest(currData.at(s1_minor_key_loc))
+                && !reset_dev)
         {
-            i = 0;
             data_status = false;
             do
             {
                 // Wait for data packet back
                 waitForData(packet_timeout);
-            } while (!data_status && (++i < packet_retries));
+            } while (!data_status && !reset_dev);
         }
     }
 

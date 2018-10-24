@@ -377,10 +377,9 @@ void MainWindow::on_DeviceConnected() {
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
 
-        // Call reset remote twice
-        // Reseting generally fails the first time after new connection
-        reset_remote();
-        reset_remote();
+        // Commands generally fail the first time after new connection
+        // Manually call reset remote (if shut off for tab switches)
+        if (!main_options_settings.reset_on_tab_switch) reset_remote();
     } else
     {
         GUI_HELPER::showMessage("Error: Unable to connect to target!");
