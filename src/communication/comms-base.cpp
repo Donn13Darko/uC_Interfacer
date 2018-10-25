@@ -21,12 +21,19 @@
 COMMS_BASE::COMMS_BASE(QObject *parent) :
     QObject(parent)
 {
+    // Create new locks
     readLock = new QMutex(QMutex::Recursive);
     writeLock = new QMutex(QMutex::Recursive);
+    initSuccess = (readLock && writeLock);
+    if (!initSuccess) return;
+
+    // Set variables
+    connected = false;
 }
 
 COMMS_BASE::~COMMS_BASE()
 {
+    // Delete locks
     delete readLock;
     delete writeLock;
 }
@@ -41,6 +48,11 @@ void COMMS_BASE::open()
 bool COMMS_BASE::isConnected()
 {
     return connected;
+}
+
+bool COMMS_BASE::initSuccessful()
+{
+    return initSuccess;
 }
 
 void COMMS_BASE::close()

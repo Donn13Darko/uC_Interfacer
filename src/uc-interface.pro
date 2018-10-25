@@ -36,7 +36,6 @@ SOURCES += \
     communication/tcp-client.cpp \
     communication/tcp-server.cpp \
     communication/udp-socket.cpp \
-    gui-helper.cpp \
     checksums/crc-8-lut.c \
     checksums/crc-8-poly.c \
     checksums/crc-16-lut.c \
@@ -46,7 +45,8 @@ SOURCES += \
     user-interfaces/gui-custom-cmd.cpp \
     communication/comms-base.cpp \
     checksums/checksum-exe.c \
-    gui-more-options.cpp
+    gui-helpers/gui-helper.cpp \
+    gui-helpers/gui-more-options.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -60,7 +60,6 @@ HEADERS += \
     communication/tcp-client.h \
     communication/tcp-server.h \
     communication/udp-socket.h \
-    gui-helper.h \
     checksums/checksums.h \
     checksums/crc-8-lut.h \
     checksums/crc-8-poly.h \
@@ -78,7 +77,8 @@ HEADERS += \
     communication/comms-base.h \
     user-interfaces/gui-base-major-keys.h \
     checksums/checksum-exe.h \
-    gui-more-options.h
+    gui-helpers/gui-helper.h \
+    gui-helpers/gui-more-options.h
 
 FORMS += \
     mainwindow.ui \
@@ -87,7 +87,7 @@ FORMS += \
     user-interfaces/gui-programmer.ui \
     user-interfaces/gui-welcome.ui \
     user-interfaces/gui-custom-cmd.ui \
-    gui-more-options.ui
+    gui-helpers/gui-more-options.ui
 
 DISTFILES += \
     uc-interfaces/arduino_uno_uart/arduino_uno_uart.ino

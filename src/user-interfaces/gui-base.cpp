@@ -50,6 +50,7 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
 {
     // Init general variables
     reset_dev = false;
+    exit_dev = false;
 
     // Init Ack variables
     ack_status = false;
@@ -70,6 +71,8 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
             &dataLoop, SLOT(quit()));
     connect(this, SIGNAL(resetting()),
             &dataLoop, SLOT(quit()));
+    connect(this, SIGNAL(exiting()),
+            &dataLoop, SLOT(quit()));
 
     connect(this, SIGNAL(ackReceived(QByteArray)),
             this, SLOT(checkAck(QByteArray)));
@@ -79,10 +82,21 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
             &ackLoop, SLOT(quit()));
     connect(this, SIGNAL(resetting()),
             &ackLoop, SLOT(quit()));
+    connect(this, SIGNAL(exiting()),
+            &ackLoop, SLOT(quit()));
 }
 
 GUI_BASE::~GUI_BASE()
 {
+    // Set exit to true
+    exit_dev = true;
+
+    // Clear local buffers
+    rcvd_raw.clear();
+    msgList.clear();
+
+    // Emit exiting to free resources
+    emit exiting();
 }
 
 void GUI_BASE::reset_remote()
@@ -215,9 +229,9 @@ void GUI_BASE::reset_gui()
     // Default do nothing
 }
 
-uint8_t GUI_BASE::get_GUI_type()
+uint8_t GUI_BASE::get_GUI_key()
 {
-    return gui_type;
+    return gui_key;
 }
 
 void GUI_BASE::parseConfigMap(QMap<QString, QVariant>* configMap)
@@ -245,7 +259,7 @@ void GUI_BASE::receive(QByteArray recvData)
     // Loop until break or rcvd is empty
     uint8_t expected_len;
     uint8_t rcvd_len = rcvd_raw.length();
-    while (0 < rcvd_len)
+    while ((0 < rcvd_len) && !exit_dev)
     {
         // Check to see if first stage in rcvd
         expected_len = num_s1_bytes;
@@ -450,7 +464,7 @@ void GUI_BASE::send_ack(uint8_t majorKey)
     // Delete checksum array (done using)
     delete[] checksum_array;
 
-    // Send ack immediatly
+    // Send ack immediately
     emit write_data(ack_packet);
 }
 
@@ -517,8 +531,8 @@ void GUI_BASE::save_rcvd_formatted()
 
 void GUI_BASE::transmit(QByteArray data)
 {
-    // Exit if empty data array sent or performing reset
-    if (data.isEmpty()) return;
+    // Exit if empty data array sent or exiting
+    if (data.isEmpty() || exit_dev) return;
 
     // Don't load message if resetting and it isn't a reset
     bool isReset = (data.at(s1_major_key_loc) == (char) MAJOR_KEY_RESET);
@@ -561,19 +575,20 @@ void GUI_BASE::transmit(QByteArray data)
 
             // Wait for CMD ack back
             waitForAck(packet_timeout);
-        } while (!ack_status && (!reset_dev || isReset));
+        } while (!ack_status && (!reset_dev || isReset) && !exit_dev);
 
         // Wait for data read if CMD success and was data request
         // Resets will never request data back (only an ack)
         if (ack_status
                 && isDataRequest(currData.at(s1_minor_key_loc))
-                && !reset_dev)
+                && !reset_dev
+                && !exit_dev)
         {
             do
             {
                 // Wait for data packet back
                 waitForData(packet_timeout);
-            } while (!data_status && !reset_dev);
+            } while (!data_status && !reset_dev && !exit_dev);
         }
     }
 
@@ -586,7 +601,7 @@ void GUI_BASE::getChecksum(const uint8_t* data, uint8_t data_len, uint8_t checks
 {
     // Get checksum
     checksum_struct check;
-    if (checksum_key == (char) gui_type)
+    if (checksum_key == (char) gui_key)
     {
         // Set checksum info
         check = gui_checksum;

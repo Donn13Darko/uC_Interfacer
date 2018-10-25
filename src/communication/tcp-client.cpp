@@ -21,7 +21,12 @@
 TCP_CLIENT::TCP_CLIENT(QString ip, int port, QObject *parent) :
     COMMS_BASE(parent)
 {
+    // Create new client
     client = new QTcpSocket(this);
+    initSuccess = (initSuccess && client);
+    if (!initSuccess) return;
+
+    // Set variables
     server_ip = ip;
     server_port = port;
 

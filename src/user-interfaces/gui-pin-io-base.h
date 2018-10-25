@@ -55,7 +55,6 @@ struct PinTypeInfo {
     .minorKey=0, .cols=0, .rows=0, .numButtons=0, \
     .numPins_GUI=0, .numPins_DEV=0, .numPins_START=0}
 
-
 class GUI_PIN_BASE : public GUI_BASE
 {
     Q_OBJECT

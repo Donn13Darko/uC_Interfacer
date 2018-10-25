@@ -43,6 +43,7 @@ GUI_8AIO_16DIO_COMM::GUI_8AIO_16DIO_COMM(QWidget *parent) :
 GUI_8AIO_16DIO_COMM::~GUI_8AIO_16DIO_COMM()
 {
     on_StopLog_Button_clicked();
+    on_StopUpdater_Button_clicked();
 
     delete ui;
 }
@@ -215,7 +216,7 @@ void GUI_8AIO_16DIO_COMM::updateValues()
     else return;
 
     send({
-             gui_type,
+             gui_key,
              requestType,
              0
          });
@@ -500,8 +501,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
 
 bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
 {
-    if (!GUI_PIN_BASE::getPinTypeInfo(pinType, infoPtr))
-        return false;
+    bool base = GUI_PIN_BASE::getPinTypeInfo(pinType, infoPtr);
 
     // Set ui pin type variables
     switch (pinType)
@@ -510,19 +510,20 @@ bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
         case MINOR_KEY_IO_AIO_SET:
         case MINOR_KEY_IO_AIO_READ:
             infoPtr->grid = ui->AIO_Grid;
-            return true;
+            return base;
         case MINOR_KEY_IO_DIO:
         case MINOR_KEY_IO_DIO_SET:
         case MINOR_KEY_IO_DIO_READ:
             infoPtr->grid = ui->DIO_Grid;
-            return true;
+            return base;
         case MINOR_KEY_IO_REMOTE_CONN:
         case MINOR_KEY_IO_REMOTE_CONN_SET:
         case MINOR_KEY_IO_REMOTE_CONN_READ:
+            // No info in pin base, set here
             infoPtr->pinType = MINOR_KEY_IO_REMOTE_CONN;
             return true;
         default:
-            return false;
+            return base;
     }
 }
 

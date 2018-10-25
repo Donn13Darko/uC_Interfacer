@@ -22,7 +22,7 @@ GUI_PIN_BASE::GUI_PIN_BASE(QWidget *parent) :
     GUI_BASE(parent)
 {
     // Set GUI Type
-    gui_type = GUI_TYPE_IO;
+    gui_key = MAJOR_KEY_IO;
 }
 
 GUI_PIN_BASE::~GUI_PIN_BASE()
@@ -158,10 +158,10 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
         {
             // Update values based on slider
             newVAL = ((float) sliderValue->value()) / rList->div;
-            if (pInfo->pinType != MINOR_KEY_IO_AIO) newVAL = qRound(newVAL);
+            if (pInfo->pinType == MINOR_KEY_IO_DIO) newVAL = qRound(newVAL);
 
             // If not combo change and number already correctly set,
-            // return to prevent double send
+            // return to prevent a double send
             if ((io_pos != io_combo_pos)
                     && (newVAL == textValue->text().toFloat()))
             {
@@ -178,7 +178,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
         {
             // Update values if text box changed
             newVAL = rList->div * textValue->text().toFloat();
-            if (pInfo->pinType != MINOR_KEY_IO_AIO) newVAL = qRound(newVAL);
+            if (pInfo->pinType == MINOR_KEY_IO_DIO) newVAL = qRound(newVAL);
 
             // Update slider value
             sliderValue->blockSignals(true);
@@ -484,7 +484,7 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
 void GUI_PIN_BASE::send_io(PinTypeInfo *pInfo, QByteArray data)
 {
     // Send msg (should only require a single send)
-    send_chunk({gui_type, pInfo->minorKey}, data);
+    send_chunk({gui_key, pInfo->minorKey}, data);
 }
 
 RangeList* GUI_PIN_BASE::makeRangeList(QString rangeInfo)

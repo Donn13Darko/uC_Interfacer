@@ -1,18 +1,13 @@
 <RCC>
     <qresource prefix="/">
-        <file>uc-interfaces/gui-arduino-uno.ini</file>
         <file>user-interfaces/gui-base.ini</file>
         <file>user-interfaces/gui-data-transmit.ini</file>
         <file>user-interfaces/gui-pin-io-base.ini</file>
         <file>user-interfaces/gui-programmer.ini</file>
         <file>user-interfaces/gui-welcome.ini</file>
-        <file>uc-interfaces/gui-pc.ini</file>
-        <file>uc-interfaces/uc-generic-fsm.c</file>
-        <file>uc-interfaces/uc-generic-fsm.h</file>
-        <file>uc-interfaces/uc-generic-io.c</file>
-        <file>uc-interfaces/uc-generic-io.h</file>
         <file>user-interfaces/gui-custom-cmd.ini</file>
-        <file>uc-interfaces/arduino-uno-uart-minor-keys.h</file>
         <file>user-interfaces/gui-8aio-16dio-comm.ini</file>
+        <file>uc-interfaces/arduino-uno-uart-example.ini</file>
+        <file>uc-interfaces/pc-example.ini</file>
     </qresource>
 </RCC>

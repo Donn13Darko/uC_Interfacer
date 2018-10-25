@@ -30,7 +30,7 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     ui->setupUi(this);
 
     // Set GUI Type
-    gui_type = GUI_TYPE_DATA_TRANSMIT;
+    gui_key = MAJOR_KEY_DATA_TRANSMIT;
 
     // Reset GUI
     reset_gui();
@@ -72,7 +72,7 @@ void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
 {
     // Create Key array (Major & Minor)
     QByteArray keys;
-    keys.append((char) gui_type);
+    keys.append((char) gui_key);
     keys.append((char) MINOR_KEY_DATA_TRANSMIT_DATA);
 
     // Find which radio button is selected

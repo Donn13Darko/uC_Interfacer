@@ -134,7 +134,7 @@ QMap<QString, QMap<QString, QVariant>*>* GUI_HELPER::readConfigINI(QString confi
     return configMap;
 }
 
-void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *> *configMap)
+void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *>* configMap)
 {
     QMap<QString, QVariant>* groupMap;
     foreach (QString group, configMap->keys())

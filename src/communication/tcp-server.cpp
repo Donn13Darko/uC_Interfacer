@@ -21,12 +21,22 @@
 TCP_SERVER::TCP_SERVER(int port, QObject *parent) :
     COMMS_BASE(parent)
 {
+    // Create new server
     server = new QTcpServer(this);
+    initSuccess = (initSuccess && server);
+    if (!initSuccess) return;
+
+    // Set new server values
     server->setMaxPendingConnections(1);
     server_client = nullptr;
     listen_port = port;
 
+    // Create new message box
     connecting_msg = new QMessageBox();
+    initSuccess = (initSuccess && connecting_msg);
+    if (!initSuccess) return;
+
+    // Set message box values
     connecting_msg->setText("Waiting for connection...");
     connecting_msg->addButton(QMessageBox::Cancel);
     connecting_msg->setModal(true);

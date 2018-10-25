@@ -23,7 +23,7 @@
 #include "user-interfaces/gui-data-transmit.h"
 #include "user-interfaces/gui-programmer.h"
 #include "user-interfaces/gui-custom-cmd.h"
-#include "gui-helper.h"
+#include "gui-helpers/gui-helper.h"
 
 #include <QMessageBox>
 #include <QFileDialog>
@@ -37,18 +37,7 @@ MainWindow::supportedGUIsList({
                                   "Data Transmit",
                                   "Programmer",
                                   "Custom CMD"
-                             });
-
-// Setup supported GUIs map
-QMap<QString, uint8_t>
-MainWindow::supportedGUIsMap({
-                                 {"GENERAL SETTINGS", GUI_TYPE_GENERAL_SETTINGS},
-                                 {"Welcome", GUI_TYPE_WELCOME},
-                                 {"IO", GUI_TYPE_IO},
-                                 {"Data Transmit", GUI_TYPE_DATA_TRANSMIT},
-                                 {"Programmer", GUI_TYPE_PROGRAMMER},
-                                 {"Custom CMD", GUI_TYPE_CUSTOM_CMD}
-                             });
+                              });
 
 // Setup static supported devices list
 QStringList
@@ -91,6 +80,8 @@ MainWindow::MainWindow(QWidget *parent) :
     // Set base parameters
     prev_tab = -1;
     device = nullptr;
+    configMap = nullptr;
+    speed = "";
     updateConnInfo = new QTimer();
 
     // Add specified values to combos
@@ -156,10 +147,10 @@ void MainWindow::on_Device_Combo_activated(int)
     switch (getDevType())
     {
         case DEV_TYPE_ARDUINO_UNO:
-            deviceINI = ":/uc-interfaces/gui-arduino-uno.ini";
+            deviceINI = ":/uc-interfaces/arduino-uno-uart-example.ini";
             break;
         case DEV_TYPE_PC:
-            deviceINI = ":/uc-interfaces/gui-pc.ini";
+            deviceINI = ":/uc-interfaces/pc-example.ini";
             break;
         case DEV_TYPE_OTHER:
             deviceINI = QFileDialog::getOpenFileName(this, tr("Open"), "",
@@ -198,22 +189,106 @@ void MainWindow::on_ConnType_Combo_currentIndexChanged(int)
     updateConnInfoCombo();
 }
 
+void MainWindow::on_Speed_Combo_activated(int)
+{
+    switch (getConnType())
+    {
+        case CONN_TYPE_RS_232:
+        {
+            if (ui->Speed_Combo->currentText() == "Other")
+                GUI_HELPER::getUserString(&speed, "Custom Baudrate", "Baudrate");
+            else
+                speed = ui->Speed_Combo->currentText();
+            break;
+        }
+        default:
+            break;
+    }
+}
+
 void MainWindow::on_DeviceConnect_Button_clicked()
 {
     // Disable input switching
     setConnected(true);
 
+    // Reset the config settings file
+    if (configMap)
+    {
+        GUI_HELPER::deleteConfigMap(configMap);
+        configMap = nullptr;
+    }
+
+    // Read config settings
+    configMap = GUI_HELPER::readConfigINI(deviceINI);
+
     // Update selected info
     QString connInfo = ui->ConnInfo_Combo->currentText();
-    QString speed = ui->Speed_Combo->currentText();
 
     // Try to connect to the device
     switch (getConnType())
     {
         case CONN_TYPE_RS_232:
         {
+            // Create and fill new settings struct
+            Serial_RS232_Settings dev_settings = Serial_RS232_Settings_DEFAULT;
+            dev_settings.port = connInfo;
+            dev_settings.baudrate = speed.toInt();
+
+            // Parse custom list & config map
+            if (configMap->contains(ui->ConnType_Combo->currentText())
+                                 || !main_options_settings.custom.isEmpty())
+            {
+                // Create holding list
+                QString setting;
+                QStringList filteredSettings;
+
+                // Get group QMap
+                QMap<QString, QVariant> tmpMap;
+                QMap<QString, QVariant>* groupMap = \
+                        configMap->value(ui->ConnType_Combo->currentText(), &tmpMap);
+
+                // Check if data bits setting
+                setting = "dataBits";
+                filteredSettings = main_options_settings.custom.filter(setting);
+                if (!filteredSettings.isEmpty())
+                    dev_settings.dataBits = filteredSettings.at(0).split(':').at(1).toInt();
+                else if (groupMap->contains(setting))
+                    dev_settings.dataBits = groupMap->value(setting).toInt();
+                // Check if direction setting
+                setting = "direction";
+                filteredSettings = main_options_settings.custom.filter(setting);
+                if (!filteredSettings.isEmpty())
+                    dev_settings.direction = filteredSettings.at(0).split(':').at(1);
+                else if (groupMap->contains(setting))
+                    dev_settings.direction = groupMap->value(setting).toString();
+
+                // Check if flowControl setting
+                setting = "flowControl";
+                filteredSettings = main_options_settings.custom.filter(setting);
+                if (!filteredSettings.isEmpty())
+                    dev_settings.flowControl = filteredSettings.at(0).split(':').at(1);
+                else if (groupMap->contains(setting))
+                    dev_settings.flowControl = groupMap->value(setting).toString();
+
+                // Check if parity setting
+                setting = "parity";
+                filteredSettings = main_options_settings.custom.filter(setting);
+                if (!filteredSettings.isEmpty())
+                    dev_settings.parity = filteredSettings.at(0).split(':').at(1);
+                else if (groupMap->contains(setting))
+                    dev_settings.parity = groupMap->value(setting).toString();
+
+                // Check if stopBits setting
+                setting = "stopBits";
+                filteredSettings = main_options_settings.custom.filter(setting);
+                if (!filteredSettings.isEmpty())
+                    dev_settings.stopBits = filteredSettings.at(0).split(':').at(1).toFloat();
+                else if (groupMap->contains(setting))
+                    dev_settings.stopBits = groupMap->value(setting).toFloat();
+            }
+
             // Create new object
-            device = new Serial_RS232(connInfo, speed);
+            device = new Serial_RS232(&dev_settings, this);
             break;
         }
         case CONN_TYPE_TCP_CLIENT:
@@ -223,13 +298,13 @@ void MainWindow::on_DeviceConnect_Button_clicked()
             if (conn.length() != 2) break;
 
             // Create new object
-            device = new TCP_CLIENT(conn[0], conn[1].toInt());
+            device = new TCP_CLIENT(conn[0], conn[1].toInt(), this);
             break;
         }
         case CONN_TYPE_TCP_SERVER:
         {
             // Create new object
-            device = new TCP_SERVER(connInfo.toInt());
+            device = new TCP_SERVER(connInfo.toInt(), this);
             break;
         }
         case CONN_TYPE_UDP_SOCKET:
@@ -239,7 +314,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
             if (conn.length() != 3) break;
 
             // Create new object
-            device = new UDP_SOCKET(conn[0], conn[1].toInt(), conn[2].toInt());
+            device = new UDP_SOCKET(conn[0], conn[1].toInt(), conn[2].toInt(), this);
             break;
         }
         default:
@@ -251,6 +326,11 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     if (!device)
     {
         setConnected(false);
+        return;
+    } else if (!device->initSuccessful())
+    {
+        GUI_HELPER::showMessage("Error: Initilization failed!");
+        on_DeviceDisconnect_Button_clicked();
         return;
     }
 
@@ -279,31 +359,26 @@ void MainWindow::on_DeviceConnected() {
         // Remove all existing tabs
         ucOptionsClear();
 
-        // Reset & load the GUI settings file
-        // Read config settings
-        QMap<QString, QMap<QString, QVariant>*>* configMap = \
-                GUI_HELPER::readConfigINI(deviceINI);
-
         // Block signals from tab group
         ui->ucOptions->blockSignals(true);
 
         // Setup tabs
-        uint8_t gui_type;
+        uint8_t gui_key;
         QMap<QString, QVariant>* groupMap;
         QWidget* tab_holder;
         foreach (QString childGroup, configMap->keys())
         {
             // Verify that its a known GUI
-            gui_type = getGUIType(childGroup.split('_').last());
-            if (gui_type == GUI_TYPE_ERROR) continue;
+            gui_key = getGUIType(childGroup.split('_').last());
+            if (gui_key == MAJOR_KEY_ERROR) continue;
 
             // Get group QMap
             groupMap = configMap->value(childGroup);
 
             // Instantiate and add GUI
-            switch (gui_type)
+            switch (gui_key)
             {
-                case GUI_TYPE_GENERAL_SETTINGS:
+                case MAJOR_KEY_GENERAL_SETTINGS:
                 {
                     GUI_BASE::parseGenericConfigMap(groupMap);
 
@@ -327,27 +402,27 @@ void MainWindow::on_DeviceConnected() {
                     }
                     continue;
                 }
-                case GUI_TYPE_WELCOME:
+                case MAJOR_KEY_WELCOME:
                 {
                     tab_holder = new GUI_WELCOME(this);
                     break;
                 }
-                case GUI_TYPE_IO:
+                case MAJOR_KEY_IO:
                 {
                     tab_holder = new GUI_8AIO_16DIO_COMM(this);
                     break;
                 }
-                case GUI_TYPE_DATA_TRANSMIT:
+                case MAJOR_KEY_DATA_TRANSMIT:
                 {
                     tab_holder = new GUI_DATA_TRANSMIT(this);
                     break;
                 }
-                case GUI_TYPE_PROGRAMMER:
+                case MAJOR_KEY_PROGRAMMER:
                 {
                     tab_holder = new GUI_PROGRAMMER(this);
                     break;
                 }
-                case GUI_TYPE_CUSTOM_CMD:
+                case MAJOR_KEY_CUSTOM_CMD:
                 {
                     tab_holder = new GUI_CUSTOM_CMD(this);
                     break;
@@ -365,14 +440,15 @@ void MainWindow::on_DeviceConnected() {
             ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());
         }
 
-        // Force changes in more options
+        // Force any changes in more options
         update_options(&main_options_settings);
 
         // Enable signals for tab group
         ui->ucOptions->blockSignals(false);
 
-        // Delete map after use
+        // Delete map now that loading finished
         GUI_HELPER::deleteConfigMap(configMap);
+        configMap = nullptr;
 
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
@@ -638,28 +714,34 @@ bool MainWindow::deviceConnected()
 
 uint8_t MainWindow::getConnType()
 {
-    // currentIndex() returns -1 on error which maps to CONN_TYPE_ERROR
-    return (uint8_t) (ui->ConnType_Combo->currentIndex()+1);
+    // currentIndex() returns -1 on error which maps to CONN_TYPE_ERROR (0 == universal error)
+    return (uint8_t) (ui->ConnType_Combo->currentIndex()+MAJOR_KEY_GENERAL_SETTINGS);
 }
 
 uint8_t MainWindow::getDevType()
 {
-    // currentIndex() returns -1 on error which maps to DEV_TYPE_ERROR
-    return (uint8_t) (ui->Device_Combo->currentIndex()+1);
+    // currentIndex() returns -1 on error which maps to DEV_TYPE_ERROR (0 == universal error)
+    return (uint8_t) (ui->Device_Combo->currentIndex()+MAJOR_KEY_GENERAL_SETTINGS);
 }
 
 uint8_t MainWindow::getGUIType(QString type)
 {
-    return supportedGUIsMap.value(type, GUI_TYPE_ERROR);
+    // indexOf() returns -1 on error which maps to MAJOR_KEY_ERROR (0 == universal error)
+    return (uint8_t) (supportedGUIsList.indexOf(type)+MAJOR_KEY_GENERAL_SETTINGS);
 }
 
 QString MainWindow::getGUIName(uint8_t type)
 {
-    return supportedGUIsList.at(type-(GUI_TYPE_ERROR+1));
+    // Check that type is valid
+    if (supportedGUIsList.length() < type) return "ERROR";
+
+    // Return the string
+    return supportedGUIsList.at(type-MAJOR_KEY_GENERAL_SETTINGS);
 }
 
 QStringList MainWindow::getConnSpeeds()
 {
+    // Returns the available speeds for the device type
     switch (getConnType())
     {
         case CONN_TYPE_RS_232: return Serial_RS232::Baudrate_Defaults;
@@ -674,7 +756,7 @@ void MainWindow::update_options(MoreOptions_struct* options)
 
     // Set generic checksum
     QStringList checksum_info;
-    QString gui_name = getGUIName(GUI_TYPE_GENERAL_SETTINGS);
+    QString gui_name = getGUIName(MAJOR_KEY_GENERAL_SETTINGS);
     if (options->checksum_map.contains(gui_name))
     {
         // Get checksum setting
@@ -682,7 +764,7 @@ void MainWindow::update_options(MoreOptions_struct* options)
 
         // Set the new generic checksum
         GUI_BASE::set_generic_checksum(checksum_info);
-    }
+    };
 
     // Set class values
     QStringList checksum_changes = options->checksum_map.keys();
@@ -694,10 +776,10 @@ void MainWindow::update_options(MoreOptions_struct* options)
     {
         // Get tab
         tab_holder = (GUI_BASE*) ui->ucOptions->widget(i);
-        if (tab_holder == 0) continue;
+        if (!tab_holder) continue;
 
         // Set gui checksum
-        gui_name = getGUIName(tab_holder->get_GUI_type());
+        gui_name = getGUIName(tab_holder->get_GUI_key());
         if (checksum_changes.contains(gui_name))
         {
             // Get checksum setting

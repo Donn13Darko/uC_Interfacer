@@ -30,16 +30,17 @@ extern "C"
 typedef enum {
     // Error and reset
     MAJOR_KEY_ERROR = 0,
-    MAJOR_KEY_RESET,
 
     // GUI Types (Major Keys)
-    GUI_TYPE_ERROR,
-    GUI_TYPE_GENERAL_SETTINGS,
-    GUI_TYPE_WELCOME,
-    GUI_TYPE_IO,
-    GUI_TYPE_DATA_TRANSMIT,
-    GUI_TYPE_PROGRAMMER,
-    GUI_TYPE_CUSTOM_CMD,
+    MAJOR_KEY_GENERAL_SETTINGS,
+    MAJOR_KEY_WELCOME,
+    MAJOR_KEY_IO,
+    MAJOR_KEY_DATA_TRANSMIT,
+    MAJOR_KEY_PROGRAMMER,
+    MAJOR_KEY_CUSTOM_CMD,
+
+    // Reset cmds
+    MAJOR_KEY_RESET,
 
     // Responses
     MAJOR_KEY_READ_RESPONSE,

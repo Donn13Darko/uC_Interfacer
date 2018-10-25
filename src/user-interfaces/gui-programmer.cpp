@@ -27,7 +27,7 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     ui->setupUi(this);
 
     // Set GUI Type
-    gui_type = GUI_TYPE_PROGRAMMER;
+    gui_key = MAJOR_KEY_PROGRAMMER;
 
     // Read config settings
     QMap<QString, QMap<QString, QVariant>*>* configMap = \
@@ -205,7 +205,7 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
         {
             // Send Packet #1
             send({
-                     gui_type,
+                     gui_key,
                      2
                  });
 
@@ -225,7 +225,7 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 
             // Send Package
             data.clear();
-            data.append((char) gui_type);
+            data.append((char) gui_key);
             data.append((char) MINOR_KEY_PROGRAMMER_DATA);
             data.append((char) prog_line_length);
             data.append(QByteArray::fromHex(curr[4].toUtf8()));

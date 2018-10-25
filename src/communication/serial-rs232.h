@@ -23,12 +23,25 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 
+typedef struct {
+    QString port;
+    int32_t baudrate;
+    int32_t dataBits;
+    QString direction;
+    QString flowControl;
+    QString parity;
+    float stopBits;
+} Serial_RS232_Settings;
+#define Serial_RS232_Settings_DEFAULT Serial_RS232_Settings{\
+    .port="", .baudrate=9600, .dataBits=8, .direction="All",\
+    .flowControl="No", .parity="No", .stopBits=1.0}
+
 class Serial_RS232 : public COMMS_BASE
 {
     Q_OBJECT
 
 public:
-    Serial_RS232(QString port, QString baudrate = "9600", QObject *parent = NULL);
+    Serial_RS232(Serial_RS232_Settings* serial_settings, QObject *parent = NULL);
     ~Serial_RS232();
 
     virtual void open();
@@ -47,6 +60,8 @@ private slots:
 
 private:
     QSerialPort *rs232;
+
+    void parseSettings(Serial_RS232_Settings* serial_settings);
 };
 
 #endif // SERIAL_RS232_H

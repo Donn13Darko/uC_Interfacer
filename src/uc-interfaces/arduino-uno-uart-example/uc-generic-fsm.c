@@ -231,16 +231,16 @@ void fsm_run()
     // Parse and act on major key
     switch (major_key)
     {
-        case GUI_TYPE_IO:
+        case MAJOR_KEY_IO:
             uc_io(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
-        case GUI_TYPE_DATA_TRANSMIT:
+        case MAJOR_KEY_DATA_TRANSMIT:
             uc_data_transmit(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
-        case GUI_TYPE_PROGRAMMER:
+        case MAJOR_KEY_PROGRAMMER:
             uc_programmer(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
-        case GUI_TYPE_CUSTOM_CMD:
+        case MAJOR_KEY_CUSTOM_CMD:
             uc_custom_cmd(minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
         case MAJOR_KEY_RESET:
@@ -343,13 +343,13 @@ checksum_struct* fsm_get_checksum_struct(uint8_t gui_key)
 {
     switch (gui_key)
     {
-        case GUI_TYPE_IO:
+        case MAJOR_KEY_IO:
             return &io_checksum;
-        case GUI_TYPE_DATA_TRANSMIT:
+        case MAJOR_KEY_DATA_TRANSMIT:
             return &data_transfer_checksum;
-        case GUI_TYPE_PROGRAMMER:
+        case MAJOR_KEY_PROGRAMMER:
             return &programmer_checksum;
-        case GUI_TYPE_CUSTOM_CMD:
+        case MAJOR_KEY_CUSTOM_CMD:
             return &custom_cmd_checksum;
         default:
             return &default_checksum;

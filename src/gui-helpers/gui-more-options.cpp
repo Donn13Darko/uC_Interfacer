@@ -37,6 +37,7 @@ void GUI_MORE_OPTIONS::reset_gui()
     ui->ResetOnTabSwitch_CheckBox->setChecked(local_options.reset_on_tab_switch);
     ui->SendLittleEndian_CheckBox->setChecked(local_options.send_little_endian);
     ui->ChunkSize_LineEdit->setText(QString::number(local_options.chunk_size));
+    ui->CustomInput_PlainText->setPlainText(local_options.custom.join(','));
 
     // Reset Checksum combos
     ui->GUI_Combo->setCurrentIndex(0);
@@ -155,11 +156,13 @@ void GUI_MORE_OPTIONS::save_updates()
     local_options.reset_on_tab_switch = ui->ResetOnTabSwitch_CheckBox->isChecked();
     local_options.send_little_endian = ui->SendLittleEndian_CheckBox->isChecked();
     local_options.chunk_size = ui->ChunkSize_LineEdit->text().toInt();
+    local_options.custom = ui->CustomInput_PlainText->toPlainText().split(',');
 
     // Overwrite members of main_options_ptr
     main_options_ptr->reset_on_tab_switch = local_options.reset_on_tab_switch;
     main_options_ptr->send_little_endian = local_options.send_little_endian;
     main_options_ptr->chunk_size = local_options.chunk_size;
+    main_options_ptr->custom = local_options.custom;
 
     // Save local checksum map
     foreach (QString key, local_options.checksum_map.keys())
@@ -177,6 +180,7 @@ void GUI_MORE_OPTIONS::reset_updates()
     local_options.reset_on_tab_switch = main_options_ptr->reset_on_tab_switch;
     local_options.send_little_endian = main_options_ptr->send_little_endian;
     local_options.chunk_size = main_options_ptr->chunk_size;
+    local_options.custom = main_options_ptr->custom;
 
     // Clear local checksum map
     local_options.checksum_map.clear();

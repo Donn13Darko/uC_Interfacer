@@ -68,7 +68,7 @@ void setup()
     
     // Init Serial transfer
     Serial.setTimeout(packet_timeout);
-    Serial.begin(115200);
+    Serial.begin(9600);
 
     // Init fsm
     fsm_setup(len);
@@ -78,7 +78,8 @@ void setup()
 void loop()
 {
     // fsm_poll() blocks forever (infinite loop)
-    // Use repeated calls to fsm_isr() to run other things in the main loop
+    // Use repeated calls to fsm_isr() to run other things during the main loop
+    // fsm_isr will return false while still waiting and true when ready
     fsm_poll();
 }
 

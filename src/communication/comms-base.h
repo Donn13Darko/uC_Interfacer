@@ -33,6 +33,7 @@ public:
 
     virtual void open();
     virtual bool isConnected();
+    virtual bool initSuccessful();
 
 signals:
     void deviceConnected();
@@ -51,6 +52,7 @@ protected:
     QMutex *writeLock;
 
     bool connected;
+    bool initSuccess;
 };
 
 #endif // COMMS_BASE_H

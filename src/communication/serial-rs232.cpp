@@ -22,16 +22,27 @@ QStringList
 Serial_RS232::Baudrate_Defaults({
                                     "1200", "2400", "4800",
                                     "9600", "19200", "39400",
-                                    "57600", "115200"
+                                    "57600", "115200", "230400",
+                                    "460800", "921600", "Other"
                                 });
 
-Serial_RS232::Serial_RS232(QString port, QString baudrate, QObject *parent) :
+Serial_RS232::Serial_RS232(Serial_RS232_Settings* serial_settings, QObject *parent) :
     COMMS_BASE(parent)
 {
+    // Create new serial port
     rs232 = new QSerialPort(this);
-    rs232->setPortName(port);
-    rs232->setBaudRate(baudrate.toInt());
-    rs232->setDataBits(QSerialPort::Data8);
+    initSuccess = (initSuccess && rs232);
+    if (!initSuccess) return;
+
+    // Set values
+    rs232->setPortName(serial_settings->port);
+    rs232->setDataBits((QSerialPort::DataBits) serial_settings->dataBits);
+
+    // Try to convert & set baudrate, error if fails
+    initSuccess = (initSuccess
+                   && serial_settings->baudrate
+                   && rs232->setBaudRate(serial_settings->baudrate));
+    if (!initSuccess) return;
 
     connect(rs232, SIGNAL(readyRead()),
             this, SLOT(read()));
@@ -46,8 +57,13 @@ Serial_RS232::~Serial_RS232()
 
 void Serial_RS232::open()
 {
-    connected = rs232->open(QIODevice::ReadWrite);
+    if (!initSuccess)
+    {
+        emit deviceDisconnected();
+        return;
+    }
 
+    connected = rs232->open(QIODevice::ReadWrite);
     if (isConnected())
     {
         connect(rs232, SIGNAL(errorOccurred(QSerialPort::SerialPortError)),

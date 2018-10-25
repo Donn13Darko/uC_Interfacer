@@ -22,8 +22,13 @@
 UDP_SOCKET::UDP_SOCKET(QString client_ip, int client_port, int server_port, QObject *parent) :
     COMMS_BASE(parent)
 {
+    // Create new client and server
     client = new QUdpSocket(this);
     server = new QUdpSocket(this);
+    initSuccess = (initSuccess && client && server);
+    if (!initSuccess) return;
+
+    // Set values
     udp_client_ip = QHostAddress(client_ip);
     udp_client_port = client_port;
     udp_server_port = server_port;

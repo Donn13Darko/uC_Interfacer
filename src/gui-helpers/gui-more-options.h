@@ -13,6 +13,7 @@ typedef struct MoreOptions_struct {
     uint32_t chunk_size;
     // (1) checksum_name, (2) checksum_start, (3) checksum_exe
     QMap<QString, QStringList> checksum_map;
+    QStringList custom;
 } MoreOptions_struct;
 
 #define DEFAULT_CHECKSUM QStringList({"CRC_8_LUT", "", "", ""})

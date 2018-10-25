@@ -26,7 +26,7 @@
 #include <QCloseEvent>
 #include <QSettings>
 
-#include "gui-more-options.h"
+#include "gui-helpers/gui-more-options.h"
 
 #include "communication/serial-rs232.h"
 #include "communication/tcp-client.h"
@@ -68,15 +68,13 @@ public:
 
     void closeEvent(QCloseEvent* e);
 
-signals:
-    void write_data(QByteArray data);
-
 public slots:
     void connect_signals(bool connect);
 
 private slots:
     void on_Device_Combo_activated(int);
     void on_ConnType_Combo_currentIndexChanged(int);
+    void on_Speed_Combo_activated(int);
 
     void on_DeviceConnect_Button_clicked();
     void on_DeviceDisconnect_Button_clicked();
@@ -112,10 +110,11 @@ private:
     static QStringList supportedGUIsList;
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
-    static QMap<QString, uint8_t> supportedGUIsMap;
+    QMap<QString, QMap<QString, QVariant>*>* configMap;
 
     QTimer *updateConnInfo;
     COMMS_BASE *device;
+    QString speed;
 
     void updateSpeedCombo();
     void setConnected(bool conn);

@@ -28,7 +28,7 @@
 
 #include "gui-base-major-keys.h"
 #include "../checksums/checksums.h"
-#include "../gui-helper.h"
+#include "../gui-helpers/gui-helper.h"
 #include <QDebug>
 
 class GUI_BASE : public QWidget
@@ -55,7 +55,7 @@ public:
 
     // Virtual functions
     virtual void reset_gui();
-    virtual uint8_t get_GUI_type();
+    virtual uint8_t get_GUI_key();
     virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
     // Static members
@@ -68,6 +68,7 @@ signals:
     void connect_signals(bool connect);
     void ackChecked(bool ackStatus);
     void resetting();
+    void exiting();
 
 protected slots:
     void receive(QByteArray recvData);
@@ -80,7 +81,8 @@ protected slots:
 protected:
     // Local variables
     const float S2MS = 1000.0f;
-    uint8_t gui_type;
+    uint8_t gui_key;
+    bool exit_dev;
 
     // Receive arrays
     QByteArray rcvd_formatted;

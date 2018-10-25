@@ -28,7 +28,7 @@ GUI_WELCOME::GUI_WELCOME(QWidget *parent) :
     ui->ResetGUI_Button->hide();
 
     // Set GUI Type
-    gui_type = GUI_TYPE_WELCOME;
+    gui_key = MAJOR_KEY_WELCOME;
 }
 
 GUI_WELCOME::~GUI_WELCOME()
