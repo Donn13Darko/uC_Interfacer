@@ -24,6 +24,8 @@
 #include <QFileDialog>
 #include <QSettings>
 
+const float GUI_HELPER::S2MS = 1000.0f;
+
 GUI_HELPER::GUI_HELPER(QObject *parent) :
     QObject(parent)
 {

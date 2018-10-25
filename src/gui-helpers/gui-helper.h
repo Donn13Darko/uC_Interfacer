@@ -56,6 +56,9 @@ public:
 
     // Transform init list to qbytearray
     static QByteArray initList2ByteArray(std::initializer_list<uint8_t> initList);
+
+    // Variables
+    static const float S2MS;
 };
 
 #endif // GUI_HELPER_H

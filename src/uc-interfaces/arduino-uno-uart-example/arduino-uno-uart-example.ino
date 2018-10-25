@@ -59,6 +59,10 @@ void uc_custom_cmd(uint8_t, const uint8_t*, uint8_t) {}
 void uc_aio(uint8_t pin_num, uint8_t setting, uint16_t value) {}
 void uc_remote_conn() {}
 
+// Function prototypes
+void set_pwm_on(uint8_t pin);
+void set_pwm_off(uint8_t pin);
+
 // Arduino setup function
 void setup()
 {
@@ -68,7 +72,7 @@ void setup()
     
     // Init Serial transfer
     Serial.setTimeout(packet_timeout);
-    Serial.begin(9600);
+    Serial.begin(1200);
 
     // Init fsm
     fsm_setup(len);
@@ -86,15 +90,23 @@ void loop()
 // Reset all internal values, for use with new connections
 void uc_reset()
 {
-    // Detach any servos
     uint8_t VALUE;
     for (int i = 0; i < num_DIO; i++)
     {
         VALUE = DIO_SET[i];
-        if ((VALUE == IO_SERVO_US) || (VALUE == IO_SERVO_DEG)) DIO_SERVO[i].detach();
+        switch (DIO_SET[i])
+        {
+            case IO_PWM:
+                set_pwm_off(i);
+                break;
+            case IO_SERVO_US:
+            case IO_SERVO_DEG:
+                DIO_SERVO[i].detach();
+                break;
+        }
     }
     
-    // Set DIOs to INPUTS
+    // Set all DIOs to INPUTS
     DDRD &= 0x00;
     DDRB &= 0xC0;
 
@@ -203,6 +215,62 @@ void uc_aio_read()
     fsm_send((uint8_t*) read_data, j);
 }
 
+// Connect PWM timer
+void set_pwm_on(uint8_t pin)
+{
+    switch (pin)
+    {
+        case 3:
+            sbi(TCCR2A, COM2B1);
+            break;
+        case 5:
+            sbi(TCCR0A, COM0B1);
+            break;
+        case 6:
+            sbi(TCCR0A, COM0A1);
+            break;
+        case 9:
+            sbi(TCCR1A, COM1A1);
+            break;
+        case 10:
+            sbi(TCCR1A, COM1B1);
+            break;
+        case 11:
+            sbi(TCCR2A, COM2A1);
+            break;
+        default:
+            break;
+    }
+}
+
+// Disconnect PWM timer
+void set_pwm_off(uint8_t pin)
+{
+    switch (pin)
+    {
+        case 3:
+            cbi(TCCR2A, COM2B1);
+            break;
+        case 5:
+            cbi(TCCR0A, COM0B1);
+            break;
+        case 6:
+            cbi(TCCR0A, COM0A1);
+            break;
+        case 9:
+            cbi(TCCR1A, COM1A1);
+            break;
+        case 10:
+            cbi(TCCR1A, COM1B1);
+            break;
+        case 11:
+            cbi(TCCR2A, COM2A1);
+            break;
+        default:
+            break;
+    }
+}
+
 // Set the DIO as per the command
 void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
 {
@@ -212,29 +280,7 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
         switch (DIO_SET[pin_num])
         {
             case IO_PWM:
-                switch (pin_num)
-                {
-                    case 3:
-                        cbi(TCCR2A, COM2B1);
-                        break;
-                    case 5:
-                        cbi(TCCR0A, COM0B1);
-                        break;
-                    case 6:
-                        cbi(TCCR0A, COM0A1);
-                        break;
-                    case 9:
-                        cbi(TCCR1A, COM1A1);
-                        break;
-                    case 10:
-                        cbi(TCCR1A, COM1B1);
-                        break;
-                    case 11:
-                        cbi(TCCR2A, COM2A1);
-                        break;
-                    default:
-                        break;
-                }
+                set_pwm_off(pin_num);
                 break;
             case IO_SERVO_US:
             case IO_SERVO_DEG:
@@ -251,30 +297,6 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
                 else cbi(DDRB, pin_num - 8);
                 break;
             case IO_PWM:
-                switch (pin_num)
-                {
-                    case 3:
-                        sbi(TCCR2A, COM2B1);
-                        break;
-                    case 5:
-                        sbi(TCCR0A, COM0B1);
-                        break;
-                    case 6:
-                        sbi(TCCR0A, COM0A1);
-                        break;
-                    case 9:
-                        sbi(TCCR1A, COM1A1);
-                        break;
-                    case 10:
-                        sbi(TCCR1A, COM1B1);
-                        break;
-                    case 11:
-                        sbi(TCCR2A, COM2A1);
-                        break;
-                    default:
-                        break;
-                }
-                break;
             case IO_OUTPUT:
                 if (pin_num < 8) DDRD |= (1 << pin_num);
                 else DDRB |= (1 << (pin_num - 8));
@@ -295,6 +317,7 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
         case IO_PWM:
             if (value && (value != 100))
             {
+                set_pwm_on(pin_num);
                 value = (int) (PWM_SCALE * (float) value);
                 switch(pin_num)
                 {
@@ -320,7 +343,8 @@ void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
                 break;
             }
             // Handle edge cases of 0 and 100
-            return uc_dio(pin_num, IO_OUTPUT, !!value);
+            set_pwm_off(pin_num);
+            value = !!value;
         case IO_OUTPUT:
             if (pin_num < 8) PORTD = (PORTD & ~(1 << pin_num)) | (value << pin_num);
             else PORTB = (PORTB & ~(1 << (pin_num - 8))) | (value << (pin_num - 8));

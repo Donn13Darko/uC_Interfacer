@@ -236,8 +236,8 @@ void GUI_8AIO_16DIO_COMM::on_StartUpdater_Button_clicked()
 {
     ui->StartUpdater_Button->setText("Reset");
 
-    DIO_READ.start((int) (S2MS * ui->DIO_UR_LineEdit->text().toFloat()));
-    AIO_READ.start((int) (S2MS * ui->AIO_UR_LineEdit->text().toFloat()));
+    DIO_READ.start((int) (GUI_HELPER::S2MS * ui->DIO_UR_LineEdit->text().toFloat()));
+    AIO_READ.start((int) (GUI_HELPER::S2MS * ui->AIO_UR_LineEdit->text().toFloat()));
 }
 
 void GUI_8AIO_16DIO_COMM::on_StopUpdater_Button_clicked()
@@ -279,7 +279,7 @@ void GUI_8AIO_16DIO_COMM::on_StartLog_Button_clicked()
     *logStream << "with update rate " << ui->LOG_UR_LineEdit->text() << " seconds\n";
     logStream->flush();
 
-    logTimer.start((int) (S2MS * ui->LOG_UR_LineEdit->text().toFloat()));
+    logTimer.start((int) (GUI_HELPER::S2MS * ui->LOG_UR_LineEdit->text().toFloat()));
     ui->StartLog_Button->setText("Running");
     ui->StartLog_Button->setEnabled(false);
     ui->AppendLog_CheckBox->setEnabled(false);

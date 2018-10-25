@@ -40,6 +40,7 @@ public:
     ~GUI_BASE();
 
     void reset_remote();
+    void closing();
 
     // GUI Checksum functions
     void set_gui_checksum(QStringList new_gui_checksum);
@@ -68,7 +69,6 @@ signals:
     void connect_signals(bool connect);
     void ackChecked(bool ackStatus);
     void resetting();
-    void exiting();
 
 protected slots:
     void receive(QByteArray recvData);
@@ -80,7 +80,6 @@ protected slots:
 
 protected:
     // Local variables
-    const float S2MS = 1000.0f;
     uint8_t gui_key;
     bool exit_dev;
 
@@ -137,9 +136,9 @@ private:
     QEventLoop dataLoop;
 
     // GUI Checksum helpers
-    bool gui_checksum_is_exe = false;
-    QString gui_checksum_exe_path = "";
-    checksum_struct gui_checksum = DEFAULT_CHECKSUM_STRUCT;
+    bool gui_checksum_is_exe;
+    checksum_struct gui_checksum;
+    QString gui_checksum_exe_path;
     QByteArray gui_checksum_start;
 
     // Static class members
@@ -154,6 +153,10 @@ private:
     void transmit(QByteArray data);
     void getChecksum(const uint8_t* data, uint8_t data_len, uint8_t checksum_key,
                      uint8_t** checksum_array, uint32_t* checksum_size);
+
+    void close_base();
+    bool send_closed;
+    bool recv_closed;
 };
 
 #endif // GUI_BASE_H

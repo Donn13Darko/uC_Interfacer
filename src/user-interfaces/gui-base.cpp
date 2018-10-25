@@ -51,6 +51,8 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     // Init general variables
     reset_dev = false;
     exit_dev = false;
+    send_closed = false;
+    recv_closed = false;
 
     // Init Ack variables
     ack_status = false;
@@ -62,41 +64,55 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     data_key = MAJOR_KEY_ERROR;
     dataTimer.setSingleShot(true);
 
-    // Connect signals
-    connect(this, SIGNAL(readyRead(QByteArray)),
-            this, SLOT(receive_gui(QByteArray)));
-    connect(this, SIGNAL(readyRead(QByteArray)),
-            &dataLoop, SLOT(quit()));
-    connect(&dataTimer, SIGNAL(timeout()),
-            &dataLoop, SLOT(quit()));
-    connect(this, SIGNAL(resetting()),
-            &dataLoop, SLOT(quit()));
-    connect(this, SIGNAL(exiting()),
-            &dataLoop, SLOT(quit()));
+    // Init gui checksum variables
+    gui_checksum_is_exe = false;
+    gui_checksum = DEFAULT_CHECKSUM_STRUCT;
+    gui_checksum_exe_path = "";
+    gui_checksum_start = {};
 
-    connect(this, SIGNAL(ackReceived(QByteArray)),
-            this, SLOT(checkAck(QByteArray)));
-    connect(this, SIGNAL(ackChecked(bool)),
-            &ackLoop, SLOT(quit()));
-    connect(&ackTimer, SIGNAL(timeout()),
-            &ackLoop, SLOT(quit()));
+    // Connect read signals and slots
+    connect(this, SIGNAL(readyRead(QByteArray)),
+            this, SLOT(receive_gui(QByteArray)),
+            Qt::QueuedConnection);
+
+    // Connect data loop signals and slots
+    connect(this, SIGNAL(readyRead(QByteArray)),
+            &dataLoop, SLOT(quit()),
+            Qt::QueuedConnection);
     connect(this, SIGNAL(resetting()),
-            &ackLoop, SLOT(quit()));
-    connect(this, SIGNAL(exiting()),
-            &ackLoop, SLOT(quit()));
+            &dataLoop, SLOT(quit()),
+            Qt::QueuedConnection);
+
+    // Connect ack loop signals and slots
+    connect(this, SIGNAL(ackReceived(QByteArray)),
+            this, SLOT(checkAck(QByteArray)),
+            Qt::QueuedConnection);
+    connect(this, SIGNAL(ackChecked(bool)),
+            &ackLoop, SLOT(quit()),
+            Qt::QueuedConnection);
+    connect(&ackTimer, SIGNAL(timeout()),
+            &ackLoop, SLOT(quit()),
+            Qt::QueuedConnection);
+    connect(this, SIGNAL(resetting()),
+            &ackLoop, SLOT(quit()),
+            Qt::QueuedConnection);
 }
 
 GUI_BASE::~GUI_BASE()
 {
+    exit_dev = true;
+}
+
+void GUI_BASE::closing()
+{
     // Set exit to true
     exit_dev = true;
 
-    // Clear local buffers
-    rcvd_raw.clear();
-    msgList.clear();
+    // Reset send
+    reset_remote();
 
-    // Emit exiting to free resources
-    emit exiting();
+    // See if ready to exit
+    close_base();
 }
 
 void GUI_BASE::reset_remote()
@@ -104,21 +120,18 @@ void GUI_BASE::reset_remote()
     // Enter reset
     reset_dev = true;
 
-    // Clear msg list
+    // Clear any pending messages
     msgList.clear();
 
-    // Emit resetting to break out of sends
+    // Emit resetting to free timers
     emit resetting();
 
-    // Send reset command
+    // Load reset CMD into msgList
     send({MAJOR_KEY_RESET, 0, 0});
 
-    // Clear buffers (prevents key errors after reset)
-    rcvd_raw.clear();
-    rcvd_formatted.clear();
-
-    // Exit reset
-    reset_dev = false;
+    // Exiting here returngs control to the main event loop
+    // Required in order for the next packet to be sent
+    // if currently in waitForAck or waitForData
 }
 
 void GUI_BASE::set_gui_checksum(QStringList new_gui_checksum)
@@ -250,6 +263,9 @@ void GUI_BASE::parseConfigMap(QMap<QString, QVariant>* configMap)
 
 void GUI_BASE::receive(QByteArray recvData)
 {
+    // Check if recieving empty data array or exiting
+    if (recvData.isEmpty() || exit_dev) return;
+
     // Add data to recv
     rcvd_raw.append(recvData);
 
@@ -327,6 +343,9 @@ void GUI_BASE::receive(QByteArray recvData)
 
     // Unlock recv lock
     recvLock.unlock();
+
+    // If exiting, check if ready
+    if (exit_dev) close_base();
 }
 
 void GUI_BASE::receive_gui(QByteArray)
@@ -531,7 +550,7 @@ void GUI_BASE::save_rcvd_formatted()
 
 void GUI_BASE::transmit(QByteArray data)
 {
-    // Exit if empty data array sent or exiting
+    // Check if trying to send empty data array or exiting
     if (data.isEmpty() || exit_dev) return;
 
     // Don't load message if resetting and it isn't a reset
@@ -548,7 +567,7 @@ void GUI_BASE::transmit(QByteArray data)
     QByteArray currData;
     uint8_t* checksum_array;
     uint32_t checksum_size = 0;
-    while (!msgList.isEmpty())
+    while (!msgList.isEmpty() && !exit_dev)
     {
         // Get next data to send
         currData = msgList.takeFirst();
@@ -580,9 +599,9 @@ void GUI_BASE::transmit(QByteArray data)
         // Wait for data read if CMD success and was data request
         // Resets will never request data back (only an ack)
         if (ack_status
-                && isDataRequest(currData.at(s1_minor_key_loc))
                 && !reset_dev
-                && !exit_dev)
+                && !exit_dev
+                && isDataRequest(currData.at(s1_minor_key_loc)))
         {
             do
             {
@@ -590,10 +609,24 @@ void GUI_BASE::transmit(QByteArray data)
                 waitForData(packet_timeout);
             } while (!data_status && !reset_dev && !exit_dev);
         }
+
+        // Check if reseting and was reset
+        if (reset_dev && isReset)
+        {
+            // Clear buffers (prevents key errors after reset)
+            rcvd_raw.clear();
+            rcvd_formatted.clear();
+
+            // Reset reset flag
+            reset_dev = false;
+        }
     }
 
-    // Unlock send lock
+    // Unlock send lock if not exiting
     sendLock.unlock();
+
+    // If exiting, check if ready
+    if (exit_dev) close_base();
 }
 
 void GUI_BASE::getChecksum(const uint8_t* data, uint8_t data_len, uint8_t checksum_key,
@@ -622,4 +655,22 @@ void GUI_BASE::getChecksum(const uint8_t* data, uint8_t data_len, uint8_t checks
     memset(*checksum_array, 0, *checksum_size);
 
     check.get_checksum(data, data_len, check.checksum_start, *checksum_array);
+}
+
+void GUI_BASE::close_base()
+{
+    // Ensure exit set
+    if (!exit_dev) return;
+
+    // Test send & recv locks (non-block)
+    if (!send_closed) send_closed = sendLock.tryLock();
+    if (!recv_closed) recv_closed = recvLock.tryLock();
+    if (!(send_closed && recv_closed)) return;
+
+    // Close widget if able to aquire both
+    while (!close());
+
+    // Release both locks
+    sendLock.unlock();
+    recvLock.unlock();
 }

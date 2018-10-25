@@ -97,7 +97,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->ucOptions->addTab(welcome_tab, welcome_tab_label);
 
     // Add connections
-    connect(updateConnInfo, SIGNAL(timeout()), this, SLOT(updateConnInfoCombo()));
+    connect(updateConnInfo, SIGNAL(timeout()),
+            this, SLOT(updateConnInfoCombo()));
 }
 
 MainWindow::~MainWindow()
@@ -117,11 +118,13 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeEvent(QCloseEvent* e)
 {
+    deviceConnected();
     // If connected, disconnect
     if (deviceConnected())
     {
         on_DeviceDisconnect_Button_clicked();
     }
+    updateConnInfo->stop();
 
     e->accept();
 }
@@ -433,6 +436,9 @@ void MainWindow::on_DeviceConnected() {
                 }
             }
 
+            // Set delete on close attribute
+            tab_holder->setAttribute(Qt::WA_DeleteOnClose);
+
             // Call config map parser
             ((GUI_BASE*) tab_holder)->parseConfigMap(groupMap);
 
@@ -490,6 +496,7 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     // Disconnect connections
     connect2sender(ui->ucOptions->currentWidget(), false);
 
+    // Remove device
     if (device)
     {
         device->close();
@@ -560,11 +567,7 @@ void MainWindow::on_ucOptions_currentChanged(int index)
     prev_tab = index;
 
     // Reset the Remote for the new tab (if connected)
-    if (deviceConnected()
-            && main_options_settings.reset_on_tab_switch)
-    {
-        reset_remote();
-    }
+    if (main_options_settings.reset_on_tab_switch) reset_remote();
 }
 
 void MainWindow::updateConnInfoCombo()
@@ -644,6 +647,8 @@ void MainWindow::updateSpeedCombo()
             ui->Speed_Combo->setCurrentText(prevSpeed);
         }
     }
+
+    on_Speed_Combo_activated(0);
 }
 
 void MainWindow::setConnected(bool conn)
@@ -663,6 +668,10 @@ void MainWindow::setConnected(bool conn)
 
 void MainWindow::reset_remote()
 {
+    // Verifu device is connected
+    if (!deviceConnected()) return;
+
+    // Send reset command
     GUI_BASE* curr = (GUI_BASE*) ui->ucOptions->currentWidget();
     if (curr) curr->reset_remote();
 }
@@ -675,12 +684,10 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
     // Connect or disconnect signals
     if (conn) {
         connect(obj, SIGNAL(write_data(QByteArray)),
-                device, SLOT(write(QByteArray)),
-                Qt::QueuedConnection);
+                device, SLOT(write(QByteArray)));
 
         connect(device, SIGNAL(readyRead(QByteArray)),
-                obj, SLOT(receive(QByteArray)),
-                Qt::QueuedConnection);
+                obj, SLOT(receive(QByteArray)));
     } else {
         disconnect(obj, SIGNAL(write_data(QByteArray)),
                    device, SLOT(write(QByteArray)));
@@ -693,12 +700,13 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
 void MainWindow::ucOptionsClear()
 {
     ui->ucOptions->blockSignals(true);
-    QWidget* tab;
-    for (int i = ui->ucOptions->count(); 0 < i; i--)
+    QWidget* tab_holder;
+    for (int i = (ui->ucOptions->count() - 1); 0 <= i; i--)
     {
-        tab = ui->ucOptions->widget(0);
-        ui->ucOptions->removeTab(0);
-        if (tab != welcome_tab) delete tab;
+        tab_holder = ui->ucOptions->widget(i);
+        tab_holder->blockSignals(true);
+        ui->ucOptions->removeTab(i);
+        if (tab_holder != welcome_tab) ((GUI_BASE*) tab_holder)->closing();
     }
     ui->ucOptions->blockSignals(false);
 
