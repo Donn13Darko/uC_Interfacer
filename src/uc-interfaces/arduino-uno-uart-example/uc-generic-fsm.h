@@ -44,7 +44,7 @@ void fsm_destroy();
 void fsm_poll();
 bool fsm_isr();
 void fsm_run();
-void fsm_send(uint8_t* data, uint32_t data_len);
+void fsm_send(uint8_t major_key, uint8_t minor_key, uint8_t* data, uint32_t data_len);
 
 /*** Following extern functions must be defined on a per uC basis ***/
 
@@ -59,7 +59,7 @@ extern void uc_delay(uint32_t ms);
 /* Returns number of bytes available */
 extern uint8_t uc_bytes_available();
 /* Sends data across the connection, returns number of bytes sent */
-extern uint8_t uc_send(uint8_t* data, uint8_t data_len);
+extern uint8_t uc_send(uint8_t* data, uint32_t data_len);
 
 /*
  * Recomend including the predefined FSM for each of the below

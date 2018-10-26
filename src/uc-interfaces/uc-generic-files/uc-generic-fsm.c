@@ -41,10 +41,14 @@ uint8_t *fsm_buffer;
 uint8_t *fsm_checksum_buffer;
 uint8_t *fsm_checksum_cmp_buffer;
 uint8_t *fsm_ack_buffer;
+uint8_t *fsm_send_buffer;
+
+uint32_t fsm_buffer_len;
+uint32_t fsm_send_buffer_len;
 
 // Key & packet holders
-uint8_t num_s2_bytes;
-uint8_t major_key, minor_key;
+uint32_t num_s2_bytes;
+uint8_t major_key, minor_key, num_s2_bytes_len;
 uint32_t curr_packet_stage, checksum_max_size;
 
 // Buffer pointer holder
@@ -59,11 +63,16 @@ checksum_struct* fsm_get_checksum_struct(uint8_t gui_key);
 void fsm_setup(uint32_t buffer_len)
 {
     // Initialize variables
-    major_key = MAJOR_KEY_ERROR;
+    major_key = MAJOR_KEY_ERROR; // All errors are 0
     minor_key = MAJOR_KEY_ERROR; // All errors are 0
     curr_packet_stage = 1;
 
-    // Select largest checksum for array creation
+    // Enfore a minimum length of 10 (min required for basic io control)
+    if (buffer_len < 10) fsm_buffer_len = 10;
+    else fsm_buffer_len = buffer_len;
+    fsm_send_buffer_len = buffer_len;
+
+    // Select largest checksum for buffer size
     checksum_max_size = default_checksum.get_checksum_size();
     if (checksum_max_size < io_checksum.get_checksum_size())
         checksum_max_size = io_checksum.get_checksum_size();
@@ -72,9 +81,10 @@ void fsm_setup(uint32_t buffer_len)
     if (checksum_max_size < programmer_checksum.get_checksum_size())
         checksum_max_size = programmer_checksum.get_checksum_size();
 
-    // Malloc buffers
-    fsm_buffer = malloc((num_s1_bytes+buffer_len)*sizeof(fsm_buffer));
+    // Malloc initial buffers
+    fsm_buffer = malloc(fsm_buffer_len*sizeof(fsm_buffer));
     fsm_ack_buffer = malloc(num_s1_bytes*sizeof(fsm_ack_buffer));
+    fsm_send_buffer = malloc(fsm_send_buffer_len*sizeof(fsm_ack_buffer));
     fsm_checksum_buffer = malloc(checksum_max_size*sizeof(fsm_checksum_buffer));
     fsm_checksum_cmp_buffer = malloc(checksum_max_size*sizeof(fsm_checksum_cmp_buffer));
 
@@ -106,9 +116,43 @@ void fsm_poll()
         // Store first stage info
         major_key = fsm_buffer[s1_major_key_loc];
         minor_key = fsm_buffer[s1_minor_key_loc];
-        num_s2_bytes = fsm_buffer[s1_num_s2_bytes_loc];
 
-        // Read Second stage or ACK failed after 1 second
+        // Modify Major key for encoding
+        num_s2_bytes_len = major_key & 0x03;
+        major_key = major_key >> s1_major_key_bit_shift;
+
+        // Handle case of 3 (want uint32_t not uint24_t)
+        if (num_s2_bytes_len == 0x03) num_s2_bytes_len += 1;
+
+        // Read number of bytes in second stage or ACK failed after packet_timeout ms
+        // Reset uc buffers and return to first stage if failed
+        if (!fsm_read_next(fsm_buffer_ptr, num_s2_bytes_len, packet_timeout))
+        {
+            fsm_ack(MAJOR_KEY_ERROR);
+            uc_reset_buffers();
+            continue;
+        }
+        // Save number of bytes in stage 2
+        switch (num_s2_bytes_len)
+        {
+            case 1:
+                // 1 byte
+                num_s2_bytes = (uint8_t) *((uint8_t*) fsm_buffer_ptr);
+                break;
+            case 2:
+                // 2 bytes
+                num_s2_bytes = (uint16_t) *((uint16_t*) fsm_buffer_ptr);
+                break;
+            case 4:
+                num_s2_bytes = *((uint32_t*) fsm_buffer_ptr);
+                break;
+            default:
+                num_s2_bytes = 0;
+                break;
+        }
+        fsm_buffer_ptr += num_s2_bytes_len;
+
+        // Read Second stage or ACK failed after packet_timeout ms
         // Reset uc buffers and return to first stage if failed
         if (!fsm_read_next(fsm_buffer_ptr, num_s2_bytes, packet_timeout))
         {
@@ -126,8 +170,11 @@ void fsm_poll()
             continue;
         }
 
+        // Ignore ack and continue (should never get an ack here)
+        if (major_key == MAJOR_KEY_ACK) continue;
+
         // Check Checksum
-        if (!fsm_check_checksum(fsm_buffer, num_s1_bytes+num_s2_bytes, fsm_checksum_buffer))
+        if (!fsm_check_checksum(fsm_buffer, num_s1_bytes+num_s2_bytes_len+num_s2_bytes, fsm_checksum_buffer))
         {
             fsm_ack(MAJOR_KEY_ERROR);
             uc_reset_buffers();
@@ -254,34 +301,66 @@ void fsm_run()
 
 void fsm_ack(uint8_t ack_key)
 {
-    // Fill buffer
-    fsm_ack_buffer[s1_major_key_loc] = MAJOR_KEY_ACK;
-    fsm_ack_buffer[s1_minor_key_loc] = ack_key;
-    fsm_ack_buffer[s1_num_s2_bytes_loc] = 0;
-
     // Send buffer (fsm send attaches checksum)
-    fsm_send(fsm_ack_buffer, num_s1_bytes);
+    fsm_send(MAJOR_KEY_ACK, ack_key, 0, 0);
 }
 
-void fsm_send(uint8_t* data, uint32_t data_len)
+void fsm_send(uint8_t major_key, uint8_t minor_key, uint8_t* data, uint32_t data_len)
 {
-    // Construct checksum for data
-    checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc]);
-    uint32_t checksum_size = check->get_checksum_size();
-    uint8_t checksum_send_buffer[checksum_size];
-    memset(checksum_send_buffer, 0, checksum_size);
-    check->get_checksum(data, data_len, check->checksum_start, (uint8_t*) &checksum_send_buffer);
+    // Build send buffer
+    uint8_t bits;
+    if ((data_len == 0) || (data == 0)) bits = 0x00;
+    else if (data_len < 0xFF) bits = 0x01;
+    else if (data_len < 0xFFFF) bits = 0x02;
+    else bits = 0x03;
 
-    // Try to send packet across
+    // Fill in fsm major and minor key
+    fsm_send_buffer[s1_major_key_loc] = (major_key << s1_major_key_bit_shift) | bits;
+    fsm_send_buffer[s1_minor_key_loc] = minor_key;
+
+    // Fill in data length bits
+    switch (bits)
+    {
+        case 0x01:
+            *((uint8_t*) fsm_send_buffer+s1_num_s2_bytes_loc) = (uint8_t) data_len;
+            break;
+        case 0x02:
+            *((uint16_t*) fsm_send_buffer+s1_num_s2_bytes_loc) = (uint16_t) data_len;
+            break;
+        case 0x03:
+            bits += 1;
+            *((uint32_t*) fsm_send_buffer+s1_num_s2_bytes_loc) = (uint32_t) data_len;
+            break;
+    }
+
+    // Copy data into fsm buffer & update data len
+    if (bits != 0x00)
+    {
+        memcpy(fsm_send_buffer+num_s1_bytes+bits, data, data_len);
+        data_len += num_s1_bytes+bits;
+    } else
+    {
+        data_len = num_s1_bytes;
+    }
+
+    // Construct checksum for data
+    checksum_struct* check = fsm_get_checksum_struct(major_key);
+    uint32_t checksum_size = check->get_checksum_size();
+    check->get_checksum(fsm_send_buffer, data_len, check->checksum_start, fsm_send_buffer+data_len);
+
+    // If just acking, send and return
+    if (major_key == MAJOR_KEY_ACK)
+    {
+        uc_send(fsm_send_buffer, data_len+checksum_size);
+        return;
+    }
+
+    // Else, send & verify data packet transmission
     do
     {
         // Send data followed by checksum
         // Checksum needs to be sent right after data
-        uc_send(data, data_len);
-        uc_send((uint8_t*) &checksum_send_buffer, checksum_size);
-
-        // Not expecting an ack back so return
-        if (data[0] == MAJOR_KEY_ACK) return;
+        uc_send(fsm_send_buffer, data_len+checksum_size);
 
         // Read ack (happens only if if not sending an ack)
         fsm_read_next(fsm_ack_buffer, num_s1_bytes, packet_timeout);
@@ -289,10 +368,10 @@ void fsm_send(uint8_t* data, uint32_t data_len)
         if (fsm_check_checksum(fsm_ack_buffer, num_s1_bytes, fsm_checksum_buffer))
         {
             // Handle ack errors or resets
-            switch (fsm_ack_buffer[s1_major_key_loc])
+            switch (fsm_ack_buffer[s1_major_key_loc] >> s1_major_key_bit_shift)
             {
                 case MAJOR_KEY_ACK: // If keys match exit otherwise send again
-                    if (fsm_ack_buffer[s1_minor_key_loc] == data[s1_major_key_loc])
+                    if (fsm_ack_buffer[s1_minor_key_loc] == fsm_send_buffer[s1_minor_key_loc])
                         return;
                     break;
                 case MAJOR_KEY_RESET: // Reset and exit if reset received
@@ -333,7 +412,7 @@ bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 
 bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp)
 {
-    checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc]);
+    checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc] >> s1_major_key_bit_shift);
     uint32_t checksum_size = check->get_checksum_size();
     check->get_checksum(data, data_len, check->checksum_start, fsm_checksum_cmp_buffer);
     return check->check_checksum(checksum_cmp, fsm_checksum_cmp_buffer);

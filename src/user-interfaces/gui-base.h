@@ -60,7 +60,7 @@ public:
     virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
     // Static members
-    static const uint8_t default_chunk_size = 32;
+    static const uint32_t default_chunk_size = 32;
 
 signals:
     void write_data(QByteArray data);
@@ -142,7 +142,7 @@ private:
     QByteArray gui_checksum_start;
 
     // Static class members
-    static uint8_t chunk_size;
+    static uint32_t chunk_size;
     static bool generic_checksum_is_exe;
     static QString generic_checksum_exe_path;
     static checksum_struct generic_checksum;
@@ -151,7 +151,7 @@ private:
 
     // Send to device
     void transmit(QByteArray data);
-    void getChecksum(const uint8_t* data, uint8_t data_len, uint8_t checksum_key,
+    void getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
                      uint8_t** checksum_array, uint32_t* checksum_size);
 
     void close_base();

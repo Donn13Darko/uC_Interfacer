@@ -56,13 +56,14 @@ typedef enum {
     s1_major_key_loc = 0,
     s1_minor_key_loc,
     s1_num_s2_bytes_loc,
-    s1_end_loc
+    s1_end_loc = s1_num_s2_bytes_loc
 } S1_Major_Settings;
 
 // Variables
 static const uint32_t packet_timeout = 500; // ms
 static const uint8_t num_s1_bytes = s1_end_loc;
-extern uint8_t num_s2_bytes;
+static const uint8_t s1_major_key_bit_shift = 2;
+extern uint32_t num_s2_bytes;
 
 /*
  * Struct for settings the checksum functions

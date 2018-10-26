@@ -50,7 +50,7 @@ float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 // Read array (more DIO than AIO)
 const uint8_t dio_data_len = 2*num_DIO;
 const uint8_t aio_data_len = 2*num_AIO;
-uint8_t read_data[dio_data_len+3];
+uint8_t read_data[dio_data_len];
 
 // Just ignore these functions for now
 void uc_data_transmit(uint8_t, const uint8_t*, uint8_t) {}
@@ -72,7 +72,7 @@ void setup()
     
     // Init Serial transfer
     Serial.setTimeout(packet_timeout);
-    Serial.begin(1200);
+    Serial.begin(115200);
 
     // Init fsm
     fsm_setup(len);
@@ -140,7 +140,7 @@ uint8_t uc_bytes_available()
     return Serial.available();
 }
 
-uint8_t uc_send(uint8_t* data, uint8_t data_len)
+uint8_t uc_send(uint8_t* data, uint32_t data_len)
 {
     return Serial.write(data, data_len);
 }
@@ -150,15 +150,9 @@ void uc_dio_read()
 {
     // Setup variables
     uint16_t val;
-    uint8_t j = 0;
+    uint8_t j = 0;    
 
-    // Compose stage 1
-    read_data[j++] = MAJOR_KEY_READ_RESPONSE; // Major Key
-    read_data[j++] = MINOR_KEY_IO_DIO_READ;   // Minor Key
-    read_data[j++] = dio_data_len;            // Num s2 bytes
-    
-
-    // Compose stage 2
+    // Compose data
     for (uint8_t i = 0; i < num_DIO; i++)
     {        
         // Iterate over pins
@@ -185,7 +179,7 @@ void uc_dio_read()
     }
 
     // Send data to GUI (use fsm_send to add checksum)
-    fsm_send((uint8_t*) read_data, j);
+    fsm_send(MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ, (uint8_t*) read_data, j);
 }
 
 // Read and return the AIO states
@@ -194,13 +188,8 @@ void uc_aio_read()
     // Setup variables
     uint16_t val;
     uint8_t j = 0;
-    
-    // Compose stage 1
-    read_data[j++] = MAJOR_KEY_READ_RESPONSE; // Major Key
-    read_data[j++] = MINOR_KEY_IO_AIO_READ;   // Minor Key
-    read_data[j++] = aio_data_len;            // Num s2 bytes
 
-    // Compose stage 2
+    // Compose data
     for (uint8_t i = 0; i < num_AIO; i++)
     {
         // Scale value
@@ -212,7 +201,7 @@ void uc_aio_read()
     }
 
     // Send data to GUI (use fsm_send to add checksum)
-    fsm_send((uint8_t*) read_data, j);
+    fsm_send(MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ, (uint8_t*) read_data, j);
 }
 
 // Connect PWM timer

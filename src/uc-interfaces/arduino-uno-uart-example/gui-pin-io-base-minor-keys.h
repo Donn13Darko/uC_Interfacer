@@ -32,12 +32,12 @@ typedef enum {
     // AIO Keys
     MINOR_KEY_IO_AIO,
     MINOR_KEY_IO_AIO_SET,
-    MINOR_KEY_IO_DIO_READ,
+    MINOR_KEY_IO_AIO_READ,
 
     // DIO Keys
     MINOR_KEY_IO_DIO,
     MINOR_KEY_IO_DIO_SET,
-    MINOR_KEY_IO_AIO_READ,
+    MINOR_KEY_IO_DIO_READ,
 
     // Leave this key at end (used for child GUI keys)
     MINOR_KEY_IO_MAIN_END

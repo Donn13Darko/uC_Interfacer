@@ -217,8 +217,7 @@ void GUI_8AIO_16DIO_COMM::updateValues()
 
     send({
              gui_key,
-             requestType,
-             0
+             requestType
          });
 }
 

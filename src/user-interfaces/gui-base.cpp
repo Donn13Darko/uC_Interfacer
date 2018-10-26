@@ -25,7 +25,7 @@
 #include <QSettings>
 #include <QProcess>
 
-uint8_t GUI_BASE::chunk_size = GUI_BASE::default_chunk_size;
+uint32_t GUI_BASE::chunk_size = GUI_BASE::default_chunk_size;
 bool GUI_BASE::generic_checksum_is_exe = false;
 QString GUI_BASE::generic_checksum_exe_path = "";
 checksum_struct GUI_BASE::generic_checksum = DEFAULT_CHECKSUM_STRUCT;
@@ -34,16 +34,16 @@ QByteArray GUI_BASE::generic_checksum_start = QByteArray();
 // Setup suported checksums map
 QMap<QString, checksum_struct>
 GUI_BASE::supportedChecksums({
-                                 {"CRC_8_LUT", {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT, nullptr, nullptr}},
-                                 {"CRC_8_POLY", {get_crc_8_POLY_size, get_crc_8_POLY, check_crc_8_POLY, nullptr, nullptr}},
-                                 {"CRC_16_LUT", {get_crc_16_LUT_size, get_crc_16_LUT, check_crc_16_LUT, nullptr, nullptr}},
-                                 {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY, nullptr, nullptr}},
-                                 {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT, nullptr, nullptr}},
-                                 {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY, nullptr, nullptr}},
-                                 {"CHECKSUM_EXE", {get_checksum_exe_size, get_checksum_exe, check_checksum_exe, nullptr, nullptr}}
+                                 {"CRC_8_LUT", {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT, 0, 0}},
+                                 {"CRC_8_POLY", {get_crc_8_POLY_size, get_crc_8_POLY, check_crc_8_POLY, 0, 0}},
+                                 {"CRC_16_LUT", {get_crc_16_LUT_size, get_crc_16_LUT, check_crc_16_LUT, 0, 0}},
+                                 {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY, 0, 0}},
+                                 {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT, 0, 0}},
+                                 {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY, 0, 0}},
+                                 {"CHECKSUM_EXE", {get_checksum_exe_size, get_checksum_exe, check_checksum_exe, 0, 0}}
                              });
 
-uint8_t num_s2_bytes;
+uint32_t num_s2_bytes;
 
 GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
@@ -57,12 +57,10 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     // Init Ack variables
     ack_status = false;
     ack_key = MAJOR_KEY_ERROR;
-    ackTimer.setSingleShot(true);
 
     // Init Data variables
     data_status = false;
     data_key = MAJOR_KEY_ERROR;
-    dataTimer.setSingleShot(true);
 
     // Init gui checksum variables
     gui_checksum_is_exe = false;
@@ -72,47 +70,30 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
 
     // Connect read signals and slots
     connect(this, SIGNAL(readyRead(QByteArray)),
-            this, SLOT(receive_gui(QByteArray)),
-            Qt::QueuedConnection);
+            this, SLOT(receive_gui(QByteArray)));
 
     // Connect data loop signals and slots
     connect(this, SIGNAL(readyRead(QByteArray)),
-            &dataLoop, SLOT(quit()),
-            Qt::QueuedConnection);
+            &dataLoop, SLOT(quit()));
+    connect(&dataTimer, SIGNAL(timeout()),
+            &dataLoop, SLOT(quit()));
     connect(this, SIGNAL(resetting()),
-            &dataLoop, SLOT(quit()),
-            Qt::QueuedConnection);
+            &dataLoop, SLOT(quit()));
 
     // Connect ack loop signals and slots
     connect(this, SIGNAL(ackReceived(QByteArray)),
-            this, SLOT(checkAck(QByteArray)),
-            Qt::QueuedConnection);
+            this, SLOT(checkAck(QByteArray)));
     connect(this, SIGNAL(ackChecked(bool)),
-            &ackLoop, SLOT(quit()),
-            Qt::QueuedConnection);
+            &ackLoop, SLOT(quit()));
     connect(&ackTimer, SIGNAL(timeout()),
-            &ackLoop, SLOT(quit()),
-            Qt::QueuedConnection);
+            &ackLoop, SLOT(quit()));
     connect(this, SIGNAL(resetting()),
-            &ackLoop, SLOT(quit()),
-            Qt::QueuedConnection);
+            &ackLoop, SLOT(quit()));
 }
 
 GUI_BASE::~GUI_BASE()
 {
     exit_dev = true;
-}
-
-void GUI_BASE::closing()
-{
-    // Set exit to true
-    exit_dev = true;
-
-    // Reset send
-    reset_remote();
-
-    // See if ready to exit
-    close_base();
 }
 
 void GUI_BASE::reset_remote()
@@ -127,11 +108,23 @@ void GUI_BASE::reset_remote()
     emit resetting();
 
     // Load reset CMD into msgList
-    send({MAJOR_KEY_RESET, 0, 0});
+    send({MAJOR_KEY_RESET, 0});
 
     // Exiting here returngs control to the main event loop
     // Required in order for the next packet to be sent
     // if currently in waitForAck or waitForData
+}
+
+void GUI_BASE::closing()
+{
+    // Set exit to true
+    exit_dev = true;
+
+    // Reset send
+    reset_remote();
+
+    // See if ready to exit
+    close_base();
 }
 
 void GUI_BASE::set_gui_checksum(QStringList new_gui_checksum)
@@ -273,8 +266,10 @@ void GUI_BASE::receive(QByteArray recvData)
     if (!recvLock.tryLock()) return;
 
     // Loop until break or rcvd is empty
-    uint8_t expected_len;
-    uint8_t rcvd_len = rcvd_raw.length();
+    uint32_t bits, count;
+    uint32_t expected_len;
+    uint32_t rcvd_len = rcvd_raw.length();
+    QByteArray tmp;
     while ((0 < rcvd_len) && !exit_dev)
     {
         // Check to see if first stage in rcvd
@@ -283,7 +278,7 @@ void GUI_BASE::receive(QByteArray recvData)
 
         // Check to see if it's an Ack packet (no second stage)
         uint32_t checksum_size;
-        if (rcvd_raw.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
+        if (rcvd_raw.at(s1_major_key_loc) == (char) (MAJOR_KEY_ACK << s1_major_key_bit_shift))
         {
             // Set generic checksum executable if using
             if (generic_checksum_is_exe)
@@ -300,19 +295,41 @@ void GUI_BASE::receive(QByteArray recvData)
                 break;
             }
 
+            // Build temporary array to send off data
+            tmp.clear();
+            tmp.append((char) (rcvd_raw.at(s1_major_key_loc) >> s1_major_key_bit_shift));
+            tmp.append(rcvd_raw.mid(1, expected_len-1));
+
             // Emit ack received
-            emit ackReceived(rcvd_raw.mid(0, expected_len));
+            emit ackReceived(tmp);
 
             // Remove ack
             rcvd_raw.remove(0, expected_len+checksum_size);
         } else
         {
+            // Check if byte length in received
+            bits = (rcvd_raw.at(s1_major_key_loc) & 0x03);
+            if (bits == 0x03) bits += 1;
+            expected_len += bits;
+            if (rcvd_len < expected_len) break;
+
+            // Read in num_s2_bytes
+            num_s2_bytes = 0;
+            for (count = 0; count < bits; count++)
+            {
+                num_s2_bytes = ((num_s2_bytes << 8) | ((char) rcvd_raw.at(s1_num_s2_bytes_loc+count)));
+            }
+
+            // Check if second stage in rcvd
+            expected_len += num_s2_bytes;
+            if (rcvd_len < (expected_len)) break;
+
             // Set gui checksum executable if using
-            if (gui_checksum_is_exe) set_executable_checksum_exe(gui_checksum_exe_path.toUtf8().constData());
+            if (gui_checksum_is_exe)
+                set_executable_checksum_exe(gui_checksum_exe_path.toUtf8().constData());
             checksum_size = gui_checksum.get_checksum_size();
 
-            // Check if second stage & checksum in rcvd
-            expected_len += rcvd_raw.at(s1_num_s2_bytes_loc);
+            // Check if checksum in rcvd
             if (rcvd_len < (expected_len+checksum_size)) break;
 
             // Check Checksum
@@ -326,12 +343,17 @@ void GUI_BASE::receive(QByteArray recvData)
                 break;
             }
 
+            // Build temporary array to send off data and ack
+            tmp.clear();
+            tmp.append((char) (rcvd_raw.at(s1_major_key_loc) >> s1_major_key_bit_shift));
+            tmp.append(rcvd_raw.mid(1, expected_len-1));
+
             // Ack success & set data status
-            send_ack((uint8_t) rcvd_raw.at(s1_major_key_loc));
+            send_ack((uint8_t) tmp.at(s1_major_key_loc));
             data_status = true;
 
             // Emit readyRead
-            emit readyRead(rcvd_raw.left(expected_len));
+            emit readyRead(tmp);
 
             // Remove data from rcvd_raw
             rcvd_raw.remove(0, expected_len+checksum_size);
@@ -369,7 +391,7 @@ void GUI_BASE::send(QString data)
 
 void GUI_BASE::send(QByteArray data)
 {
-    transmit(data);
+    send_chunk(data, QByteArray());
 }
 
 void GUI_BASE::send(std::initializer_list<uint8_t> data)
@@ -400,25 +422,52 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
     uint32_t pos = 0;
     uint32_t end_pos = chunk.length();
 
+    // Bitshift start for data length encoding
+    QByteArray start_shifted;
+    if (!start.isEmpty())
+    {
+        start_shifted.append((char) (start.at(s1_major_key_loc) << s1_major_key_bit_shift));
+    }
+    start.replace(s1_major_key_loc, 1, start_shifted);
+
     // Send start of data chunk
     // (if multiple packets are required)
     if (chunk_size < end_pos)
     {
-        data.append(start);
-        data.append((char) 0);
-        transmit(data);
+        transmit(start);
     }
 
     // Send data chunk
-    while (pos < end_pos)
+    uint32_t data_len, bits, bit_num;
+    do
     {
         // Clear data and add start array
         data.clear();
-        data.append(start);
 
         // Get next data chunk and add info
         curr = chunk.mid(pos, chunk_size);
-        data.append((char) curr.length());
+
+        // Compute size of data chunk and modify data array
+        data_len = curr.length();
+        if (data_len == 0) bits = 0x00;
+        else if (data_len <= 0xFF) bits = 0x01;
+        else if (data_len <= 0xFFFF) bits = 0x02;
+        else bits = 0x03;
+        data.append((char) (start.at(s1_major_key_loc) | bits));
+        data.append(start.mid(s1_minor_key_loc));
+
+        // Append data length and data
+        start_shifted.clear();
+        for (bit_num = 0; bit_num < bits; bit_num++)
+        {
+            start_shifted.prepend((char) (data_len & 0xFF));
+            data_len >>= 8;
+        }
+
+        // If 0x03, add a final byte to make it uint32_t
+        if (bits == 0x03) start_shifted.prepend((char) (data_len & 0xFF));
+
+        data.append(start_shifted);
         data.append(curr);
 
         // Transmit data to device
@@ -426,16 +475,13 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
 
         // Increment position counter
         pos += chunk_size;
-    }
+    } while (pos < end_pos);
 
     // Send end of data chunk
     // (if multiple packets were required)
     if (chunk_size < end_pos)
     {
-        data.clear();
-        data.append(start);
-        data.append((char) 0);
-        transmit(data);
+        transmit(start);
     }
 }
 
@@ -467,9 +513,8 @@ void GUI_BASE::send_ack(uint8_t majorKey)
 {
     // Build ack packet
     QByteArray ack_packet;
-    ack_packet.append((char) MAJOR_KEY_ACK);
+    ack_packet.append((char) (MAJOR_KEY_ACK << s1_major_key_bit_shift));
     ack_packet.append((char) majorKey);
-    ack_packet.append((char) 0);
 
     // Get checksum
     uint8_t* checksum_array;
@@ -511,11 +556,10 @@ bool GUI_BASE::check_checksum(const uint8_t* data, uint32_t data_len, checksum_s
 {
     // Create checksum variables
     uint32_t checksum_size = check->get_checksum_size();
-    uint8_t checksum_start[checksum_size] = {0};
     uint8_t fsm_checksum_cmp_buffer[checksum_size];
 
     // Compute checksum on data
-    check->get_checksum(data, data_len, checksum_start, fsm_checksum_cmp_buffer);
+    check->get_checksum(data, data_len, check->checksum_start, fsm_checksum_cmp_buffer);
 
     // Compare generated to received checksum
     return check->check_checksum(data+data_len, fsm_checksum_cmp_buffer);
@@ -554,7 +598,7 @@ void GUI_BASE::transmit(QByteArray data)
     if (data.isEmpty() || exit_dev) return;
 
     // Don't load message if resetting and it isn't a reset
-    bool isReset = (data.at(s1_major_key_loc) == (char) MAJOR_KEY_RESET);
+    bool isReset = (data.at(s1_major_key_loc) == (char) (MAJOR_KEY_RESET << s1_major_key_bit_shift));
     if (reset_dev && !isReset) return;
 
     // Append to msgList
@@ -571,10 +615,10 @@ void GUI_BASE::transmit(QByteArray data)
     {
         // Get next data to send
         currData = msgList.takeFirst();
-        ack_key = currData.at(s1_major_key_loc);
         ack_status = false;
         data_status = false;
-        isReset = (currData.at(s1_major_key_loc) == (char) MAJOR_KEY_RESET);
+        ack_key = ((char) currData.at(s1_major_key_loc) >> s1_major_key_bit_shift);
+        isReset = (ack_key == MAJOR_KEY_RESET);
 
         // Get checksum
         getChecksum((const uint8_t*) currData.constData(), currData.length(),
@@ -629,7 +673,7 @@ void GUI_BASE::transmit(QByteArray data)
     if (exit_dev) close_base();
 }
 
-void GUI_BASE::getChecksum(const uint8_t* data, uint8_t data_len, uint8_t checksum_key,
+void GUI_BASE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
                            uint8_t** checksum_array, uint32_t* checksum_size)
 {
     // Get checksum
@@ -659,7 +703,7 @@ void GUI_BASE::getChecksum(const uint8_t* data, uint8_t data_len, uint8_t checks
 
 void GUI_BASE::close_base()
 {
-    // Ensure exit set
+    // Ensure exit is set
     if (!exit_dev) return;
 
     // Test send & recv locks (non-block)
@@ -667,10 +711,14 @@ void GUI_BASE::close_base()
     if (!recv_closed) recv_closed = recvLock.tryLock();
     if (!(send_closed && recv_closed)) return;
 
-    // Close widget if able to aquire both
-    while (!close());
-
-    // Release both locks
-    sendLock.unlock();
-    recvLock.unlock();
+    // Close widget if both locks acquired
+    if (close())
+    {
+        // Release locks
+        sendLock.unlock();
+        recvLock.unlock();
+    } else
+    {
+        qDebug() << "Error: Failed to close!";
+    }
 }

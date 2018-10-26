@@ -88,7 +88,7 @@ void GUI_PIN_BASE::recordPinValues(PinTypeInfo *pInfo)
 void GUI_PIN_BASE::receive_gui(QByteArray recvData)
 {
     // Check known major key
-    if (recvData.at(s1_major_key_loc) != (char) MAJOR_KEY_READ_RESPONSE)
+    if (recvData.at(s1_major_key_loc) != (char) gui_key)
         return;
 
     // Set values with minor key
