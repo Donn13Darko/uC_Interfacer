@@ -238,63 +238,14 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     {
         case CONN_TYPE_RS_232:
         {
-            // Create and fill new settings struct
+            // Create a new settings struct
             Serial_RS232_Settings dev_settings = Serial_RS232_Settings_DEFAULT;
-            dev_settings.port = connInfo;
-            dev_settings.baudrate = speed.toInt();
 
-            // Parse custom list & config map
-            if (configMap->contains(ui->ConnType_Combo->currentText())
-                                 || !main_options_settings.custom.isEmpty())
-            {
-                // Create holding list
-                QString setting;
-                QStringList filteredSettings;
-
-                // Get group QMap
-                QMap<QString, QVariant> tmpMap;
-                QMap<QString, QVariant>* groupMap = \
-                        configMap->value(ui->ConnType_Combo->currentText(), &tmpMap);
-
-                // Check if data bits setting
-                setting = "dataBits";
-                filteredSettings = main_options_settings.custom.filter(setting);
-                if (!filteredSettings.isEmpty())
-                    dev_settings.dataBits = filteredSettings.at(0).split(':').at(1).toInt();
-                else if (groupMap->contains(setting))
-                    dev_settings.dataBits = groupMap->value(setting).toInt();
-                // Check if direction setting
-                setting = "direction";
-                filteredSettings = main_options_settings.custom.filter(setting);
-                if (!filteredSettings.isEmpty())
-                    dev_settings.direction = filteredSettings.at(0).split(':').at(1);
-                else if (groupMap->contains(setting))
-                    dev_settings.direction = groupMap->value(setting).toString();
-
-                // Check if flowControl setting
-                setting = "flowControl";
-                filteredSettings = main_options_settings.custom.filter(setting);
-                if (!filteredSettings.isEmpty())
-                    dev_settings.flowControl = filteredSettings.at(0).split(':').at(1);
-                else if (groupMap->contains(setting))
-                    dev_settings.flowControl = groupMap->value(setting).toString();
-
-                // Check if parity setting
-                setting = "parity";
-                filteredSettings = main_options_settings.custom.filter(setting);
-                if (!filteredSettings.isEmpty())
-                    dev_settings.parity = filteredSettings.at(0).split(':').at(1);
-                else if (groupMap->contains(setting))
-                    dev_settings.parity = groupMap->value(setting).toString();
-
-                // Check if stopBits setting
-                setting = "stopBits";
-                filteredSettings = main_options_settings.custom.filter(setting);
-                if (!filteredSettings.isEmpty())
-                    dev_settings.stopBits = filteredSettings.at(0).split(':').at(1).toFloat();
-                else if (groupMap->contains(setting))
-                    dev_settings.stopBits = groupMap->value(setting).toFloat();
-            }
+            // Call parse function
+            QMap<QString, QVariant> tmpMap;
+            options_serial_rs232(&main_options_settings,
+                                 configMap->value(ui->ConnType_Combo->currentText(), &tmpMap),
+                                 &dev_settings);
 
             // Create new object
             device = new Serial_RS232(&dev_settings, this);
@@ -802,5 +753,55 @@ void MainWindow::update_options(MoreOptions_struct* options)
             // Set the new gui checksum
             tab_holder->set_gui_checksum(checksum_info);
         }
+    }
+}
+
+void MainWindow::options_serial_rs232(MoreOptions_struct *options,
+                                      QMap<QString, QVariant> *groupMap,
+                                      Serial_RS232_Settings *settings)
+{
+    // Add basic info
+    settings->port = ui->ConnInfo_Combo->currentText();
+    settings->baudrate = speed.toInt();
+
+    // Parse custom list & config map
+    if (configMap->contains(ui->ConnType_Combo->currentText())
+                         || !options->custom.isEmpty())
+    {
+        // Create holding list
+        QString setting;
+        QStringList filteredSettings;
+
+        // Check if data bits setting
+        setting = "dataBits";
+        filteredSettings = options->custom.filter(setting);
+        if (!filteredSettings.isEmpty())
+            settings->dataBits = filteredSettings.at(0).split(':').at(1).toInt();
+        else if (groupMap->contains(setting))
+            settings->dataBits = groupMap->value(setting).toInt();
+
+        // Check if flowControl setting
+        setting = "flowControl";
+        filteredSettings = options->custom.filter(setting);
+        if (!filteredSettings.isEmpty())
+            settings->flowControl = filteredSettings.at(0).split(':').at(1).toInt();
+        else if (groupMap->contains(setting))
+            settings->flowControl = groupMap->value(setting).toInt();
+
+        // Check if parity setting
+        setting = "parity";
+        filteredSettings = options->custom.filter(setting);
+        if (!filteredSettings.isEmpty())
+            settings->parity = filteredSettings.at(0).split(':').at(1).toInt();
+        else if (groupMap->contains(setting))
+            settings->parity = groupMap->value(setting).toInt();
+
+        // Check if stopBits setting
+        setting = "stopBits";
+        filteredSettings = options->custom.filter(setting);
+        if (!filteredSettings.isEmpty())
+            settings->stopBits = filteredSettings.at(0).split(':').at(1).toInt();
+        else if (groupMap->contains(setting))
+            settings->stopBits = groupMap->value(setting).toInt();
     }
 }

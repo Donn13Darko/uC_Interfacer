@@ -26,15 +26,14 @@
 typedef struct {
     QString port;
     int32_t baudrate;
-    int32_t dataBits;
-    QString direction;
-    QString flowControl;
-    QString parity;
-    float stopBits;
+    uint8_t dataBits;
+    uint8_t flowControl;
+    uint8_t parity;
+    uint8_t stopBits;
 } Serial_RS232_Settings;
 #define Serial_RS232_Settings_DEFAULT Serial_RS232_Settings{\
-    .port="", .baudrate=9600, .dataBits=8, .direction="All",\
-    .flowControl="No", .parity="No", .stopBits=1.0}
+    .port="", .baudrate=9600, .dataBits=8,\
+    .flowControl=0, .parity=0, .stopBits=1}
 
 class Serial_RS232 : public COMMS_BASE
 {

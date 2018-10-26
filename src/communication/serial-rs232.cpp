@@ -34,15 +34,8 @@ Serial_RS232::Serial_RS232(Serial_RS232_Settings* serial_settings, QObject *pare
     initSuccess = (initSuccess && rs232);
     if (!initSuccess) return;
 
-    // Set values
-    rs232->setPortName(serial_settings->port);
-    rs232->setDataBits((QSerialPort::DataBits) serial_settings->dataBits);
-
-    // Try to convert & set baudrate, error if fails
-    initSuccess = (initSuccess
-                   && serial_settings->baudrate
-                   && rs232->setBaudRate(serial_settings->baudrate));
-    if (!initSuccess) return;
+    // Call parser for settings
+    parseSettings(serial_settings);
 
     connect(rs232, SIGNAL(readyRead()),
             this, SLOT(read()));
@@ -122,4 +115,50 @@ void Serial_RS232::checkError(QSerialPort::SerialPortError)
 {
     connected = false;
     emit deviceDisconnected();
+}
+
+void Serial_RS232::parseSettings(Serial_RS232_Settings* serial_settings)
+{
+    // Set port name
+    if (serial_settings->port.isEmpty())
+    {
+        initSuccess = false;
+        return;
+    } else
+    {
+        rs232->setPortName(serial_settings->port);
+    }
+
+    // Try setting baudrate (sets direction to All, baudrate can't be 0)
+    initSuccess = (initSuccess
+                   && serial_settings->baudrate
+                   && rs232->setBaudRate(serial_settings->baudrate));
+    if (!initSuccess) return;
+
+    // Try setting dataBits, (must be between 5 and 8)
+    initSuccess = (initSuccess
+                   && (5 <= serial_settings->dataBits)
+                   && (serial_settings->dataBits <= 8)
+                   && rs232->setDataBits((QSerialPort::DataBits) serial_settings->dataBits));
+    if (!initSuccess) return;
+
+    // Try setting flow control (must be less than 2, can be 0)
+    initSuccess = (initSuccess
+                   && (serial_settings->flowControl <= 2)
+                   && rs232->setFlowControl((QSerialPort::FlowControl) serial_settings->flowControl));
+    if (!initSuccess) return;
+
+    // Try setting parity (must be less than 5 and not 1, can be 0)
+    initSuccess = (initSuccess
+                   && (serial_settings->parity != 1)
+                   && (serial_settings->parity <= 5)
+                   && rs232->setParity((QSerialPort::Parity) serial_settings->parity));
+    if (!initSuccess) return;
+
+    // Try setting stop bits (must be between 1 and 3)
+    initSuccess = (initSuccess
+                   && (1 <= serial_settings->stopBits)
+                   && (serial_settings->stopBits <= 3)
+                   && rs232->setStopBits((QSerialPort::StopBits) serial_settings->stopBits));
+    if (!initSuccess) return;
 }

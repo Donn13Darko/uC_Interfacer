@@ -130,6 +130,11 @@ private:
     QStringList getConnSpeeds();
 
     void update_options(MoreOptions_struct *options);
+
+    // Connection option parsers
+    void options_serial_rs232(MoreOptions_struct *options,
+                              QMap<QString, QVariant>* groupMap,
+                              Serial_RS232_Settings* settings);
 };
 
 #endif // MAINWINDOW_H
