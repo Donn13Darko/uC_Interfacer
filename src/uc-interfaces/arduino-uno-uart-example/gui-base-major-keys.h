@@ -27,28 +27,29 @@ extern "C"
 #include <stdint.h>
 
 // Major Keys enum
+static const uint8_t s1_major_key_bit_shift = 2;
 typedef enum {
     // Error and reset
-    MAJOR_KEY_ERROR = 0,
+    MAJOR_KEY_ERROR = 0 << 2,
 
     // GUI Types (Major Keys)
     // Must be kept here and in same order as
     // supportedGUIsList in mainwindow.cpp
-    MAJOR_KEY_GENERAL_SETTINGS,
-    MAJOR_KEY_WELCOME,
-    MAJOR_KEY_IO,
-    MAJOR_KEY_DATA_TRANSMIT,
-    MAJOR_KEY_PROGRAMMER,
-    MAJOR_KEY_CUSTOM_CMD,
+    MAJOR_KEY_GENERAL_SETTINGS = 1 << 2,
+    MAJOR_KEY_WELCOME = 2 << 2,
+    MAJOR_KEY_IO = 3 << 2,
+    MAJOR_KEY_DATA_TRANSMIT = 4 << 2,
+    MAJOR_KEY_PROGRAMMER = 5 << 2,
+    MAJOR_KEY_CUSTOM_CMD = 6 << 2,
 
     // Reset cmds
-    MAJOR_KEY_RESET,
+    MAJOR_KEY_RESET = 7 << 2,
 
     // Responses
-    MAJOR_KEY_READ_RESPONSE,
+    MAJOR_KEY_READ_RESPONSE = 8 << 2,
 
     // Action confirmations
-    MAJOR_KEY_ACK
+    MAJOR_KEY_ACK = 9 << 2
 } GUI_BASE_MAJOR_KEYS;
 
 /* First stage (s1) generic key positions */
@@ -62,7 +63,8 @@ typedef enum {
 // Variables
 static const uint32_t packet_timeout = 500; // ms
 static const uint8_t num_s1_bytes = s1_end_loc;
-static const uint8_t s1_major_key_bit_shift = 2;
+static const uint8_t s1_major_key_bit_mask = 0xFC;
+static const uint8_t s1_num_s2_bytes_bit_mask = 0x03;
 extern uint32_t num_s2_bytes;
 
 /*

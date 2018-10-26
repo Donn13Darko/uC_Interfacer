@@ -44,7 +44,7 @@ void fsm_destroy();
 void fsm_poll();
 bool fsm_isr();
 void fsm_run();
-void fsm_send(uint8_t major_key, uint8_t minor_key, uint8_t* data, uint32_t data_len);
+void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, uint8_t* data, uint32_t data_len);
 
 /*** Following extern functions must be defined on a per uC basis ***/
 

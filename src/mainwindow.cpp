@@ -84,11 +84,17 @@ MainWindow::MainWindow(QWidget *parent) :
     speed = "";
     updateConnInfo = new QTimer();
 
-    // Add specified values to combos
+    // Add values to Device combo
+    ui->Device_Combo->blockSignals(true);
     ui->Device_Combo->clear();
     ui->Device_Combo->addItems(MainWindow::supportedDevicesList);
+    ui->Device_Combo->blockSignals(false);
+
+    // Add values to conn type combo
+    ui->ConnType_Combo->blockSignals(true);
     ui->ConnType_Combo->clear();
     ui->ConnType_Combo->addItems(MainWindow::supportedProtocolsList);
+    ui->ConnType_Combo->blockSignals(false);
 
     // Set Initial values
     setConnected(false);
@@ -723,19 +729,19 @@ bool MainWindow::deviceConnected()
 uint8_t MainWindow::getConnType()
 {
     // currentIndex() returns -1 on error which maps to CONN_TYPE_ERROR (0 == universal error)
-    return (uint8_t) (ui->ConnType_Combo->currentIndex()+MAJOR_KEY_GENERAL_SETTINGS);
+    return (uint8_t) (ui->ConnType_Combo->currentIndex()+1);
 }
 
 uint8_t MainWindow::getDevType()
 {
     // currentIndex() returns -1 on error which maps to DEV_TYPE_ERROR (0 == universal error)
-    return (uint8_t) (ui->Device_Combo->currentIndex()+MAJOR_KEY_GENERAL_SETTINGS);
+    return (uint8_t) (ui->Device_Combo->currentIndex()+1);
 }
 
 uint8_t MainWindow::getGUIType(QString type)
 {
     // indexOf() returns -1 on error which maps to MAJOR_KEY_ERROR (0 == universal error)
-    return (uint8_t) (supportedGUIsList.indexOf(type)+MAJOR_KEY_GENERAL_SETTINGS);
+    return (uint8_t) ((supportedGUIsList.indexOf(type)+1) << s1_major_key_bit_shift);
 }
 
 QString MainWindow::getGUIName(uint8_t type)
@@ -744,7 +750,7 @@ QString MainWindow::getGUIName(uint8_t type)
     if (supportedGUIsList.length() < type) return "ERROR";
 
     // Return the string
-    return supportedGUIsList.at(type-MAJOR_KEY_GENERAL_SETTINGS);
+    return supportedGUIsList.at((type >> s1_major_key_bit_shift)-1);
 }
 
 QStringList MainWindow::getConnSpeeds()

@@ -92,7 +92,7 @@ void GUI_PIN_BASE::receive_gui(QByteArray recvData)
         return;
 
     // Set values with minor key
-    setValues(recvData.at(s1_minor_key_loc), recvData.right(recvData.at(s1_num_s2_bytes_loc)));
+    setValues(recvData.at(s1_minor_key_loc), recvData.mid(s1_end_loc));
 }
 
 void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io_pos, QByteArray *data)

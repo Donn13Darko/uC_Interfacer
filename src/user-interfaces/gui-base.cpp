@@ -266,8 +266,8 @@ void GUI_BASE::receive(QByteArray recvData)
     if (!recvLock.tryLock()) return;
 
     // Loop until break or rcvd is empty
-    uint32_t bits, count;
-    uint32_t expected_len;
+    uint8_t* data_buffer;
+    uint32_t bits, expected_len;
     uint32_t rcvd_len = rcvd_raw.length();
     QByteArray tmp;
     while ((0 < rcvd_len) && !exit_dev)
@@ -278,7 +278,7 @@ void GUI_BASE::receive(QByteArray recvData)
 
         // Check to see if it's an Ack packet (no second stage)
         uint32_t checksum_size;
-        if (rcvd_raw.at(s1_major_key_loc) == (char) (MAJOR_KEY_ACK << s1_major_key_bit_shift))
+        if (rcvd_raw.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
         {
             // Set generic checksum executable if using
             if (generic_checksum_is_exe)
@@ -297,8 +297,7 @@ void GUI_BASE::receive(QByteArray recvData)
 
             // Build temporary array to send off data
             tmp.clear();
-            tmp.append((char) (rcvd_raw.at(s1_major_key_loc) >> s1_major_key_bit_shift));
-            tmp.append(rcvd_raw.mid(1, expected_len-1));
+            tmp.append(rcvd_raw.mid(0, num_s1_bytes));
 
             // Emit ack received
             emit ackReceived(tmp);
@@ -308,16 +307,29 @@ void GUI_BASE::receive(QByteArray recvData)
         } else
         {
             // Check if byte length in received
-            bits = (rcvd_raw.at(s1_major_key_loc) & 0x03);
+            bits = (rcvd_raw.at(s1_major_key_loc) & s1_num_s2_bytes_bit_mask);
             if (bits == 0x03) bits += 1;
             expected_len += bits;
             if (rcvd_len < expected_len) break;
 
-            // Read in num_s2_bytes
-            num_s2_bytes = 0;
-            for (count = 0; count < bits; count++)
+            // Parse num_s2_bytes
+            data_buffer = (uint8_t*) rcvd_raw.mid(s1_num_s2_bytes_loc, bits).data();
+            switch (bits)
             {
-                num_s2_bytes = ((num_s2_bytes << 8) | ((char) rcvd_raw.at(s1_num_s2_bytes_loc+count)));
+                case 0x01:
+                    // 1 byte
+                    num_s2_bytes = (uint8_t) *((uint8_t*) data_buffer);
+                    break;
+                case 0x02:
+                    // 2 bytes
+                    num_s2_bytes = (uint16_t) *((uint16_t*) data_buffer);
+                    break;
+                case 0x04:
+                    num_s2_bytes = *((uint32_t*) data_buffer);
+                    break;
+                default:
+                    num_s2_bytes = 0;
+                    break;
             }
 
             // Check if second stage in rcvd
@@ -345,8 +357,9 @@ void GUI_BASE::receive(QByteArray recvData)
 
             // Build temporary array to send off data and ack
             tmp.clear();
-            tmp.append((char) (rcvd_raw.at(s1_major_key_loc) >> s1_major_key_bit_shift));
-            tmp.append(rcvd_raw.mid(1, expected_len-1));
+            tmp.append((char) (rcvd_raw.at(s1_major_key_loc) & s1_major_key_bit_mask));
+            tmp.append(rcvd_raw.at(s1_minor_key_loc));
+            tmp.append(rcvd_raw.mid(s1_num_s2_bytes_loc+bits, expected_len-(s1_num_s2_bytes_loc+bits)));
 
             // Ack success & set data status
             send_ack((uint8_t) tmp.at(s1_major_key_loc));
@@ -377,11 +390,11 @@ void GUI_BASE::receive_gui(QByteArray)
 
 void GUI_BASE::on_ResetGUI_Button_clicked()
 {
-    // Reset the GUI
-    reset_gui();
-
     // Reset the Remote
     reset_remote();
+
+    // Reset the GUI
+    reset_gui();
 }
 
 void GUI_BASE::send(QString data)
@@ -422,14 +435,6 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
     uint32_t pos = 0;
     uint32_t end_pos = chunk.length();
 
-    // Bitshift start for data length encoding
-    QByteArray start_shifted;
-    if (!start.isEmpty())
-    {
-        start_shifted.append((char) (start.at(s1_major_key_loc) << s1_major_key_bit_shift));
-    }
-    start.replace(s1_major_key_loc, 1, start_shifted);
-
     // Send start of data chunk
     // (if multiple packets are required)
     if (chunk_size < end_pos)
@@ -438,7 +443,7 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
     }
 
     // Send data chunk
-    uint32_t data_len, bits, bit_num;
+    uint32_t data_len, bits;
     do
     {
         // Clear data and add start array
@@ -456,18 +461,13 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
         data.append((char) (start.at(s1_major_key_loc) | bits));
         data.append(start.mid(s1_minor_key_loc));
 
-        // Append data length and data
-        start_shifted.clear();
-        for (bit_num = 0; bit_num < bits; bit_num++)
-        {
-            start_shifted.prepend((char) (data_len & 0xFF));
-            data_len >>= 8;
-        }
+        // Check if bits == 0x03
+        if (bits == 0x03) bits += 1;
 
-        // If 0x03, add a final byte to make it uint32_t
-        if (bits == 0x03) start_shifted.prepend((char) (data_len & 0xFF));
+        // Cast datalen to char* pointer and load into data
+        data.append((const char*) &data_len, bits);
 
-        data.append(start_shifted);
+        // Append data
         data.append(curr);
 
         // Transmit data to device
@@ -513,7 +513,7 @@ void GUI_BASE::send_ack(uint8_t majorKey)
 {
     // Build ack packet
     QByteArray ack_packet;
-    ack_packet.append((char) (MAJOR_KEY_ACK << s1_major_key_bit_shift));
+    ack_packet.append((char) MAJOR_KEY_ACK);
     ack_packet.append((char) majorKey);
 
     // Get checksum
@@ -598,7 +598,7 @@ void GUI_BASE::transmit(QByteArray data)
     if (data.isEmpty() || exit_dev) return;
 
     // Don't load message if resetting and it isn't a reset
-    bool isReset = (data.at(s1_major_key_loc) == (char) (MAJOR_KEY_RESET << s1_major_key_bit_shift));
+    bool isReset = ((data.at(s1_major_key_loc) & s1_major_key_bit_mask) == (char) MAJOR_KEY_RESET);
     if (reset_dev && !isReset) return;
 
     // Append to msgList
@@ -617,7 +617,7 @@ void GUI_BASE::transmit(QByteArray data)
         currData = msgList.takeFirst();
         ack_status = false;
         data_status = false;
-        ack_key = ((char) currData.at(s1_major_key_loc) >> s1_major_key_bit_shift);
+        ack_key = ((char) currData.at(s1_major_key_loc) & s1_major_key_bit_mask);
         isReset = (ack_key == MAJOR_KEY_RESET);
 
         // Get checksum
@@ -629,6 +629,16 @@ void GUI_BASE::transmit(QByteArray data)
 
         // Delete checksum array (done using)
         delete[] checksum_array;
+
+        // If is ack, send and return
+        if (ack_key == MAJOR_KEY_ACK)
+        {
+            // Emit write command to connected device
+            emit write_data(currData);
+
+            // Move onto the next packet
+            continue;
+        }
 
         // Send data and verify ack
         do
@@ -660,6 +670,7 @@ void GUI_BASE::transmit(QByteArray data)
             // Clear buffers (prevents key errors after reset)
             rcvd_raw.clear();
             rcvd_formatted.clear();
+            msgList.clear();
 
             // Reset reset flag
             reset_dev = false;
@@ -719,6 +730,6 @@ void GUI_BASE::close_base()
         recvLock.unlock();
     } else
     {
-        qDebug() << "Error: Failed to close!";
+        qDebug() << "Error: Tab failed to close!";
     }
 }
