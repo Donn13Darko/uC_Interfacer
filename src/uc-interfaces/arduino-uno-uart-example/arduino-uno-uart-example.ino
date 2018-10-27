@@ -34,17 +34,17 @@ const uint8_t num_DIO = 14;
 uint8_t DIO_SET[num_DIO];
 uint16_t DIO_VAL[num_DIO];
 Servo DIO_SERVO[num_DIO];
-float PWM_SCALE = (float) 255.0 / (float) 100.0;
+float PWM_SCALE = 255.0f / 100.0f;
 
 // Setup pin watch for AIO
 const uint8_t num_AIO = 6;
 // No char array since no Analog outputs
 
 // Setup map values for AIO (0-5V)
-float AIO_LOW = 0.0;
-float AIO_HIGH = 5.0;
-float AIO_RES = 1024.0;
-float AIO_RANGE = 100.0;
+float AIO_LOW = 0.0f;
+float AIO_HIGH = 5.0f;
+float AIO_RES = 1024.0f;
+float AIO_RANGE = 100.0f;
 float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 
 // Read array (more DIO than AIO)
