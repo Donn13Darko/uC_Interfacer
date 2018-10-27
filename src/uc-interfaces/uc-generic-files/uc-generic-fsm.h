@@ -46,6 +46,11 @@ bool fsm_isr();
 void fsm_run();
 void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, uint8_t* data, uint32_t data_len);
 
+// Acts as a general flag variable for:
+//   1) malloc or realloc failures (gets set to 1)
+//   2) Force an exit of internal loop (gets set to 2)
+uint8_t fsm_error;
+
 /*** Following extern functions must be defined on a per uC basis ***/
 
 /* Resets all the data and pins on the uc */

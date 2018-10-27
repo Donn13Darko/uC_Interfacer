@@ -136,17 +136,11 @@ private:
     QEventLoop dataLoop;
 
     // GUI Checksum helpers
-    bool gui_checksum_is_exe;
     checksum_struct gui_checksum;
-    QString gui_checksum_exe_path;
-    QByteArray gui_checksum_start;
 
     // Static class members
     static uint32_t chunk_size;
-    static bool generic_checksum_is_exe;
-    static QString generic_checksum_exe_path;
     static checksum_struct generic_checksum;
-    static QByteArray generic_checksum_start;
     static QMap<QString, checksum_struct> supportedChecksums;
 
     // Send to device

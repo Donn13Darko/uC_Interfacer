@@ -26,21 +26,18 @@
 #include <QProcess>
 
 uint32_t GUI_BASE::chunk_size = GUI_BASE::default_chunk_size;
-bool GUI_BASE::generic_checksum_is_exe = false;
-QString GUI_BASE::generic_checksum_exe_path = "";
 checksum_struct GUI_BASE::generic_checksum = DEFAULT_CHECKSUM_STRUCT;
-QByteArray GUI_BASE::generic_checksum_start = QByteArray();
 
 // Setup suported checksums map
 QMap<QString, checksum_struct>
 GUI_BASE::supportedChecksums({
-                                 {"CRC_8_LUT", {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT, 0, 0}},
-                                 {"CRC_8_POLY", {get_crc_8_POLY_size, get_crc_8_POLY, check_crc_8_POLY, 0, 0}},
-                                 {"CRC_16_LUT", {get_crc_16_LUT_size, get_crc_16_LUT, check_crc_16_LUT, 0, 0}},
-                                 {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY, 0, 0}},
-                                 {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT, 0, 0}},
-                                 {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY, 0, 0}},
-                                 {"CHECKSUM_EXE", {get_checksum_exe_size, get_checksum_exe, check_checksum_exe, 0, 0}}
+                                 {"CRC_8_LUT", {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT, 0, 0, 0}},
+                                 {"CRC_8_POLY", {get_crc_8_POLY_size, get_crc_8_POLY, check_crc_8_POLY, 0, 0, 0}},
+                                 {"CRC_16_LUT", {get_crc_16_LUT_size, get_crc_16_LUT, check_crc_16_LUT, 0, 0, 0}},
+                                 {"CRC_16_POLY", {get_crc_16_POLY_size, get_crc_16_POLY, check_crc_16_POLY, 0, 0, 0}},
+                                 {"CRC_32_LUT", {get_crc_32_LUT_size, get_crc_32_LUT, check_crc_32_LUT, 0, 0, 0}},
+                                 {"CRC_32_POLY", {get_crc_32_POLY_size, get_crc_32_POLY, check_crc_32_POLY, 0, 0, 0}},
+                                 {"CHECKSUM_EXE", {get_checksum_exe_size, get_checksum_exe, check_checksum_exe, 0, 0, 1}}
                              });
 
 uint32_t num_s2_bytes;
@@ -63,10 +60,7 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     data_key = MAJOR_KEY_ERROR;
 
     // Init gui checksum variables
-    gui_checksum_is_exe = false;
     gui_checksum = DEFAULT_CHECKSUM_STRUCT;
-    gui_checksum_exe_path = "";
-    gui_checksum_start = {};
 
     // Connect read signals and slots
     connect(this, SIGNAL(readyRead(QByteArray)),
@@ -130,15 +124,13 @@ void GUI_BASE::closing()
 void GUI_BASE::set_gui_checksum(QStringList new_gui_checksum)
 {
     // Set new checksum information
-    gui_checksum_exe_path = new_gui_checksum.at(checksum_exe_pos) + '\0';
     gui_checksum = supportedChecksums.value(
                 new_gui_checksum.at(checksum_name_pos),
                 DEFAULT_CHECKSUM_STRUCT
                 );
-    gui_checksum_is_exe = (gui_checksum.get_checksum == get_checksum_exe);
 
     // Load in new checksum start
-    gui_checksum_start.clear();
+    QByteArray gui_checksum_start;
     uint8_t base = new_gui_checksum.at(checksum_start_base_pos).toInt();
     QStringList new_gui_checksum_start = new_gui_checksum.at(checksum_start_pos).split(',');
     for (auto byte = new_gui_checksum_start.cbegin(); byte != new_gui_checksum_start.cend(); byte++)
@@ -146,12 +138,15 @@ void GUI_BASE::set_gui_checksum(QStringList new_gui_checksum)
         gui_checksum_start.append((char) byte->toInt(nullptr, base));
     }
 
-    // Pad checksum start if not long enough
-    if (gui_checksum_is_exe)
+    // Set executable if is exe
+    if (gui_checksum.checksum_is_exe)
     {
+        QString gui_checksum_exe_path = new_gui_checksum.at(checksum_exe_pos) + '\0';
         gui_checksum.checksum_exe = gui_checksum_exe_path.toUtf8().constData();
         set_executable_checksum_exe(gui_checksum.checksum_exe);
     }
+
+    // Pad checksum if start not long enough
     uint32_t checksum_size = gui_checksum.get_checksum_size();
     for (uint32_t i = gui_checksum_start.length(); i < checksum_size; i++)
     {
@@ -168,34 +163,35 @@ QStringList GUI_BASE::get_supported_checksums()
 void GUI_BASE::set_generic_checksum(QStringList new_generic_checksum)
 {
     // Set new checksum information
-    GUI_BASE::generic_checksum_exe_path = new_generic_checksum.at(checksum_exe_pos) + '\0';
     GUI_BASE::generic_checksum = supportedChecksums.value(
                 new_generic_checksum.at(checksum_name_pos),
                 DEFAULT_CHECKSUM_STRUCT
                 );
-    GUI_BASE::generic_checksum_is_exe = (GUI_BASE::generic_checksum.get_checksum == get_checksum_exe);
 
     // Load in new checksum start
-    GUI_BASE::generic_checksum_start.clear();
+    QByteArray generic_checksum_start;
     uint8_t base = new_generic_checksum.at(checksum_start_base_pos).toInt();
     QStringList new_generic_checksum_start = new_generic_checksum.at(checksum_start_pos).split(',');
     for (auto byte = new_generic_checksum_start.cbegin(); byte != new_generic_checksum_start.cend(); byte++)
     {
-        GUI_BASE::generic_checksum_start.append((char) byte->toInt(nullptr, base));
+        generic_checksum_start.append((char) byte->toInt(nullptr, base));
     }
 
-    // Pad checksum if not long enough
-    if (GUI_BASE::generic_checksum_is_exe)
+    // Set executable if is exe
+    if (GUI_BASE::generic_checksum.checksum_is_exe)
     {
-        GUI_BASE::generic_checksum.checksum_exe = GUI_BASE::generic_checksum_exe_path.toUtf8().constData();
+        QString exe_path = new_generic_checksum.at(checksum_exe_pos) + '\0';
+        GUI_BASE::generic_checksum.checksum_exe = exe_path.toUtf8().constData();
         set_executable_checksum_exe(GUI_BASE::generic_checksum.checksum_exe);
     }
+
+    // Pad checksum if start not long enough
     uint32_t checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
-    for (uint32_t i = GUI_BASE::generic_checksum_start.length(); i < checksum_size; i++)
+    for (uint32_t i = generic_checksum_start.length(); i < checksum_size; i++)
     {
-        GUI_BASE::generic_checksum_start.prepend((char) 0);
+        generic_checksum_start.prepend((char) 0);
     }
-    GUI_BASE::generic_checksum.checksum_start = (const uint8_t*) GUI_BASE::generic_checksum_start.constData();
+    GUI_BASE::generic_checksum.checksum_start = (const uint8_t*) generic_checksum_start.constData();
 }
 
 void GUI_BASE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
@@ -281,8 +277,8 @@ void GUI_BASE::receive(QByteArray recvData)
         if (rcvd_raw.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
         {
             // Set generic checksum executable if using
-            if (generic_checksum_is_exe)
-                set_executable_checksum_exe(generic_checksum_exe_path.toUtf8().constData());
+            if (GUI_BASE::generic_checksum.checksum_is_exe)
+                set_executable_checksum_exe(GUI_BASE::generic_checksum.checksum_exe);
 
             // Verify enough bytes
             checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
@@ -337,8 +333,8 @@ void GUI_BASE::receive(QByteArray recvData)
             if (rcvd_len < (expected_len)) break;
 
             // Set gui checksum executable if using
-            if (gui_checksum_is_exe)
-                set_executable_checksum_exe(gui_checksum_exe_path.toUtf8().constData());
+            if (gui_checksum.checksum_is_exe)
+                set_executable_checksum_exe(gui_checksum.checksum_exe);
             checksum_size = gui_checksum.get_checksum_size();
 
             // Check if checksum in rcvd
@@ -699,14 +695,14 @@ void GUI_BASE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_t check
         check = GUI_BASE::generic_checksum;
     }
     // Set executable if using
-    if (check.checksum_exe)
+    if (check.checksum_is_exe)
         set_executable_checksum_exe(check.checksum_exe);
 
     // Get size
     *checksum_size = check.get_checksum_size();
 
     // Malloc checksum array
-    *checksum_array = (uint8_t*) malloc((*checksum_size)*sizeof(uint8_t));
+    *checksum_array = (uint8_t*) malloc((*checksum_size)*sizeof(**checksum_array));
     memset(*checksum_array, 0, *checksum_size);
 
     check.get_checksum(data, data_len, check.checksum_start, *checksum_array);

@@ -124,7 +124,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::closeEvent(QCloseEvent* e)
 {
-    deviceConnected();
     // If connected, disconnect
     if (deviceConnected())
     {
