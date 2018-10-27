@@ -39,6 +39,7 @@ public:
 
 protected slots:
     virtual void receive_gui(QByteArray recvData);
+    virtual void progress_update(int progress);
 
 private slots:
     void on_MSG_Sel_buttonClicked(int);
@@ -51,6 +52,8 @@ private slots:
 
 private:
     Ui::GUI_DATA_TRANSMIT *ui;
+
+    bool start_data;
 
     void input_select(bool fileIN, bool plainIN);
 };

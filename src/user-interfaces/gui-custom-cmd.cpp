@@ -131,13 +131,32 @@ void GUI_CUSTOM_CMD::on_cmdSelect_buttonClicked(int)
 
 void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
 {
-    // Remove Major key, minor key, and byte length
-    recvData.remove(0, s1_end_loc);
+    // See if this GUI sent CMD
+    if (recvData.at(s1_major_key_loc) == (char) gui_key)
+    {
+        // See if known CMD
+        switch (recvData.at(s1_minor_key_loc))
+        {
+            case MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE:
+                expected_recv_length = GUI_HELPER::byteArray_to_uint32(recvData.mid(s1_end_loc));
+                return;
+            case MINOR_KEY_CUSTOM_CMD_CMD:
+                int data_len = recvData.length();
+                if (data_len == 0) current_recv_length = 0;
+                else current_recv_length += recvData.length() - s1_end_loc;
+                break;
+        }
+    }
 
-    // Insert into global array (for saving in original format)
-    rcvd_formatted.append(recvData);
+    // Insert into class array (for saving in original format)
+    rcvd_formatted.append(recvData.mid(s1_end_loc));
 
-    // Insert plaintext at end
+    // Highlight keypair
+    recvData.insert(s1_end_loc, ']');
+    recvData.insert(1, ':');
+    recvData.prepend('[');
+
+    // Insert at end of plaintext
     QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
     ui->Feedback_PlainText->moveCursor(QTextCursor::End);
     ui->Feedback_PlainText->insertPlainText(QString(recvData));
@@ -156,29 +175,25 @@ void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)
 void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QByteArray customCMD_bytes, uint8_t customCMD_base)
 {
     // Build custom command keys
-    QByteArray keys;
+    uint8_t major_key, minor_key;
 
     // Read, parse, and add Major/Minor keys
     if (key_base < 2)
     {
         // Add directly
-        keys.append(majorKey_char.at(0).row());
-        keys.append(minorKey_char.at(0).row());
+        major_key = majorKey_char.at(0).row();
+        minor_key = minorKey_char.at(0).row();
     } else
     {
         // Convert keys to correct base
-        uint8_t majorKey = majorKey_char.toInt(nullptr, key_base);
-        uint8_t minorKey = minorKey_char.toInt(nullptr, key_base);
-
-        // Add converted value
-        keys.append((char) majorKey);
-        keys.append((char) minorKey);
+        major_key = majorKey_char.toInt(nullptr, key_base);
+        minor_key = minorKey_char.toInt(nullptr, key_base);
     }
 
     // Read, parse, and add custom CMD
     if ((customCMD_base < 2) || (customCMD_bytes.length() == 0))
     {
-        send_chunk(keys, customCMD_bytes);
+        send_chunk(major_key, minor_key, customCMD_bytes);
     } else
     {
         // Modify cmd bytes into correct format
@@ -187,6 +202,6 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
         {
             data.append((char) QString(cmd_byte).toInt(nullptr, customCMD_base));
         }
-        send_chunk(keys, data);
+        send_chunk(major_key, minor_key, data);
     }
 }

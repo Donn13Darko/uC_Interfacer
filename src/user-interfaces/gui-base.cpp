@@ -262,7 +262,6 @@ void GUI_BASE::receive(QByteArray recvData)
     if (!recvLock.tryLock()) return;
 
     // Loop until break or rcvd is empty
-    uint8_t* data_buffer;
     uint32_t bits, expected_len;
     uint32_t rcvd_len = rcvd_raw.length();
     QByteArray tmp;
@@ -309,24 +308,7 @@ void GUI_BASE::receive(QByteArray recvData)
             if (rcvd_len < expected_len) break;
 
             // Parse num_s2_bytes
-            data_buffer = (uint8_t*) rcvd_raw.mid(s1_num_s2_bytes_loc, bits).data();
-            switch (bits)
-            {
-                case 0x01:
-                    // 1 byte
-                    num_s2_bytes = (uint8_t) *((uint8_t*) data_buffer);
-                    break;
-                case 0x02:
-                    // 2 bytes
-                    num_s2_bytes = (uint16_t) *((uint16_t*) data_buffer);
-                    break;
-                case 0x04:
-                    num_s2_bytes = *((uint32_t*) data_buffer);
-                    break;
-                default:
-                    num_s2_bytes = 0;
-                    break;
-            }
+            num_s2_bytes = GUI_HELPER::byteArray_to_uint32(rcvd_raw.mid(s1_num_s2_bytes_loc, bits));
 
             // Check if second stage in rcvd
             expected_len += num_s2_bytes;
@@ -393,6 +375,11 @@ void GUI_BASE::on_ResetGUI_Button_clicked()
     reset_gui();
 }
 
+void GUI_BASE::progress_update(int)
+{
+    // Default do nothing
+}
+
 void GUI_BASE::send(QString data)
 {
     send(data.toUtf8());
@@ -400,31 +387,34 @@ void GUI_BASE::send(QString data)
 
 void GUI_BASE::send(QByteArray data)
 {
-    send_chunk(data, QByteArray());
+    send_chunk(data.at(s1_major_key_loc), data.at(s1_minor_key_loc), data.mid(s1_end_loc));
 }
 
 void GUI_BASE::send(std::initializer_list<uint8_t> data)
 {
-    send(GUI_HELPER::initList2ByteArray(data));
+    send(GUI_HELPER::initList_to_byteArray(data));
 }
 
-void GUI_BASE::send_file(QByteArray start, QString filePath)
+void GUI_BASE::send_file(uint8_t major_key, uint8_t minor_key, QString filePath)
 {
-    send_chunk(start, GUI_HELPER::loadFile(filePath));
+    send_chunk(major_key, minor_key, GUI_HELPER::loadFile(filePath));
 }
 
-void GUI_BASE::send_file_chunked(QByteArray start, QString filePath, char sep)
+void GUI_BASE::send_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep)
 {
     foreach (QByteArray chunk, GUI_HELPER::loadFile(filePath).split(sep))
     {
-        send_chunk(start, chunk);
+        send_chunk(major_key, minor_key, chunk);
     }
 }
 
-void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
+void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk)
 {
     // Verify this will terminate
     if (chunk_size == 0) return;
+
+    // Reset progress (if available)
+    progress_update(0);
 
     // Setup base variables
     QByteArray data, curr;
@@ -435,33 +425,38 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
     // (if multiple packets are required)
     if (chunk_size < end_pos)
     {
-        transmit(start);
+        data.clear();
+        data.append((char) major_key);
+        data.append((char) minor_key);
+        transmit(data);
     }
 
     // Send data chunk
     uint32_t data_len, bits;
     do
     {
-        // Clear data and add start array
+        // Clear data
         data.clear();
 
         // Get next data chunk and add info
         curr = chunk.mid(pos, chunk_size);
 
-        // Compute size of data chunk and modify data array
+        // Compute size of data chunk
         data_len = curr.length();
         if (data_len == 0) bits = 0x00;
         else if (data_len <= 0xFF) bits = 0x01;
         else if (data_len <= 0xFFFF) bits = 0x02;
         else bits = 0x03;
-        data.append((char) (start.at(s1_major_key_loc) | bits));
-        data.append(start.mid(s1_minor_key_loc));
+
+        // Load into data array
+        data.append((char) (major_key | bits));
+        data.append((char) minor_key);
 
         // Check if bits == 0x03
         if (bits == 0x03) bits += 1;
 
-        // Cast datalen to char* pointer and load into data
-        data.append((const char*) &data_len, bits);
+        // Load data_len into data
+        data.append(GUI_HELPER::uint32_to_byteArray(data_len).left(bits));
 
         // Append data
         data.append(curr);
@@ -471,37 +466,28 @@ void GUI_BASE::send_chunk(QByteArray start, QByteArray chunk)
 
         // Increment position counter
         pos += chunk_size;
+
+        // Update progress
+        progress_update(qRound(((float) pos / end_pos) * 100.0));
     } while (pos < end_pos);
 
     // Send end of data chunk
     // (if multiple packets were required)
     if (chunk_size < end_pos)
     {
-        transmit(start);
+        data.clear();
+        data.append((char) major_key);
+        data.append((char) minor_key);
+        transmit(data);
     }
 }
 
-void GUI_BASE::send_chunk(std::initializer_list<uint8_t> start, QByteArray chunk)
+void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk)
 {
     send_chunk(
-                GUI_HELPER::initList2ByteArray(start),
-                chunk
-                );
-}
-
-void GUI_BASE::send_chunk(QByteArray start, std::initializer_list<uint8_t> chunk)
-{
-    send_chunk(
-                start,
-                GUI_HELPER::initList2ByteArray(chunk)
-                );
-}
-
-void GUI_BASE::send_chunk(std::initializer_list<uint8_t> start, std::initializer_list<uint8_t> chunk)
-{
-    send_chunk(
-                GUI_HELPER::initList2ByteArray(start),
-                GUI_HELPER::initList2ByteArray(chunk)
+                major_key,
+                minor_key,
+                GUI_HELPER::initList_to_byteArray(chunk)
                 );
 }
 

@@ -77,14 +77,16 @@ protected slots:
     // Virtual slots
     virtual void receive_gui(QByteArray recvData);
     virtual void on_ResetGUI_Button_clicked();
+    virtual void progress_update(int progress);
 
 protected:
     // Local variables
     uint8_t gui_key;
-    bool exit_dev;
 
-    // Receive arrays
+    // Receive arrays & variables
     QByteArray rcvd_formatted;
+    uint32_t current_recv_length;
+    uint32_t expected_recv_length;
 
     // Direct sends
     void send(QString data);
@@ -92,14 +94,12 @@ protected:
     void send(std::initializer_list<uint8_t> data);
 
     // File sending
-    void send_file(QByteArray start, QString filePath);
-    void send_file_chunked(QByteArray start, QString filePath, char sep);
+    void send_file(uint8_t major_key, uint8_t minor_key, QString filePath);
+    void send_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep);
 
     // Chunk sending
-    void send_chunk(QByteArray start, QByteArray chunk);
-    void send_chunk(std::initializer_list<uint8_t> start, QByteArray chunk);
-    void send_chunk(QByteArray start, std::initializer_list<uint8_t> chunk);
-    void send_chunk(std::initializer_list<uint8_t> start, std::initializer_list<uint8_t> chunk);
+    void send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk);
+    void send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk);
 
     // Ack
     void send_ack(uint8_t majorKey);
@@ -114,6 +114,9 @@ protected:
     void save_rcvd_formatted();
 
 private:
+    // Private variables
+    bool exit_dev;
+
     // Send helper variables
     QMutex sendLock;
     QList<QByteArray> msgList;

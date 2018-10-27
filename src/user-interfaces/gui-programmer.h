@@ -46,6 +46,7 @@ public:
 
 protected slots:
     virtual void receive_gui(QByteArray recvData);
+    virtual void progress_update(int progress);
 
 protected:
     virtual bool isDataRequest(uint8_t minorKey);

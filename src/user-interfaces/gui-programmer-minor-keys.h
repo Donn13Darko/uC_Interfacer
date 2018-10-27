@@ -29,6 +29,9 @@ typedef enum {
     // Error and reset
     MINOR_KEY_PROGRAMMER_ERROR = 0,
 
+    // Set trasnmission size
+    MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
+
     // Programer Set
     MINOR_KEY_PROGRAMMER_SET_ADDR,
 

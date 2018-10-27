@@ -27,7 +27,13 @@ extern "C"
 // Custom CMD Minor Keys enum
 typedef enum {
     // Error and reset
-    MINOR_KEY_CUSTOM_CMD_ERROR = 0
+    MINOR_KEY_CUSTOM_CMD_ERROR = 0,
+
+    // Set transmission size
+    MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE,
+
+    // Custom CMD CMD
+    MINOR_KEY_CUSTOM_CMD_CMD
 } MINOR_KEYS_CUSTOM_CMD;
 
 #ifdef __cplusplus

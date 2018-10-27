@@ -21,6 +21,7 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QFile>
+#include <QFileInfo>
 #include <QFileDialog>
 #include <QSettings>
 
@@ -83,6 +84,12 @@ bool GUI_HELPER::saveFile(QString filePath, QByteArray data)
 
     // Check result
     return (0 <= res);
+}
+
+uint32_t GUI_HELPER::getFileSize(QString filePath)
+{
+    QFileInfo file(filePath);
+    return file.size();
 }
 
 QByteArray GUI_HELPER::loadFile(QString filePath)
@@ -148,7 +155,7 @@ void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *>* confi
     delete configMap;
 }
 
-QByteArray GUI_HELPER::initList2ByteArray(std::initializer_list<uint8_t> initList)
+QByteArray GUI_HELPER::initList_to_byteArray(std::initializer_list<uint8_t> initList)
 {
     QByteArray init_array;
     foreach (char i, initList)
@@ -157,4 +164,25 @@ QByteArray GUI_HELPER::initList2ByteArray(std::initializer_list<uint8_t> initLis
     }
 
     return init_array;
+}
+
+uint32_t GUI_HELPER::byteArray_to_uint32(QByteArray data)
+{
+    uint32_t ret_data = 0;
+    foreach (char a, data)
+    {
+        ret_data = (ret_data << 8) | a;
+    }
+    return ret_data;
+}
+
+QByteArray GUI_HELPER::uint32_to_byteArray(uint32_t data)
+{
+    QByteArray ret_data;
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        ret_data.prepend((char) (data & 0xFF));
+        data = data >> 8;
+    }
+    return ret_data;
 }

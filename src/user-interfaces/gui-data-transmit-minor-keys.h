@@ -29,6 +29,9 @@ typedef enum {
     // Error and reset
     MINOR_KEY_DATA_TRANSMIT_ERROR = 0,
 
+    // Set trasnmission size
+    MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+
     // Data Transmit Transfer
     MINOR_KEY_DATA_TRANSMIT_DATA
 } MINOR_KEYS_DATA_TRANSMIT;

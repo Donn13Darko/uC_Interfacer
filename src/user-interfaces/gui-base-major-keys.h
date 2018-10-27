@@ -45,9 +45,6 @@ typedef enum {
     // Reset cmds
     MAJOR_KEY_RESET = 7 << 2,
 
-    // Responses
-    MAJOR_KEY_READ_RESPONSE = 8 << 2,
-
     // Action confirmations
     MAJOR_KEY_ACK = 9 << 2
 } GUI_BASE_MAJOR_KEYS;

@@ -28,6 +28,8 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
 {
     // Setup UI
     ui->setupUi(this);
+    ui->SendMsg_ProgressBar->setMinimum(0);
+    ui->SendMsg_ProgressBar->setMaximum(100);
 
     // Set GUI Type
     gui_key = MAJOR_KEY_DATA_TRANSMIT;
@@ -52,6 +54,12 @@ void GUI_DATA_TRANSMIT::reset_gui()
     // Reset radio selection
     ui->File_Radio->setChecked(true);
     on_MSG_Sel_buttonClicked(0);
+
+    // Reset progress bar
+    progress_update(0);
+    start_data = true;
+    current_recv_length = 0;
+    expected_recv_length = 0;
 }
 
 void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant>* configMap)
@@ -70,18 +78,29 @@ void GUI_DATA_TRANSMIT::on_MSG_Sel_buttonClicked(int)
 
 void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
 {
-    // Create Key array (Major & Minor)
-    QByteArray keys;
-    keys.append((char) gui_key);
-    keys.append((char) MINOR_KEY_DATA_TRANSMIT_DATA);
-
     // Find which radio button is selected
     if (ui->File_Radio->isChecked())
     {
-        send_file(keys, ui->FilePath_LineEdit->text());
+        // Get filePath
+        QString filePath = ui->FilePath_LineEdit->text();
+
+        // Send size
+        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+                   GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
+
+        // Send file
+        send_file(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
     } else if (ui->Input_Radio->isChecked())
     {
-        send_chunk(keys, ui->msg_PlainText->toPlainText().toUtf8());
+        // Get data
+        QByteArray data = ui->MSG_PlainText->toPlainText().toUtf8();
+
+        // Send size
+        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+                   GUI_HELPER::uint32_to_byteArray(data.length()));
+
+        // Send plaintext
+        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
     }
 }
 
@@ -100,7 +119,7 @@ void GUI_DATA_TRANSMIT::on_SaveAs_Button_clicked()
 
 void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()
 {
-    ui->recv_PlainText->clear();
+    ui->Recv_PlainText->clear();
     rcvd_formatted.clear();
 }
 
@@ -112,16 +131,21 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
     // Insert into global array (for saving in original format)
     rcvd_formatted.append(recvData);
 
-    // Insert plaintext at end
-    QTextCursor prev_cursor = ui->recv_PlainText->textCursor();
-    ui->recv_PlainText->moveCursor(QTextCursor::End);
-    ui->recv_PlainText->insertPlainText(QString(recvData));
-    ui->recv_PlainText->setTextCursor(prev_cursor);
+    // Insert at end of plaintext
+    QTextCursor prev_cursor = ui->Recv_PlainText->textCursor();
+    ui->Recv_PlainText->moveCursor(QTextCursor::End);
+    ui->Recv_PlainText->insertPlainText(QString(recvData));
+    ui->Recv_PlainText->setTextCursor(prev_cursor);
+}
+
+void GUI_DATA_TRANSMIT::progress_update(int progress)
+{
+    ui->SendMsg_ProgressBar->setValue(progress);
 }
 
 void GUI_DATA_TRANSMIT::input_select(bool fileIN, bool plainIN)
 {
     ui->FilePath_LineEdit->setEnabled(fileIN);
     ui->BrowseFile_Button->setEnabled(fileIN);
-    ui->msg_PlainText->setEnabled(plainIN);
+    ui->MSG_PlainText->setEnabled(plainIN);
 }

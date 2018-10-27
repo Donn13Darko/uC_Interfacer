@@ -48,14 +48,17 @@ public:
     static bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
     static bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
     static bool saveFile(QString filePath, QByteArray data);
+    static uint32_t getFileSize(QString filePath);
     static QByteArray loadFile(QString filePath);
 
     // Read or delete a config INI
     static QMap<QString, QMap<QString, QVariant>*>* readConfigINI(QString config);
     static void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*>* configMap);
 
-    // Transform init list to qbytearray
-    static QByteArray initList2ByteArray(std::initializer_list<uint8_t> initList);
+    // Conversions
+    static QByteArray initList_to_byteArray(std::initializer_list<uint8_t> initList);
+    static uint32_t byteArray_to_uint32(QByteArray data);
+    static QByteArray uint32_to_byteArray(uint32_t data);
 
     // Variables
     static const float S2MS;

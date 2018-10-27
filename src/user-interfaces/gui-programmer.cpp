@@ -142,11 +142,16 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
     // Insert into global array (for saving in original format)
     rcvd_formatted.append(recvData);
 
-    // Insert plaintext at end
+    // Insert at end of plaintext
     QTextCursor prev_cursor = ui->ReadData_PlainText->textCursor();
     ui->ReadData_PlainText->moveCursor(QTextCursor::End);
     ui->ReadData_PlainText->insertPlainText(QString(recvData));
     ui->ReadData_PlainText->setTextCursor(prev_cursor);
+}
+
+void GUI_PROGRAMMER::progress_update(int progress)
+{
+    ui->Programmer_ProgressBar->setValue(progress);
 }
 
 bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)

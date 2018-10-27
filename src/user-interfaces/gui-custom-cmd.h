@@ -20,6 +20,7 @@
 #define GUI_CUSTOM_CMD_H
 
 #include "gui-base.h"
+#include "gui-custom-cmd-minor-keys.h"
 
 namespace Ui {
 class GUI_CUSTOM_CMD;

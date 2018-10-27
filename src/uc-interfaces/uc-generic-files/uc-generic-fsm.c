@@ -95,12 +95,12 @@ void fsm_setup(uint32_t buffer_len)
     if (buffer_len < 2) buffer_len = 2;
     fsm_buffer_len = buffer_len + checksum_max_size;
 
-    // Malloc initial dynamic buffers
-    fsm_buffer = malloc(fsm_buffer_len*sizeof(*fsm_buffer));
-
     // Malloc static buffers
     fsm_ack_buffer = malloc((num_s1_bytes+checksum_max_size)*sizeof(*fsm_ack_buffer));
     fsm_checksum_buffer = malloc(checksum_max_size*sizeof(*fsm_checksum_buffer));
+
+    // Malloc initial dynamic buffer (attempt to prevent fragmentation by mallocing last)
+    fsm_buffer = malloc(fsm_buffer_len*sizeof(*fsm_buffer));
 
     // Reset to start defaults
     uc_reset();
