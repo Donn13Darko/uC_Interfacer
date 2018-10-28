@@ -450,7 +450,8 @@ void GUI_BASE::receive_gui(QByteArray)
 
 void GUI_BASE::on_ResetGUI_Button_clicked()
 {
-    // Reset the Remote (also resets the GUI)
+    // Reset the Remote
+    // (reset_remote() enforces a GUI reset)
     reset_remote();
 }
 
@@ -497,13 +498,14 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
     // Verify this will terminate
     if (chunk_size == 0) return;
 
-    // Reset progress (if sending from gui)
-    if (major_key == gui_key) emit progress_update_send(0, "");
-
     // Setup base variables
     QByteArray data, curr;
     uint32_t pos = 0;
     uint32_t end_pos = chunk.length();
+    bool emit_progress = (major_key == gui_key);
+
+    // Reset progress (if sending from gui)
+    if (emit_progress) emit progress_update_send(0, "");
 
     // Send start of data chunk
     force_envelope |= (chunk_size < end_pos);
@@ -554,7 +556,8 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
         pos += curr.length();
 
         // Update progress
-        emit progress_update_send(qRound(((float) pos / end_pos) * 100.0f), "");
+        if (emit_progress)
+            emit progress_update_send(qRound(((float) pos / end_pos) * 100.0f), "");
     } while ((pos < end_pos) && !reset_dev);
 
     // Send end of data chunk
@@ -567,7 +570,7 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
     }
 
     // Signal done to user if from gui
-    if (major_key == gui_key) emit progress_update_send(100, "Done!");
+    if (emit_progress) emit progress_update_send(100, "Done!");
 }
 
 void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk, bool force_envelope)
@@ -701,7 +704,7 @@ void GUI_BASE::update_current_recv_length(QByteArray recvData)
     // Update received length
     current_recv_length += data_len;
 
-    // Update progress bar if known what we are expecting
+    // Update progress bar if total recv length known
     if (expected_recv_length != 0)
         emit progress_update_recv(qRound(((float) current_recv_length/expected_recv_length) * 100.0f), "");
 }
