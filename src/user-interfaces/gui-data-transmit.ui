@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QPlainTextEdit" name="MSG_PlainText">
+  <widget class="QPlainTextEdit" name="Send_PlainText">
    <property name="geometry">
     <rect>
      <x>26</x>
@@ -23,7 +23,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QLineEdit" name="FilePath_LineEdit">
+  <widget class="QLineEdit" name="SendFilePath_LineEdit">
    <property name="geometry">
     <rect>
      <x>86</x>
@@ -33,7 +33,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="BrowseFile_Button">
+  <widget class="QPushButton" name="SendBrowseFile_Button">
    <property name="geometry">
     <rect>
      <x>420</x>
@@ -68,7 +68,7 @@
     <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
    </property>
   </widget>
-  <widget class="QPushButton" name="ClearReceived_Button">
+  <widget class="QPushButton" name="RecvClear_Button">
    <property name="geometry">
     <rect>
      <x>840</x>
@@ -84,7 +84,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="Receive_Label">
+  <widget class="QLabel" name="Recv_Label">
    <property name="geometry">
     <rect>
      <x>540</x>
@@ -100,7 +100,7 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QRadioButton" name="File_Radio">
+  <widget class="QRadioButton" name="SendFile_Radio">
    <property name="geometry">
     <rect>
      <x>30</x>
@@ -113,7 +113,7 @@
     <string>File</string>
    </property>
    <attribute name="buttonGroup">
-    <string notr="true">MSG_Sel</string>
+    <string notr="true">Send_RadioGroup</string>
    </attribute>
   </widget>
   <widget class="QLabel" name="Send_Label">
@@ -132,7 +132,7 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QRadioButton" name="Input_Radio">
+  <widget class="QRadioButton" name="SendInput_Radio">
    <property name="geometry">
     <rect>
      <x>30</x>
@@ -145,10 +145,10 @@
     <string>Input</string>
    </property>
    <attribute name="buttonGroup">
-    <string notr="true">MSG_Sel</string>
+    <string notr="true">Send_RadioGroup</string>
    </attribute>
   </widget>
-  <widget class="QPushButton" name="SaveAs_Button">
+  <widget class="QPushButton" name="RecvSave_Button">
    <property name="geometry">
     <rect>
      <x>930</x>
@@ -164,10 +164,10 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="SendMSG_Button">
+  <widget class="QPushButton" name="Send_Button">
    <property name="geometry">
     <rect>
-     <x>410</x>
+     <x>420</x>
      <y>300</y>
      <width>75</width>
      <height>23</height>
@@ -215,12 +215,12 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QProgressBar" name="SendMsg_ProgressBar">
+  <widget class="QProgressBar" name="Send_ProgressBar">
    <property name="geometry">
     <rect>
      <x>50</x>
      <y>300</y>
-     <width>341</width>
+     <width>351</width>
      <height>23</height>
     </rect>
    </property>
@@ -228,7 +228,7 @@
     <number>0</number>
    </property>
   </widget>
-  <widget class="QProgressBar" name="RecvMsg_ProgressBar">
+  <widget class="QProgressBar" name="Recv_ProgressBar">
    <property name="geometry">
     <rect>
      <x>560</x>
@@ -244,7 +244,7 @@
     <bool>true</bool>
    </property>
   </widget>
-  <widget class="QCheckBox" name="ClearOnSet_CheckBox">
+  <widget class="QCheckBox" name="RecvClearOnSet_CheckBox">
    <property name="geometry">
     <rect>
      <x>940</x>
@@ -257,7 +257,7 @@
     <string>Clear on Set</string>
    </property>
   </widget>
-  <widget class="QLabel" name="RecvMsgProgress_Label">
+  <widget class="QLabel" name="RecvProgress_Label">
    <property name="geometry">
     <rect>
      <x>560</x>
@@ -273,12 +273,12 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QLabel" name="SendMsgProgress_Label">
+  <widget class="QLabel" name="SendProgress_Label">
    <property name="geometry">
     <rect>
      <x>50</x>
      <y>300</y>
-     <width>301</width>
+     <width>311</width>
      <height>20</height>
     </rect>
    </property>
@@ -293,6 +293,6 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="MSG_Sel"/>
+  <buttongroup name="Send_RadioGroup"/>
  </buttongroups>
 </ui>

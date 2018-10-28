@@ -33,10 +33,10 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     gui_key = MAJOR_KEY_DATA_TRANSMIT;
 
     // Setup progress bars
-    ui->SendMsg_ProgressBar->setMinimum(0);
-    ui->SendMsg_ProgressBar->setMaximum(100);
-    ui->RecvMsg_ProgressBar->setMinimum(0);
-    ui->RecvMsg_ProgressBar->setMaximum(100);
+    ui->Send_ProgressBar->setMinimum(0);
+    ui->Send_ProgressBar->setMaximum(100);
+    ui->Recv_ProgressBar->setMinimum(0);
+    ui->Recv_ProgressBar->setMaximum(100);
 
     // Reset GUI
     reset_gui();
@@ -50,17 +50,14 @@ GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
 void GUI_DATA_TRANSMIT::reset_gui()
 {
     // Clear received data
-    on_ClearReceived_Button_clicked();
-
-    // Clear entered data
-    ui->FilePath_LineEdit->clear();
+    on_RecvClear_Button_clicked();
 
     // Reset radio selection
-    ui->File_Radio->setChecked(true);
-    on_MSG_Sel_buttonClicked(0);
+    ui->SendFile_Radio->setChecked(true);
+    on_Send_RadioGroup_buttonClicked(0);
 
     // Set clear on set
-    ui->ClearOnSet_CheckBox->setChecked(true);
+    ui->RecvClearOnSet_CheckBox->setChecked(true);
 
     // Reset base (resets progress bars)
     GUI_BASE::reset_gui();
@@ -70,62 +67,6 @@ void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant>* configMap)
 {
     // Pass to parent for additional parsing
     GUI_BASE::parseConfigMap(configMap);
-}
-
-void GUI_DATA_TRANSMIT::on_MSG_Sel_buttonClicked(int)
-{
-    if (ui->File_Radio->isChecked())
-        input_select(true, false);
-    else if (ui->Input_Radio->isChecked())
-        input_select(false, true);
-}
-
-void GUI_DATA_TRANSMIT::on_SendMSG_Button_clicked()
-{
-    // Find which radio button is selected
-    if (ui->File_Radio->isChecked())
-    {
-        // Get filePath
-        QString filePath = ui->FilePath_LineEdit->text();
-
-        // Send size
-        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                   GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
-
-        // Send file
-        send_file(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
-    } else if (ui->Input_Radio->isChecked())
-    {
-        // Get data
-        QByteArray data = ui->MSG_PlainText->toPlainText().toUtf8();
-
-        // Send size
-        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                   GUI_HELPER::uint32_to_byteArray(data.length()));
-
-        // Send plaintext
-        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
-    }
-}
-
-void GUI_DATA_TRANSMIT::on_BrowseFile_Button_clicked()
-{
-    // Select file to send
-    QString file;
-    if (GUI_HELPER::getOpenFilePath(&file))
-        ui->FilePath_LineEdit->setText(file);
-}
-
-void GUI_DATA_TRANSMIT::on_SaveAs_Button_clicked()
-{
-    save_rcvd_formatted();
-}
-
-void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()
-{
-    ui->Recv_PlainText->clear();
-    rcvd_formatted.clear();
-    set_expected_recv_length(0);
 }
 
 void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
@@ -141,8 +82,8 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
         {
             case MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE:
                 // Clear recv if clear on set checked
-                if (ui->ClearOnSet_CheckBox->isChecked())
-                    on_ClearReceived_Button_clicked();
+                if (ui->RecvClearOnSet_CheckBox->isChecked())
+                    on_RecvClear_Button_clicked();
 
                 // Set expected length
                 set_expected_recv_length(data);
@@ -169,19 +110,75 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
 
 void GUI_DATA_TRANSMIT::set_progress_update_recv(int progress, QString label)
 {
-    ui->RecvMsg_ProgressBar->setValue(progress);
-    ui->RecvMsgProgress_Label->setText(label);
+    ui->Recv_ProgressBar->setValue(progress);
+    ui->RecvProgress_Label->setText(label);
 }
 
 void GUI_DATA_TRANSMIT::set_progress_update_send(int progress, QString label)
 {
-    ui->SendMsg_ProgressBar->setValue(progress);
-    ui->SendMsgProgress_Label->setText(label);
+    ui->Send_ProgressBar->setValue(progress);
+    ui->SendProgress_Label->setText(label);
+}
+
+void GUI_DATA_TRANSMIT::on_Send_RadioGroup_buttonClicked(int)
+{
+    if (ui->SendFile_Radio->isChecked())
+        input_select(true, false);
+    else if (ui->SendInput_Radio->isChecked())
+        input_select(false, true);
+}
+
+void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
+{
+    // Find which radio button is selected
+    if (ui->SendFile_Radio->isChecked())
+    {
+        // Get filePath
+        QString filePath = ui->SendFilePath_LineEdit->text();
+
+        // Send size
+        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+                   GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
+
+        // Send file
+        send_file(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
+    } else if (ui->SendInput_Radio->isChecked())
+    {
+        // Get data
+        QByteArray data = ui->Send_PlainText->toPlainText().toUtf8();
+
+        // Send size
+        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+                   GUI_HELPER::uint32_to_byteArray(data.length()));
+
+        // Send plaintext
+        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
+    }
+}
+
+void GUI_DATA_TRANSMIT::on_SendBrowseFile_Button_clicked()
+{
+    // Select file to send
+    QString file;
+    if (GUI_HELPER::getOpenFilePath(&file))
+        ui->SendFilePath_LineEdit->setText(file);
+}
+
+void GUI_DATA_TRANSMIT::on_RecvSave_Button_clicked()
+{
+    save_rcvd_formatted();
+}
+
+void GUI_DATA_TRANSMIT::on_RecvClear_Button_clicked()
+{
+    ui->Recv_PlainText->clear();
+    rcvd_formatted.clear();
+    set_expected_recv_length(0);
 }
 
 void GUI_DATA_TRANSMIT::input_select(bool fileIN, bool plainIN)
 {
-    ui->FilePath_LineEdit->setEnabled(fileIN);
-    ui->BrowseFile_Button->setEnabled(fileIN);
-    ui->MSG_PlainText->setEnabled(plainIN);
+    ui->SendFilePath_LineEdit->setEnabled(fileIN);
+    ui->SendBrowseFile_Button->setEnabled(fileIN);
+    ui->Send_PlainText->setEnabled(plainIN);
 }

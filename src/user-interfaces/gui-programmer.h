@@ -60,10 +60,10 @@ private slots:
     void on_HexFormat_Combo_activated(int);
     void on_BurnMethod_Combo_currentIndexChanged(int);
 
-    void on_readSelect_buttonClicked(int);
-    void on_ClearReadData_Button_clicked();
+    void on_ReadData_RadioGroup_buttonClicked(int);
+    void on_ReadDataClear_Button_clicked();
     void on_ReadData_Button_clicked();
-    void on_SaveReadData_Button_clicked();
+    void on_ReadDataSave_Button_clicked();
 
 private:
     Ui::GUI_PROGRAMMER *ui;

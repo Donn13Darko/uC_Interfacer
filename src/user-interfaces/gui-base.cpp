@@ -46,7 +46,7 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
 {
     // Init general variables
-    reset_dev = false;
+    reset_dev_flags = 0x00;
     exit_dev = false;
     send_closed = false;
     recv_closed = false;
@@ -89,10 +89,13 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
             &ackLoop, SLOT(quit()));
 
     // Connect progress signals and slots
+    // Wait till return to main event loop to process slots
     connect(this, SIGNAL(progress_update_recv(int, QString)),
-            this, SLOT(set_progress_update_recv(int,QString)));
+            this, SLOT(set_progress_update_recv(int,QString)),
+            Qt::QueuedConnection);
     connect(this, SIGNAL(progress_update_send(int, QString)),
-            this, SLOT(set_progress_update_send(int,QString)));
+            this, SLOT(set_progress_update_send(int,QString)),
+            Qt::QueuedConnection);
 }
 
 GUI_BASE::~GUI_BASE()
@@ -102,8 +105,8 @@ GUI_BASE::~GUI_BASE()
 
 void GUI_BASE::reset_remote()
 {
-    // Enter reset
-    reset_dev = true;
+    // Enter reset (set active and send_chunk flags, clear sent flag)
+    reset_dev_flags |= reset_active_flag | reset_send_chunk_flag;
 
     // Clear any pending messages
     msgList.clear();
@@ -359,6 +362,9 @@ void GUI_BASE::receive(QByteArray recvData)
                             // Ack success
                             send_ack(major_key);
 
+                            // Set reset flags to breakout of send_chunk
+                            reset_dev_flags |= reset_send_chunk_flag;
+
                             // Emit reseting
                             emit resetting();
 
@@ -498,6 +504,14 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
     // Verify this will terminate
     if (chunk_size == 0) return;
 
+    // Check if reset & packet not the resetting packet
+    // Assumes reset occurs before any other signals and that
+    // any packets calling this will be after a reset
+    if ((reset_dev_flags & reset_active_flag) && (major_key != MAJOR_KEY_RESET))
+        return;  // Still sending data return
+    else if ((reset_dev_flags & reset_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
+        reset_dev_flags &= ~reset_send_chunk_flag; // Clear reset_send_chunk bit
+
     // Setup base variables
     QByteArray data, curr;
     uint32_t pos = 0;
@@ -509,13 +523,16 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
 
     // Send start of data chunk
     force_envelope |= (chunk_size < end_pos);
-    if (force_envelope && !reset_dev)
+    if (force_envelope)
     {
         // Make start packet and send
         data.clear();
         data.append((char) major_key);
         data.append((char) minor_key);
         transmit(data);
+
+        // Check if reset set during transmission eventloop
+        if (reset_dev_flags) return;
     }
 
     // Send data chunk
@@ -551,6 +568,9 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
         // Transmit data to device
         transmit(data);
 
+        // Check if reset set during transmission eventloop
+        if (reset_dev_flags) return;
+
         // Increment position counter
         // Do not use chunk_size to enable dyanmic setting
         pos += curr.length();
@@ -558,15 +578,18 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
         // Update progress
         if (emit_progress)
             emit progress_update_send(qRound(((float) pos / end_pos) * 100.0f), "");
-    } while ((pos < end_pos) && !reset_dev);
+    } while (pos < end_pos);
 
     // Send end of data chunk
-    if (force_envelope && !reset_dev)
+    if (force_envelope)
     {
         data.clear();
         data.append((char) major_key);
         data.append((char) minor_key);
         transmit(data);
+
+        // Check if reset set during transmission eventloop
+        if (reset_dev_flags) return;
     }
 
     // Signal done to user if from gui
@@ -603,6 +626,7 @@ void GUI_BASE::send_ack(uint8_t majorKey)
     delete[] checksum_array;
 
     // Send ack immediately
+    // Not expecting ack back (makes this possible)
     emit write_data(ack_packet);
 }
 
@@ -714,20 +738,19 @@ void GUI_BASE::transmit(QByteArray data)
     // Check if trying to send empty data array or exiting
     if (data.isEmpty() || exit_dev) return;
 
-    // Don't load message if resetting and it isn't a reset
-    bool isReset = ((data.at(s1_major_key_loc) & s1_major_key_bit_mask) == (char) MAJOR_KEY_RESET);
-    if (reset_dev && !isReset) return;
-
     // Append to msgList
     msgList.append(data);
 
     // Lock send to prevent spamming/blocking
     if (!sendLock.tryLock()) return;
 
-    // Send all messages in list
+    // Loop variables
+    bool isReset;
     QByteArray currData;
     uint8_t* checksum_array;
     uint32_t checksum_size = 0;
+
+    // Send all messages in list
     while (!msgList.isEmpty() && !exit_dev)
     {
         // Get next data to send
@@ -747,16 +770,6 @@ void GUI_BASE::transmit(QByteArray data)
         // Delete checksum array (done using)
         delete[] checksum_array;
 
-        // If is ack, send and return
-        if (ack_key == MAJOR_KEY_ACK)
-        {
-            // Emit write command to connected device
-            emit write_data(currData);
-
-            // Move onto the next packet
-            continue;
-        }
-
         // Else, send data and verify ack
         do
         {
@@ -765,12 +778,14 @@ void GUI_BASE::transmit(QByteArray data)
 
             // Wait for CMD ack back
             waitForAck(packet_timeout);
-        } while (!ack_status && (!reset_dev || isReset) && !exit_dev);
+        } while (!ack_status
+                 && (!reset_dev_flags || isReset)
+                 && !exit_dev);
 
         // Wait for data read if CMD success and was data request
         // Resets will never request data back (only an ack)
         if (ack_status
-                && !reset_dev
+                && !reset_dev_flags
                 && !exit_dev
                 && isDataRequest(currData.at(s1_minor_key_loc)))
         {
@@ -778,19 +793,19 @@ void GUI_BASE::transmit(QByteArray data)
             {
                 // Wait for data packet back
                 waitForData(packet_timeout);
-            } while (!data_status && !reset_dev && !exit_dev);
+            } while (!data_status && !reset_dev_flags && !exit_dev);
         }
 
         // Check if reseting and was reset
-        if (reset_dev && isReset)
+        if (reset_dev_flags && isReset)
         {
             // Clear buffers (prevents key errors after reset)
             rcvd_raw.clear();
             rcvd_formatted.clear();
             msgList.clear();
 
-            // Reset reset flag
-            reset_dev = false;
+            // Clear reset active flag
+            reset_dev_flags &= ~reset_active_flag;
         }
     }
 

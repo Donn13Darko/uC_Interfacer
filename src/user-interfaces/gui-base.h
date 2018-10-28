@@ -129,7 +129,15 @@ private:
     // Send helper variables
     QMutex sendLock;
     QList<QByteArray> msgList;
-    bool reset_dev;
+
+    // Reset flag. Bits as follows:
+    //  1) Reset active
+    //  2) Reset send_chunk
+    uint8_t reset_dev_flags;
+    typedef enum {
+        reset_active_flag = 0x01,
+        reset_send_chunk_flag = 0x02
+    } reset_dev_flags_enum;
 
     // Recv helper variables
     QMutex recvLock;

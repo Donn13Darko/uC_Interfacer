@@ -206,7 +206,7 @@
     <string>File</string>
    </property>
    <attribute name="buttonGroup">
-    <string notr="true">cmdSelect</string>
+    <string notr="true">CustomCMD_RadioGroup</string>
    </attribute>
   </widget>
   <widget class="QRadioButton" name="Manual_Radio">
@@ -222,7 +222,7 @@
     <string>Manual</string>
    </property>
    <attribute name="buttonGroup">
-    <string notr="true">cmdSelect</string>
+    <string notr="true">CustomCMD_RadioGroup</string>
    </attribute>
   </widget>
   <widget class="QLineEdit" name="KeyBase_LineEdit">
@@ -284,7 +284,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="SendCustomCMD_Button">
+  <widget class="QPushButton" name="CustomCMDSend_Button">
    <property name="geometry">
     <rect>
      <x>360</x>
@@ -294,13 +294,13 @@
     </rect>
    </property>
    <property name="text">
-    <string>Send CMD</string>
+    <string>Send</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="ClearFeedback_Button">
+  <widget class="QPushButton" name="FeedbackClear_Button">
    <property name="geometry">
     <rect>
      <x>510</x>
@@ -316,7 +316,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="SaveFeedback_Button">
+  <widget class="QPushButton" name="FeedbackSave_Button">
    <property name="geometry">
     <rect>
      <x>760</x>
@@ -390,7 +390,7 @@
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QCheckBox" name="ClearOnSet_CheckBox">
+  <widget class="QCheckBox" name="FeedbackClearOnSet_CheckBox">
    <property name="geometry">
     <rect>
      <x>800</x>
@@ -407,6 +407,6 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="cmdSelect"/>
+  <buttongroup name="CustomCMD_RadioGroup"/>
  </buttongroups>
 </ui>

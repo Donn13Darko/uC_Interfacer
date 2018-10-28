@@ -44,13 +44,13 @@ protected slots:
     virtual void set_progress_update_send(int progress, QString label);
 
 private slots:
-    void on_MSG_Sel_buttonClicked(int);
-    void on_SendMSG_Button_clicked();
+    void on_Send_RadioGroup_buttonClicked(int);
+    void on_Send_Button_clicked();
 
-    void on_BrowseFile_Button_clicked();
-    void on_SaveAs_Button_clicked();
+    void on_SendBrowseFile_Button_clicked();
+    void on_RecvSave_Button_clicked();
 
-    void on_ClearReceived_Button_clicked();
+    void on_RecvClear_Button_clicked();
 
 private:
     Ui::GUI_DATA_TRANSMIT *ui;

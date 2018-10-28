@@ -61,7 +61,7 @@ GUI_PROGRAMMER::~GUI_PROGRAMMER()
 void GUI_PROGRAMMER::reset_gui()
 {
     // Clear received data
-    on_ClearReadData_Button_clicked();
+    on_ReadDataClear_Button_clicked();
 
     // Clear entered data
     ui->HexFile_LineEdit->clear();
@@ -70,7 +70,7 @@ void GUI_PROGRAMMER::reset_gui()
 
     // Reset radio selection
     ui->ReadAll_Radio->setChecked(true);
-    on_readSelect_buttonClicked(0);
+    on_ReadData_RadioGroup_buttonClicked(0);
 
     // Reset hex format selection
     ui->HexFormat_Combo->setCurrentIndex(0);
@@ -78,7 +78,7 @@ void GUI_PROGRAMMER::reset_gui()
     on_HexFormat_Combo_activated(0);
 
     // Set clear on set
-    ui->ClearOnSet_CheckBox->setChecked(true);
+    ui->ReadDataClearOnSet_CheckBox->setChecked(true);
     progress_divisor = 1;
     progress_adjuster = 0;
 
@@ -159,8 +159,8 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
         {
             case MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE:
                 // Clear recv if clear on set checked
-                if (ui->ClearOnSet_CheckBox->isChecked())
-                    on_ClearReadData_Button_clicked();
+                if (ui->ReadDataClearOnSet_CheckBox->isChecked())
+                    on_ReadDataClear_Button_clicked();
 
                 // Set expected length
                 set_expected_recv_length(data);
@@ -334,12 +334,12 @@ void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
     ui->Instructions_PlainText->moveCursor(QTextCursor::Start);
 }
 
-void GUI_PROGRAMMER::on_readSelect_buttonClicked(int)
+void GUI_PROGRAMMER::on_ReadData_RadioGroup_buttonClicked(int)
 {
-    ui->ReadAddr_Edit->setEnabled(ui->ReadAddr_Radio->isChecked());
+    ui->ReadAddr_LineEdit->setEnabled(ui->ReadAddr_Radio->isChecked());
 }
 
-void GUI_PROGRAMMER::on_ClearReadData_Button_clicked()
+void GUI_PROGRAMMER::on_ReadDataClear_Button_clicked()
 {
     ui->ReadData_PlainText->clear();
     rcvd_formatted.clear();
@@ -351,7 +351,7 @@ void GUI_PROGRAMMER::on_ReadData_Button_clicked()
     // FixMe - Request read operation here
 }
 
-void GUI_PROGRAMMER::on_SaveReadData_Button_clicked()
+void GUI_PROGRAMMER::on_ReadDataSave_Button_clicked()
 {
     save_rcvd_formatted();
 }

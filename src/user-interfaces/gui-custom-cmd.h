@@ -44,13 +44,13 @@ protected slots:
     virtual void set_progress_update_send(int progress, QString label);
 
 private slots:
-    void on_SaveFeedback_Button_clicked();
+    void on_FeedbackSave_Button_clicked();
+    void on_FeedbackClear_Button_clicked();
+
     void on_BrowseFile_Button_clicked();
-    void on_ClearFeedback_Button_clicked();
+    void on_CustomCMDSend_Button_clicked();
 
-    void on_SendCustomCMD_Button_clicked();
-
-    void on_cmdSelect_buttonClicked(int);
+    void on_CustomCMD_RadioGroup_buttonClicked(int);
 
 private:
     Ui::GUI_CUSTOM_CMD *ui;
