@@ -84,7 +84,7 @@ void TCP_CLIENT::write(QByteArray writeData)
 
     qDebug() << "S: " << writeData;
     client->write((const QByteArray) writeData);
-    client->waitForBytesWritten();
+    client->flush();
 
     writeLock->unlock();
 }

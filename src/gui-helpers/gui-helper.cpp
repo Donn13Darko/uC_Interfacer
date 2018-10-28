@@ -169,9 +169,10 @@ QByteArray GUI_HELPER::initList_to_byteArray(std::initializer_list<uint8_t> init
 uint32_t GUI_HELPER::byteArray_to_uint32(QByteArray data)
 {
     uint32_t ret_data = 0;
-    foreach (char a, data)
+    uint8_t data_len = data.length();
+    for (uint8_t i = 0; ((i < 4) && (i < data_len)); i++)
     {
-        ret_data = (ret_data << 8) | a;
+        ret_data = (ret_data << 8) | (uchar) data.at(i);
     }
     return ret_data;
 }

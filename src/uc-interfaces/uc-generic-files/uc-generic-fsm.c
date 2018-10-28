@@ -134,11 +134,11 @@ void fsm_poll()
         if (!fsm_read_next(fsm_buffer_ptr, num_s1_bytes, packet_timeout)) continue;
         fsm_buffer_ptr += num_s1_bytes;
 
-        // Store first stage info
+        // Parse keys
         major_key = fsm_buffer[s1_major_key_loc];
         minor_key = fsm_buffer[s1_minor_key_loc];
 
-        // Unecnode Major key
+        // Decode keys
         num_s2_bits = major_key & s1_num_s2_bytes_bit_mask;
         major_key &= s1_major_key_bit_mask;
 

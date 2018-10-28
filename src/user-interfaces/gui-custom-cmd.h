@@ -40,6 +40,9 @@ public:
 protected slots:
     virtual void receive_gui(QByteArray recvData);
 
+    virtual void set_progress_update_recv(int progress, QString label);
+    virtual void set_progress_update_send(int progress, QString label);
+
 private slots:
     void on_SaveFeedback_Button_clicked();
     void on_BrowseFile_Button_clicked();

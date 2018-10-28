@@ -97,7 +97,7 @@ void Serial_RS232::write(QByteArray writeData)
 
     qDebug() << "S: " << writeData;
     rs232->write((const QByteArray) writeData);
-    rs232->waitForBytesWritten();
+    rs232->flush();
 
     writeLock->unlock();
 }

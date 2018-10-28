@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>90</x>
-     <y>20</y>
+     <y>10</y>
      <width>261</width>
      <height>20</height>
     </rect>
@@ -27,7 +27,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>20</y>
+     <y>10</y>
      <width>71</width>
      <height>20</height>
     </rect>
@@ -40,7 +40,7 @@
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>20</y>
+     <y>10</y>
      <width>71</width>
      <height>23</height>
     </rect>
@@ -160,7 +160,7 @@
    <property name="geometry">
     <rect>
      <x>530</x>
-     <y>20</y>
+     <y>10</y>
      <width>61</width>
      <height>17</height>
     </rect>
@@ -176,7 +176,7 @@
    <property name="geometry">
     <rect>
      <x>600</x>
-     <y>20</y>
+     <y>10</y>
      <width>91</width>
      <height>17</height>
     </rect>
@@ -192,7 +192,7 @@
    <property name="geometry">
     <rect>
      <x>700</x>
-     <y>20</y>
+     <y>10</y>
      <width>121</width>
      <height>20</height>
     </rect>
@@ -390,6 +390,35 @@
    </property>
    <property name="value">
     <number>0</number>
+   </property>
+  </widget>
+  <widget class="QLabel" name="ProgrammerProgress_Label">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>390</y>
+     <width>571</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="ClearOnSet_CheckBox">
+   <property name="geometry">
+    <rect>
+     <x>800</x>
+     <y>40</y>
+     <width>81</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Clear on Set</string>
    </property>
   </widget>
  </widget>

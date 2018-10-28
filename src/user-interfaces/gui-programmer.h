@@ -46,7 +46,9 @@ public:
 
 protected slots:
     virtual void receive_gui(QByteArray recvData);
-    virtual void progress_update(int progress);
+
+    virtual void set_progress_update_recv(int progress, QString label);
+    virtual void set_progress_update_send(int progress, QString label);
 
 protected:
     virtual bool isDataRequest(uint8_t minorKey);
@@ -72,6 +74,9 @@ private:
 
     QByteArray loadedHex;
     QString format_hex(QByteArray rawHex);
+
+    uint8_t progress_divisor;
+    uint8_t progress_adjuster;
 };
 
 #endif // GUI_PROGRAMMER_H

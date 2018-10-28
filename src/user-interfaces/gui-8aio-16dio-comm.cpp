@@ -87,6 +87,9 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     // Clear any rcvd data
     rcvd_formatted.clear();
 
+    // Reset pin base
+    GUI_PIN_BASE::reset_gui();
+
     // Reconnect sending slot
     emit connect_signals(true);
 }

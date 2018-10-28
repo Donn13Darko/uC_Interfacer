@@ -59,6 +59,10 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     data_status = false;
     data_key = MAJOR_KEY_ERROR;
 
+    // Init progress bars
+    set_expected_recv_length(QByteArray());
+    update_current_recv_length(QByteArray());
+
     // Init gui checksum variables
     gui_checksum = DEFAULT_CHECKSUM_STRUCT;
 
@@ -83,6 +87,12 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
             &ackLoop, SLOT(quit()));
     connect(this, SIGNAL(resetting()),
             &ackLoop, SLOT(quit()));
+
+    // Connect progress signals and slots
+    connect(this, SIGNAL(progress_update_recv(int, QString)),
+            this, SLOT(set_progress_update_recv(int,QString)));
+    connect(this, SIGNAL(progress_update_send(int, QString)),
+            this, SLOT(set_progress_update_send(int,QString)));
 }
 
 GUI_BASE::~GUI_BASE()
@@ -100,6 +110,9 @@ void GUI_BASE::reset_remote()
 
     // Emit resetting to free timers
     emit resetting();
+
+    // Reset the gui (must not call reset remote)
+    reset_gui();
 
     // Load reset CMD into msgList
     send({MAJOR_KEY_RESET, 0});
@@ -228,7 +241,13 @@ void GUI_BASE::set_chunk_size(size_t chunk)
 
 void GUI_BASE::reset_gui()
 {
-    // Default do nothing
+    // Reset progress bars info
+    start_data = true;
+    current_recv_length = 0;
+    expected_recv_length = 1;
+
+    emit progress_update_recv(0, "");
+    emit progress_update_send(0, "");
 }
 
 uint8_t GUI_BASE::get_GUI_key()
@@ -261,93 +280,156 @@ void GUI_BASE::receive(QByteArray recvData)
     // Lock recv to prevent spamming/blocking
     if (!recvLock.tryLock()) return;
 
-    // Loop until break or rcvd is empty
-    uint32_t bits, expected_len;
+    // Setup loop variables
+    bool exit_recv = false;
+    uint8_t major_key, minor_key, bits;
+    uint32_t expected_len, checksum_size;
     uint32_t rcvd_len = rcvd_raw.length();
     QByteArray tmp;
-    while ((0 < rcvd_len) && !exit_dev)
+
+    // Recv Loop
+    while ((0 < rcvd_len) && !exit_recv && !exit_dev)
     {
-        // Check to see if first stage in rcvd
+        // Check to see if keys in rcvd
         expected_len = num_s1_bytes;
-        if (rcvd_len < expected_len) break;
+        if (rcvd_len < expected_len) break; // Break out of Recv Loop
 
-        // Check to see if it's an Ack packet (no second stage)
-        uint32_t checksum_size;
-        if (rcvd_raw.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
+        // Parse keys
+        major_key = (uchar) rcvd_raw.at(s1_major_key_loc);
+        minor_key = (uchar) rcvd_raw.at(s1_minor_key_loc);
+
+        // Decode keys
+        bits = major_key & s1_num_s2_bytes_bit_mask;
+        major_key &= s1_major_key_bit_mask;
+
+        // Adjust byte length of 3 (want uint32_t not uint24_t)
+        if (bits == 0x03) bits += 1;
+
+        // Check if byte length in received
+        expected_len += bits;
+        if (rcvd_len < expected_len) break; // Break out of Recv Loop
+
+        // Key Switch
+        switch (major_key)
         {
-            // Set generic checksum executable if using
-            if (GUI_BASE::generic_checksum.checksum_is_exe)
-                set_executable_checksum_exe(GUI_BASE::generic_checksum.checksum_exe);
-
-            // Verify enough bytes
-            checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
-            if (rcvd_len < (expected_len+checksum_size)) break;
-
-            // Check Checksum
-            if (!check_checksum((const uint8_t*) rcvd_raw.constData(), expected_len, &GUI_BASE::generic_checksum))
+            case MAJOR_KEY_ACK:
+            case MAJOR_KEY_RESET:
             {
-                rcvd_raw.clear();
+                // Set generic checksum executable if using
+                if (GUI_BASE::generic_checksum.checksum_is_exe)
+                    set_executable_checksum_exe(GUI_BASE::generic_checksum.checksum_exe);
+
+                // Verify enough bytes
+                checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
+                exit_recv = (rcvd_len < (expected_len+checksum_size));
+                if (exit_recv) break;  // Break out of Key Switch
+
+                // Check Checksum (checksum failure handled in Act Switch)
+                exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(), expected_len, &GUI_BASE::generic_checksum);
+
+                // Act Switch
+                switch (major_key)
+                {
+                    case MAJOR_KEY_ACK:
+                    {
+                        // If not error, emit ackReceived
+                        if (!exit_recv)
+                        {
+                            // Build temporary array to send off data
+                            tmp.clear();
+                            tmp.append((char) major_key);
+                            tmp.append((char) minor_key);
+
+                            // Emit ack received
+                            emit ackReceived(tmp);
+                        }
+
+                        // Break out of Act Switch
+                        break;
+                    }
+                    case MAJOR_KEY_RESET:
+                    {
+                        // Check if error
+                        if (exit_recv)
+                        {
+                            // Ack error if checksum error
+                            send_ack(MAJOR_KEY_ERROR);
+                        } else
+                        {
+                            // Ack success
+                            send_ack(major_key);
+
+                            // Emit reseting
+                            emit resetting();
+
+                            // Reset the gui (must not call reset remote)
+                            reset_gui();
+                        }
+
+                        // Break out of Act Switch
+                        break;
+                    }
+                }
+
+                // Clear array if error, else remove packet from rcvd
+                if (exit_recv) rcvd_raw.clear();
+                else rcvd_raw.remove(0, expected_len+checksum_size);
+
+                // Break out of Key Switch
                 break;
             }
-
-            // Build temporary array to send off data
-            tmp.clear();
-            tmp.append(rcvd_raw.mid(0, num_s1_bytes));
-
-            // Emit ack received
-            emit ackReceived(tmp);
-
-            // Remove ack
-            rcvd_raw.remove(0, expected_len+checksum_size);
-        } else
-        {
-            // Check if byte length in received
-            bits = (rcvd_raw.at(s1_major_key_loc) & s1_num_s2_bytes_bit_mask);
-            if (bits == 0x03) bits += 1;
-            expected_len += bits;
-            if (rcvd_len < expected_len) break;
-
-            // Parse num_s2_bytes
-            num_s2_bytes = GUI_HELPER::byteArray_to_uint32(rcvd_raw.mid(s1_num_s2_bytes_loc, bits));
-
-            // Check if second stage in rcvd
-            expected_len += num_s2_bytes;
-            if (rcvd_len < (expected_len)) break;
-
-            // Set gui checksum executable if using
-            if (gui_checksum.checksum_is_exe)
-                set_executable_checksum_exe(gui_checksum.checksum_exe);
-            checksum_size = gui_checksum.get_checksum_size();
-
-            // Check if checksum in rcvd
-            if (rcvd_len < (expected_len+checksum_size)) break;
-
-            // Check Checksum
-            if (!check_checksum((const uint8_t*) rcvd_raw.constData(), expected_len, &gui_checksum))
+            default:
             {
-                // Clear rcvd if error
-                rcvd_raw.clear();
+                // Parse num_s2_bytes
+                num_s2_bytes = GUI_HELPER::byteArray_to_uint32(rcvd_raw.mid(s1_num_s2_bytes_loc, bits));
 
-                // Ack error
-                send_ack(MAJOR_KEY_ERROR);
+                // Check if second stage in rcvd
+                expected_len += num_s2_bytes;
+                exit_recv = rcvd_len < (expected_len);
+                if (exit_recv) break; // Break out of Key Switch
+
+                // Set gui checksum executable if using
+                if (gui_checksum.checksum_is_exe)
+                    set_executable_checksum_exe(gui_checksum.checksum_exe);
+                checksum_size = gui_checksum.get_checksum_size();
+
+                // Check if checksum in rcvd
+                exit_recv = (rcvd_len < (expected_len+checksum_size));
+                if (exit_recv) break; // Break out of Key Switch
+
+                // Check Checksum
+                exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(), expected_len, &gui_checksum);
+                if (exit_recv)
+                {
+                    // Clear rcvd if checksum error
+                    rcvd_raw.clear();
+
+                    // Ack error
+                    send_ack(MAJOR_KEY_ERROR);
+
+                    // Break out of Key Switch
+                    break;
+                }
+
+                // Build temporary array to send off data and ack
+                tmp.clear();
+                tmp.append((char) major_key);
+                tmp.append((char) minor_key);
+                tmp.append(rcvd_raw.mid(s1_num_s2_bytes_loc+bits, num_s2_bytes));
+
+                // Ack success & set data status
+                send_ack(major_key);
+                data_status = true;
+
+                // Emit readyRead
+                emit readyRead(tmp);
+
+                // Remove data from rcvd_raw
+                rcvd_raw.remove(0, expected_len+checksum_size);
+
+                // Break out of Key Switch
                 break;
             }
-
-            // Build temporary array to send off data and ack
-            tmp.clear();
-            tmp.append((char) (rcvd_raw.at(s1_major_key_loc) & s1_major_key_bit_mask));
-            tmp.append(rcvd_raw.at(s1_minor_key_loc));
-            tmp.append(rcvd_raw.mid(s1_num_s2_bytes_loc+bits, expected_len-(s1_num_s2_bytes_loc+bits)));
-
-            // Ack success & set data status
-            send_ack((uint8_t) tmp.at(s1_major_key_loc));
-            data_status = true;
-
-            // Emit readyRead
-            emit readyRead(tmp);
-
-            // Remove data from rcvd_raw
-            rcvd_raw.remove(0, expected_len+checksum_size);
         }
 
         // Update rcvd_len
@@ -368,14 +450,16 @@ void GUI_BASE::receive_gui(QByteArray)
 
 void GUI_BASE::on_ResetGUI_Button_clicked()
 {
-    // Reset the Remote
+    // Reset the Remote (also resets the GUI)
     reset_remote();
-
-    // Reset the GUI
-    reset_gui();
 }
 
-void GUI_BASE::progress_update(int)
+void GUI_BASE::set_progress_update_recv(int, QString)
+{
+    // Default do nothing
+}
+
+void GUI_BASE::set_progress_update_send(int, QString)
 {
     // Default do nothing
 }
@@ -397,7 +481,7 @@ void GUI_BASE::send(std::initializer_list<uint8_t> data)
 
 void GUI_BASE::send_file(uint8_t major_key, uint8_t minor_key, QString filePath)
 {
-    send_chunk(major_key, minor_key, GUI_HELPER::loadFile(filePath));
+    send_chunk(major_key, minor_key, GUI_HELPER::loadFile(filePath), true);
 }
 
 void GUI_BASE::send_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep)
@@ -408,13 +492,13 @@ void GUI_BASE::send_file_chunked(uint8_t major_key, uint8_t minor_key, QString f
     }
 }
 
-void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk)
+void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk, bool force_envelope)
 {
     // Verify this will terminate
     if (chunk_size == 0) return;
 
-    // Reset progress (if available)
-    progress_update(0);
+    // Reset progress (if sending from gui)
+    if (major_key == gui_key) emit progress_update_send(0, "");
 
     // Setup base variables
     QByteArray data, curr;
@@ -422,9 +506,10 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
     uint32_t end_pos = chunk.length();
 
     // Send start of data chunk
-    // (if multiple packets are required)
-    if (chunk_size < end_pos)
+    force_envelope |= (chunk_size < end_pos);
+    if (force_envelope && !reset_dev)
     {
+        // Make start packet and send
         data.clear();
         data.append((char) major_key);
         data.append((char) minor_key);
@@ -452,11 +537,11 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
         data.append((char) (major_key | bits));
         data.append((char) minor_key);
 
-        // Check if bits == 0x03
+        // Adjust byte length of 3 (want uint32_t not uint24_t)
         if (bits == 0x03) bits += 1;
 
         // Load data_len into data
-        data.append(GUI_HELPER::uint32_to_byteArray(data_len).left(bits));
+        data.append(GUI_HELPER::uint32_to_byteArray(data_len).right(bits));
 
         // Append data
         data.append(curr);
@@ -465,29 +550,33 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
         transmit(data);
 
         // Increment position counter
-        pos += chunk_size;
+        // Do not use chunk_size to enable dyanmic setting
+        pos += curr.length();
 
         // Update progress
-        progress_update(qRound(((float) pos / end_pos) * 100.0));
-    } while (pos < end_pos);
+        emit progress_update_send(qRound(((float) pos / end_pos) * 100.0f), "");
+    } while ((pos < end_pos) && !reset_dev);
 
     // Send end of data chunk
-    // (if multiple packets were required)
-    if (chunk_size < end_pos)
+    if (force_envelope && !reset_dev)
     {
         data.clear();
         data.append((char) major_key);
         data.append((char) minor_key);
         transmit(data);
     }
+
+    // Signal done to user if from gui
+    if (major_key == gui_key) emit progress_update_send(100, "Done!");
 }
 
-void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk)
+void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk, bool force_envelope)
 {
     send_chunk(
                 major_key,
                 minor_key,
-                GUI_HELPER::initList_to_byteArray(chunk)
+                GUI_HELPER::initList_to_byteArray(chunk),
+                force_envelope
                 );
 }
 
@@ -574,6 +663,49 @@ void GUI_BASE::save_rcvd_formatted()
         GUI_HELPER::showMessage("ERROR: Failed to save file!");
 }
 
+void GUI_BASE::set_expected_recv_length(QByteArray recv_length)
+{
+    // Convert and set qbytearray
+    expected_recv_length = GUI_HELPER::byteArray_to_uint32(recv_length);
+
+    // Reset progress bar
+    emit progress_update_recv(0, "");
+}
+
+void GUI_BASE::update_current_recv_length(QByteArray recvData)
+{
+    // Find length of data
+    int data_len = recvData.length();
+
+    // Start and stop sent by
+    if (data_len == 0)
+    {
+        // See if starting new file
+        if (start_data)
+        {
+            current_recv_length = 0;
+            emit progress_update_recv(0, "");
+        } else
+        {
+            expected_recv_length = 0;
+            emit progress_update_recv(100, "Done!");
+        }
+
+        // Toggle start_data
+        start_data = !start_data;
+
+        // Exit after setting
+        return;
+    }
+
+    // Update received length
+    current_recv_length += data_len;
+
+    // Update progress bar if known what we are expecting
+    if (expected_recv_length != 0)
+        emit progress_update_recv(qRound(((float) current_recv_length/expected_recv_length) * 100.0f), "");
+}
+
 void GUI_BASE::transmit(QByteArray data)
 {
     // Check if trying to send empty data array or exiting
@@ -622,7 +754,7 @@ void GUI_BASE::transmit(QByteArray data)
             continue;
         }
 
-        // Send data and verify ack
+        // Else, send data and verify ack
         do
         {
             // Emit write command to connected device

@@ -29,6 +29,12 @@ GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :
     // Set GUI Type
     gui_key = MAJOR_KEY_CUSTOM_CMD;
 
+    // Setup Progress bars
+    ui->CustomCMD_ProgressBar->setMinimum(0);
+    ui->CustomCMD_ProgressBar->setMaximum(100);
+    ui->Feedback_ProgressBar->setMinimum(0);
+    ui->Feedback_ProgressBar->setMaximum(100);
+
     // Reset GUI
     reset_gui();
 }
@@ -53,6 +59,12 @@ void GUI_CUSTOM_CMD::reset_gui()
     // Reset radio selection
     ui->File_Radio->setChecked(true);
     on_cmdSelect_buttonClicked(0);
+
+    // Set clear on set
+    ui->ClearOnSet_CheckBox->setChecked(true);
+
+    // Reset base (resets progress bar)
+    GUI_BASE::reset_gui();
 }
 
 void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant>* configMap)
@@ -78,6 +90,7 @@ void GUI_CUSTOM_CMD::on_ClearFeedback_Button_clicked()
 {
     ui->Feedback_PlainText->clear();
     rcvd_formatted.clear();
+    set_expected_recv_length(0);
 }
 
 void GUI_CUSTOM_CMD::on_SendCustomCMD_Button_clicked()
@@ -138,18 +151,22 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
         switch (recvData.at(s1_minor_key_loc))
         {
             case MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE:
-                expected_recv_length = GUI_HELPER::byteArray_to_uint32(recvData.mid(s1_end_loc));
+                // Clear recv if clear on set checked
+                if (ui->ClearOnSet_CheckBox->isChecked())
+                    on_ClearFeedback_Button_clicked();
+
+                // Set expected length
+                set_expected_recv_length(recvData.mid(s1_end_loc));
                 return;
             case MINOR_KEY_CUSTOM_CMD_CMD:
-                int data_len = recvData.length();
-                if (data_len == 0) current_recv_length = 0;
-                else current_recv_length += recvData.length() - s1_end_loc;
+                // Update current recv length with each packet
+                update_current_recv_length(recvData.mid(s1_end_loc));
                 break;
         }
     }
 
     // Insert into class array (for saving in original format)
-    rcvd_formatted.append(recvData.mid(s1_end_loc));
+    rcvd_formatted.append(recvData);
 
     // Highlight keypair
     recvData.insert(s1_end_loc, ']');
@@ -161,6 +178,18 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
     ui->Feedback_PlainText->moveCursor(QTextCursor::End);
     ui->Feedback_PlainText->insertPlainText(QString(recvData));
     ui->Feedback_PlainText->setTextCursor(prev_cursor);
+}
+
+void GUI_CUSTOM_CMD::set_progress_update_recv(int progress, QString label)
+{
+    ui->Feedback_ProgressBar->setValue(progress);
+    ui->FeedbackProgress_Label->setText(label);
+}
+
+void GUI_CUSTOM_CMD::set_progress_update_send(int progress, QString label)
+{
+    ui->CustomCMD_ProgressBar->setValue(progress);
+    ui->CustomCMDProgress_Label->setText(label);
 }
 
 void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)

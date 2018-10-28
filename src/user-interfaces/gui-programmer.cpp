@@ -45,6 +45,10 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     // Delete map after use
     GUI_HELPER::deleteConfigMap(configMap);
 
+    // Setup progress bars
+    ui->Programmer_ProgressBar->setMinimum(0);
+    ui->Programmer_ProgressBar->setMaximum(100);
+
     // Reset GUI
     reset_gui();
 }
@@ -72,6 +76,14 @@ void GUI_PROGRAMMER::reset_gui()
     ui->HexFormat_Combo->setCurrentIndex(0);
     curr_hexFormat = ui->HexFormat_Combo->currentText();
     on_HexFormat_Combo_activated(0);
+
+    // Set clear on set
+    ui->ClearOnSet_CheckBox->setChecked(true);
+    progress_divisor = 1;
+    progress_adjuster = 0;
+
+    // Reset base (resets send progress bar)
+    GUI_BASE::reset_gui();
 }
 
 void GUI_PROGRAMMER::parseConfigMap(QMap<QString, QVariant>* configMap)
@@ -136,22 +148,56 @@ void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
 
 void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
 {
-    // Remove Major key, minor key, and byte length
-    recvData.remove(0, s1_end_loc);
+    // Get data without keys
+    QByteArray data = recvData.mid(s1_end_loc);
+
+    // See if this GUI sent CMD
+    if (recvData.at(s1_major_key_loc) == (char) gui_key)
+    {
+        // See if known CMD
+        switch (recvData.at(s1_minor_key_loc))
+        {
+            case MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE:
+                // Clear recv if clear on set checked
+                if (ui->ClearOnSet_CheckBox->isChecked())
+                    on_ClearReadData_Button_clicked();
+
+                // Set expected length
+                set_expected_recv_length(data);
+                return;
+            case MINOR_KEY_PROGRAMMER_DATA:
+                // Update current recv length with each packet
+                update_current_recv_length(data);
+                break;
+        }
+    }
 
     // Insert into global array (for saving in original format)
-    rcvd_formatted.append(recvData);
+    rcvd_formatted.append(data);
 
     // Insert at end of plaintext
     QTextCursor prev_cursor = ui->ReadData_PlainText->textCursor();
     ui->ReadData_PlainText->moveCursor(QTextCursor::End);
-    ui->ReadData_PlainText->insertPlainText(QString(recvData));
+    ui->ReadData_PlainText->insertPlainText(QString(data));
     ui->ReadData_PlainText->setTextCursor(prev_cursor);
 }
 
-void GUI_PROGRAMMER::progress_update(int progress)
+void GUI_PROGRAMMER::set_progress_update_recv(int progress, QString label)
 {
-    ui->Programmer_ProgressBar->setValue(progress);
+    if (progress_divisor != 0)
+        ui->Programmer_ProgressBar->setValue((progress_adjuster + progress) / progress_divisor);
+
+    if (progress_divisor == 1)
+        ui->ProgrammerProgress_Label->setText(label);
+}
+
+void GUI_PROGRAMMER::set_progress_update_send(int progress, QString label)
+{
+    if (progress_divisor != 0)
+        ui->Programmer_ProgressBar->setValue((progress_adjuster + progress) / progress_divisor);
+
+    if (progress_divisor == 1)
+        ui->ProgrammerProgress_Label->setText(label);
 }
 
 bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
@@ -297,6 +343,7 @@ void GUI_PROGRAMMER::on_ClearReadData_Button_clicked()
 {
     ui->ReadData_PlainText->clear();
     rcvd_formatted.clear();
+    set_expected_recv_length(0);
 }
 
 void GUI_PROGRAMMER::on_ReadData_Button_clicked()

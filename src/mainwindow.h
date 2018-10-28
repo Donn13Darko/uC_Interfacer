@@ -70,6 +70,8 @@ public:
 
 public slots:
     void connect_signals(bool connect);
+    void reset_remote();
+    void reset_guis();
 
 private slots:
     void on_Device_Combo_activated(int);
@@ -118,7 +120,6 @@ private:
 
     void updateSpeedCombo();
     void setConnected(bool conn);
-    void reset_remote();
     void connect2sender(QObject* obj, bool conn);
     void ucOptionsClear();
     bool deviceConnected();

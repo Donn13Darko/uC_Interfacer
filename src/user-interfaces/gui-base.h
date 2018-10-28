@@ -55,7 +55,7 @@ public:
     static void parseGenericConfigMap(QMap<QString, QVariant>* configMap);
 
     // Virtual functions
-    virtual void reset_gui();
+    virtual void reset_gui();       // Must not call reset_remote()
     virtual uint8_t get_GUI_key();
     virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
@@ -70,6 +70,9 @@ signals:
     void ackChecked(bool ackStatus);
     void resetting();
 
+    void progress_update_recv(int progress, QString label);
+    void progress_update_send(int progress, QString label);
+
 protected slots:
     void receive(QByteArray recvData);
     void checkAck(QByteArray ack);
@@ -77,7 +80,8 @@ protected slots:
     // Virtual slots
     virtual void receive_gui(QByteArray recvData);
     virtual void on_ResetGUI_Button_clicked();
-    virtual void progress_update(int progress);
+    virtual void set_progress_update_recv(int progress, QString label);
+    virtual void set_progress_update_send(int progress, QString label);
 
 protected:
     // Local variables
@@ -87,6 +91,7 @@ protected:
     QByteArray rcvd_formatted;
     uint32_t current_recv_length;
     uint32_t expected_recv_length;
+    bool start_data;
 
     // Direct sends
     void send(QString data);
@@ -98,8 +103,8 @@ protected:
     void send_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep);
 
     // Chunk sending
-    void send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk);
-    void send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk);
+    void send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk, bool force_envelope = false);
+    void send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk, bool force_envelope = false);
 
     // Ack
     void send_ack(uint8_t majorKey);
@@ -112,6 +117,10 @@ protected:
 
     // Save to file
     void save_rcvd_formatted();
+
+    // Other functions
+    void set_expected_recv_length(QByteArray recv_length);
+    void update_current_recv_length(QByteArray recvData);
 
 private:
     // Private variables

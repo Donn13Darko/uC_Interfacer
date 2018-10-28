@@ -28,11 +28,15 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
 {
     // Setup UI
     ui->setupUi(this);
-    ui->SendMsg_ProgressBar->setMinimum(0);
-    ui->SendMsg_ProgressBar->setMaximum(100);
 
     // Set GUI Type
     gui_key = MAJOR_KEY_DATA_TRANSMIT;
+
+    // Setup progress bars
+    ui->SendMsg_ProgressBar->setMinimum(0);
+    ui->SendMsg_ProgressBar->setMaximum(100);
+    ui->RecvMsg_ProgressBar->setMinimum(0);
+    ui->RecvMsg_ProgressBar->setMaximum(100);
 
     // Reset GUI
     reset_gui();
@@ -55,11 +59,11 @@ void GUI_DATA_TRANSMIT::reset_gui()
     ui->File_Radio->setChecked(true);
     on_MSG_Sel_buttonClicked(0);
 
-    // Reset progress bar
-    progress_update(0);
-    start_data = true;
-    current_recv_length = 0;
-    expected_recv_length = 0;
+    // Set clear on set
+    ui->ClearOnSet_CheckBox->setChecked(true);
+
+    // Reset base (resets progress bars)
+    GUI_BASE::reset_gui();
 }
 
 void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant>* configMap)
@@ -121,26 +125,58 @@ void GUI_DATA_TRANSMIT::on_ClearReceived_Button_clicked()
 {
     ui->Recv_PlainText->clear();
     rcvd_formatted.clear();
+    set_expected_recv_length(0);
 }
 
 void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
 {
-    // Remove Major key, minor key, and byte length
-    recvData.remove(0, s1_end_loc);
+    // Get data without keys
+    QByteArray data = recvData.mid(s1_end_loc);
+
+    // See if this GUI sent CMD
+    if (recvData.at(s1_major_key_loc) == (char) gui_key)
+    {
+        // See if known CMD
+        switch (recvData.at(s1_minor_key_loc))
+        {
+            case MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE:
+                // Clear recv if clear on set checked
+                if (ui->ClearOnSet_CheckBox->isChecked())
+                    on_ClearReceived_Button_clicked();
+
+                // Set expected length
+                set_expected_recv_length(data);
+                return;
+            case MINOR_KEY_DATA_TRANSMIT_DATA:
+                // Update current recv length with each packet
+                update_current_recv_length(data);
+                break;
+        }
+    }
+
+    // Check if any data to add
+    if (data.isEmpty()) return;
 
     // Insert into global array (for saving in original format)
-    rcvd_formatted.append(recvData);
+    rcvd_formatted.append(data);
 
     // Insert at end of plaintext
     QTextCursor prev_cursor = ui->Recv_PlainText->textCursor();
     ui->Recv_PlainText->moveCursor(QTextCursor::End);
-    ui->Recv_PlainText->insertPlainText(QString(recvData));
+    ui->Recv_PlainText->insertPlainText(QString(data));
     ui->Recv_PlainText->setTextCursor(prev_cursor);
 }
 
-void GUI_DATA_TRANSMIT::progress_update(int progress)
+void GUI_DATA_TRANSMIT::set_progress_update_recv(int progress, QString label)
+{
+    ui->RecvMsg_ProgressBar->setValue(progress);
+    ui->RecvMsgProgress_Label->setText(label);
+}
+
+void GUI_DATA_TRANSMIT::set_progress_update_send(int progress, QString label)
 {
     ui->SendMsg_ProgressBar->setValue(progress);
+    ui->SendMsgProgress_Label->setText(label);
 }
 
 void GUI_DATA_TRANSMIT::input_select(bool fileIN, bool plainIN)

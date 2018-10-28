@@ -146,6 +146,32 @@ void MainWindow::connect_signals(bool conn)
     connect2sender(curr_widget, conn);
 }
 
+void MainWindow::reset_remote()
+{
+    // Verifu device is connected
+    if (!deviceConnected()) return;
+
+    // Send reset command (only need to call once)
+    GUI_BASE* curr = (GUI_BASE*) ui->ucOptions->currentWidget();
+    if (curr) curr->reset_remote();
+
+    // Reset all guis
+    reset_guis();
+}
+
+void MainWindow::reset_guis()
+{
+    // Only reset if not resetting between tab switches
+    if (main_options_settings.reset_on_tab_switch) return;
+
+    // Reset all tabs
+    uint8_t num_tabs = ui->ucOptions->count();
+    for (uint8_t i = 0; i < num_tabs; i++)
+    {
+        ((GUI_BASE*) ui->ucOptions->widget(i))->reset_gui();
+    }
+}
+
 void MainWindow::on_Device_Combo_activated(int)
 {
     // Save previous value
@@ -335,6 +361,7 @@ void MainWindow::on_DeviceConnected() {
             groupMap = configMap->value(childGroup);
 
             // Instantiate and add GUI
+            tab_holder = nullptr;
             switch (gui_key)
             {
                 case MAJOR_KEY_GENERAL_SETTINGS:
@@ -359,7 +386,8 @@ void MainWindow::on_DeviceConnected() {
                     {
                         main_options_settings.chunk_size = groupMap->value("chunk_size").toInt();
                     }
-                    continue;
+
+                    break;
                 }
                 case MAJOR_KEY_WELCOME:
                 {
@@ -388,9 +416,11 @@ void MainWindow::on_DeviceConnected() {
                 }
                 default:
                 {
-                    continue;
+                    break;
                 }
             }
+            if (!tab_holder) continue;
+
 
             // Set delete on close attribute
             tab_holder->setAttribute(Qt::WA_DeleteOnClose);
@@ -408,16 +438,13 @@ void MainWindow::on_DeviceConnected() {
         // Enable signals for tab group
         ui->ucOptions->blockSignals(false);
 
-        // Delete map now that loading finished
-        GUI_HELPER::deleteConfigMap(configMap);
-        configMap = nullptr;
-
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
 
         // Commands generally fail the first time after new connection
         // Manually call reset remote (if shut off for tab switches)
-        if (!main_options_settings.reset_on_tab_switch) reset_remote();
+        if (!main_options_settings.reset_on_tab_switch)
+            reset_remote();
     } else
     {
         GUI_HELPER::showMessage("Error: Unable to connect to target!");
@@ -437,8 +464,8 @@ void MainWindow::on_DeviceDisconnected()
 
 void MainWindow::on_DeviceDisconnect_Button_clicked()
 {
-    // Reset the remote if connected
-    if (deviceConnected()) reset_remote();
+    // Reset the remote
+    reset_remote();
 
     // Disconnect any connected slots
     if (device)
@@ -500,6 +527,8 @@ void MainWindow::on_ucOptions_currentChanged(int index)
             connect2sender(prev_widget, false);
             disconnect(prev_widget, SIGNAL(connect_signals(bool)),
                        this, SLOT(connect_signals(bool)));
+            disconnect((GUI_BASE*) prev_widget, SIGNAL(resetting()),
+                       this, SLOT(reset_guis()));
 
             // Reset the previous GUI
             if (main_options_settings.reset_on_tab_switch)
@@ -514,6 +543,8 @@ void MainWindow::on_ucOptions_currentChanged(int index)
         // Enable device to manage signals
         connect(curr_widget, SIGNAL(connect_signals(bool)),
                 this, SLOT(connect_signals(bool)));
+        connect((GUI_BASE*) curr_widget, SIGNAL(resetting()),
+                this, SLOT(reset_guis()));
 
         // Set signal acceptance to true
         connect_signals(true);
@@ -523,7 +554,8 @@ void MainWindow::on_ucOptions_currentChanged(int index)
     prev_tab = index;
 
     // Reset the Remote for the new tab (if connected)
-    if (main_options_settings.reset_on_tab_switch) reset_remote();
+    if (main_options_settings.reset_on_tab_switch)
+        reset_remote();
 }
 
 void MainWindow::updateConnInfoCombo()
@@ -620,16 +652,6 @@ void MainWindow::setConnected(bool conn)
     // Set Buttons Enabled
     ui->DeviceConnect_Button->setEnabled(op_conn);
     ui->DeviceDisconnect_Button->setEnabled(conn);
-}
-
-void MainWindow::reset_remote()
-{
-    // Verifu device is connected
-    if (!deviceConnected()) return;
-
-    // Send reset command
-    GUI_BASE* curr = (GUI_BASE*) ui->ucOptions->currentWidget();
-    if (curr) curr->reset_remote();
 }
 
 void MainWindow::connect2sender(QObject* obj, bool conn)

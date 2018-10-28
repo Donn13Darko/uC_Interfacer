@@ -84,7 +84,7 @@ void UDP_SOCKET::write(QByteArray writeData)
     qDebug() << "S: " << writeData;
     client->writeDatagram((const QByteArray) writeData,
                           udp_client_ip, udp_client_port);
-    client->waitForBytesWritten();
+    client->flush();
 
     writeLock->unlock();
 }
