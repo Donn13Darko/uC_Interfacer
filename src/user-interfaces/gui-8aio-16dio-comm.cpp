@@ -62,8 +62,8 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     on_StopUpdater_Button_clicked();
 
     // Reset pin settings
-    QList<uint8_t> pinTypes({MINOR_KEY_IO_AIO, MINOR_KEY_IO_DIO});
-    foreach (uint8_t pinType, pinTypes)
+    foreach (uint8_t pinType,
+             QList<uint8_t>({MINOR_KEY_IO_AIO, MINOR_KEY_IO_DIO}))
     {
         if (getPinTypeInfo(pinType, &pInfo))
         {
@@ -84,14 +84,14 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
         }
     }
 
+    // Reconnect sending slot
+    emit connect_signals(true);
+
     // Clear any rcvd data
     rcvd_formatted.clear();
 
     // Reset pin base
     GUI_PIN_BASE::reset_gui();
-
-    // Reconnect sending slot
-    emit connect_signals(true);
 }
 
 void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)

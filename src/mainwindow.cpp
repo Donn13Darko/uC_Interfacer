@@ -136,19 +136,13 @@ void MainWindow::closeEvent(QCloseEvent* e)
 
 void MainWindow::connect_signals(bool conn)
 {
-    // Get curr widget
-    QObject* curr_widget = (QObject*) ui->ucOptions->currentWidget();
-
-    // Exit if no widget found
-    if (!curr_widget) return;
-
     // Connect signals to slots
-    connect2sender(curr_widget, conn);
+    connect2sender(sender(), conn);
 }
 
 void MainWindow::reset_remote()
 {
-    // Verifu device is connected
+    // Verify device is connected
     if (!deviceConnected()) return;
 
     // Send reset command (only need to call once)
@@ -421,10 +415,6 @@ void MainWindow::on_DeviceConnected() {
             }
             if (!tab_holder) continue;
 
-
-            // Set delete on close attribute
-            tab_holder->setAttribute(Qt::WA_DeleteOnClose);
-
             // Call config map parser
             ((GUI_BASE*) tab_holder)->parseConfigMap(groupMap);
 
@@ -478,6 +468,8 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
 
     // Disconnect connections
     connect2sender(ui->ucOptions->currentWidget(), false);
+    disconnect(ui->ucOptions->currentWidget(), SIGNAL(connect_signals(bool)),
+               this, SLOT(connect_signals(bool)));
 
     // Remove device
     if (device)
@@ -508,7 +500,7 @@ void MainWindow::on_MoreOptions_Button_clicked()
     // Run dialog and set values if connected
     if (more_options->exec() && deviceConnected())
     {
-        update_options(local_options_settings);
+        update_options(&main_options_settings);
     }
 }
 
@@ -523,12 +515,11 @@ void MainWindow::on_ucOptions_currentChanged(int index)
         QObject* prev_widget = ui->ucOptions->widget(prev_tab);
         if (prev_widget)
         {
-            // Disconnect slots/signals
+            // Force disconnect slots/signals from previous tab
             connect2sender(prev_widget, false);
+
             disconnect(prev_widget, SIGNAL(connect_signals(bool)),
                        this, SLOT(connect_signals(bool)));
-            disconnect((GUI_BASE*) prev_widget, SIGNAL(resetting()),
-                       this, SLOT(reset_guis()));
 
             // Reset the previous GUI
             if (main_options_settings.reset_on_tab_switch)
@@ -540,14 +531,11 @@ void MainWindow::on_ucOptions_currentChanged(int index)
     QObject* curr_widget = (QObject*) ui->ucOptions->currentWidget();
     if (curr_widget)
     {
-        // Enable device to manage signals
+        // Set signal acceptance to true
+        connect2sender(curr_widget, true);
+
         connect(curr_widget, SIGNAL(connect_signals(bool)),
                 this, SLOT(connect_signals(bool)));
-        connect((GUI_BASE*) curr_widget, SIGNAL(resetting()),
-                this, SLOT(reset_guis()));
-
-        // Set signal acceptance to true
-        connect_signals(true);
     }
 
     // Update previous tab index
@@ -661,17 +649,29 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
 
     // Connect or disconnect signals
     if (conn) {
+        // Tab to device
         connect(obj, SIGNAL(write_data(QByteArray)),
                 device, SLOT(write(QByteArray)));
 
+        // Device to tab
         connect(device, SIGNAL(readyRead(QByteArray)),
                 obj, SLOT(receive(QByteArray)));
+
+        // Tab to window
+        connect(obj, SIGNAL(resetting()),
+                this, SLOT(reset_guis()));
     } else {
+        // Tab to device
         disconnect(obj, SIGNAL(write_data(QByteArray)),
                    device, SLOT(write(QByteArray)));
 
+        // Device to tab
         disconnect(device, SIGNAL(readyRead(QByteArray)),
                    obj, SLOT(receive(QByteArray)));
+
+        // Tab to window
+        disconnect(obj, SIGNAL(resetting()),
+                   this, SLOT(reset_guis()));
     }
 }
 
@@ -718,11 +718,14 @@ uint8_t MainWindow::getGUIType(QString type)
 
 QString MainWindow::getGUIName(uint8_t type)
 {
+    // Adjust type for correct bit shifts
+    uint8_t type_shifted = (type >> s1_major_key_bit_shift) - 1;
+
     // Check that type is valid
-    if (supportedGUIsList.length() < type) return "ERROR";
+    if (supportedGUIsList.length() < type_shifted) return "ERROR";
 
     // Return the string
-    return supportedGUIsList.at((type >> s1_major_key_bit_shift)-1);
+    return supportedGUIsList.at(type_shifted);
 }
 
 QStringList MainWindow::getConnSpeeds()

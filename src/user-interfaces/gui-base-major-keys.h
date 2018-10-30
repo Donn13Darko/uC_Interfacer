@@ -30,7 +30,7 @@ extern "C"
 static const uint8_t s1_major_key_bit_shift = 2;
 typedef enum {
     // Error and reset
-    MAJOR_KEY_ERROR = 0 << 2,
+    MAJOR_KEY_ERROR = 0,
 
     // GUI Types (Major Keys)
     // Must be kept here and in same order as

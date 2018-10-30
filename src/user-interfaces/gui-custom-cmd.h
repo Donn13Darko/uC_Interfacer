@@ -47,7 +47,8 @@ private slots:
     void on_FeedbackSave_Button_clicked();
     void on_FeedbackClear_Button_clicked();
 
-    void on_BrowseFile_Button_clicked();
+    void on_CustomCMDKeysInInput_CheckBox_stateChanged(int);
+    void on_CustomCMDBrowseFile_Button_clicked();
     void on_CustomCMDSend_Button_clicked();
 
     void on_CustomCMD_RadioGroup_buttonClicked(int);

@@ -52,6 +52,10 @@ void GUI_DATA_TRANSMIT::reset_gui()
     // Clear received data
     on_RecvClear_Button_clicked();
 
+    // Set default entered values
+    ui->Send_PlainText->clear();
+    ui->SendFilePath_LineEdit->clear();
+
     // Reset radio selection
     ui->SendFile_Radio->setChecked(true);
     on_Send_RadioGroup_buttonClicked(0);

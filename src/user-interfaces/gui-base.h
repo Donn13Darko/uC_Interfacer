@@ -123,54 +123,61 @@ protected:
     void update_current_recv_length(QByteArray recvData);
 
 private:
-    // Private variables
-    bool exit_dev;
+    // Base flag. Bits as follows:
+    //  1) Exit General
+    //  2) Exit Send Done
+    //  3) Exit Recv Done
+    //  4) Reset active
+    //  5) Reset send_chunk
+    uint8_t base_flags;
+    typedef enum {
+        base_exit_flag = 0x01,
+        base_exit_send_flag = 0x02,
+        base_exit_recv_flag = 0x04,
+        base_reset_flag = 0x08,
+        base_send_chunk_flag = 0x10
+    } base_flags_enum;
 
     // Send helper variables
-    QMutex sendLock;
-    QList<QByteArray> msgList;
+    static QMutex sendLock;
+    static QList<QByteArray> msgList;
 
-    // Reset flag. Bits as follows:
-    //  1) Reset active
-    //  2) Reset send_chunk
-    uint8_t reset_dev_flags;
-    typedef enum {
-        reset_active_flag = 0x01,
-        reset_send_chunk_flag = 0x02
-    } reset_dev_flags_enum;
-
-    // Recv helper variables
-    QMutex recvLock;
-    QByteArray rcvd_raw;
+    // Rcv helper variables
+    static QMutex rcvLock;
+    static QByteArray rcvd_raw;
 
     // Ack helper variables
-    bool ack_status;
-    uint8_t ack_key;
+    static bool ack_status;
+    static uint8_t ack_key;
     QTimer ackTimer;
     QEventLoop ackLoop;
 
     // Data helper variables
-    bool data_status;
-    uint8_t data_key;
+    static bool data_status;
+    static uint8_t data_key;
     QTimer dataTimer;
     QEventLoop dataLoop;
 
-    // GUI Checksum helpers
+    // Checksums helpers
     checksum_struct gui_checksum;
-
-    // Static class members
-    static uint32_t chunk_size;
     static checksum_struct generic_checksum;
     static QMap<QString, checksum_struct> supportedChecksums;
 
-    // Send to device
+    // Static class members
+    static uint32_t chunk_size;
+
     void transmit(QByteArray data);
+
+    // Checksum helpers
     void getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
                      uint8_t** checksum_array, uint32_t* checksum_size);
+    static void copy_checksum_info(checksum_struct *cpy_to, checksum_struct *cpy_from);
+    static void delete_checksum_info(checksum_struct *check);
+    static void set_checksum_exe(checksum_struct *check, QString checksum_exe);
+    static void set_checksum_start(checksum_struct *check, QStringList checksum_start, uint8_t checksum_start_base);
 
+    // Exit base (waits to acquire send and recv locks)
     void close_base();
-    bool send_closed;
-    bool recv_closed;
 };
 
 #endif // GUI_BASE_H

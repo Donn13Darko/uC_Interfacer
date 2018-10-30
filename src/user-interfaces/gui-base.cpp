@@ -25,6 +25,22 @@
 #include <QSettings>
 #include <QProcess>
 
+// Setup send helpers
+QMutex GUI_BASE::sendLock;
+QList<QByteArray> GUI_BASE::msgList({});
+
+// Setup recv helpers
+QMutex GUI_BASE::rcvLock;
+QByteArray GUI_BASE::rcvd_raw({});
+
+// Setup Ack variables
+bool GUI_BASE::ack_status = false;
+uint8_t GUI_BASE::ack_key = MAJOR_KEY_ERROR;
+
+// Setup Data variables
+bool GUI_BASE::data_status = false;
+uint8_t GUI_BASE::data_key = MAJOR_KEY_ERROR;
+
 uint32_t GUI_BASE::chunk_size = GUI_BASE::default_chunk_size;
 checksum_struct GUI_BASE::generic_checksum = DEFAULT_CHECKSUM_STRUCT;
 
@@ -45,19 +61,8 @@ uint32_t num_s2_bytes;
 GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
 {
-    // Init general variables
-    reset_dev_flags = 0x00;
-    exit_dev = false;
-    send_closed = false;
-    recv_closed = false;
-
-    // Init Ack variables
-    ack_status = false;
-    ack_key = MAJOR_KEY_ERROR;
-
-    // Init Data variables
-    data_status = false;
-    data_key = MAJOR_KEY_ERROR;
+    // Setup base flags
+    base_flags = 0x00;
 
     // Init progress bars
     set_expected_recv_length(QByteArray());
@@ -100,13 +105,14 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
 
 GUI_BASE::~GUI_BASE()
 {
-    exit_dev = true;
+    delete_checksum_info(&gui_checksum);
+    delete_checksum_info(&generic_checksum);
 }
 
 void GUI_BASE::reset_remote()
 {
     // Enter reset (set active and send_chunk flags, clear sent flag)
-    reset_dev_flags |= reset_active_flag | reset_send_chunk_flag;
+    base_flags |= (base_reset_flag | base_send_chunk_flag);
 
     // Clear any pending messages
     msgList.clear();
@@ -128,7 +134,7 @@ void GUI_BASE::reset_remote()
 void GUI_BASE::closing()
 {
     // Set exit to true
-    exit_dev = true;
+    base_flags |= base_exit_flag;
 
     // Reset send
     reset_remote();
@@ -139,36 +145,23 @@ void GUI_BASE::closing()
 
 void GUI_BASE::set_gui_checksum(QStringList new_gui_checksum)
 {
-    // Set new checksum information
-    gui_checksum = supportedChecksums.value(
+    // Get default struct
+    checksum_struct default_check = supportedChecksums.value(
                 new_gui_checksum.at(checksum_name_pos),
                 DEFAULT_CHECKSUM_STRUCT
                 );
 
-    // Load in new checksum start
-    QByteArray gui_checksum_start;
-    uint8_t base = new_gui_checksum.at(checksum_start_base_pos).toInt();
-    QStringList new_gui_checksum_start = new_gui_checksum.at(checksum_start_pos).split(',');
-    for (auto byte = new_gui_checksum_start.cbegin(); byte != new_gui_checksum_start.cend(); byte++)
-    {
-        gui_checksum_start.append((char) byte->toInt(nullptr, base));
-    }
+    // Copy default information
+    copy_checksum_info(&gui_checksum, &default_check);
 
-    // Set executable if is exe
-    if (gui_checksum.checksum_is_exe)
-    {
-        QString gui_checksum_exe_path = new_gui_checksum.at(checksum_exe_pos) + '\0';
-        gui_checksum.checksum_exe = gui_checksum_exe_path.toUtf8().constData();
-        set_executable_checksum_exe(gui_checksum.checksum_exe);
-    }
+    // Copy executable path if new checksum is exe & exe provided
+    set_checksum_exe(&gui_checksum,
+                     new_gui_checksum.at(checksum_exe_pos));
 
-    // Pad checksum if start not long enough
-    uint32_t checksum_size = gui_checksum.get_checksum_size();
-    for (uint32_t i = gui_checksum_start.length(); i < checksum_size; i++)
-    {
-        gui_checksum_start.prepend((char) 0);
-    }
-    gui_checksum.checksum_start = (const uint8_t*) gui_checksum_start.constData();
+    // If checksum_start provided, overwrite default
+    set_checksum_start(&gui_checksum,
+                       new_gui_checksum.at(checksum_start_pos).split(','),
+                       new_gui_checksum.at(checksum_start_base_pos).toInt());
 }
 
 QStringList GUI_BASE::get_supported_checksums()
@@ -178,36 +171,23 @@ QStringList GUI_BASE::get_supported_checksums()
 
 void GUI_BASE::set_generic_checksum(QStringList new_generic_checksum)
 {
-    // Set new checksum information
-    GUI_BASE::generic_checksum = supportedChecksums.value(
+    // Get default struct
+    checksum_struct default_check = supportedChecksums.value(
                 new_generic_checksum.at(checksum_name_pos),
                 DEFAULT_CHECKSUM_STRUCT
                 );
 
-    // Load in new checksum start
-    QByteArray generic_checksum_start;
-    uint8_t base = new_generic_checksum.at(checksum_start_base_pos).toInt();
-    QStringList new_generic_checksum_start = new_generic_checksum.at(checksum_start_pos).split(',');
-    for (auto byte = new_generic_checksum_start.cbegin(); byte != new_generic_checksum_start.cend(); byte++)
-    {
-        generic_checksum_start.append((char) byte->toInt(nullptr, base));
-    }
+    // Copy default information
+    copy_checksum_info(&generic_checksum, &default_check);
 
-    // Set executable if is exe
-    if (GUI_BASE::generic_checksum.checksum_is_exe)
-    {
-        QString exe_path = new_generic_checksum.at(checksum_exe_pos) + '\0';
-        GUI_BASE::generic_checksum.checksum_exe = exe_path.toUtf8().constData();
-        set_executable_checksum_exe(GUI_BASE::generic_checksum.checksum_exe);
-    }
+    // Copy executable path if new checksum is exe & exe provided
+    set_checksum_exe(&generic_checksum,
+                     new_generic_checksum.at(checksum_exe_pos));
 
-    // Pad checksum if start not long enough
-    uint32_t checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
-    for (uint32_t i = generic_checksum_start.length(); i < checksum_size; i++)
-    {
-        generic_checksum_start.prepend((char) 0);
-    }
-    GUI_BASE::generic_checksum.checksum_start = (const uint8_t*) generic_checksum_start.constData();
+    // If checksum_start provided, overwrite default
+    set_checksum_start(&generic_checksum,
+                       new_generic_checksum.at(checksum_start_pos).split(','),
+                       new_generic_checksum.at(checksum_start_base_pos).toInt());
 }
 
 void GUI_BASE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
@@ -221,25 +201,25 @@ void GUI_BASE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
     if (!setting.isNull())
     {
         // Set generic checksum type
-        GUI_BASE::set_generic_checksum(setting.toStringList());
+        set_generic_checksum(setting.toStringList());
     }
 
     // Set chunk size
     setting = configMap->value("chunk_size");
     if (!setting.isNull())
     {
-        GUI_BASE::set_chunk_size(setting.toUInt());
+        set_chunk_size(setting.toUInt());
     }
 }
 
 size_t GUI_BASE::get_chunk_size()
 {
-    return GUI_BASE::chunk_size;
+    return chunk_size;
 }
 
 void GUI_BASE::set_chunk_size(size_t chunk)
 {
-    GUI_BASE::chunk_size = chunk;
+    chunk_size = chunk;
 }
 
 void GUI_BASE::reset_gui()
@@ -275,13 +255,13 @@ void GUI_BASE::parseConfigMap(QMap<QString, QVariant>* configMap)
 void GUI_BASE::receive(QByteArray recvData)
 {
     // Check if recieving empty data array or exiting
-    if (recvData.isEmpty() || exit_dev) return;
+    if (recvData.isEmpty() || (base_flags & base_exit_flag)) return;
 
     // Add data to recv
     rcvd_raw.append(recvData);
 
     // Lock recv to prevent spamming/blocking
-    if (!recvLock.tryLock()) return;
+    if (!rcvLock.tryLock()) return;
 
     // Setup loop variables
     bool exit_recv = false;
@@ -291,7 +271,7 @@ void GUI_BASE::receive(QByteArray recvData)
     QByteArray tmp;
 
     // Recv Loop
-    while ((0 < rcvd_len) && !exit_recv && !exit_dev)
+    while ((0 < rcvd_len) && !exit_recv && !(base_flags & base_exit_flag))
     {
         // Check to see if keys in rcvd
         expected_len = num_s1_bytes;
@@ -319,16 +299,16 @@ void GUI_BASE::receive(QByteArray recvData)
             case MAJOR_KEY_RESET:
             {
                 // Set generic checksum executable if using
-                if (GUI_BASE::generic_checksum.checksum_is_exe)
-                    set_executable_checksum_exe(GUI_BASE::generic_checksum.checksum_exe);
+                if (generic_checksum.checksum_is_exe)
+                    set_executable_checksum_exe(generic_checksum.checksum_exe);
 
                 // Verify enough bytes
-                checksum_size = GUI_BASE::generic_checksum.get_checksum_size();
+                checksum_size = generic_checksum.get_checksum_size();
                 exit_recv = (rcvd_len < (expected_len+checksum_size));
                 if (exit_recv) break;  // Break out of Key Switch
 
                 // Check Checksum (checksum failure handled in Act Switch)
-                exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(), expected_len, &GUI_BASE::generic_checksum);
+                exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(), expected_len, &generic_checksum);
 
                 // Act Switch
                 switch (major_key)
@@ -363,7 +343,7 @@ void GUI_BASE::receive(QByteArray recvData)
                             send_ack(major_key);
 
                             // Set reset flags to breakout of send_chunk
-                            reset_dev_flags |= reset_send_chunk_flag;
+                            base_flags |= base_send_chunk_flag;
 
                             // Emit reseting
                             emit resetting();
@@ -443,10 +423,10 @@ void GUI_BASE::receive(QByteArray recvData)
     }
 
     // Unlock recv lock
-    recvLock.unlock();
+    rcvLock.unlock();
 
     // If exiting, check if ready
-    if (exit_dev) close_base();
+    if (base_flags & base_exit_flag) close_base();
 }
 
 void GUI_BASE::receive_gui(QByteArray)
@@ -501,16 +481,16 @@ void GUI_BASE::send_file_chunked(uint8_t major_key, uint8_t minor_key, QString f
 
 void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk, bool force_envelope)
 {
-    // Verify this will terminate
-    if (chunk_size == 0) return;
+    // Verify this will terminate & not exiting
+    if ((chunk_size == 0) || (base_flags & base_exit_flag)) return;
 
     // Check if reset & packet not the resetting packet
     // Assumes reset occurs before any other signals and that
     // any packets calling this will be after a reset
-    if ((reset_dev_flags & reset_active_flag) && (major_key != MAJOR_KEY_RESET))
+    if ((base_flags & base_reset_flag) && (major_key != MAJOR_KEY_RESET))
         return;  // Still sending data return
-    else if ((reset_dev_flags & reset_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
-        reset_dev_flags &= ~reset_send_chunk_flag; // Clear reset_send_chunk bit
+    else if ((base_flags & base_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
+        base_flags &= ~base_send_chunk_flag; // Clear base_send_chunk bit
 
     // Setup base variables
     QByteArray data, curr;
@@ -532,7 +512,7 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
         transmit(data);
 
         // Check if reset set during transmission eventloop
-        if (reset_dev_flags) return;
+        if (base_flags) return;
     }
 
     // Send data chunk
@@ -569,7 +549,7 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
         transmit(data);
 
         // Check if reset set during transmission eventloop
-        if (reset_dev_flags) return;
+        if (base_flags) return;
 
         // Increment position counter
         // Do not use chunk_size to enable dyanmic setting
@@ -589,7 +569,7 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk
         transmit(data);
 
         // Check if reset set during transmission eventloop
-        if (reset_dev_flags) return;
+        if (base_flags) return;
     }
 
     // Signal done to user if from gui
@@ -736,7 +716,7 @@ void GUI_BASE::update_current_recv_length(QByteArray recvData)
 void GUI_BASE::transmit(QByteArray data)
 {
     // Check if trying to send empty data array or exiting
-    if (data.isEmpty() || exit_dev) return;
+    if (data.isEmpty() || (base_flags & base_exit_flag)) return;
 
     // Append to msgList
     msgList.append(data);
@@ -751,7 +731,7 @@ void GUI_BASE::transmit(QByteArray data)
     uint32_t checksum_size = 0;
 
     // Send all messages in list
-    while (!msgList.isEmpty() && !exit_dev)
+    while (!msgList.isEmpty() && !(base_flags & base_exit_flag))
     {
         // Get next data to send
         currData = msgList.takeFirst();
@@ -779,25 +759,25 @@ void GUI_BASE::transmit(QByteArray data)
             // Wait for CMD ack back
             waitForAck(packet_timeout);
         } while (!ack_status
-                 && (!reset_dev_flags || isReset)
-                 && !exit_dev);
+                 && (!(base_flags & base_reset_flag) || isReset)
+                 && !(base_flags & base_exit_flag));
 
         // Wait for data read if CMD success and was data request
         // Resets will never request data back (only an ack)
         if (ack_status
-                && !reset_dev_flags
-                && !exit_dev
+                && !base_flags
                 && isDataRequest(currData.at(s1_minor_key_loc)))
         {
             do
             {
                 // Wait for data packet back
                 waitForData(packet_timeout);
-            } while (!data_status && !reset_dev_flags && !exit_dev);
+            } while (!data_status
+                     && !base_flags);
         }
 
         // Check if reseting and was reset
-        if (reset_dev_flags && isReset)
+        if ((base_flags & base_reset_flag) && isReset)
         {
             // Clear buffers (prevents key errors after reset)
             rcvd_raw.clear();
@@ -805,63 +785,162 @@ void GUI_BASE::transmit(QByteArray data)
             msgList.clear();
 
             // Clear reset active flag
-            reset_dev_flags &= ~reset_active_flag;
+            base_flags &= ~base_reset_flag;
         }
     }
 
-    // Unlock send lock if not exiting
+    // Unlock send lock
     sendLock.unlock();
 
     // If exiting, check if ready
-    if (exit_dev) close_base();
+    if (base_flags & base_exit_flag) close_base();
 }
 
 void GUI_BASE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
                            uint8_t** checksum_array, uint32_t* checksum_size)
 {
     // Get checksum
-    checksum_struct check;
+    checksum_struct* check;
     if (checksum_key == (char) gui_key)
     {
         // Set checksum info
-        check = gui_checksum;
+        check = &gui_checksum;
     } else
     {
         // Set checksum info
-        check = GUI_BASE::generic_checksum;
+        check = &generic_checksum;
     }
     // Set executable if using
-    if (check.checksum_is_exe)
-        set_executable_checksum_exe(check.checksum_exe);
+    if (check->checksum_is_exe)
+        set_executable_checksum_exe(check->checksum_exe);
 
     // Get size
-    *checksum_size = check.get_checksum_size();
+    *checksum_size = check->get_checksum_size();
 
     // Malloc checksum array
     *checksum_array = (uint8_t*) malloc((*checksum_size)*sizeof(**checksum_array));
     memset(*checksum_array, 0, *checksum_size);
 
-    check.get_checksum(data, data_len, check.checksum_start, *checksum_array);
+    check->get_checksum(data, data_len, check->checksum_start, *checksum_array);
+}
+
+void GUI_BASE::copy_checksum_info(checksum_struct *cpy_to, checksum_struct *cpy_from)
+{
+    // Delete info from cpy to
+    // Sets checksum_start and checksum_exe to nullptr
+    delete_checksum_info(cpy_to);
+
+    // Copy function/generic information
+    cpy_to->get_checksum_size = cpy_from->get_checksum_size;
+    cpy_to->get_checksum = cpy_from->get_checksum;
+    cpy_to->check_checksum = cpy_from->check_checksum;
+    cpy_to->checksum_is_exe = cpy_from->checksum_is_exe;
+
+    // Copy executable information
+    if (cpy_from->checksum_is_exe)
+    {
+        // Error no null ptr
+        if (cpy_from->checksum_exe == nullptr) return;
+
+        //
+        char* new_check_exe = (char*) malloc(strlen(cpy_from->checksum_exe)*sizeof(char));
+        strcpy(new_check_exe, cpy_from->checksum_exe);
+        set_executable_checksum_exe(new_check_exe);
+        cpy_to->checksum_exe = new_check_exe;
+    }
+
+    // Copy checksum start array
+    if (cpy_from->checksum_start != nullptr)
+    {
+        uint32_t checksum_size = cpy_from->get_checksum_size();
+        uint8_t* new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
+        memcpy(new_check_start, cpy_from->checksum_start, checksum_size);
+        cpy_to->checksum_start = new_check_start;
+    }
+}
+
+void GUI_BASE::delete_checksum_info(checksum_struct *check)
+{
+    // Delete start
+    if (check->checksum_start != nullptr)
+    {
+        delete[] check->checksum_start;
+        check->checksum_start = nullptr;
+    }
+
+    // Delete exe
+    if (check->checksum_exe != nullptr)
+    {
+        delete[] check->checksum_exe;
+        check->checksum_exe = nullptr;
+    }
+}
+
+void GUI_BASE::set_checksum_exe(checksum_struct *check, QString checksum_exe)
+{
+    // Return if not exe or is exe path empty
+    if (!check->checksum_is_exe || checksum_exe.isEmpty()) return;
+
+    // Ensure exe path null terminated
+    checksum_exe += '\0';
+
+    // Create and copy into new array
+    char* new_exe_path = (char*) malloc(checksum_exe.length()*sizeof(char));
+    strcpy((char*) new_exe_path, checksum_exe.toUtf8().constData());
+
+    // Delete and replace current value
+    if (check->checksum_exe != nullptr) delete[] check->checksum_exe;
+    check->checksum_exe = new_exe_path;
+}
+
+void GUI_BASE::set_checksum_start(checksum_struct *check, QStringList checksum_start, uint8_t checksum_start_base)
+{
+    // Verify that data present
+    if (checksum_start.isEmpty()) return;
+
+    // Create new array
+    if (check->checksum_is_exe) set_executable_checksum_exe(check->checksum_exe);
+    uint32_t checksum_size = check->get_checksum_size();
+    uint8_t* new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
+    memset(new_check_start, 0, checksum_size);
+
+    // Build from supplied checksum start
+    uint32_t j = checksum_size - 1;
+    for (uint32_t i = 0; i < checksum_size; i++)
+    {
+        new_check_start[i] = (char) checksum_start.at(j).toInt(nullptr, checksum_start_base);
+        j -= 1;
+    }
+    qDebug() << checksum_start;
+
+    // Delete and replace default
+    if (check->checksum_start != nullptr) delete[] check->checksum_start;
+    check->checksum_start = new_check_start;
 }
 
 void GUI_BASE::close_base()
 {
     // Ensure exit is set
-    if (!exit_dev) return;
+    if (!(base_flags & base_exit_flag)) return;
 
-    // Test send & recv locks (non-block)
-    if (!send_closed) send_closed = sendLock.tryLock();
-    if (!recv_closed) recv_closed = recvLock.tryLock();
-    if (!(send_closed && recv_closed)) return;
-
-    // Close widget if both locks acquired
-    if (close())
+    // Try acquire sendLock if not already done
+    if (!(base_flags & base_exit_send_flag) && sendLock.tryLock())
     {
-        // Release locks
+        base_flags |= base_exit_send_flag;
         sendLock.unlock();
-        recvLock.unlock();
-    } else
-    {
-        qDebug() << "Error: Tab failed to close!";
     }
+
+
+    // Try acquire rcvLock if not already done
+    if (!(base_flags & base_exit_recv_flag) && rcvLock.tryLock())
+    {
+        base_flags |= base_exit_recv_flag;
+        rcvLock.unlock();
+    }
+
+    // Check status
+    if (!(base_flags & (base_exit_send_flag | base_exit_recv_flag))) return;
+
+    // Schedule for deletion
+    this->deleteLater();
 }

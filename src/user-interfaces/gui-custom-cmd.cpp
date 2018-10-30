@@ -50,14 +50,16 @@ void GUI_CUSTOM_CMD::reset_gui()
     on_FeedbackClear_Button_clicked();
 
     // Set default entered values
-    ui->MajorKey_LineEdit->setText(QString::number(gui_key));
-    ui->MinorKey_LineEdit->setText("0");
-    ui->KeyBase_LineEdit->setText("10");
+    ui->CustomCMDMajorKey_LineEdit->setText(QString::number(gui_key));
+    ui->CustomCMDMinorKey_LineEdit->setText("0");
+    ui->CustomCMDKeyBase_LineEdit->setText("10");
     ui->CustomCMDBase_LineEdit->setText("0");
     ui->CustomCMD_PlainText->clear();
+    ui->CustomCMDFilePath_LineEdit->clear();
 
-    // Reset radio selection
-    ui->File_Radio->setChecked(true);
+    // Reset radio selections
+    ui->CustomCMDFile_Radio->setChecked(true);
+    ui->CustomCMDKeysInInput_CheckBox->setChecked(false);
     on_CustomCMD_RadioGroup_buttonClicked(0);
 
     // Set clear on set
@@ -135,70 +137,110 @@ void GUI_CUSTOM_CMD::on_FeedbackClear_Button_clicked()
     set_expected_recv_length(0);
 }
 
-void GUI_CUSTOM_CMD::on_BrowseFile_Button_clicked()
+void GUI_CUSTOM_CMD::on_CustomCMDKeysInInput_CheckBox_stateChanged(int)
+{
+    if (ui->CustomCMDKeysInInput_CheckBox->isChecked()
+            || ui->CustomCMDFile_Radio->isChecked())
+    {
+        ui->CustomCMDMajorKey_LineEdit->setEnabled(false);
+        ui->CustomCMDMinorKey_LineEdit->setEnabled(false);
+    } else
+    {
+        ui->CustomCMDMajorKey_LineEdit->setEnabled(true);
+        ui->CustomCMDMinorKey_LineEdit->setEnabled(true);
+    }
+}
+
+void GUI_CUSTOM_CMD::on_CustomCMDBrowseFile_Button_clicked()
 {
     // Select file to send
     QString file;
     if (GUI_HELPER::getOpenFilePath(&file))
-        ui->FilePath_LineEdit->setText(file);
+        ui->CustomCMDFilePath_LineEdit->setText(file);
 }
 
 void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
 {
     // Get bases for conversion
-    uint8_t keyBase = ui->KeyBase_LineEdit->text().toUInt(nullptr, 10);
+    uint8_t keyBase = ui->CustomCMDKeyBase_LineEdit->text().toUInt(nullptr, 10);
     uint8_t customCMDBase = ui->CustomCMDBase_LineEdit->text().toUInt(nullptr, 10);
-    if (((keyBase < 2) && (ui->KeyBase_LineEdit->text() != "0"))
+    if (((keyBase < 2) && (ui->CustomCMDKeyBase_LineEdit->text() != "0"))
             || ((customCMDBase < 2) && (ui->CustomCMDBase_LineEdit->text() != "0")))
+    {
         return;
+    }
 
     // Select cmd based on radio
-    if (ui->File_Radio->isChecked())
+    bool parseKeys = false;
+    QByteArray customCMD_bytes;
+    QString major_key_str, minor_key_str;
+    if (ui->CustomCMDFile_Radio->isChecked())
     {
         // Read entire file
-        QByteArray customCMD_bytes = GUI_HELPER::loadFile(ui->FilePath_LineEdit->text());
+        customCMD_bytes = GUI_HELPER::loadFile(ui->CustomCMDFilePath_LineEdit->text());
+
+        // See if any data
         if (customCMD_bytes.length() == 0) return;
 
-        // Parse custom file line by line
-        foreach (QByteArray customCMD_line, customCMD_bytes.split('\n'))
-        {
-            QList<QByteArray> customCMD = customCMD_line.split(' ');
-            // Major key, Minor key, data bytes
-            send_custom_cmd(
-                            customCMD.takeFirst(),
-                            customCMD.takeFirst(),
-                            keyBase,
-                            customCMD.join(' '),
-                            customCMDBase
-                        );
-        }
-    } else if (ui->Manual_Radio->isChecked())
+        // Set parse keys from data
+        parseKeys = true;
+    } else if (ui->CustomCMDManual_Radio->isChecked())
     {
+        // Get keys
+        major_key_str = ui->CustomCMDMajorKey_LineEdit->text();
+        minor_key_str = ui->CustomCMDMinorKey_LineEdit->text();
+
+        // Get custom cmd bytes
+        customCMD_bytes = ui->CustomCMD_PlainText->toPlainText().toUtf8();
+
+        // Set parse keys
+        parseKeys = ui->CustomCMDKeysInInput_CheckBox->isChecked();
+    }
+
+    // Parse custom file line by line
+    foreach (QByteArray customCMD_line, customCMD_bytes.split('\n'))
+    {
+        // Cleanup and split the command line
+        QList<QByteArray> customCMD = customCMD_line.simplified().split(' ');
+
+        if (parseKeys)
+        {
+            // Ignore malformed commands
+            if (customCMD.length() < 3) continue;
+
+            // Grab keys from files
+            major_key_str = customCMD.takeFirst();
+            minor_key_str = customCMD.takeFirst();
+        }
+
+        // Major key, Minor key, data bytes
         send_custom_cmd(
-                    ui->MajorKey_LineEdit->text(),
-                    ui->MinorKey_LineEdit->text(),
-                    keyBase,
-                    ui->CustomCMD_PlainText->toPlainText().toUtf8(),
-                    customCMDBase
-                );
+                        major_key_str,
+                        minor_key_str,
+                        keyBase,
+                        customCMD.join(' '),
+                        customCMDBase
+                    );
     }
 }
 
 void GUI_CUSTOM_CMD::on_CustomCMD_RadioGroup_buttonClicked(int)
 {
-    if (ui->File_Radio->isChecked())
+    if (ui->CustomCMDFile_Radio->isChecked())
         input_select(true, false);
-    else if (ui->Manual_Radio->isChecked())
+    else if (ui->CustomCMDManual_Radio->isChecked())
         input_select(false, true);
+
+    on_CustomCMDKeysInInput_CheckBox_stateChanged(0);
 }
 
 void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)
 {
-    ui->FilePath_LineEdit->setEnabled(fileIN);
-    ui->BrowseFile_Button->setEnabled(fileIN);
-    ui->MajorKey_LineEdit->setEnabled(manualIN);
-    ui->MinorKey_LineEdit->setEnabled(manualIN);
+    ui->CustomCMDFilePath_LineEdit->setEnabled(fileIN);
+    ui->CustomCMDBrowseFile_Button->setEnabled(fileIN);
+
     ui->CustomCMD_PlainText->setEnabled(manualIN);
+    ui->CustomCMDKeysInInput_CheckBox->setEnabled(manualIN);
 }
 
 void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QByteArray customCMD_bytes, uint8_t customCMD_base)

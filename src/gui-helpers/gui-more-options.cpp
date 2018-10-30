@@ -52,7 +52,12 @@ void GUI_MORE_OPTIONS::on_GUI_Combo_activated(int)
                 gui, main_options_ptr->checksum_map.value(
                     gui, DEFAULT_CHECKSUM)
                 );
+
+    // Set members
     ui->Checksum_Combo->setCurrentText(gui_checksum.at(checksum_name_pos));
+    ui->ChecksumStart_LineEdit->setText(gui_checksum.at(checksum_start_pos));
+    ui->ChecksumStartBase_LineEdit->setText(gui_checksum.at(checksum_start_base_pos));
+    ui->ChecksumEXE_LineEdit->setText(gui_checksum.at(checksum_exe_pos));
 
     // Update checksum
     on_Checksum_Combo_activated(0);
@@ -99,8 +104,7 @@ void GUI_MORE_OPTIONS::on_ChecksumSet_Button_clicked()
     QString exe = ui->ChecksumEXE_LineEdit->text();
 
     // If EXE, verify path input
-    if ((checksum == "CHECKSUM_EXE")
-            && exe.isEmpty())
+    if ((checksum == "CHECKSUM_EXE") && exe.isEmpty())
     {
         GUI_HELPER::showMessage("Error: Checksum EXE path required!");
         return;
