@@ -911,7 +911,6 @@ void GUI_BASE::set_checksum_start(checksum_struct *check, QStringList checksum_s
         new_check_start[i] = (char) checksum_start.at(j).toInt(nullptr, checksum_start_base);
         j -= 1;
     }
-    qDebug() << checksum_start;
 
     // Delete and replace default
     if (check->checksum_start != nullptr) delete[] check->checksum_start;

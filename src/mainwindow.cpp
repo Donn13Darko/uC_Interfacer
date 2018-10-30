@@ -500,7 +500,8 @@ void MainWindow::on_MoreOptions_Button_clicked()
     // Run dialog and set values if connected
     if (more_options->exec() && deviceConnected())
     {
-        update_options(&main_options_settings);
+        // Local options contains only changes
+        update_options(local_options_settings);
     }
 }
 

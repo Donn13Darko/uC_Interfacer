@@ -29,8 +29,7 @@ GUI_MORE_OPTIONS::~GUI_MORE_OPTIONS()
 
 void GUI_MORE_OPTIONS::reset_gui()
 {
-    // Reset variables
-    updated = false;
+    // Reset vvariables
     reset_updates();
 
     // Reset fields
@@ -49,8 +48,9 @@ void GUI_MORE_OPTIONS::on_GUI_Combo_activated(int)
     // Updated checksum settings (set to current default)
     QString gui = ui->GUI_Combo->currentText();
     QStringList gui_checksum = local_options.checksum_map.value(
-                gui, main_options_ptr->checksum_map.value(
-                    gui, DEFAULT_CHECKSUM)
+                gui,
+                main_options_ptr->checksum_map.value(gui,
+                                                     DEFAULT_CHECKSUM)
                 );
 
     // Set members
@@ -188,4 +188,7 @@ void GUI_MORE_OPTIONS::reset_updates()
 
     // Clear local checksum map
     local_options.checksum_map.clear();
+
+    // Reset check variable
+    updated = false;
 }

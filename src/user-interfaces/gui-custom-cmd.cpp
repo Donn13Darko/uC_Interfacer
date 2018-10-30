@@ -170,10 +170,12 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
         return;
     }
 
-    // Select cmd based on radio
+    // Setup variables
     bool parseKeys = false;
     QByteArray customCMD_bytes;
     QString major_key_str, minor_key_str;
+
+    // Select cmd based on radio
     if (ui->CustomCMDFile_Radio->isChecked())
     {
         // Read entire file
