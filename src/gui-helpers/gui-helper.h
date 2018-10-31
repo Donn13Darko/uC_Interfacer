@@ -60,6 +60,8 @@ public:
     static QByteArray initList_to_byteArray(std::initializer_list<uint8_t> initList);
     static uint32_t byteArray_to_uint32(QByteArray data);
     static QByteArray uint32_to_byteArray(uint32_t data);
+    static QByteArray string_to_byteArray(QString data, char sep = ' ', uint8_t base = 10);
+    static QString byteArray_to_string(QByteArray data, char sep = ' ', uint8_t base = 16);
 
     // Variables
     static const float S2MS;

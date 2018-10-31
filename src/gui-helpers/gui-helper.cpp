@@ -187,3 +187,23 @@ QByteArray GUI_HELPER::uint32_to_byteArray(uint32_t data)
     }
     return ret_data;
 }
+
+QByteArray GUI_HELPER::string_to_byteArray(QString data, char sep, uint8_t base)
+{
+    QByteArray ret_data;
+    foreach (QString elem, data.split(sep))
+    {
+        ret_data.append((char) elem.toInt(nullptr, base));
+    }
+    return ret_data;
+}
+
+QString GUI_HELPER::byteArray_to_string(QByteArray data, char sep, uint8_t base)
+{
+    QString ret_data;
+    foreach (uint8_t elem, data)
+    {
+        ret_data += QString::number(elem, base) + sep;
+    }
+    return ret_data;
+}

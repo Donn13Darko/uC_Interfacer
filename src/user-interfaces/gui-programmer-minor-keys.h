@@ -29,18 +29,19 @@ typedef enum {
     // Error and reset
     MINOR_KEY_PROGRAMMER_ERROR = 0,
 
-    // Set trasnmission size
+    // Set transmission size
     MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
 
     // Programer Set
     MINOR_KEY_PROGRAMMER_SET_ADDR,
 
-    // Programmer Send
+    // Programmer Data
     MINOR_KEY_PROGRAMMER_DATA,
 
     // Programmer Read
-    MINOR_KEY_PROGRAMMER_READ_ALL,
-    MINOR_KEY_PROGRAMMER_READ_ADDR
+    // Send data address start (first 4 bytes) and end (second 4 bytes)
+    // If no address sent along, read all
+    MINOR_KEY_PROGRAMMER_READ
 } MINOR_KEYS_PROGRAMMER;
 
 #ifdef __cplusplus

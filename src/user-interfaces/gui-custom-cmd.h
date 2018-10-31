@@ -57,7 +57,7 @@ private:
     Ui::GUI_CUSTOM_CMD *ui;
 
     void input_select(bool fileIN, bool manualIN);
-    void send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QByteArray customCMD_bytes, uint8_t customCMD_base);
+    void send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QString customCMD_bytes, uint8_t customCMD_base);
 };
 
 #endif // GUI_CUSTOM_CMD_H

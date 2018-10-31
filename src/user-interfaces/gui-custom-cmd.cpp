@@ -50,10 +50,10 @@ void GUI_CUSTOM_CMD::reset_gui()
     on_FeedbackClear_Button_clicked();
 
     // Set default entered values
-    ui->CustomCMDMajorKey_LineEdit->setText(QString::number(gui_key));
-    ui->CustomCMDMinorKey_LineEdit->setText("0");
-    ui->CustomCMDKeyBase_LineEdit->setText("10");
-    ui->CustomCMDBase_LineEdit->setText("0");
+    ui->CustomCMDMajorKey_LineEdit->setText(QString::number(gui_key, 16));
+    ui->CustomCMDMinorKey_LineEdit->setText("2");
+    ui->CustomCMDKeyBase_LineEdit->setText("16");
+    ui->CustomCMDBase_LineEdit->setText("16");
     ui->CustomCMD_PlainText->clear();
     ui->CustomCMDFilePath_LineEdit->clear();
 
@@ -94,22 +94,37 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
             case MINOR_KEY_CUSTOM_CMD_CMD:
                 // Update current recv length with each packet
                 update_current_recv_length(recvData.mid(s1_end_loc));
+
+                // Check if end or start cmd
+                if (recvData.length() == 2)
+                {
+                    // If end of CMD, append a newline
+                    if (start_data) rcvd_formatted.append('\n');
+
+                    // Insert \n at end of plaintext
+                    QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
+                    ui->Feedback_PlainText->moveCursor(QTextCursor::End);
+                    ui->Feedback_PlainText->insertPlainText(QString('\n'));
+                    ui->Feedback_PlainText->setTextCursor(prev_cursor);
+
+                    // Exit (this is transparently added by send_chunk
+                    // and shouldn't be used in normal operation)
+                    return;
+                }
                 break;
         }
     }
 
-    // Insert into class array (for saving in original format)
-    rcvd_formatted.append(recvData);
-
     // Highlight keypair
-    recvData.insert(s1_end_loc, ']');
-    recvData.insert(1, ':');
-    recvData.prepend('[');
+    QString recvPlain = GUI_HELPER::byteArray_to_string(recvData);
+
+    // Insert into class array (for saving in sent format)
+    rcvd_formatted.append(recvPlain.toUtf8());
 
     // Insert at end of plaintext
     QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
     ui->Feedback_PlainText->moveCursor(QTextCursor::End);
-    ui->Feedback_PlainText->insertPlainText(QString(recvData));
+    ui->Feedback_PlainText->insertPlainText(recvPlain);
     ui->Feedback_PlainText->setTextCursor(prev_cursor);
 }
 
@@ -172,14 +187,14 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
 
     // Setup variables
     bool parseKeys = false;
-    QByteArray customCMD_bytes;
+    QString customCMD_bytes;
     QString major_key_str, minor_key_str;
 
     // Select cmd based on radio
     if (ui->CustomCMDFile_Radio->isChecked())
     {
         // Read entire file
-        customCMD_bytes = GUI_HELPER::loadFile(ui->CustomCMDFilePath_LineEdit->text());
+        customCMD_bytes = QString(GUI_HELPER::loadFile(ui->CustomCMDFilePath_LineEdit->text()));
 
         // See if any data
         if (customCMD_bytes.length() == 0) return;
@@ -188,41 +203,50 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
         parseKeys = true;
     } else if (ui->CustomCMDManual_Radio->isChecked())
     {
-        // Get keys
-        major_key_str = ui->CustomCMDMajorKey_LineEdit->text();
-        minor_key_str = ui->CustomCMDMinorKey_LineEdit->text();
-
         // Get custom cmd bytes
-        customCMD_bytes = ui->CustomCMD_PlainText->toPlainText().toUtf8();
+        customCMD_bytes = ui->CustomCMD_PlainText->toPlainText();
 
-        // Set parse keys
+        // Set parse keys variable
         parseKeys = ui->CustomCMDKeysInInput_CheckBox->isChecked();
+
+        // Get keys if not parsing from CMD
+        if (!parseKeys)
+        {
+            major_key_str = ui->CustomCMDMajorKey_LineEdit->text();
+            minor_key_str = ui->CustomCMDMinorKey_LineEdit->text();
+        }
     }
 
     // Parse custom file line by line
-    foreach (QByteArray customCMD_line, customCMD_bytes.split('\n'))
+    foreach (QString customCMD_line, customCMD_bytes.split('\n'))
     {
-        // Cleanup and split the command line
-        QList<QByteArray> customCMD = customCMD_line.simplified().split(' ');
+        // Cleanup the command line
+        customCMD_line = customCMD_line.simplified();
 
+        // If keys inside cmd line, split and parse the command line
         if (parseKeys)
         {
+            // Split the command line
+            QStringList customCMD = customCMD_line.split(' ');
+
             // Ignore malformed commands
             if (customCMD.length() < 3) continue;
 
             // Grab keys from files
             major_key_str = customCMD.takeFirst();
             minor_key_str = customCMD.takeFirst();
+
+            // Reassemble cmd without keys
+            customCMD_line = customCMD.join(' ');
         }
 
         // Major key, Minor key, data bytes
-        send_custom_cmd(
-                        major_key_str,
+        send_custom_cmd(major_key_str,
                         minor_key_str,
                         keyBase,
-                        customCMD.join(' '),
+                        customCMD_line,
                         customCMDBase
-                    );
+                        );
     }
 }
 
@@ -245,7 +269,7 @@ void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)
     ui->CustomCMDKeysInInput_CheckBox->setEnabled(manualIN);
 }
 
-void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QByteArray customCMD_bytes, uint8_t customCMD_base)
+void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QString customCMD_bytes, uint8_t customCMD_base)
 {
     // Build custom command keys
     uint8_t major_key, minor_key;
@@ -266,15 +290,12 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
     // Read, parse, and add custom CMD
     if ((customCMD_base < 2) || (customCMD_bytes.length() == 0))
     {
-        send_chunk(major_key, minor_key, customCMD_bytes);
+        send_chunk(major_key, minor_key, customCMD_bytes.toUtf8(), true);
     } else
     {
-        // Modify cmd bytes into correct format
-        QByteArray data;
-        foreach (QByteArray cmd_byte, customCMD_bytes.split(' '))
-        {
-            data.append((char) QString(cmd_byte).toInt(nullptr, customCMD_base));
-        }
-        send_chunk(major_key, minor_key, data);
+        send_chunk(major_key,
+                   minor_key,
+                   GUI_HELPER::string_to_byteArray(customCMD_bytes, ' ', customCMD_base),
+                   true);
     }
 }

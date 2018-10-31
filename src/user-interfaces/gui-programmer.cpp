@@ -204,8 +204,8 @@ bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
 {
     switch (minorKey)
     {
-        case MINOR_KEY_PROGRAMMER_READ_ALL:
-        case MINOR_KEY_PROGRAMMER_READ_ADDR:
+        case MINOR_KEY_PROGRAMMER_SET_ADDR:
+        case MINOR_KEY_PROGRAMMER_DATA:
             return true;
         default:
             return GUI_BASE::isDataRequest(minorKey);
@@ -241,47 +241,19 @@ void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
 
 void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 {
-    //  [NN Addr TT Data CC]
-    QByteArray data;
-    QStringList curr;
-    uint8_t prog_line_length;
-    QStringList formattedHexList = ui->HexPreview_PlainText->toPlainText().split('\n');
-    foreach (QString i, formattedHexList)
+    // Verify that a file has been loaded
+    if (loadedHex.isEmpty()) return;
+
+    foreach (QString data_line, loadedHex.split('\n'))
     {
-        curr = i.split(' ');
-        if (curr.isEmpty() || (curr.length() < 5)) continue;
+        // Clear all whitespace other than spaces
+        data_line = data_line.simplified();
 
-        // Send across address
-        if (!curr[3].isEmpty() && (curr[3].length() == 4))
-        {
-            // Send Packet #1
-            send({
-                     gui_key,
-                     2
-                 });
+        // Remove all those spaces
+        data_line.replace(" ", "");
 
-            // Send Packet #2
-            data.clear();
-            data.append((char) MINOR_KEY_PROGRAMMER_SET_ADDR);
-            data.append(QByteArray::fromHex(curr[3].toUtf8()));
-            send(data);
-        }
-
-        // Send across data
-        if (!curr[4].isEmpty() && (1 < curr[4].length()))
-        {
-            // Calculate command length
-            prog_line_length = curr[4].length();
-            prog_line_length = (prog_line_length / 2) + (prog_line_length % 2);
-
-            // Send Package
-            data.clear();
-            data.append((char) gui_key);
-            data.append((char) MINOR_KEY_PROGRAMMER_DATA);
-            data.append((char) prog_line_length);
-            data.append(QByteArray::fromHex(curr[4].toUtf8()));
-            send(data);
-        }
+        // Convert to bytes and send across (assumes data in hex)
+        send_chunk(gui_key, MINOR_KEY_PROGRAMMER_DATA, QByteArray::fromHex(data_line.toUtf8()));
     }
 }
 
@@ -336,7 +308,10 @@ void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
 
 void GUI_PROGRAMMER::on_ReadData_RadioGroup_buttonClicked(int)
 {
-    ui->ReadAddr_LineEdit->setEnabled(ui->ReadAddr_Radio->isChecked());
+    bool enable_addr = ui->ReadAddr_Radio->isChecked();
+    ui->ReadAddrLower_LineEdit->setEnabled(enable_addr);
+    ui->ReadAddrUpper_LineEdit->setEnabled(enable_addr);
+    ui->ReadAddrBase_LineEdit->setEnabled(enable_addr);
 }
 
 void GUI_PROGRAMMER::on_ReadDataClear_Button_clicked()
@@ -371,7 +346,7 @@ QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
         if (i.isEmpty()) continue;
 
         // Attempt to match with regex
-        // Should be in format [nnaaaatt_dd_cc]
+        // Should be in format [nnaaaatt_dd_cc] ([NN Addr TT Data CC])
         // Transfer match to capture groups
         captureList = hexReg.match(i.trimmed()).capturedTexts();
         if (!captureList.isEmpty())
