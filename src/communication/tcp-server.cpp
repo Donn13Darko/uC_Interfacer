@@ -18,7 +18,7 @@
 
 #include "tcp-server.h"
 
-TCP_SERVER::TCP_SERVER(int port, QObject *parent) :
+TCP_SERVER::TCP_SERVER(QHostAddress addr, int port, QObject *parent) :
     COMMS_BASE(parent)
 {
     // Create new server
@@ -30,6 +30,7 @@ TCP_SERVER::TCP_SERVER(int port, QObject *parent) :
     server->setMaxPendingConnections(1);
     server_client = nullptr;
     listen_port = port;
+    listen_addr = addr;
 
     // Create new message box
     connecting_msg = new QMessageBox();
@@ -60,7 +61,7 @@ void TCP_SERVER::open()
             this, SLOT(connecting_finished(int)));
 
     // Begin listening
-    server->listen(QHostAddress::Any, listen_port);
+    server->listen(listen_addr, listen_port);
     connecting_msg->show();
 }
 

@@ -282,8 +282,24 @@ void MainWindow::on_DeviceConnect_Button_clicked()
         }
         case CONN_TYPE_TCP_SERVER:
         {
+            // Create defaults
+            QHostAddress addr = QHostAddress::Any;
+            int port = 0;
+
+            // Parse input
+            QStringList conn = connInfo.split(':');
+            uint8_t conn_len = conn.length();
+            if (conn_len == 1)
+            {
+                port = connInfo.toInt();
+            } else if (conn_len == 2)
+            {
+                addr = QHostAddress(conn.at(0));
+                port = conn.at(1).toInt();
+            }
+
             // Create new object
-            device = new TCP_SERVER(connInfo.toInt(), this);
+            device = new TCP_SERVER(addr, port, this);
             break;
         }
         case CONN_TYPE_UDP_SOCKET:

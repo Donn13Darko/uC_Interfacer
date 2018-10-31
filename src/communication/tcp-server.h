@@ -29,7 +29,7 @@ class TCP_SERVER : public COMMS_BASE
     Q_OBJECT
 
 public:
-    TCP_SERVER(int port, QObject *parent = NULL);
+    TCP_SERVER(QHostAddress addr = QHostAddress::Any, int port = 0, QObject *parent = NULL);
     ~TCP_SERVER();
 
     virtual void open();
@@ -51,6 +51,7 @@ private:
     QMessageBox *connecting_msg;
 
     int listen_port;
+    QHostAddress listen_addr;
 };
 
 #endif // TCP_SERVER_H
