@@ -74,6 +74,7 @@ private:
 
     QByteArray loadedHex;
     QString format_hex(QByteArray rawHex);
+    void refresh_hex();
 
     uint8_t progress_divisor;
     uint8_t progress_adjuster;

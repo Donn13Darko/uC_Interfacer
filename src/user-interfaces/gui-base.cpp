@@ -597,7 +597,7 @@ void GUI_BASE::send_ack(uint8_t majorKey)
     uint8_t* checksum_array;
     uint32_t checksum_size = 0;
     getChecksum((const uint8_t*) ack_packet.constData(), ack_packet.length(),
-                ack_key, &checksum_array, &checksum_size);
+                majorKey, &checksum_array, &checksum_size);
 
     // Append checksum
     ack_packet.append((const char*) checksum_array, checksum_size);

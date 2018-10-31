@@ -416,6 +416,19 @@
     <string>Keys in Input</string>
    </property>
   </widget>
+  <widget class="QCheckBox" name="FeedbackAppendNewline_CheckBox">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>20</y>
+     <width>101</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Append Newline</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

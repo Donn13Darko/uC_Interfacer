@@ -89,15 +89,15 @@
     <rect>
      <x>540</x>
      <y>20</y>
-     <width>481</width>
+     <width>81</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Received Data</string>
+    <string>Received Data:</string>
    </property>
    <property name="alignment">
-    <set>Qt::AlignCenter</set>
+    <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
    </property>
   </widget>
   <widget class="QRadioButton" name="SendFile_Radio">

@@ -64,6 +64,7 @@ void GUI_CUSTOM_CMD::reset_gui()
 
     // Set clear on set
     ui->FeedbackClearOnSet_CheckBox->setChecked(true);
+    ui->FeedbackAppendNewline_CheckBox->setChecked(true);
 
     // Reset base (resets progress bar)
     GUI_BASE::reset_gui();
@@ -78,45 +79,58 @@ void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant>* configMap)
 void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
 {
     // See if this GUI sent CMD
-    if (recvData.at(s1_major_key_loc) == (char) gui_key)
+    switch ((char) recvData.at(s1_major_key_loc))
     {
-        // See if known CMD
-        switch (recvData.at(s1_minor_key_loc))
+        case MAJOR_KEY_CUSTOM_CMD:  // gui_key
         {
-            case MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE:
-                // Clear recv if clear on set checked
-                if (ui->FeedbackClearOnSet_CheckBox->isChecked())
-                    on_FeedbackClear_Button_clicked();
+            // See if known CMD
+            switch (recvData.at(s1_minor_key_loc))
+            {
+                case MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE:
+                    // Clear recv if clear on set checked
+                    if (ui->FeedbackClearOnSet_CheckBox->isChecked())
+                        on_FeedbackClear_Button_clicked();
 
-                // Set expected length
-                set_expected_recv_length(recvData.mid(s1_end_loc));
-                return;
-            case MINOR_KEY_CUSTOM_CMD_CMD:
-                // Update current recv length with each packet
-                update_current_recv_length(recvData.mid(s1_end_loc));
-
-                // Check if end or start cmd
-                if (recvData.length() == 2)
-                {
-                    // If end of CMD, append a newline
-                    if (start_data) rcvd_formatted.append('\n');
-
-                    // Insert \n at end of plaintext
-                    QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
-                    ui->Feedback_PlainText->moveCursor(QTextCursor::End);
-                    ui->Feedback_PlainText->insertPlainText(QString('\n'));
-                    ui->Feedback_PlainText->setTextCursor(prev_cursor);
-
-                    // Exit (this is transparently added by send_chunk
-                    // and shouldn't be used in normal operation)
+                    // Set expected length
+                    set_expected_recv_length(recvData.mid(s1_end_loc));
                     return;
-                }
-                break;
+                case MINOR_KEY_CUSTOM_CMD_CMD:
+                    // Update current recv length with each packet
+                    update_current_recv_length(recvData.mid(s1_end_loc));
+                    break;
+            }
+        }
+        default:
+        {
+            // Check if end or start cmd
+            if ((recvData.length() == 2)
+                    && !(recvData.at(s1_major_key_loc) & s1_num_s2_bytes_bit_mask))
+            {
+                // If end of CMD not newline exit
+                if (rcvd_formatted.endsWith('\n') || rcvd_formatted.isEmpty()) return;
+
+                // Otherwise add newline to rcvd
+                rcvd_formatted.append('\n');
+
+                // And, insert newline at end of plaintext
+                QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
+                ui->Feedback_PlainText->moveCursor(QTextCursor::End);
+                ui->Feedback_PlainText->insertPlainText(QString('\n'));
+                ui->Feedback_PlainText->setTextCursor(prev_cursor);
+
+                // Exit (this is transparently added by send_chunk
+                // and shouldn't be used in normal operation)
+                return;
+            }
         }
     }
 
     // Highlight keypair
     QString recvPlain = GUI_HELPER::byteArray_to_string(recvData);
+
+    // Append newline if required
+    if (ui->FeedbackAppendNewline_CheckBox->isChecked())
+        recvPlain.append('\n');
 
     // Insert into class array (for saving in sent format)
     rcvd_formatted.append(recvPlain.toUtf8());

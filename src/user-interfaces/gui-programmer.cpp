@@ -72,6 +72,11 @@ void GUI_PROGRAMMER::reset_gui()
     ui->ReadAll_Radio->setChecked(true);
     on_ReadData_RadioGroup_buttonClicked(0);
 
+    // Reset address range reading
+    ui->ReadAddrLower_LineEdit->setText("0");
+    ui->ReadAddrUpper_LineEdit->setText("0");
+    ui->ReadAddrBase_LineEdit->setText("16");
+
     // Reset hex format selection
     ui->HexFormat_Combo->setCurrentIndex(0);
     curr_hexFormat = ui->HexFormat_Combo->currentText();
@@ -228,6 +233,9 @@ void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()
 
 void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
 {
+    // Clear existing data
+    loadedHex.clear();
+
     // Get file path
     QString filePath = ui->HexFile_LineEdit->text();
     if (filePath.isEmpty()) return;
@@ -236,7 +244,7 @@ void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
     loadedHex = GUI_HELPER::loadFile(filePath);
 
     // Reset preview
-    on_HexFormat_Combo_activated(0);
+    refresh_hex();
 }
 
 void GUI_PROGRAMMER::on_BurnData_Button_clicked()
@@ -272,9 +280,11 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_activated(int)
         if (GUI_HELPER::getUserString(&hexRegexStr, "Other Hex Format", "Enter hex format regex:"))
         {
             // Only update regex if it changed
-            if (otherRegex.pattern() == hexRegexStr) return;
-            otherRegex.setPattern(hexRegexStr);
-            hexFormats.insert("Other", otherRegex);
+            if (otherRegex.pattern() != hexRegexStr)
+            {
+                otherRegex.setPattern(hexRegexStr);
+                hexFormats.insert("Other", otherRegex);
+            }
         } else
         {
             // Return to previous entry if change canceled
@@ -288,15 +298,8 @@ void GUI_PROGRAMMER::on_HexFormat_Combo_activated(int)
     ui->HexRegex_PlainText->setPlainText(hexFormats.value(curr_hexFormat).pattern());
     ui->HexRegex_PlainText->moveCursor(QTextCursor::Start);
 
-    // Only update format if file loaded
-    if (loadedHex.isEmpty()) return;
-
-    // Update Hex
-    ui->HexPreview_PlainText->clear();
-    ui->HexPreview_PlainText->appendPlainText(format_hex(loadedHex));
-
-    // Set cursor to top
-    ui->HexPreview_PlainText->moveCursor(QTextCursor::Start);
+    // Refresh the preview
+    refresh_hex();
 }
 
 void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
@@ -358,5 +361,18 @@ QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
     }
 
     return final;
+}
+
+void GUI_PROGRAMMER::refresh_hex()
+{
+    // Only update format if file loaded
+    if (loadedHex.isEmpty()) return;
+
+    // Update Hex
+    ui->HexPreview_PlainText->clear();
+    ui->HexPreview_PlainText->appendPlainText(format_hex(loadedHex));
+
+    // Set cursor to top
+    ui->HexPreview_PlainText->moveCursor(QTextCursor::Start);
 }
 
