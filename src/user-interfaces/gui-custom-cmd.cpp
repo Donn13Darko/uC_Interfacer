@@ -49,11 +49,19 @@ void GUI_CUSTOM_CMD::reset_gui()
     // Clear received data
     on_FeedbackClear_Button_clicked();
 
+    // Reset recv bases
+    recv_key_base = 16;
+    recv_cmd_base = 16;
+
+    // Reset send bases
+    send_key_base = 16;
+    send_cmd_base = 16;
+
     // Set default entered values
-    ui->CustomCMDMajorKey_LineEdit->setText(QString::number(gui_key, 16));
-    ui->CustomCMDMinorKey_LineEdit->setText("2");
-    ui->CustomCMDKeyBase_LineEdit->setText("16");
-    ui->CustomCMDBase_LineEdit->setText("16");
+    ui->CustomCMDMajorKey_LineEdit->setText(QString::number(gui_key, send_key_base));
+    ui->CustomCMDMinorKey_LineEdit->setText(QString::number(MINOR_KEY_CUSTOM_CMD_CMD, send_key_base));
+    ui->CustomCMDBase_LineEdit->setText(QString::number(send_cmd_base, 10));
+    ui->CustomCMDKeyBase_LineEdit->setText(QString::number(send_key_base, 10));
     ui->CustomCMD_PlainText->clear();
     ui->CustomCMDFilePath_LineEdit->clear();
 
@@ -79,6 +87,7 @@ void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant>* configMap)
 void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
 {
     // See if this GUI sent CMD
+    bool updateCMD_base = false;
     switch ((char) recvData.at(s1_major_key_loc))
     {
         case MAJOR_KEY_CUSTOM_CMD:  // gui_key
@@ -94,42 +103,38 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
                     // Set expected length
                     set_expected_recv_length(recvData.mid(s1_end_loc));
                     return;
+                case MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE:
+                    updateCMD_base = true;
                 case MINOR_KEY_CUSTOM_CMD_CMD:
                     // Update current recv length with each packet
                     update_current_recv_length(recvData.mid(s1_end_loc));
+
+                    if (recvData.length() == 2)
+                    {
+                        // If end of CMD is newline exit
+                        if (rcvd_formatted.endsWith('\n') || rcvd_formatted.isEmpty()) return;
+
+                        // Insert newline into class array
+                        rcvd_formatted.append('\n');
+
+                        // Insert newline at end of plaintext
+                        QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
+                        ui->Feedback_PlainText->moveCursor(QTextCursor::End);
+                        ui->Feedback_PlainText->insertPlainText(QString('\n'));
+                        ui->Feedback_PlainText->setTextCursor(prev_cursor);
+                        return;
+                    }
                     break;
-            }
-        }
-        default:
-        {
-            // Check if end or start cmd
-            if ((recvData.length() == 2)
-                    && !(recvData.at(s1_major_key_loc) & s1_num_s2_bytes_bit_mask))
-            {
-                // If end of CMD not newline exit
-                if (rcvd_formatted.endsWith('\n') || rcvd_formatted.isEmpty()) return;
-
-                // Otherwise add newline to rcvd
-                rcvd_formatted.append('\n');
-
-                // And, insert newline at end of plaintext
-                QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
-                ui->Feedback_PlainText->moveCursor(QTextCursor::End);
-                ui->Feedback_PlainText->insertPlainText(QString('\n'));
-                ui->Feedback_PlainText->setTextCursor(prev_cursor);
-
-                // Exit (this is transparently added by send_chunk
-                // and shouldn't be used in normal operation)
-                return;
             }
         }
     }
 
-    // Highlight keypair
-    QString recvPlain = GUI_HELPER::byteArray_to_string(recvData);
+    // Parse key pair and data based on bases
+    QString recvPlain = GUI_HELPER::byteArray_to_string(recvData.left(s1_end_loc), recv_key_base);
+    recvPlain += GUI_HELPER::byteArray_to_string(recvData.mid(s1_end_loc), recv_cmd_base);
 
     // Append newline if required
-    if (ui->FeedbackAppendNewline_CheckBox->isChecked())
+    if (ui->FeedbackAppendNewline_CheckBox->isChecked() && !recvPlain.endsWith('\n'))
         recvPlain.append('\n');
 
     // Insert into class array (for saving in sent format)
@@ -140,6 +145,13 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
     ui->Feedback_PlainText->moveCursor(QTextCursor::End);
     ui->Feedback_PlainText->insertPlainText(recvPlain);
     ui->Feedback_PlainText->setTextCursor(prev_cursor);
+
+    // Update cmd base if value set
+    if (updateCMD_base)
+    {
+        recv_key_base = recvData.at(s1_end_loc);
+        recv_cmd_base = recvData.at(s1_end_loc+1);
+    }
 }
 
 void GUI_CUSTOM_CMD::set_progress_update_recv(int progress, QString label)
@@ -190,14 +202,32 @@ void GUI_CUSTOM_CMD::on_CustomCMDBrowseFile_Button_clicked()
 
 void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
 {
-    // Get bases for conversion
-    uint8_t keyBase = ui->CustomCMDKeyBase_LineEdit->text().toUInt(nullptr, 10);
-    uint8_t customCMDBase = ui->CustomCMDBase_LineEdit->text().toUInt(nullptr, 10);
-    if (((keyBase < 2) && (ui->CustomCMDKeyBase_LineEdit->text() != "0"))
-            || ((customCMDBase < 2) && (ui->CustomCMDBase_LineEdit->text() != "0")))
+    // Get default key start base for conversion
+    uint8_t ui_setBase_num;
+    QString ui_setBase = ui->CustomCMDKeyBase_LineEdit->text();
+    if (!ui_setBase.isEmpty())
     {
-        return;
+        ui_setBase_num = ui_setBase.toInt(nullptr, 10);
+        if ((1 < ui_setBase_num) || (ui_setBase == "0"))
+        {
+            send_key_base = ui_setBase_num;
+        }
     }
+
+    // Get default cmd start base for conversion
+    ui_setBase = ui->CustomCMDBase_LineEdit->text();
+    if (!ui_setBase.isEmpty())
+    {
+        ui_setBase_num = ui_setBase.toInt(nullptr, 10);
+        if ((1 < ui_setBase_num) || (ui_setBase == "0"))
+        {
+            send_cmd_base = ui_setBase_num;
+        }
+    }
+
+    // Transmit cmd base at start
+    // (Have other guis ignore CMDs that don't have the relevant gui_key as major_key)
+    send_chunk(gui_key, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE, {send_key_base, send_cmd_base});
 
     // Setup variables
     bool parseKeys = false;
@@ -234,17 +264,14 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
     // Parse custom file line by line
     foreach (QString customCMD_line, customCMD_bytes.split('\n'))
     {
-        // Cleanup the command line
-        customCMD_line = customCMD_line.simplified();
-
         // If keys inside cmd line, split and parse the command line
         if (parseKeys)
         {
             // Split the command line
-            QStringList customCMD = customCMD_line.split(' ');
+            QStringList customCMD = customCMD_line.split(' ', QString::KeepEmptyParts);
 
             // Ignore malformed commands
-            if (customCMD.length() < 3) continue;
+            if (customCMD.length() < 2) continue;
 
             // Grab keys from files
             major_key_str = customCMD.takeFirst();
@@ -257,9 +284,7 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
         // Major key, Minor key, data bytes
         send_custom_cmd(major_key_str,
                         minor_key_str,
-                        keyBase,
-                        customCMD_line,
-                        customCMDBase
+                        customCMD_line
                         );
     }
 }
@@ -283,33 +308,62 @@ void GUI_CUSTOM_CMD::input_select(bool fileIN, bool manualIN)
     ui->CustomCMDKeysInInput_CheckBox->setEnabled(manualIN);
 }
 
-void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QString customCMD_bytes, uint8_t customCMD_base)
+void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_char, QString customCMD_bytes)
 {
     // Build custom command keys
     uint8_t major_key, minor_key;
 
     // Read, parse, and add Major/Minor keys
-    if (key_base < 2)
+    if (send_key_base < 2)
     {
         // Add directly
-        major_key = majorKey_char.at(0).row();
-        minor_key = minorKey_char.at(0).row();
+        major_key = majorKey_char.at(0).cell();
+        minor_key = minorKey_char.at(0).cell();
     } else
     {
         // Convert keys to correct base
-        major_key = majorKey_char.toInt(nullptr, key_base);
-        minor_key = minorKey_char.toInt(nullptr, key_base);
+        major_key = majorKey_char.toInt(nullptr, send_key_base);
+        minor_key = minorKey_char.toInt(nullptr, send_key_base);
     }
 
-    // Read, parse, and add custom CMD
-    if ((customCMD_base < 2) || (customCMD_bytes.length() == 0))
+    // Check if line is key settings & update locals if so
+    uint8_t send_cmd_base_old = send_cmd_base;
+    switch (major_key)
     {
-        send_chunk(major_key, minor_key, customCMD_bytes.toUtf8(), true);
-    } else
-    {
-        send_chunk(major_key,
-                   minor_key,
-                   GUI_HELPER::string_to_byteArray(customCMD_bytes, ' ', customCMD_base),
-                   true);
+        case MAJOR_KEY_CUSTOM_CMD:
+        {
+            switch (minor_key)
+            {
+                case MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE:
+                {
+                    // Split bases and verify length
+                    QStringList bases = customCMD_bytes.split(' ');
+                    if (2 < bases.length()) return;
+
+                    // Parse new bases (uses old cmd_base)
+                    uint8_t send_key_base_new = bases.at(0).toInt(nullptr, send_cmd_base);
+                    uint8_t send_cmd_base_new = bases.at(1).toInt(nullptr, send_cmd_base);
+
+                    // Only set and send if new values (removes duplicate sends)
+                    if ((send_key_base_new == send_key_base)
+                            && (send_cmd_base_new == send_cmd_base))
+                    {
+                        return;
+                    } else
+                    {
+                        send_key_base = send_key_base_new;
+                        send_cmd_base = send_cmd_base_new;
+                    }
+                    break;
+                }
+                break;
+            }
+        }
     }
+
+    // Send CMD
+    send_chunk(major_key,
+               minor_key,
+               GUI_HELPER::string_to_byteArray(customCMD_bytes, send_cmd_base_old),
+               true);
 }

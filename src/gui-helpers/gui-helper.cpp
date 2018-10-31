@@ -188,8 +188,12 @@ QByteArray GUI_HELPER::uint32_to_byteArray(uint32_t data)
     return ret_data;
 }
 
-QByteArray GUI_HELPER::string_to_byteArray(QString data, char sep, uint8_t base)
+QByteArray GUI_HELPER::string_to_byteArray(QString data, uint8_t base, char sep)
 {
+    // If base is 0, return data as is
+    if (base == 0) return data.toUtf8();
+
+    // Otherwise, build return array from data
     QByteArray ret_data;
     foreach (QString elem, data.split(sep))
     {
@@ -198,11 +202,16 @@ QByteArray GUI_HELPER::string_to_byteArray(QString data, char sep, uint8_t base)
     return ret_data;
 }
 
-QString GUI_HELPER::byteArray_to_string(QByteArray data, char sep, uint8_t base)
+QString GUI_HELPER::byteArray_to_string(QByteArray data, uint8_t base, char sep)
 {
+    // If base is 0, return data as is
+    if (base == 0) return QString(data);
+
+    // Otherwise, build return string from data
     QString ret_data;
     foreach (uint8_t elem, data)
     {
+        // Append new element + sep
         ret_data += QString::number(elem, base) + sep;
     }
     return ret_data;

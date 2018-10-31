@@ -136,8 +136,11 @@ void GUI_BASE::closing()
     // Set exit to true
     base_flags |= base_exit_flag;
 
-    // Reset send
-    reset_remote();
+    // Clear any pending messages
+    msgList.clear();
+
+    // Emit resetting to free timers
+    emit resetting();
 
     // See if ready to exit
     close_base();

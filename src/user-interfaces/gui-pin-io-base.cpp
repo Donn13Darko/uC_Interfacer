@@ -203,7 +203,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
     {
         // Build pin data array
         uint16_t v = (uint16_t) QString::number(newVAL).toInt();
-        data->append((char) pinNum.toInt());     // Pin Num
+        data->append((char) pinNum.toInt());    // Pin Num
         data->append((char) IO);                 // Combo setting
         data->append((char) ((v >> 8) & 0xFF));  // Value High
         data->append((char) (v & 0xFF));         // Value Low

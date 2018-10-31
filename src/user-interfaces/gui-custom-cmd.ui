@@ -55,23 +55,10 @@
     </rect>
    </property>
   </widget>
-  <widget class="QLabel" name="CustomCMDKeyBase_Label">
-   <property name="geometry">
-    <rect>
-     <x>60</x>
-     <y>350</y>
-     <width>61</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Key Base:</string>
-   </property>
-  </widget>
   <widget class="QLabel" name="CustomCMDBase_Label">
    <property name="geometry">
     <rect>
-     <x>190</x>
+     <x>200</x>
      <y>350</y>
      <width>61</width>
      <height>20</height>
@@ -225,20 +212,10 @@
     <string notr="true">CustomCMD_RadioGroup</string>
    </attribute>
   </widget>
-  <widget class="QLineEdit" name="CustomCMDKeyBase_LineEdit">
-   <property name="geometry">
-    <rect>
-     <x>120</x>
-     <y>350</y>
-     <width>41</width>
-     <height>20</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QLineEdit" name="CustomCMDBase_LineEdit">
    <property name="geometry">
     <rect>
-     <x>250</x>
+     <x>260</x>
      <y>350</y>
      <width>41</width>
      <height>20</height>
@@ -427,6 +404,29 @@
    </property>
    <property name="text">
     <string>Append Newline</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="CustomCMDKeyBase_Label">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>350</y>
+     <width>61</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Key Base:</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="CustomCMDKeyBase_LineEdit">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>350</y>
+     <width>41</width>
+     <height>20</height>
+    </rect>
    </property>
   </widget>
  </widget>

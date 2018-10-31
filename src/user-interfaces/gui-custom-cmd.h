@@ -56,8 +56,16 @@ private slots:
 private:
     Ui::GUI_CUSTOM_CMD *ui;
 
+    // Send key base storage
+    uint8_t send_key_base;
+    uint8_t send_cmd_base;
+
+    // Rcv key base storage
+    uint8_t recv_key_base;
+    uint8_t recv_cmd_base;
+
     void input_select(bool fileIN, bool manualIN);
-    void send_custom_cmd(QString majorKey_char, QString minorKey_char, uint8_t key_base, QString customCMD_bytes, uint8_t customCMD_base);
+    void send_custom_cmd(QString majorKey_char, QString minorKey_char, QString customCMD_bytes);
 };
 
 #endif // GUI_CUSTOM_CMD_H

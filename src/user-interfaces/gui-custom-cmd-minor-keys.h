@@ -32,6 +32,9 @@ typedef enum {
     // Set transmission size
     MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE,
 
+    // Set key storage bases
+    MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+
     // Custom CMD CMD
     MINOR_KEY_CUSTOM_CMD_CMD
 } MINOR_KEYS_CUSTOM_CMD;
