@@ -76,6 +76,9 @@ MainWindow::MainWindow(QWidget *parent) :
     main_options_settings.chunk_size = GUI_BASE::default_chunk_size;
     more_options = new GUI_MORE_OPTIONS(&main_options_settings, &local_options_settings,
                                         supportedGUIsList, GUI_BASE::get_supported_checksums());
+    more_options->setModal(true);
+    connect(more_options, SIGNAL(accepted()),
+            this, SLOT(moreOptions_accepted()));
 
     // Set base parameters
     prev_tab = -1;
@@ -513,8 +516,16 @@ void MainWindow::on_MoreOptions_Button_clicked()
     // Reset More Options dialog
     more_options->reset_gui();
 
-    // Run dialog and set values if connected
-    if (more_options->exec() && deviceConnected())
+    // Show dialog (accept is linked to update function)
+    // Don't want to block main application from running
+    more_options->show();
+}
+
+void MainWindow::moreOptions_accepted()
+{
+    // Verify device is connected before trying
+    // to set devices
+    if (deviceConnected())
     {
         // Local options contains only changes
         update_options(local_options_settings);
@@ -772,9 +783,6 @@ void MainWindow::update_options(MoreOptions_struct* options)
         GUI_BASE::set_generic_checksum(checksum_info);
     };
 
-    // Set class values
-    QStringList checksum_changes = options->checksum_map.keys();
-
     // Iterate over each tab and apply any changes
     GUI_BASE* tab_holder;
     uint8_t num_tabs = ui->ucOptions->count();
@@ -786,7 +794,7 @@ void MainWindow::update_options(MoreOptions_struct* options)
 
         // Set gui checksum
         gui_name = getGUIName(tab_holder->get_GUI_key());
-        if (checksum_changes.contains(gui_name))
+        if (options->checksum_map.contains(gui_name))
         {
             // Get checksum setting
             checksum_info = options->checksum_map.value(gui_name);

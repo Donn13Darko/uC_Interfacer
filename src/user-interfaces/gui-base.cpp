@@ -163,7 +163,7 @@ void GUI_BASE::set_gui_checksum(QStringList new_gui_checksum)
 
     // If checksum_start provided, overwrite default
     set_checksum_start(&gui_checksum,
-                       new_gui_checksum.at(checksum_start_pos).split(','),
+                       new_gui_checksum.at(checksum_start_pos),
                        new_gui_checksum.at(checksum_start_base_pos).toInt());
 }
 
@@ -189,7 +189,7 @@ void GUI_BASE::set_generic_checksum(QStringList new_generic_checksum)
 
     // If checksum_start provided, overwrite default
     set_checksum_start(&generic_checksum,
-                       new_generic_checksum.at(checksum_start_pos).split(','),
+                       new_generic_checksum.at(checksum_start_pos),
                        new_generic_checksum.at(checksum_start_base_pos).toInt());
 }
 
@@ -311,7 +311,8 @@ void GUI_BASE::receive(QByteArray recvData)
                 if (exit_recv) break;  // Break out of Key Switch
 
                 // Check Checksum (checksum failure handled in Act Switch)
-                exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(), expected_len, &generic_checksum);
+                exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(),
+                                            expected_len, &generic_checksum);
 
                 // Act Switch
                 switch (major_key)
@@ -370,7 +371,8 @@ void GUI_BASE::receive(QByteArray recvData)
             default:
             {
                 // Parse num_s2_bytes
-                num_s2_bytes = GUI_HELPER::byteArray_to_uint32(rcvd_raw.mid(s1_num_s2_bytes_loc, bits));
+                num_s2_bytes = GUI_HELPER::byteArray_to_uint32(
+                            rcvd_raw.mid(s1_num_s2_bytes_loc,bits));
 
                 // Check if second stage in rcvd
                 expected_len += num_s2_bytes;
@@ -387,7 +389,8 @@ void GUI_BASE::receive(QByteArray recvData)
                 if (exit_recv) break; // Break out of Key Switch
 
                 // Check Checksum
-                exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(), expected_len, &gui_checksum);
+                exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(),
+                                            expected_len, &gui_checksum);
                 if (exit_recv)
                 {
                     // Clear rcvd if checksum error
@@ -600,7 +603,7 @@ void GUI_BASE::send_ack(uint8_t majorKey)
     uint8_t* checksum_array;
     uint32_t checksum_size = 0;
     getChecksum((const uint8_t*) ack_packet.constData(), ack_packet.length(),
-                majorKey, &checksum_array, &checksum_size);
+                MAJOR_KEY_ACK, &checksum_array, &checksum_size);
 
     // Append checksum
     ack_packet.append((const char*) checksum_array, checksum_size);
@@ -896,7 +899,7 @@ void GUI_BASE::set_checksum_exe(checksum_struct *check, QString checksum_exe)
     check->checksum_exe = new_exe_path;
 }
 
-void GUI_BASE::set_checksum_start(checksum_struct *check, QStringList checksum_start, uint8_t checksum_start_base)
+void GUI_BASE::set_checksum_start(checksum_struct *check, QString checksum_start, uint8_t checksum_start_base)
 {
     // Verify that data present
     if (checksum_start.isEmpty()) return;
@@ -907,13 +910,19 @@ void GUI_BASE::set_checksum_start(checksum_struct *check, QStringList checksum_s
     uint8_t* new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
     memset(new_check_start, 0, checksum_size);
 
-    // Build from supplied checksum start
-    uint32_t j = checksum_size - 1;
-    for (uint32_t i = 0; i < checksum_size; i++)
+    // Build base start from supplied checksum start
+    QByteArray start_convert = GUI_HELPER::string_to_byteArray(checksum_start, checksum_start_base);
+
+    // Pad start until its checksum_size
+    uint32_t start_len = start_convert.length();
+    while (start_len < checksum_size)
     {
-        new_check_start[i] = (char) checksum_start.at(j).toInt(nullptr, checksum_start_base);
-        j -= 1;
+        start_convert.prepend((char) 0);
+        start_len += 1;
     }
+
+    // Copy start into new_check_start
+    memcpy(new_check_start, start_convert.constData(), checksum_size);
 
     // Delete and replace default
     if (check->checksum_start != nullptr) delete[] check->checksum_start;

@@ -174,7 +174,7 @@ private:
     static void copy_checksum_info(checksum_struct *cpy_to, checksum_struct *cpy_from);
     static void delete_checksum_info(checksum_struct *check);
     static void set_checksum_exe(checksum_struct *check, QString checksum_exe);
-    static void set_checksum_start(checksum_struct *check, QStringList checksum_start, uint8_t checksum_start_base);
+    static void set_checksum_start(checksum_struct *check, QString checksum_start, uint8_t checksum_start_base);
 
     // Exit base (waits to acquire send and recv locks)
     void close_base();

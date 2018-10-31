@@ -80,7 +80,9 @@ private slots:
 
     void on_DeviceConnect_Button_clicked();
     void on_DeviceDisconnect_Button_clicked();
+
     void on_MoreOptions_Button_clicked();
+    void moreOptions_accepted();
 
     void on_DeviceConnected();
     void on_DeviceDisconnected();
