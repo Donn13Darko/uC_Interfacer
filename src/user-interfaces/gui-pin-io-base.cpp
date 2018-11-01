@@ -93,7 +93,7 @@ void GUI_PIN_BASE::recordPinValues(PinTypeInfo *pInfo)
 
 void GUI_PIN_BASE::receive_gui(QByteArray recvData)
 {
-    // Check known major key
+    // Verify correct major key
     if (recvData.at(s1_major_key_loc) != (char) gui_key)
         return;
 
@@ -133,29 +133,24 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
     QString pinNum = QString::number(label->text().toInt());
 
     // Clarify IO selection
-    uint8_t IO = pinMap->value(combo->currentText());
+    uint8_t io_combo = pinMap->value(combo->currentText());
 
     // Get range list for use in next sections
-    RangeList* rList = pinRangeMap->value(IO);
+    RangeList* rList = pinRangeMap->value(io_combo);
 
     // Set IO if combo changed
     float newVAL;
+    bool prev_block_status;
     switch (io_pos)
     {
         case io_combo_pos:
         {
             // Enable/Disable pins if selection changed
-            if (pinDisabledSet->contains(IO))
-            {
-                sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-                textValue->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-            } else
-            {
-                sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-                textValue->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-            }
+            bool disableClicks = pinDisabledSet->contains(io_combo);
+            sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
+            textValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
 
-            // Update slider range (will update slider value)
+            // Update slider range (will reset slider value)
             updateSliderRange(sliderValue, rList);
 
             // Fall through to next case to update info
@@ -175,9 +170,9 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
             }
 
             // Update text value
-            textValue->blockSignals(true);
+            prev_block_status = textValue->blockSignals(true);
             textValue->setText(QString::number(newVAL));
-            textValue->blockSignals(false);
+            textValue->blockSignals(prev_block_status);
             break;
         }
         case io_line_edit_pos:
@@ -187,9 +182,9 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
             if (pInfo->pinType == MINOR_KEY_IO_DIO) newVAL = qRound(newVAL);
 
             // Update slider value
-            sliderValue->blockSignals(true);
+            prev_block_status = sliderValue->blockSignals(true);
             sliderValue->setSliderPosition(newVAL);
-            sliderValue->blockSignals(false);
+            sliderValue->blockSignals(prev_block_status);
             break;
         }
         default:
@@ -204,16 +199,16 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
         // Build pin data array
         uint16_t v = (uint16_t) QString::number(newVAL).toInt();
         data->append((char) pinNum.toInt());    // Pin Num
-        data->append((char) IO);                 // Combo setting
-        data->append((char) ((v >> 8) & 0xFF));  // Value High
-        data->append((char) (v & 0xFF));         // Value Low
+        data->append((char) io_combo);          // Combo setting
+        data->append((char) ((v >> 8) & 0xFF)); // Value High
+        data->append((char) (v & 0xFF));        // Value Low
     }
 }
 
 void GUI_PIN_BASE::updateSliderRange(QSlider *slider, RangeList *rList)
 {
     // Disable signals
-    slider->blockSignals(true);
+    bool prev_block_status = slider->blockSignals(true);
 
     // Change settings
     slider->setMinimum(rList->min);
@@ -228,7 +223,7 @@ void GUI_PIN_BASE::updateSliderRange(QSlider *slider, RangeList *rList)
     else slider->setSliderPosition(0);
 
     // Enable signals
-    slider->blockSignals(false);
+    slider->blockSignals(prev_block_status);
 }
 
 void GUI_PIN_BASE::setNumPins(PinTypeInfo *pInfo, uint8_t num_dev_pins, uint8_t start_num)
@@ -327,6 +322,7 @@ void GUI_PIN_BASE::setCombos(PinTypeInfo *pInfo, QList<QString> combos)
     QList<uint8_t> pinNums;
     QList<QString> listValues;
     QStringList comboStr_split;
+    bool prev_block_status;
 
     // Setup widget holders
     QComboBox *itemCombo;
@@ -370,7 +366,7 @@ void GUI_PIN_BASE::setCombos(PinTypeInfo *pInfo, QList<QString> combos)
             // Replace combo options
             if (getItemWidget((QWidget**) &itemCombo, pInfo->grid, rowNum, colNum+io_combo_pos))
             {
-                itemCombo->blockSignals(true);
+                prev_block_status = itemCombo->blockSignals(true);
 
                 itemCombo->clear();
                 itemCombo->addItems(listValues);
@@ -393,7 +389,7 @@ void GUI_PIN_BASE::setCombos(PinTypeInfo *pInfo, QList<QString> combos)
                     updateSliderRange((QSlider*) sliderWidget, rList);
                 }
 
-                itemCombo->blockSignals(false);
+                itemCombo->blockSignals(prev_block_status);
             }
         }
     }

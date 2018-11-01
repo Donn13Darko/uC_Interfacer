@@ -298,6 +298,7 @@ void GUI_BASE::receive(QByteArray recvData)
         // Key Switch
         switch (major_key)
         {
+            // Check if ack or reset
             case MAJOR_KEY_ACK:
             case MAJOR_KEY_RESET:
             {
@@ -368,7 +369,12 @@ void GUI_BASE::receive(QByteArray recvData)
                 // Break out of Key Switch
                 break;
             }
-            default:
+            // Check if part of GUI Keys
+            case MAJOR_KEY_IO:
+            case MAJOR_KEY_WELCOME:
+            case MAJOR_KEY_PROGRAMMER:
+            case MAJOR_KEY_CUSTOM_CMD:
+            case MAJOR_KEY_DATA_TRANSMIT:
             {
                 // Parse num_s2_bytes
                 num_s2_bytes = GUI_HELPER::byteArray_to_uint32(
@@ -418,6 +424,19 @@ void GUI_BASE::receive(QByteArray recvData)
 
                 // Remove data from rcvd_raw
                 rcvd_raw.remove(0, expected_len+checksum_size);
+
+                // Break out of Key Switch
+                break;
+            }
+            // If unknown
+            default:
+            {
+                // Clear buffers and set exit
+                rcvd_raw.clear();
+                exit_recv = true;
+
+                // Ack error
+                send_ack(MAJOR_KEY_ERROR);
 
                 // Break out of Key Switch
                 break;

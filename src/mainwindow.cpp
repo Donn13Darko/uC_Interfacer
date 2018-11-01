@@ -88,16 +88,17 @@ MainWindow::MainWindow(QWidget *parent) :
     updateConnInfo = new QTimer();
 
     // Add values to Device combo
-    ui->Device_Combo->blockSignals(true);
+    bool prev_block_status;
+    prev_block_status = ui->Device_Combo->blockSignals(true);
     ui->Device_Combo->clear();
     ui->Device_Combo->addItems(MainWindow::supportedDevicesList);
-    ui->Device_Combo->blockSignals(false);
+    ui->Device_Combo->blockSignals(prev_block_status);
 
     // Add values to conn type combo
-    ui->ConnType_Combo->blockSignals(true);
+    prev_block_status = ui->ConnType_Combo->blockSignals(true);
     ui->ConnType_Combo->clear();
     ui->ConnType_Combo->addItems(MainWindow::supportedProtocolsList);
-    ui->ConnType_Combo->blockSignals(false);
+    ui->ConnType_Combo->blockSignals(prev_block_status);
 
     // Set Initial values
     setConnected(false);
@@ -358,7 +359,7 @@ void MainWindow::on_DeviceConnected() {
         ucOptionsClear();
 
         // Block signals from tab group
-        ui->ucOptions->blockSignals(true);
+        bool prev_block_status = ui->ucOptions->blockSignals(true);
 
         // Setup tabs
         uint8_t gui_key;
@@ -445,7 +446,7 @@ void MainWindow::on_DeviceConnected() {
         update_options(&main_options_settings);
 
         // Enable signals for tab group
-        ui->ucOptions->blockSignals(false);
+        ui->ucOptions->blockSignals(prev_block_status);
 
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
@@ -705,7 +706,7 @@ void MainWindow::connect2sender(QObject* obj, bool conn)
 
 void MainWindow::ucOptionsClear()
 {
-    ui->ucOptions->blockSignals(true);
+    bool prev_block_status = ui->ucOptions->blockSignals(true);
     QWidget* tab_holder;
     for (int i = (ui->ucOptions->count() - 1); 0 <= i; i--)
     {
@@ -714,7 +715,7 @@ void MainWindow::ucOptionsClear()
         ui->ucOptions->removeTab(i);
         if (tab_holder != welcome_tab) ((GUI_BASE*) tab_holder)->closing();
     }
-    ui->ucOptions->blockSignals(false);
+    ui->ucOptions->blockSignals(prev_block_status);
 
     prev_tab = -1;
 }

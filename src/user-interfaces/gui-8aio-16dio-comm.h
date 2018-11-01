@@ -75,7 +75,7 @@ protected:
     void setConTypes(QStringList connTypes, QList<char> mapValues);
 
     virtual bool isDataRequest(uint8_t minorKey);
-    virtual void setValues(uint8_t pinType, QByteArray values);
+    virtual void setValues(uint8_t minorKey, QByteArray values);
     virtual bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 
 private:

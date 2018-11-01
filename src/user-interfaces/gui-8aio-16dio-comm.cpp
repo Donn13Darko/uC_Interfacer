@@ -50,9 +50,11 @@ GUI_8AIO_16DIO_COMM::~GUI_8AIO_16DIO_COMM()
 
 void GUI_8AIO_16DIO_COMM::reset_gui()
 {
+    // Setup loop variables
     PinTypeInfo pInfo;
     QWidget *item;
     uint8_t rowNum, colNum;
+    bool prev_block_status;
 
     // Disconnect sending slot for setup
     emit connect_signals(false);
@@ -75,10 +77,10 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
                 // Reset Combo
                 if (getItemWidget(&item, pInfo.grid, rowNum, colNum+io_combo_pos))
                 {
-                    item->blockSignals(true);
+                    prev_block_status = item->blockSignals(true);
                     ((QComboBox*) item)->setCurrentIndex(0);
                     inputsChanged(&pInfo, item, io_combo_pos);
-                    item->blockSignals(false);
+                    item->blockSignals(prev_block_status);
                 }
             }
         }
@@ -117,10 +119,10 @@ void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
     if (!getPinTypeInfo(MINOR_KEY_IO_REMOTE_CONN, &pInfo)) return;
     addNewPinSettings(&pInfo, configMap->value("remote_pin_settings").toStringList());
 
-    ui->ConnType_Combo->blockSignals(true);
+    bool prev_block_status = ui->ConnType_Combo->blockSignals(true);
     ui->ConnType_Combo->clear();
     ui->ConnType_Combo->addItems(controlMap.value(pInfo.pinType)->keys());
-    ui->ConnType_Combo->blockSignals(false);
+    ui->ConnType_Combo->blockSignals(prev_block_status);
 
     // Pass to parent for additional parsing
     GUI_PIN_BASE::parseConfigMap(configMap);
@@ -540,16 +542,11 @@ bool GUI_8AIO_16DIO_COMM::isDataRequest(uint8_t minorKey)
     }
 }
 
-void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
+void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
 {
+    // Get pin information
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(pinType, &pInfo)) return;
-
-    QComboBox *comboBox;
-    QSlider *sliderValue;
-    QLineEdit *textValue;
-    uint32_t value;
-    uint8_t rowNum, colNum, comboVal, divisor;
+    if (!getPinTypeInfo(minorKey, &pInfo)) return;
 
     // Get & verify maps
     QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo.pinType);
@@ -557,35 +554,113 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t pinType, QByteArray values)
     QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo.pinType);
     if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
 
+    // Allocate loop variables
+    QComboBox *comboBox;
+    QSlider *sliderValue;
+    QLineEdit *textValue;
+    uint32_t value;
+    uint8_t rowNum, colNum, comboVal, divisor;
+    bool prev_block_combo, prev_block_slider, prev_block_text;
+
+    // Set loop variables
     uint8_t i = 0, j = 0, pin_num = 0;
     uint8_t val_len = values.length();
-    while (i < val_len)
+
+    switch (minorKey)
     {
-        // Value is big endian
-        value = 0;
-        for (j = bytesPerPin; 0 < j; j--)
+        // If read data
+        case MINOR_KEY_IO_AIO_READ:
+        case MINOR_KEY_IO_DIO_READ:
         {
-            value = ((value << 8) | (values[i++] & 0xFF));
+            // values is an array of uint16_t's for each pin in the set
+            // Loop over each pin setting its value
+            while (i < val_len)
+            {
+                // Value is big endian
+                value = 0;
+                for (j = bytesPerPin; 0 < j; j--)
+                {
+                    value = ((value << 8) | (values[i++] & 0xFF));
+                }
+
+                // Find pin location on GUI
+                getPinLocation(&rowNum, &colNum, &pInfo, pin_num++);
+
+                // Get combo widget
+                if (getItemWidget((QWidget**) &comboBox, pInfo.grid, rowNum, colNum+io_combo_pos))
+                {
+                    // Get combo value
+                    comboVal = pinMap->value(comboBox->currentText());
+
+                    // Only set if not GUI controllable and able to get other widgets
+                    if (pinDisabledSet->contains(comboVal)
+                            && getItemWidget((QWidget**) &sliderValue, pInfo.grid, rowNum, colNum+io_slider_pos)
+                            && getItemWidget((QWidget**) &textValue, pInfo.grid, rowNum, colNum+io_line_edit_pos))
+                    {
+                        // Block signals before setting
+                        prev_block_slider = sliderValue->blockSignals(true);
+                        prev_block_text = textValue->blockSignals(true);
+
+                        // Set values
+                        divisor = pinRangeMap->value(comboVal)->div;
+                        sliderValue->setSliderPosition(value);
+                        textValue->setText(QString::number(((float) value) / divisor));
+
+                        // Unblock signals now that they are set
+                        sliderValue->blockSignals(prev_block_slider);
+                        textValue->blockSignals(prev_block_text);
+                    }
+                }
+            }
         }
-
-        getPinLocation(&rowNum, &colNum, &pInfo, pin_num++);
-
-        if (getItemWidget((QWidget**) &comboBox, pInfo.grid, rowNum, colNum+io_combo_pos))
+        // If set data
+        case MINOR_KEY_IO_AIO_SET:
+        case MINOR_KEY_IO_DIO_SET:
         {
-            comboVal = pinMap->value(comboBox->currentText());
-            if (pinDisabledSet->contains(comboVal)
+            // Parse & verify info from set data
+            // Formatted as [pinNum, io_combo, val_high, val_low]
+            pin_num = values.at(0);
+            value = ((uint16_t) values.at(2) << 8) | ((uchar) values.at(3));
+            QString combo_text = pinMap->key(values.at(1), "");
+            if (combo_text.isEmpty()) return;
+
+            // Find pin location on GUI
+            getPinLocation(&rowNum, &colNum, &pInfo, pin_num);
+
+            // Get all widgets for setting
+            if (getItemWidget((QWidget**) &comboBox, pInfo.grid, rowNum, colNum+io_combo_pos)
                     && getItemWidget((QWidget**) &sliderValue, pInfo.grid, rowNum, colNum+io_slider_pos)
                     && getItemWidget((QWidget**) &textValue, pInfo.grid, rowNum, colNum+io_line_edit_pos))
             {
-                sliderValue->blockSignals(true);
-                textValue->blockSignals(true);
+                // Block combo signals before setting
+                prev_block_combo = comboBox->blockSignals(true);
+                prev_block_slider = sliderValue->blockSignals(true);
+                prev_block_text = textValue->blockSignals(true);
 
+                // Set combo to correct position
+                comboBox->setCurrentText(combo_text);
+
+                // Get combo value
+                comboVal = pinMap->value(comboBox->currentText());
+
+                // Overwrite current values with inputs changed
+                bool disableClicks = pinDisabledSet->contains(comboVal);
+                sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
+                textValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
+
+                // Get & update slider range list
+                RangeList* rList = pinRangeMap->value(comboVal);
+                updateSliderRange(sliderValue, rList);
+
+                // Set slider and divisor
                 divisor = pinRangeMap->value(comboVal)->div;
                 sliderValue->setSliderPosition(value);
                 textValue->setText(QString::number(((float) value) / divisor));
 
-                sliderValue->blockSignals(false);
-                textValue->blockSignals(false);
+                // Unblock signals now that they are set
+                comboBox->blockSignals(prev_block_combo);
+                sliderValue->blockSignals(prev_block_slider);
+                textValue->blockSignals(prev_block_text);
             }
         }
     }
