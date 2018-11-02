@@ -34,6 +34,7 @@ extern "C"
 
 #include <stdint.h>
 
+#include "uc-generic-def.h"
 #include "../user-interfaces/gui-pin-io-base-minor-keys.h"
 #include "../user-interfaces/gui-8aio-16dio-comm-minor-keys.h"
 
@@ -41,16 +42,19 @@ extern "C"
 /* Parses IO minor key and calls uc specific code */
 void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
 
+/*** Following externs are defined in uc-generic-fsm (or need to be defiend elsewhere if not using) ***/
+extern void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uint32_t data_len);
+
 /*** Following extern functions must be defined on a per uC basis ***/
 
 /* Set or read DIO value(s) */
 extern void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value);
-extern uint16_t uc_dio_read(uint8_t pin_num)
+extern uint16_t uc_dio_read(uint8_t pin_num);
 extern uint16_t* uc_dio_read_all();
 
 /* Set or read AIO value(s) */
-extern void uc_aio(uint8_t pin_num, uint8_t setting, uint16_t value);
-extern uint16_t uc_aio_read(uint8_t pin_num)
+extern void uc_aio_set(uint8_t pin_num, uint8_t setting, uint16_t value);
+extern uint16_t uc_aio_read(uint8_t pin_num);
 extern uint16_t* uc_aio_read_all();
 
 /* Set Remote Conn info */

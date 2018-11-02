@@ -16,11 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-base-major-keys.h"
 #include "arduino-uno-uart-minor-keys.h"
-#include "gui-pin-io-base-minor-keys.h"
 #include "uc-generic-fsm.h"
 #include "uc-generic-io.h"
+
 #include <Servo.h>
 
 // Set and clear bit helpers
@@ -56,11 +55,6 @@ float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 
 // Read array (more DIO than AIO)
 uint16_t read_data[uc_dio_num_pins];
-
-// Define unused externs (not implemented yet)
-void uc_data_transmit(uint8_t, uint8_t, const uint8_t*, uint8_t) {}
-void uc_programmer(uint8_t, uint8_t, const uint8_t*, uint8_t) {}
-void uc_custom_cmd(uint8_t, uint8_t, const uint8_t*, uint8_t) {}
 
 // Ignore uc_aio_set (can't use on arudino)
 void uc_aio_set(uint8_t, uint8_t, uint16_t) {}
@@ -148,7 +142,7 @@ void uc_delay_ms(uint32_t ms)
     delay(ms);
 }
 
-uint8_t uc_bytes_available()
+uint32_t uc_bytes_available()
 {
     return Serial.available();
 }
@@ -161,7 +155,10 @@ uint8_t uc_send(uint8_t* data, uint32_t data_len)
 // Read and return the DIO state
 uint16_t uc_dio_read(uint8_t pin_num)
 {
-    // Identify & read pin
+    // Verify pin_num in range
+    if (uc_dio_num_pins < pin_num) return 0;
+    
+    // Read and return
     switch (DIO_SET[pin_num])
     {
         case IO_INPUT:
@@ -197,6 +194,10 @@ uint16_t* uc_dio_read_all()
 // Read and return the AIO state
 uint16_t uc_aio_read(uint8_t pin_num)
 {
+    // Verify pin_num in range
+    if (uc_aio_num_pins < pin_num) return 0;
+
+    // Read and return
     return (uint16_t) (AIO_SCALE * analogRead(pin_num));
 }
 
@@ -274,7 +275,7 @@ void set_pwm_off(uint8_t pin)
 void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value)
 {
     // Verify pin_num in range
-    if (num_DIO < pin_num) return;
+    if (uc_dio_num_pins < pin_num) return;
 
     // If setting changed
     if (DIO_SET[pin_num] != setting)

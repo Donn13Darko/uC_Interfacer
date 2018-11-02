@@ -18,44 +18,64 @@
 
 #include "uc-generic-io.h"
 
-void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
+void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
 {
-    // Verify & parse bytes
-    uint16_t value = 0;
-    if (buffer_len != s2_io_end_loc)
-    {
-        // If not enough bytes for command return
-        if ((minor_key == MINOR_KEY_IO_DIO_SET)
-                || (minor_key == MINOR_KEY_IO_AIO_SET))
-        {
-            return;
-        }
-    } else
-    {
-        value = (buffer[s2_io_value_high_loc] << 8)
-                          | buffer[s2_io_value_low_loc];
-    }
+    // If not enough bytes for command return
+    if (((minor_key == MINOR_KEY_IO_DIO_SET) || (minor_key == MINOR_KEY_IO_AIO_SET))
+            && (buffer_len != s2_io_end_loc))
+        return;
+    else if (((minor_key == MINOR_KEY_IO_DIO_READ_PIN) || (minor_key == MINOR_KEY_IO_AIO_READ_PIN))
+            && (buffer_len != 1))
+        return;
 
     // Parse and act on minor key
     switch (minor_key)
     {
         case MINOR_KEY_IO_DIO_SET:
-            uc_dio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
+        {
+            uint16_t value = ((uint16_t) buffer[s2_io_value_high_loc] << 8) | buffer[s2_io_value_low_loc];
+            uc_dio_set(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
+        }
         case MINOR_KEY_IO_AIO_SET:
-            uc_aio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
+        {
+            uint16_t value = ((uint16_t) buffer[s2_io_value_high_loc] << 8) | buffer[s2_io_value_low_loc];
+            uc_aio_set(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
-        case MINOR_KEY_IO_DIO_READ:
-            uc_dio_read();
+        }
+        case MINOR_KEY_IO_DIO_READ_PIN:
+        {
+            uint16_t read_data = uc_dio_read(buffer[s2_io_pin_num_loc]);
+            fsm_send(major_key, minor_key, (const uint8_t*) &read_data, 2);
             break;
-        case MINOR_KEY_IO_AIO_READ:
-            uc_aio_read();
+        }
+        case MINOR_KEY_IO_AIO_READ_PIN:
+        {
+            uint16_t read_data = uc_aio_read(buffer[s2_io_pin_num_loc]);
+            fsm_send(major_key, minor_key, (const uint8_t*) &read_data, 2);
             break;
+        }
+        case MINOR_KEY_IO_DIO_READ_ALL:
+        {
+            uint16_t* read_data = uc_dio_read_all();
+            fsm_send(major_key, minor_key, (const uint8_t*) read_data, uc_dio_num_pins << 1);
+            break;
+        }
+        case MINOR_KEY_IO_AIO_READ_ALL:
+        {
+            uint16_t* read_data = uc_aio_read_all();
+            fsm_send(major_key, minor_key, (const uint8_t*) read_data, uc_aio_num_pins << 1);
+            break;
+        }
         case MINOR_KEY_IO_REMOTE_CONN:
+        {
             uc_remote_conn();
             break;
+        }
         default:
-            return;
+        {
+            break;
+        }
 
     }
 }

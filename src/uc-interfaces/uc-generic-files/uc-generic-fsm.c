@@ -28,10 +28,18 @@
 #include "../checksums/crc-8-lut.h"
 
 // GUI checksums
+#ifdef UC_IO
 checksum_struct io_checksum = DEFAULT_CHECKSUM_STRUCT;
+#endif
+#ifdef UC_DATA_TRANSMIT
 checksum_struct data_transfer_checksum = DEFAULT_CHECKSUM_STRUCT;
+#endif
+#ifdef UC_PROGRAMMER
 checksum_struct programmer_checksum = DEFAULT_CHECKSUM_STRUCT;
+#endif
+#ifdef UC_CUSTOM_CMD
 checksum_struct custom_cmd_checksum = DEFAULT_CHECKSUM_STRUCT;
+#endif
 
 // Default checksum (for acks, errors, and resets);
 checksum_struct default_checksum = DEFAULT_CHECKSUM_STRUCT;
@@ -63,7 +71,7 @@ uint8_t *fsm_buffer_ptr;
 // Function prototypes (local access only)
 void fsm_ack(uint8_t ack_key);
 bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
-bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp);
+bool fsm_check_checksum(const uint8_t* data, uint32_t data_len, const uint8_t* checksum_cmp);
 checksum_struct* fsm_get_checksum_struct(uint8_t gui_key);
 
 void fsm_setup(uint32_t buffer_len)
@@ -78,17 +86,25 @@ void fsm_setup(uint32_t buffer_len)
     uint32_t checksum_size_cmp;
     checksum_max_size = default_checksum.get_checksum_size();
 
+#ifdef UC_IO
     checksum_size_cmp = io_checksum.get_checksum_size();
     if (checksum_max_size < checksum_size_cmp) checksum_max_size = checksum_size_cmp;
+#endif
 
+#ifdef UC_DATA_TRANSMIT
     checksum_size_cmp = data_transfer_checksum.get_checksum_size();
     if (checksum_max_size < checksum_size_cmp) checksum_max_size = checksum_size_cmp;
+#endif
 
+#ifdef UC_PROGRAMMER
     checksum_size_cmp = programmer_checksum.get_checksum_size();
     if (checksum_max_size < checksum_size_cmp) checksum_max_size = checksum_size_cmp;
+#endif
 
+#ifdef UC_CUSTOM_CMD
     checksum_size_cmp = custom_cmd_checksum.get_checksum_size();
     if (checksum_max_size < checksum_size_cmp) checksum_max_size = checksum_size_cmp;
+#endif
 
     // Require at least 2 bytes (for major and minor key with no checksum)
     // Recommend a minimum length of 8 (allows for basic control without any reallocs, min 2+1+4)
@@ -390,18 +406,26 @@ void fsm_run()
     // Parse and act on major key
     switch (major_key)
     {
+#ifdef UC_IO
         case MAJOR_KEY_IO:
             uc_io(major_key, minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
+#endif
+#ifdef UC_DATA_TRANSMIT
         case MAJOR_KEY_DATA_TRANSMIT:
             uc_data_transmit(major_key, minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
+#endif
+#ifdef UC_PROGRAMMER
         case MAJOR_KEY_PROGRAMMER:
             uc_programmer(major_key, minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
+#endif
+#ifdef UC_CUSTOM_CMD
         case MAJOR_KEY_CUSTOM_CMD:
             uc_custom_cmd(major_key, minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
+#endif
         case MAJOR_KEY_RESET:
             uc_reset();
             break;
@@ -425,7 +449,7 @@ void fsm_ack(uint8_t ack_key)
     uc_send(fsm_ack_buffer, num_s1_bytes+check->get_checksum_size());
 }
 
-void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, uint8_t* data, uint32_t data_len)
+void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uint32_t data_len)
 {
     // Find data_len size
     if ((data_len == 0) || (data == 0)) num_s2_bits = 0x00;
@@ -541,7 +565,7 @@ bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
     return true;
 }
 
-bool fsm_check_checksum(uint8_t* data, uint32_t data_len, uint8_t* checksum_cmp)
+bool fsm_check_checksum(const uint8_t* data, uint32_t data_len, const uint8_t* checksum_cmp)
 {
     checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc] & s1_major_key_bit_mask);
     uint32_t checksum_size = check->get_checksum_size();
@@ -553,14 +577,22 @@ checksum_struct* fsm_get_checksum_struct(uint8_t gui_key)
 {
     switch (gui_key)
     {
+#ifdef UC_IO
         case MAJOR_KEY_IO:
             return &io_checksum;
+#endif
+#ifdef UC_DATA_TRANSMIT
         case MAJOR_KEY_DATA_TRANSMIT:
             return &data_transfer_checksum;
+#endif
+#ifdef UC_PROGRAMMER
         case MAJOR_KEY_PROGRAMMER:
             return &programmer_checksum;
+#endif
+#ifdef UC_CUSTOM_CMD
         case MAJOR_KEY_CUSTOM_CMD:
             return &custom_cmd_checksum;
+#endif
         default:
             return &default_checksum;
     }

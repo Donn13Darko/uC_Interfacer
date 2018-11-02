@@ -16,22 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_CUSTOM_CMD_MINOR_KEYS_H
-#define GUI_CUSTOM_CMD_MINOR_KEYS_H
+#ifndef UC_GENERIC_DEF_H
+#define UC_GENERIC_DEF_H
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
+// Define UC_IO to enable io parsing
+#define UC_IO
 
-// Custom CMD Minor Keys enum
-typedef enum {
-    // Error and reset
-    MINOR_KEY_CUSTOM_CMD_ERROR = 0
-} MINOR_KEYS_CUSTOM_CMD;
+// Define UC_DATA_TRANSMIT to enable data transmit parsing
+// #define UC_DATA_TRANSMIT
 
-#ifdef __cplusplus
-}
-#endif
+// Define UC_PROGRAMMER to enable program parsing
+// #define UC_PROGRAMMER
 
-#endif // GUI_CUSTOM_CMD_MINOR_KEYS_H
+// Define UC_CUSTOM_CMD to enable custom CMD parsing
+// #define UC_CUSTOM_CMD
+
+#endif // UC_GENERIC_DEF_H

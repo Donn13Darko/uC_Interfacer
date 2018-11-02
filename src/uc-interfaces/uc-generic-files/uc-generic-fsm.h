@@ -36,6 +36,7 @@ extern "C"
 #include <stdlib.h>
 #include <string.h>
 
+#include "uc-generic-def.h"
 #include "../user-interfaces/gui-base-major-keys.h"
 
 /* FSM Public Functions */
@@ -44,7 +45,7 @@ void fsm_destroy();
 void fsm_poll();
 bool fsm_isr();
 void fsm_run();
-void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, uint8_t* data, uint32_t data_len);
+void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uint32_t data_len);
 
 // Acts as a general flag variable for:
 //   1) malloc or realloc failures (gets set to 1)
@@ -74,14 +75,25 @@ extern uint8_t uc_send(uint8_t* data, uint32_t data_len);
  * FSM as opposed to reimplimenting the key parsing included (unless
  * space efficiency, speed, or not implementing (stub it))
 */
+#ifdef UC_IO
 /* Parses IO minor key and acts */
 extern void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+#endif
+
+#ifdef UC_DATA_TRANSMIT
 /* Parses Data Transmit minor key and acts */
 extern void uc_data_transmit(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+#endif
+
+#ifdef UC_PROGRAMMER
 /* Parses Programmer minor key and acts */
 extern void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+#endif
+
+#ifdef UC_CUSTOM_CMD
 /* Parses Custom CMD minor key and acts */
 extern void uc_custom_cmd(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+#endif
 
 #ifdef __cplusplus
 }
