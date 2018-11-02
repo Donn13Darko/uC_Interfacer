@@ -38,7 +38,7 @@ typedef struct SPI_MASTER_INFO {
     uint8_t MISO_PIN;
     uint8_t SCLK_PIN;
     uint32_t SCLK_DELAY_US;
-    uint8_t bitFlags; // See SPI_MASTER_FLAGS_ENUM
+    uint8_t SPI_FLAGS; // See SPI_MASTER_FLAGS_ENUM
 } SPI_MASTER_INFO;
 
 typedef enum {
@@ -53,25 +53,15 @@ typedef enum {
     SPI_MASTER_WRITE_FIRST = 0x08,
     SPI_MASTER_READ_FIRST = 0x10,
     // Use if send_len and read_len not same length
+    // And reading at the same time
     SPI_MASTER_ALIGN_RIGHT = 0x20,
-    // Defines SCLK polarity 
+    // Defines SCLK polarity
+    // setting 0 is pulse high/idle low, 1 is pulse low/idle high
     SPI_MASTER_CLK_POL = 0x40,
     // Defines SCLK data bit timing
     SPI_MASTER_CLK_PHA = 0x80
 } SPI_MASTER_FLAGS_ENUM;
 
-
-// Used for bitshifts
-typedef enum {
-    SPI_MASTER_SETUP_POS = 0,
-    SPI_MASTER_TRANS_STARTED_POS,
-    SPI_MASTER_MSB_LSB_TOGGLE_POS,
-    SPI_MASTER_WRITE_FIRST_POS,
-    SPI_MASTER_READ_FIRST_POS,
-    SPI_MASTER_ALIGN_RIGHT_POS,
-    SPI_MASTER_CLK_POL_POS,
-    SPI_MASTER_CLK_PHA_POS
-} SPI_MASTER_FLAGS_POS_ENUM;
 
 /* SPI MASTER Functions */
 
@@ -89,17 +79,17 @@ void software_spi_master_begin_transaction(SPI_MASTER_INFO *spi_info, uint8_t sl
 void software_spi_master_end_transaction(SPI_MASTER_INFO *spi_info, uint8_t slave_select = 0xFF);
 
 /* Perform a SPI read & write transaction */
-uint8_t software_spi_master_byte_transaction(uint8_t send_byte, SPI_MASTER_INFO *spi_info);
+uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO *spi_info);
 
 /* Performs a SPI transaction */
-void software_spi_master_perform_transaction(uint8_t *send_data, uint32_t send_data_len,
+void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write_data_len,
                                               uint8_t *read_data, uint32_t read_data_len,
                                               SPI_MASTER_INFO *spi_info, uint8_t slave_select = 0xFF,
                                               uint32_t setup_delay_us = 0, uint32_t transaction_delay_us = 0,
                                               uint32_t read_write_delay_us = 0);
 
-/* Sends send_data_len bytes from send_data array. */
-void software_spi_master_send_bytes(uint8_t *send_data, uint32_t send_data_len,
+/* Sends write_data_len bytes from write_data array. */
+void software_spi_master_write_bytes(uint8_t *write_data, uint32_t write_data_len,
                                       SPI_MASTER_INFO *spi_info, uint8_t slave_select = 0xFF,
                                       uint32_t setup_delay_us = 0, uint32_t transaction_delay_us = 0);
 
@@ -109,7 +99,7 @@ void software_spi_master_read_bytes(uint8_t *read_data, uint32_t read_data_len,
                                       uint32_t setup_delay_us = 0, uint32_t transaction_delay_us = 0);
 
 /* Sends a single byte acorss the SPI connection */
-void software_spi_master_send_byte(uint8_t send_byte,
+void software_spi_master_write_byte(uint8_t write_byte,
                                     SPI_MASTER_INFO *spi_info, uint8_t slave_select = 0xFF,
                                     uint32_t setup_delay_us = 0);
 
@@ -117,21 +107,20 @@ void software_spi_master_send_byte(uint8_t send_byte,
 uint8_t software_spi_master_read_byte(SPI_MASTER_INFO *spi_info, uint8_t slave_select = 0xFF,
                                         uint32_t setup_delay_us = 0);
 
+
 /*** Following extern functions must be defined on a per uC basis ***/
 
 /* Set or read the DIO value */
 extern void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value);
 extern uint16_t uc_dio_read(uint8_t pin_num);
 
-/* Setting value for digital input in uc_dio_set */
-extern uint8_t uc_dio_input;  
-/* Setting value for digital output in uc_dio_set */
-extern uint8_t uc_dio_output;
-
-/* Waits for timeout milliseconds (args: timeout) */
-extern void uc_delay_ms(uint32_t ms);
 /* Waits for timeout microseconds (args: timeout) */
 extern void uc_delay_us(uint32_t us);
+
+/* Setting key (second arg) for uc_dio_set that sets pin to digital input */
+extern const uint8_t uc_dio_input;  
+/* Setting key (second arg) for uc_dio_set that sets pin to digital output */
+extern const uint8_t uc_dio_output;
 
 #ifdef __cplusplus
 }

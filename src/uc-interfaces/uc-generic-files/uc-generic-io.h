@@ -33,30 +33,32 @@ extern "C"
 #endif
 
 #include <stdint.h>
-#include <stdbool.h>
-#include <stdlib.h>
 
-#include "../user-interfaces/gui-base-major-keys.h"
 #include "../user-interfaces/gui-pin-io-base-minor-keys.h"
 #include "../user-interfaces/gui-8aio-16dio-comm-minor-keys.h"
 
 /* IO Functions */
 /* Parses IO minor key and calls uc specific code */
-void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
 
 /*** Following extern functions must be defined on a per uC basis ***/
 
-/* Set or read the DIO value(s) */
+/* Set or read DIO value(s) */
 extern void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value);
 extern uint16_t uc_dio_read(uint8_t pin_num)
 extern uint16_t* uc_dio_read_all();
-/* Set or read the AIO value(s) */
+
+/* Set or read AIO value(s) */
 extern void uc_aio(uint8_t pin_num, uint8_t setting, uint16_t value);
 extern uint16_t uc_aio_read(uint8_t pin_num)
 extern uint16_t* uc_aio_read_all();
+
 /* Set Remote Conn info */
 extern void uc_remote_conn();
 
+/* Helper variables */
+extern const uint8_t uc_dio_num_pins;
+extern const uint8_t uc_aio_num_pins;
 
 #ifdef __cplusplus
 }

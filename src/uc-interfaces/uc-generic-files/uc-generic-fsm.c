@@ -23,7 +23,7 @@
  * This will need to be input as part of the INI file under each
  * GUI section (gets broken apart based on the GUI tab type).
  * Multiple instances of the same tab type must have the same checksum.
- * Default checksum is CRC-8 LUT (#defined in gui-base-major-keys.h).
+ * DEFAULT_CHECKSUM_STRUCT is CRC-8 LUT (#defined in gui-base-major-keys.h).
 */
 #include "../checksums/crc-8-lut.h"
 
@@ -117,6 +117,10 @@ void fsm_destroy()
     // Free static buffers
     free(fsm_ack_buffer);
     free(fsm_checksum_buffer);
+
+    // Set fsm_error for malloc nullptr
+    // Forces setup call again to use fsm
+    fsm_error |= 0x01;
 }
 
 void fsm_poll()
@@ -387,16 +391,16 @@ void fsm_run()
     switch (major_key)
     {
         case MAJOR_KEY_IO:
-            uc_io(minor_key, fsm_buffer_ptr, num_s2_bytes);
+            uc_io(major_key, minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
         case MAJOR_KEY_DATA_TRANSMIT:
-            uc_data_transmit(minor_key, fsm_buffer_ptr, num_s2_bytes);
+            uc_data_transmit(major_key, minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
         case MAJOR_KEY_PROGRAMMER:
-            uc_programmer(minor_key, fsm_buffer_ptr, num_s2_bytes);
+            uc_programmer(major_key, minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
         case MAJOR_KEY_CUSTOM_CMD:
-            uc_custom_cmd(minor_key, fsm_buffer_ptr, num_s2_bytes);
+            uc_custom_cmd(major_key, minor_key, fsm_buffer_ptr, num_s2_bytes);
             break;
         case MAJOR_KEY_RESET:
             uc_reset();

@@ -23,22 +23,29 @@
 #include "uc-generic-io.h"
 #include <Servo.h>
 
+// Set and clear bit helpers
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+
+// Define extern variables
+const uint8_t uc_dio_num_pins = 14;
+const uint8_t uc_aio_num_pins = 6;
+// Pulled from arduino-uno-uart-minor-keys.h
+// Mapped to combo values of input and output
+const uint8_t uc_dio_input = IO_INPUT;
+const uint8_t uc_dio_output = IO_OUTPUT;
 
 // Buffer Variables
 const int len = 32;
 
-// Setup pin watch for DIO
-const uint8_t num_DIO = 14;
-uint8_t DIO_SET[num_DIO];
-uint16_t DIO_VAL[num_DIO];
-Servo DIO_SERVO[num_DIO];
+// Setup pin setting info and watch arrays
+uint8_t DIO_SET[uc_dio_num_pins];
+uint16_t DIO_VAL[uc_dio_num_pins];
+Servo DIO_SERVO[uc_dio_num_pins];
 float PWM_SCALE = 255.0f / 100.0f;
 
 // Setup pin watch for AIO
-const uint8_t num_AIO = 6;
-// No char array since no Analog outputs
+// No arrays since no Analog outputs
 
 // Setup map values for AIO (0-5V)
 float AIO_LOW = 0.0f;
@@ -48,15 +55,17 @@ float AIO_RANGE = 100.0f;
 float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 
 // Read array (more DIO than AIO)
-const uint8_t dio_data_len = 2*num_DIO;
-const uint8_t aio_data_len = 2*num_AIO;
-uint8_t read_data[dio_data_len];
+uint16_t read_data[uc_dio_num_pins];
 
-// Just ignore these functions for now
-void uc_data_transmit(uint8_t, const uint8_t*, uint8_t) {}
-void uc_programmer(uint8_t, const uint8_t*, uint8_t) {}
-void uc_custom_cmd(uint8_t, const uint8_t*, uint8_t) {}
-void uc_aio(uint8_t pin_num, uint8_t setting, uint16_t value) {}
+// Define unused externs (not implemented yet)
+void uc_data_transmit(uint8_t, uint8_t, const uint8_t*, uint8_t) {}
+void uc_programmer(uint8_t, uint8_t, const uint8_t*, uint8_t) {}
+void uc_custom_cmd(uint8_t, uint8_t, const uint8_t*, uint8_t) {}
+
+// Ignore uc_aio_set (can't use on arudino)
+void uc_aio_set(uint8_t, uint8_t, uint16_t) {}
+
+// Ignore uc_remote_conn (not implemented yet)
 void uc_remote_conn() {}
 
 // Function prototypes
@@ -90,10 +99,9 @@ void loop()
 // Reset all internal values, for use with new connections
 void uc_reset()
 {
-    uint8_t VALUE;
-    for (int i = 0; i < num_DIO; i++)
+    // Clear any running DIO functions (PWM and servo)
+    for (uint8_t i = 0; i < uc_dio_num_pins; i++)
     {
-        VALUE = DIO_SET[i];
         switch (DIO_SET[i])
         {
             case IO_PWM:
@@ -130,7 +138,12 @@ uint8_t uc_getch()
     return Serial.read();
 }
 
-void uc_delay(uint32_t ms)
+void uc_delay_us(uint32_t us)
+{
+    delayMicroseconds(us);
+}
+
+void uc_delay_ms(uint32_t ms)
 {
     delay(ms);
 }
@@ -145,63 +158,60 @@ uint8_t uc_send(uint8_t* data, uint32_t data_len)
     return Serial.write(data, data_len);
 }
 
-// Read and return the DIO states
-void uc_dio_read_all()
+// Read and return the DIO state
+uint16_t uc_dio_read(uint8_t pin_num)
 {
-    // Setup variables
-    uint16_t val;
-    uint8_t j = 0;    
+    // Identify & read pin
+    switch (DIO_SET[pin_num])
+    {
+        case IO_INPUT:
+            if (pin_num < 8) return (PIND & (1 << pin_num)) ? IO_ON : IO_OFF;
+            else return (PINB & (1 << (pin_num - 8))) ? IO_ON : IO_OFF;
+            break;
+        case IO_PWM:
+        case IO_OUTPUT:
+        case IO_SERVO_US:
+        case IO_SERVO_DEG:
+            return DIO_VAL[pin_num];
+            break;
+        default:
+            return 0;
+            break;
+    }
+}
 
+// Read and return the DIO states
+uint16_t* uc_dio_read_all()
+{
     // Compose data
-    for (uint8_t i = 0; i < num_DIO; i++)
-    {        
-        // Iterate over pins
-        switch (DIO_SET[i])
-        {
-            case IO_INPUT:
-                if (i < 8) val = (PIND & (1 << i)) ? IO_ON : IO_OFF;
-                else val = (PINB & (1 << (i - 8))) ? IO_ON : IO_OFF;
-                break;
-            case IO_PWM:
-            case IO_OUTPUT:
-            case IO_SERVO_US:
-            case IO_SERVO_DEG:
-                val = DIO_VAL[i];
-                break;
-            default:
-                val = 0;
-                break;
-        }
-
+    for (uint8_t i = 0; i < uc_dio_num_pins; i++)
+    {
         // Add pin value to list (convert to big endian)
-        *((uint16_t*)(read_data + j)) = __builtin_bswap16(val);
-        j += 2;
+        read_data[i] = __builtin_bswap16(uc_dio_read(i));
     }
 
     // Send data to GUI (use fsm_send to add checksum)
-    fsm_send(MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ, (uint8_t*) read_data, j);
+    return read_data;
+}
+
+// Read and return the AIO state
+uint16_t uc_aio_read(uint8_t pin_num)
+{
+    return (uint16_t) (AIO_SCALE * analogRead(pin_num));
 }
 
 // Read and return the AIO states
-void uc_aio_read_all()
+uint16_t* uc_aio_read_all()
 {
-    // Setup variables
-    uint16_t val;
-    uint8_t j = 0;
-
     // Compose data
-    for (uint8_t i = 0; i < num_AIO; i++)
+    for (uint8_t i = 0; i < uc_aio_num_pins; i++)
     {
-        // Scale value
-        val = (uint16_t) (AIO_SCALE * analogRead(i));
-
         // Add pin value to list (convert to big endian)
-        *((uint16_t*)(read_data + j)) = __builtin_bswap16(val);
-        j += 2;
+        read_data[i] = __builtin_bswap16(uc_aio_read(i));
     }
 
-    // Send data to GUI (use fsm_send to add checksum)
-    fsm_send(MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ, (uint8_t*) read_data, j);
+    // Return a pointer to read_data array
+    return read_data;
 }
 
 // Connect PWM timer
