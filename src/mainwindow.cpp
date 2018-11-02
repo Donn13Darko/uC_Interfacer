@@ -225,7 +225,7 @@ void MainWindow::on_Speed_Combo_activated(int)
 {
     switch (getConnType())
     {
-        case CONN_TYPE_RS_232:
+        case CONN_TYPE_SERIAL_COM_PORT:
         {
             if (ui->Speed_Combo->currentText() == "Other")
                 GUI_HELPER::getUserString(&speed, "Custom Baudrate", "Baudrate");
@@ -259,19 +259,20 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     // Try to connect to the device
     switch (getConnType())
     {
-        case CONN_TYPE_RS_232:
+        case CONN_TYPE_SERIAL_COM_PORT:
         {
             // Create a new settings struct
-            Serial_RS232_Settings dev_settings = Serial_RS232_Settings_DEFAULT;
+            Serial_COM_Port_Settings dev_settings = Serial_COM_Port_Settings_DEFAULT;
 
             // Call parse function
             QMap<QString, QVariant> tmpMap;
-            options_serial_rs232(&main_options_settings,
-                                 configMap->value(ui->ConnType_Combo->currentText(), &tmpMap),
-                                 &dev_settings);
+            options_serial_com_port(&main_options_settings,
+                                    configMap->value(ui->ConnType_Combo->currentText(),
+                                                     &tmpMap),
+                                    &dev_settings);
 
             // Create new object
-            device = new Serial_RS232(&dev_settings, this);
+            device = new SERIAL_COM_PORT(&dev_settings, this);
             break;
         }
         case CONN_TYPE_TCP_CLIENT:
@@ -588,14 +589,14 @@ void MainWindow::updateConnInfoCombo()
     // Otherwise handle based on connection type
     switch (getConnType())
     {
-        case CONN_TYPE_RS_232:
+        case CONN_TYPE_SERIAL_COM_PORT:
         {
             if (!updateConnInfo->isActive()) {
                 updateConnInfo->start(1000);
                 ui->ConnInfo_Combo->setEditable(false);
             }
 
-            QStringList* avail = Serial_RS232::getDevices();
+            QStringList* avail = SERIAL_COM_PORT::getDevices();
             if (avail->length() != 0)
             {
                 QString curr = ui->ConnInfo_Combo->currentText();
@@ -762,7 +763,7 @@ QStringList MainWindow::getConnSpeeds()
     // Returns the available speeds for the device type
     switch (getConnType())
     {
-        case CONN_TYPE_RS_232: return Serial_RS232::Baudrate_Defaults;
+        case CONN_TYPE_SERIAL_COM_PORT: return SERIAL_COM_PORT::Baudrate_Defaults;
         default: return {};
     }
 }
@@ -806,9 +807,9 @@ void MainWindow::update_options(MoreOptions_struct* options)
     }
 }
 
-void MainWindow::options_serial_rs232(MoreOptions_struct *options,
-                                      QMap<QString, QVariant> *groupMap,
-                                      Serial_RS232_Settings *settings)
+void MainWindow::options_serial_com_port(MoreOptions_struct *options,
+                                         QMap<QString, QVariant> *groupMap,
+                                         Serial_COM_Port_Settings *settings)
 {
     // Add basic info
     settings->port = ui->ConnInfo_Combo->currentText();

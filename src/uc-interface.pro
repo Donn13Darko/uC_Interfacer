@@ -26,7 +26,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    communication/serial-rs232.cpp \
     user-interfaces/gui-base.cpp \
     user-interfaces/gui-pin-io-base.cpp \
     user-interfaces/gui-8aio-16dio-comm.cpp \
@@ -46,11 +45,11 @@ SOURCES += \
     communication/comms-base.cpp \
     checksums/checksum-exe.c \
     gui-helpers/gui-helper.cpp \
-    gui-helpers/gui-more-options.cpp
+    gui-helpers/gui-more-options.cpp \
+    communication/serial-com-port.cpp
 
 HEADERS += \
     mainwindow.h \
-    communication/serial-rs232.h \
     user-interfaces/gui-base.h \
     user-interfaces/gui-pin-io-base.h \
     user-interfaces/gui-8aio-16dio-comm.h \
@@ -78,7 +77,8 @@ HEADERS += \
     user-interfaces/gui-base-major-keys.h \
     checksums/checksum-exe.h \
     gui-helpers/gui-helper.h \
-    gui-helpers/gui-more-options.h
+    gui-helpers/gui-more-options.h \
+    communication/serial-com-port.h
 
 FORMS += \
     mainwindow.ui \

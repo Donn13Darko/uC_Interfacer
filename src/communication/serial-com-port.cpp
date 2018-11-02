@@ -16,39 +16,39 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "serial-rs232.h"
+#include "serial-com-port.h"
 
 QStringList
-Serial_RS232::Baudrate_Defaults({
+SERIAL_COM_PORT::Baudrate_Defaults({
                                     "1200", "2400", "4800",
                                     "9600", "19200", "39400",
                                     "57600", "115200", "230400",
                                     "460800", "921600", "Other"
                                 });
 
-Serial_RS232::Serial_RS232(Serial_RS232_Settings* serial_settings, QObject *parent) :
+SERIAL_COM_PORT::SERIAL_COM_PORT(Serial_COM_Port_Settings* serial_settings, QObject *parent) :
     COMMS_BASE(parent)
 {
     // Create new serial port
-    rs232 = new QSerialPort(this);
-    initSuccess = (initSuccess && rs232);
+    serial_com_port = new QSerialPort(this);
+    initSuccess = (initSuccess && serial_com_port);
     if (!initSuccess) return;
 
     // Call parser for settings
     parseSettings(serial_settings);
 
-    connect(rs232, SIGNAL(readyRead()),
+    connect(serial_com_port, SIGNAL(readyRead()),
             this, SLOT(read()));
 }
 
-Serial_RS232::~Serial_RS232()
+SERIAL_COM_PORT::~SERIAL_COM_PORT()
 {
     if (isConnected()) close();
 
-    delete rs232;
+    delete serial_com_port;
 }
 
-void Serial_RS232::open()
+void SERIAL_COM_PORT::open()
 {
     if (!initSuccess)
     {
@@ -56,10 +56,10 @@ void Serial_RS232::open()
         return;
     }
 
-    connected = rs232->open(QIODevice::ReadWrite);
+    connected = serial_com_port->open(QIODevice::ReadWrite);
     if (isConnected())
     {
-        connect(rs232, SIGNAL(errorOccurred(QSerialPort::SerialPortError)),
+        connect(serial_com_port, SIGNAL(errorOccurred(QSerialPort::SerialPortError)),
                 this, SLOT(checkError(QSerialPort::SerialPortError)));
         emit deviceConnected();
     } else
@@ -68,12 +68,12 @@ void Serial_RS232::open()
     }
 }
 
-bool Serial_RS232::isConnected()
+bool SERIAL_COM_PORT::isConnected()
 {
     return connected;
 }
 
-QStringList* Serial_RS232::getDevices()
+QStringList* SERIAL_COM_PORT::getDevices()
 {
     QStringList* portNames = new QStringList();
     QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
@@ -85,39 +85,39 @@ QStringList* Serial_RS232::getDevices()
     return portNames;
 }
 
-void Serial_RS232::close()
+void SERIAL_COM_PORT::close()
 {
-    rs232->close();
+    serial_com_port->close();
     connected = false;
 }
 
-void Serial_RS232::write(QByteArray writeData)
+void SERIAL_COM_PORT::write(QByteArray writeData)
 {
     writeLock->lock();
 
     qDebug() << "S: " << writeData;
-    rs232->write((const QByteArray) writeData);
-    rs232->flush();
+    serial_com_port->write((const QByteArray) writeData);
+    serial_com_port->flush();
 
     writeLock->unlock();
 }
 
-void Serial_RS232::read()
+void SERIAL_COM_PORT::read()
 {
     readLock->lock();
-    QByteArray recvData = rs232->readAll();
+    QByteArray recvData = serial_com_port->readAll();
     emit readyRead(recvData);
     qDebug() << "R: " << recvData;
     readLock->unlock();
 }
 
-void Serial_RS232::checkError(QSerialPort::SerialPortError)
+void SERIAL_COM_PORT::checkError(QSerialPort::SerialPortError)
 {
     connected = false;
     emit deviceDisconnected();
 }
 
-void Serial_RS232::parseSettings(Serial_RS232_Settings* serial_settings)
+void SERIAL_COM_PORT::parseSettings(Serial_COM_Port_Settings* serial_settings)
 {
     // Set port name
     if (serial_settings->port.isEmpty())
@@ -126,39 +126,39 @@ void Serial_RS232::parseSettings(Serial_RS232_Settings* serial_settings)
         return;
     } else
     {
-        rs232->setPortName(serial_settings->port);
+        serial_com_port->setPortName(serial_settings->port);
     }
 
     // Try setting baudrate (sets direction to All, baudrate can't be 0)
     initSuccess = (initSuccess
                    && serial_settings->baudrate
-                   && rs232->setBaudRate(serial_settings->baudrate));
+                   && serial_com_port->setBaudRate(serial_settings->baudrate));
     if (!initSuccess) return;
 
     // Try setting dataBits, (must be between 5 and 8)
     initSuccess = (initSuccess
                    && (5 <= serial_settings->dataBits)
                    && (serial_settings->dataBits <= 8)
-                   && rs232->setDataBits((QSerialPort::DataBits) serial_settings->dataBits));
+                   && serial_com_port->setDataBits((QSerialPort::DataBits) serial_settings->dataBits));
     if (!initSuccess) return;
 
     // Try setting flow control (must be less than 2, can be 0)
     initSuccess = (initSuccess
                    && (serial_settings->flowControl <= 2)
-                   && rs232->setFlowControl((QSerialPort::FlowControl) serial_settings->flowControl));
+                   && serial_com_port->setFlowControl((QSerialPort::FlowControl) serial_settings->flowControl));
     if (!initSuccess) return;
 
     // Try setting parity (must be less than 5 and not 1, can be 0)
     initSuccess = (initSuccess
                    && (serial_settings->parity != 1)
                    && (serial_settings->parity <= 5)
-                   && rs232->setParity((QSerialPort::Parity) serial_settings->parity));
+                   && serial_com_port->setParity((QSerialPort::Parity) serial_settings->parity));
     if (!initSuccess) return;
 
     // Try setting stop bits (must be between 1 and 3)
     initSuccess = (initSuccess
                    && (1 <= serial_settings->stopBits)
                    && (serial_settings->stopBits <= 3)
-                   && rs232->setStopBits((QSerialPort::StopBits) serial_settings->stopBits));
+                   && serial_com_port->setStopBits((QSerialPort::StopBits) serial_settings->stopBits));
     if (!initSuccess) return;
 }

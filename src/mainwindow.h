@@ -28,7 +28,7 @@
 
 #include "gui-helpers/gui-more-options.h"
 
-#include "communication/serial-rs232.h"
+#include "communication/serial-com-port.h"
 #include "communication/tcp-client.h"
 #include "communication/tcp-server.h"
 #include "communication/udp-socket.h"
@@ -48,7 +48,7 @@ typedef enum {
 // Must be in same order as supportedProtocolsList
 typedef enum {
     CONN_TYPE_ERROR = 0,
-    CONN_TYPE_RS_232,
+    CONN_TYPE_SERIAL_COM_PORT,
     CONN_TYPE_TCP_CLIENT,
     CONN_TYPE_TCP_SERVER,
     CONN_TYPE_UDP_SOCKET
@@ -135,9 +135,9 @@ private:
     void update_options(MoreOptions_struct *options);
 
     // Connection option parsers
-    void options_serial_rs232(MoreOptions_struct *options,
-                              QMap<QString, QVariant>* groupMap,
-                              Serial_RS232_Settings* settings);
+    void options_serial_com_port(MoreOptions_struct *options,
+                                 QMap<QString, QVariant>* groupMap,
+                                 Serial_COM_Port_Settings* settings);
 };
 
 #endif // MAINWINDOW_H

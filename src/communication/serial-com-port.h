@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef SERIAL_RS232_H
-#define SERIAL_RS232_H
+#ifndef SERIAL_COM_PORT_H
+#define SERIAL_COM_PORT_H
 
 #include "comms-base.h"
 #include <QSerialPort>
@@ -30,18 +30,18 @@ typedef struct {
     uint8_t flowControl;
     uint8_t parity;
     uint8_t stopBits;
-} Serial_RS232_Settings;
-#define Serial_RS232_Settings_DEFAULT Serial_RS232_Settings{\
+} Serial_COM_Port_Settings;
+#define Serial_COM_Port_Settings_DEFAULT Serial_COM_Port_Settings{\
     .port="", .baudrate=9600, .dataBits=8,\
     .flowControl=0, .parity=0, .stopBits=1}
 
-class Serial_RS232 : public COMMS_BASE
+class SERIAL_COM_PORT : public COMMS_BASE
 {
     Q_OBJECT
 
 public:
-    Serial_RS232(Serial_RS232_Settings* serial_settings, QObject *parent = NULL);
-    ~Serial_RS232();
+    SERIAL_COM_PORT(Serial_COM_Port_Settings* serial_settings, QObject *parent = NULL);
+    ~SERIAL_COM_PORT();
 
     virtual void open();
     virtual void close();
@@ -58,9 +58,9 @@ private slots:
     void checkError(QSerialPort::SerialPortError);
 
 private:
-    QSerialPort *rs232;
+    QSerialPort *serial_com_port;
 
-    void parseSettings(Serial_RS232_Settings* serial_settings);
+    void parseSettings(Serial_COM_Port_Settings* serial_settings);
 };
 
-#endif // SERIAL_RS232_H
+#endif // SERIAL_COM_PORT_H
