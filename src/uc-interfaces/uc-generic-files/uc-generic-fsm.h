@@ -60,7 +60,9 @@ extern void uc_reset_buffers();
 /* Removes & returns one byte from received */
 extern uint8_t uc_getch();
 /* Waits for timeout milliseconds (args: timeout) */
-extern void uc_delay(uint32_t ms);
+extern void uc_delay_ms(uint32_t ms);
+/* Waits for timeout microseconds (args: timeout) */
+extern void uc_delay_us(uint32_t us);
 /* Returns number of bytes available */
 extern uint8_t uc_bytes_available();
 /* Sends data across the connection, returns number of bytes sent */

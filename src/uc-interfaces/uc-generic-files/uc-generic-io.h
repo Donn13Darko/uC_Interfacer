@@ -46,12 +46,14 @@ void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
 
 /*** Following extern functions must be defined on a per uC basis ***/
 
-/* Set or read the DIO value */
-extern void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value);
-extern void uc_dio_read();
-/* Set or read the AIO value */
+/* Set or read the DIO value(s) */
+extern void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value);
+extern uint16_t uc_dio_read(uint8_t pin_num)
+extern uint16_t* uc_dio_read_all();
+/* Set or read the AIO value(s) */
 extern void uc_aio(uint8_t pin_num, uint8_t setting, uint16_t value);
-extern void uc_aio_read();
+extern uint16_t uc_aio_read(uint8_t pin_num)
+extern uint16_t* uc_aio_read_all();
 /* Set Remote Conn info */
 extern void uc_remote_conn();
 

@@ -146,7 +146,7 @@ uint8_t uc_send(uint8_t* data, uint32_t data_len)
 }
 
 // Read and return the DIO states
-void uc_dio_read()
+void uc_dio_read_all()
 {
     // Setup variables
     uint16_t val;
@@ -183,7 +183,7 @@ void uc_dio_read()
 }
 
 // Read and return the AIO states
-void uc_aio_read()
+void uc_aio_read_all()
 {
     // Setup variables
     uint16_t val;
@@ -261,8 +261,11 @@ void set_pwm_off(uint8_t pin)
 }
 
 // Set the DIO as per the command
-void uc_dio(uint8_t pin_num, uint8_t setting, uint16_t value)
+void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value)
 {
+    // Verify pin_num in range
+    if (num_DIO < pin_num) return;
+
     // If setting changed
     if (DIO_SET[pin_num] != setting)
     {

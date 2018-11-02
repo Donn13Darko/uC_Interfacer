@@ -26,9 +26,14 @@ void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
     {
         // If not enough bytes for command return
         if ((minor_key == MINOR_KEY_IO_DIO_SET)
-                || (minor_key == MINOR_KEY_IO_AIO_SET))
+            || (minor_key == MINOR_KEY_IO_AIO_SET))
         {
             return;
+        } else if (((minor_key == MINOR_KEY_IO_DIO_READ_PIN)
+                || (minor_key == MINOR_KEY_IO_AIO_READ_PIN))
+            && buffer_len != 1)
+        {
+
         }
     } else
     {
@@ -40,16 +45,22 @@ void uc_io(uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
     switch (minor_key)
     {
         case MINOR_KEY_IO_DIO_SET:
-            uc_dio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
+            uc_dio_set(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
         case MINOR_KEY_IO_AIO_SET:
-            uc_aio(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
+            uc_aio_set(buffer[s2_io_pin_num_loc], buffer[s2_io_combo_loc], value);
             break;
-        case MINOR_KEY_IO_DIO_READ:
-            uc_dio_read();
+        case MINOR_KEY_IO_DIO_READ_PIN:
+            uc_dio_read_pin(buffer[s2_io_pin_num_loc]);
             break;
-        case MINOR_KEY_IO_AIO_READ:
-            uc_aio_read();
+        case MINOR_KEY_IO_AIO_READ_PIN:
+            uc_aio_read_pin(buffer[s2_io_pin_num_loc]);
+            break;
+        case MINOR_KEY_IO_DIO_READ_ALL:
+            uc_dio_read_all();
+            break;
+        case MINOR_KEY_IO_AIO_READ_ALL:
+            uc_aio_read_all();
             break;
         case MINOR_KEY_IO_REMOTE_CONN:
             uc_remote_conn();

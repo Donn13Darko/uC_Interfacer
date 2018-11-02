@@ -524,7 +524,7 @@ bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
     // Wait for num_bytes to be received
     while (uc_bytes_available() < num_bytes)
     {
-        uc_delay(check_delay);
+        uc_delay_ms(check_delay);
         wait_time += check_delay;
         if (timeout < wait_time) return false;
     }

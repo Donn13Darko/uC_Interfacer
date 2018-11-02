@@ -216,8 +216,8 @@ void GUI_8AIO_16DIO_COMM::updateValues()
 {
     uint8_t requestType;
     QTimer *caller = (QTimer*) sender();
-    if (caller == &DIO_READ) requestType = MINOR_KEY_IO_DIO_READ;
-    else if (caller == &AIO_READ) requestType = MINOR_KEY_IO_AIO_READ;
+    if (caller == &DIO_READ) requestType = MINOR_KEY_IO_DIO_READ_ALL;
+    else if (caller == &AIO_READ) requestType = MINOR_KEY_IO_AIO_READ_ALL;
     else return;
 
     send({
@@ -231,8 +231,8 @@ void GUI_8AIO_16DIO_COMM::recordLogData()
     if (!logIsRecording) return;
 
     PinTypeInfo pInfo;
-    if (getPinTypeInfo(MINOR_KEY_IO_AIO_READ, &pInfo)) recordPinValues(&pInfo);
-    if (getPinTypeInfo(MINOR_KEY_IO_DIO_READ, &pInfo)) recordPinValues(&pInfo);
+    if (getPinTypeInfo(MINOR_KEY_IO_AIO_READ_ALL, &pInfo)) recordPinValues(&pInfo);
+    if (getPinTypeInfo(MINOR_KEY_IO_DIO_READ_ALL, &pInfo)) recordPinValues(&pInfo);
 
 }
 
@@ -512,12 +512,14 @@ bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
     {
         case MINOR_KEY_IO_AIO:
         case MINOR_KEY_IO_AIO_SET:
-        case MINOR_KEY_IO_AIO_READ:
+        case MINOR_KEY_IO_AIO_READ_PIN:
+        case MINOR_KEY_IO_AIO_READ_ALL:
             infoPtr->grid = ui->AIO_Grid;
             return base;
         case MINOR_KEY_IO_DIO:
         case MINOR_KEY_IO_DIO_SET:
-        case MINOR_KEY_IO_DIO_READ:
+        case MINOR_KEY_IO_DIO_READ_PIN:
+        case MINOR_KEY_IO_DIO_READ_ALL:
             infoPtr->grid = ui->DIO_Grid;
             return base;
         case MINOR_KEY_IO_REMOTE_CONN:
@@ -569,8 +571,8 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
     switch (minorKey)
     {
         // If read data
-        case MINOR_KEY_IO_AIO_READ:
-        case MINOR_KEY_IO_DIO_READ:
+        case MINOR_KEY_IO_AIO_READ_ALL:
+        case MINOR_KEY_IO_DIO_READ_ALL:
         {
             // values is an array of uint16_t's for each pin in the set
             // Loop over each pin setting its value
