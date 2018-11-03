@@ -59,6 +59,9 @@ public:
     // Add gui tab to known list
     void add_gui(GUI_BASE *new_gui);
 
+    // Default chunk size
+    static const uint32_t default_chunk_size = 32;
+
 signals:
     // Write data
     void write_data(QByteArray data);
@@ -131,7 +134,6 @@ private:
 
     // Chunk variables
     uint32_t chunk_size;
-    static const uint32_t default_chunk_size = 32;
 
     // GUI List - Position == key
     QList<QList<GUI_BASE*>> known_guis;
@@ -140,10 +142,8 @@ private:
     QList<checksum_struct> gui_checksums;
     static QMap<QString, checksum_struct> supportedChecksums;
 
-    // Relavant GUI bases
-
     // Checksum helpers
-    static void getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
+    void getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
                             uint8_t** checksum_array, uint32_t* checksum_size);
     static void copy_checksum_info(checksum_struct *cpy_to, checksum_struct *cpy_from);
     static void delete_checksum_info(checksum_struct *check);

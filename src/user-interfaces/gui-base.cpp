@@ -59,6 +59,9 @@ void GUI_BASE::reset_remote()
 
 void GUI_BASE::reset_gui()
 {
+    // Clear formatted
+    rcvd_formatted.clear();
+
     // Reset progress bars info
     start_data = true;
     current_recv_length = 0;
@@ -73,18 +76,9 @@ uint8_t GUI_BASE::get_GUI_key()
     return gui_key;
 }
 
-void GUI_BASE::parseConfigMap(QMap<QString, QVariant>* configMap)
+void GUI_BASE::parseConfigMap(QMap<QString, QVariant>*)
 {
-    // Default variable for holding each setting
-    QVariant setting;
-
-    // Get gui type checksum
-    setting = configMap->value("checksum_set");
-    if (!setting.isNull())
-    {
-        // Set checksum type struct
-        set_gui_checksum(setting.toStringList());
-    }
+    // Default do nothing
 }
 
 void GUI_BASE::receive_gui(QByteArray)

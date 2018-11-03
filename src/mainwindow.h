@@ -71,7 +71,6 @@ public:
 
 public slots:
     void reset_remote();
-    void reset_guis();
 
 private slots:
     void on_Device_Combo_activated(int);

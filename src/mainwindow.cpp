@@ -75,8 +75,7 @@ MainWindow::MainWindow(QWidget *parent) :
     main_options_settings.send_little_endian = false;
     main_options_settings.chunk_size = GUI_COMM_BRIDGE::default_chunk_size;
     more_options = new GUI_MORE_OPTIONS(&main_options_settings, &local_options_settings,
-                                        supportedGUIsList, GUI_COMM_BRIDGE::get_supported_checksums(),
-                                        this);
+                                        supportedGUIsList, GUI_COMM_BRIDGE::get_supported_checksums());
     more_options->setModal(true);
     connect(more_options, SIGNAL(accepted()),
             this, SLOT(moreOptions_accepted()),
@@ -391,7 +390,7 @@ void MainWindow::on_DeviceConnected() {
                     }
 
                     // Check chunk size setting (overrides if options setting is default)
-                    if ((main_options_settings.chunk_size == GUI_BASE::default_chunk_size)
+                    if ((main_options_settings.chunk_size == GUI_COMM_BRIDGE::default_chunk_size)
                             && groupMap->contains("chunk_size"))
                     {
                         main_options_settings.chunk_size = groupMap->value("chunk_size").toInt();
@@ -730,51 +729,17 @@ QStringList MainWindow::getConnSpeeds()
 void MainWindow::update_options(MoreOptions_struct* options)
 {
     // Set chunk size
-    GUI_BASE::set_chunk_size(options->chunk_size);
+    comm_bridge->set_chunk_size(options->chunk_size);
 
-    // Set generic checksum
+    // Set checksums
     QStringList checksum_info;
-    QString gui_name = getGUIName(MAJOR_KEY_GENERAL_SETTINGS);
-    if (options->checksum_map.contains(gui_name))
+    foreach (QString gui_name, options->checksum_map.keys())
     {
         // Get checksum setting
         checksum_info = options->checksum_map.value(gui_name);
 
-        // Set the new generic checksum
-        comm_bridge->set_generic_checksum(checksum_info);
-    };
-
-    foreach (QString gui_name, supportedGUIsList)
-    {
-        if (options->checksum_map.contains(gui_name))
-        {
-            // Get checksum setting
-            checksum_info = options->checksum_map.value(gui_name);
-
-            // Set the new checksum
-            comm_bridge->set_gui_checksum(getGUIType(gui_name), checksum_info);
-        }
-    }
-
-    // Iterate over each tab and apply any changes
-    GUI_BASE* tab_holder;
-    uint8_t num_tabs = ui->ucOptions->count();
-    for (uint8_t i = 0; i < num_tabs; i++)
-    {
-        // Get tab
-        tab_holder = (GUI_BASE*) ui->ucOptions->widget(i);
-        if (!tab_holder) continue;
-
-        // Set gui checksum
-        gui_name = getGUIName(tab_holder->get_GUI_key());
-        if (options->checksum_map.contains(gui_name))
-        {
-            // Get checksum setting
-            checksum_info = options->checksum_map.value(gui_name);
-
-            // Set the new gui checksum
-            tab_holder->set_gui_checksum(checksum_info);
-        }
+        // Set the new checksum
+        comm_bridge->set_gui_checksum(getGUIType(gui_name), checksum_info);
     }
 }
 

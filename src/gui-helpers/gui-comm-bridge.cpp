@@ -60,9 +60,6 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     }
 
     // Connect data loop signals and slots
-    connect(this, SIGNAL(readyRead(QByteArray)),
-            &dataLoop, SLOT(quit()),
-            Qt::DirectConnection);
     connect(&dataTimer, SIGNAL(timeout()),
             &dataLoop, SLOT(quit()),
             Qt::DirectConnection);
@@ -109,6 +106,11 @@ QStringList GUI_COMM_BRIDGE::get_supported_checksums()
 
 void GUI_COMM_BRIDGE::set_gui_checksum(uint8_t gui_key, QStringList new_gui_checksum)
 {
+    // Get current checksum
+    uint8_t gui_list_pos = (gui_key >> s1_major_key_bit_shift)-1;
+    if (gui_checksums.length() < gui_list_pos) return;
+    checksum_struct current_check = gui_checksums.at(gui_list_pos);
+
     // Get default struct
     checksum_struct default_check = supportedChecksums.value(
                 new_gui_checksum.at(checksum_name_pos),
@@ -116,14 +118,14 @@ void GUI_COMM_BRIDGE::set_gui_checksum(uint8_t gui_key, QStringList new_gui_chec
                 );
 
     // Copy default information
-    copy_checksum_info(&gui_checksum, &default_check);
+    copy_checksum_info(&current_check, &default_check);
 
     // Copy executable path if new checksum is exe & exe provided
-    set_checksum_exe(&gui_checksum,
+    set_checksum_exe(&current_check,
                      new_gui_checksum.at(checksum_exe_pos));
 
     // If checksum_start provided, overwrite default
-    set_checksum_start(&gui_checksum,
+    set_checksum_start(&current_check,
                        new_gui_checksum.at(checksum_start_pos),
                        new_gui_checksum.at(checksum_start_base_pos).toInt());
 }
@@ -155,7 +157,7 @@ void GUI_COMM_BRIDGE::add_gui(GUI_BASE *new_gui)
     uint8_t gui_list_pos = (new_gui->get_GUI_key() >> s1_major_key_bit_shift)-1;
     if (known_guis.length() < gui_list_pos) return;
 
-    known_guis.at(gui_list_pos).append(new_gui);
+    ((QList<GUI_BASE*>) known_guis.at(gui_list_pos)).append(new_gui);
 }
 
 void GUI_COMM_BRIDGE::receive(QByteArray recvData)
@@ -413,14 +415,14 @@ void GUI_COMM_BRIDGE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArra
         emit reset();
     }
 
+    // Get sender info for emiting signals
+    GUI_BASE* sending_gui = (GUI_BASE*) sender();
+
     // Setup base variables
     QByteArray data, curr;
     uint32_t pos = 0;
     uint32_t end_pos = chunk.length();
-    bool emit_progress = (major_key == gui_key);
-
-    // Get sender info for emiting signals
-    GUI_BASE* sending_gui = sender();
+    bool emit_progress = (major_key == sending_gui->get_GUI_key());
 
     // Reset progress (if sending from gui)
     if (emit_progress) emit sending_gui->progress_update_send(0, "");
@@ -589,16 +591,9 @@ void GUI_COMM_BRIDGE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_
     uint8_t gui_list_pos = (checksum_key >> s1_major_key_bit_shift)-1;
 
     // Get checksum
-    checksum_struct* check;
-    if (gui_list_pos < gui_checksums.length())
-    {
-        // Set checksum info
-        check = &gui_checksums.at(gui_list_pos);
-    } else
-    {
-        // Set checksum info
-        check = &generic_checksum;
-    }
+    const checksum_struct* check;
+    if (gui_checksums.length() < gui_list_pos) return;
+    check = &(gui_checksums.at(gui_list_pos));
 
     // Set executable if using
     if (check->checksum_is_exe)
@@ -765,8 +760,8 @@ void GUI_COMM_BRIDGE::transmit(QByteArray data)
         // Wait for data read if CMD success and was data request
         // Resets will never request data back (only an ack)
         if (ack_status
-                && !base_flags
-                && isDataRequest(currData.at(s1_minor_key_loc)))
+                && !base_flags)
+//                && isDataRequest(currData.at(s1_minor_key_loc)))
         {
             do
             {
@@ -781,7 +776,6 @@ void GUI_COMM_BRIDGE::transmit(QByteArray data)
         {
             // Clear buffers (prevents key errors after reset)
             rcvd_raw.clear();
-            rcvd_formatted.clear();
             msgList.clear();
 
             // Clear reset active flag
