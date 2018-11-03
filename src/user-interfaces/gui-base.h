@@ -43,19 +43,19 @@ signals:
     void readyRead(QByteArray data);
 
     // File transmit
-    void transmit_file(uint8_t major_key, uint8_t minor_key, QString filePath);
-    void transmit_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep);
+    void transmit_file(quint8 major_key, quint8 minor_key, QString filePath);
+    void transmit_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep);
 
     // Chunk transmit
-    void transmit_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk = QByteArray(), bool force_envelope = false);
+    void transmit_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray(), bool force_envelope = false);
 
     // Send progress bar updates
     void progress_update_recv(int progress, QString label);
     void progress_update_send(int progress, QString label);
 
 public slots:
-    void reset_remote();
-    virtual void reset_gui();       // Must not call reset_remote()
+    // Resets the GUI (must not call reset_remote())
+    virtual void reset_gui();
 
 protected slots:
     // Receive and parse data
@@ -68,12 +68,7 @@ protected slots:
     virtual void set_progress_update_recv(int progress, QString label);
     virtual void set_progress_update_send(int progress, QString label);
 
-    // File sending
-    void send_file(uint8_t major_key, uint8_t minor_key, QString filePath);
-    void send_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep);
-
-    // Chunk sending
-    void send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk = QByteArray(), bool force_envelope = false);
+    // Chunk sending from list
     void send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk, bool force_envelope = false);
 
 protected:

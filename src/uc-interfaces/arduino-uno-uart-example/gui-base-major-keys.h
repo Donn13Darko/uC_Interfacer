@@ -27,7 +27,6 @@ extern "C"
 #include <stdint.h>
 
 // Major Keys enum
-static const uint8_t s1_major_key_bit_shift = 2;
 typedef enum {
     // Error and reset
     MAJOR_KEY_ERROR = 0,
@@ -35,19 +34,28 @@ typedef enum {
     // GUI Types (Major Keys)
     // Must be kept here and in same order as
     // supportedGUIsList in mainwindow.cpp
-    MAJOR_KEY_GENERAL_SETTINGS = 1 << 2,
-    MAJOR_KEY_WELCOME = 2 << 2,
-    MAJOR_KEY_IO = 3 << 2,
-    MAJOR_KEY_DATA_TRANSMIT = 4 << 2,
-    MAJOR_KEY_PROGRAMMER = 5 << 2,
-    MAJOR_KEY_CUSTOM_CMD = 6 << 2,
+    MAJOR_KEY_GENERAL_SETTINGS,
+    MAJOR_KEY_WELCOME,
+    MAJOR_KEY_IO,
+    MAJOR_KEY_DATA_TRANSMIT,
+    MAJOR_KEY_PROGRAMMER,
+    MAJOR_KEY_CUSTOM_CMD,
 
     // Reset cmds
-    MAJOR_KEY_RESET = 7 << 2,
+    MAJOR_KEY_RESET,
 
     // Action confirmations
-    MAJOR_KEY_ACK = 9 << 2
+    MAJOR_KEY_ACK
 } GUI_BASE_MAJOR_KEYS;
+
+// Num ;en bytes enum
+typedef enum {
+    num_s2_bits_0 = 0x00,
+    num_s2_bits_1 = 0x01,
+    num_s2_bits_2 = 0x02,
+    num_s2_bits_3 = 0x03,
+    num_s2_bits_4 = 0x04,
+} num_s2_len_bytes;
 
 /* First stage (s1) generic key positions */
 typedef enum {
@@ -60,8 +68,9 @@ typedef enum {
 // Variables
 static const uint32_t packet_timeout = 500; // ms
 static const uint8_t num_s1_bytes = s1_end_loc;
-static const uint8_t s1_major_key_bit_mask = 0xFC;
-static const uint8_t s1_num_s2_bytes_bit_mask = 0x03;
+static const uint8_t s1_major_key_byte_mask = 0x3F;
+static const uint8_t s1_num_s2_bits_byte_mask = 0x03;
+static const uint8_t s1_num_s2_bits_byte_shift = 6;
 extern uint32_t num_s2_bytes;
 
 /*

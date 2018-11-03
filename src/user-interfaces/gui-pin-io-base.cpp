@@ -93,7 +93,7 @@ void GUI_PIN_BASE::recordPinValues(PinTypeInfo *pInfo)
 
 void GUI_PIN_BASE::receive_gui(QByteArray recvData)
 {
-    // Verify correct major key
+    // Ignore commands not meant for this GUI
     if (recvData.at(s1_major_key_loc) != (char) gui_key)
         return;
 
@@ -490,7 +490,7 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
 void GUI_PIN_BASE::send_io(PinTypeInfo *pInfo, QByteArray data)
 {
     // Send msg (should only require a single send)
-    send_chunk(gui_key, pInfo->minorKey, data);
+    emit transmit_chunk(gui_key, pInfo->minorKey, data);
 }
 
 RangeList* GUI_PIN_BASE::makeRangeList(QString rangeInfo)

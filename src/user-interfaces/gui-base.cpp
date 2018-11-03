@@ -44,19 +44,6 @@ GUI_BASE::~GUI_BASE()
 {
 }
 
-void GUI_BASE::reset_remote()
-{
-    // Load reset CMD into msgList
-    send_chunk(MAJOR_KEY_RESET, 0);
-
-    /* Exiting here returngs control to the main event loop
-     * Required in order for the next packet to be sent
-     * if currently in waitForAck or waitForData
-     * conn_bridge will emit reset() once CMD is set which
-     * is tied to reset_gui()
-    */
-}
-
 void GUI_BASE::reset_gui()
 {
     // Clear formatted
@@ -88,9 +75,15 @@ void GUI_BASE::receive_gui(QByteArray)
 
 void GUI_BASE::on_ResetGUI_Button_clicked()
 {
-    // Reset the Remote
-    // (reset_remote() enforces a GUI reset)
-    reset_remote();
+    // Load reset CMD into msgList
+    emit transmit_chunk(MAJOR_KEY_RESET, 0);
+
+    /* Exiting here returngs control to the main event loop
+     * Required in order for the next packet to be sent
+     * if currently in waitForAck or waitForData
+     * conn_bridge will emit reset() once CMD is sent which
+     * then calls reset_gui()
+    */
 }
 
 void GUI_BASE::set_progress_update_recv(int, QString)
@@ -103,29 +96,12 @@ void GUI_BASE::set_progress_update_send(int, QString)
     // Default do nothing
 }
 
-void GUI_BASE::send_file(uint8_t major_key, uint8_t minor_key, QString filePath)
-{
-    emit transmit_file(major_key, minor_key, filePath);
-}
-
-void GUI_BASE::send_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep)
-{
-    emit transmit_file_chunked(major_key, minor_key, filePath, sep);
-}
-
-void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk, bool force_envelope)
-{
-    emit transmit_chunk(major_key, minor_key, chunk, force_envelope);
-}
-
 void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk, bool force_envelope)
 {
-    send_chunk(
-                major_key,
-                minor_key,
-                GUI_HELPER::initList_to_byteArray(chunk),
-                force_envelope
-                );
+    emit transmit_chunk(major_key, minor_key,
+                        GUI_HELPER::initList_to_byteArray(chunk),
+                        force_envelope
+                        );
 }
 
 bool GUI_BASE::isDataRequest(uint8_t)

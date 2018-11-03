@@ -163,6 +163,7 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
         switch (recvData.at(s1_minor_key_loc))
         {
             case MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE:
+            {
                 // Clear recv if clear on set checked
                 if (ui->ReadDataClearOnSet_CheckBox->isChecked())
                     on_ReadDataClear_Button_clicked();
@@ -170,11 +171,18 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
                 // Set expected length
                 set_expected_recv_length(data);
                 return;
+            }
             case MINOR_KEY_PROGRAMMER_DATA:
+            {
                 // Update current recv length with each packet
                 update_current_recv_length(data);
                 break;
+            }
         }
+    } else
+    {
+        // Ignore any CMDs not meant for this GUI
+        return;
     }
 
     // Insert into global array (for saving in original format)
@@ -261,7 +269,8 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
         data_line.replace(" ", "");
 
         // Convert to bytes and send across (assumes data in hex)
-        send_chunk(gui_key, MINOR_KEY_PROGRAMMER_DATA, QByteArray::fromHex(data_line.toUtf8()));
+        emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_DATA,
+                            QByteArray::fromHex(data_line.toUtf8()));
     }
 }
 

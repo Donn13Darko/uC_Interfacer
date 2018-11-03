@@ -69,9 +69,6 @@ public:
 
     void closeEvent(QCloseEvent* e);
 
-public slots:
-    void reset_remote();
-
 private slots:
     void on_Device_Combo_activated(int);
     void on_ConnType_Combo_currentIndexChanged(int);

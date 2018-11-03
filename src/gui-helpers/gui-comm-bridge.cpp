@@ -36,7 +36,7 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     QObject(parent)
 {
     // Setup base flags
-    base_flags = 0x00;
+    bridge_flags = 0x00;
 
     // Setup Ack variables
     ack_status = false;
@@ -54,9 +54,6 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     {
         // Set default checksum
         gui_checksums.append(DEFAULT_CHECKSUM_STRUCT);
-
-        // Add known guis
-        known_guis.append(QList<GUI_BASE*>());
     }
 
     // Connect data loop signals and slots
@@ -86,7 +83,9 @@ GUI_COMM_BRIDGE::~GUI_COMM_BRIDGE()
 {
     // Delete each GUIs checksum info
     foreach (checksum_struct gui_checksum, gui_checksums)
+    {
         delete_checksum_info(&gui_checksum);
+    }
 }
 
 size_t GUI_COMM_BRIDGE::get_chunk_size()
@@ -107,9 +106,8 @@ QStringList GUI_COMM_BRIDGE::get_supported_checksums()
 void GUI_COMM_BRIDGE::set_gui_checksum(uint8_t gui_key, QStringList new_gui_checksum)
 {
     // Get current checksum
-    uint8_t gui_list_pos = (gui_key >> s1_major_key_bit_shift)-1;
-    if (gui_checksums.length() < gui_list_pos) return;
-    checksum_struct current_check = gui_checksums.at(gui_list_pos);
+    if (!gui_key || (gui_checksums.length() < gui_key)) return;
+    checksum_struct current_check = gui_checksums.at(gui_key-1);
 
     // Get default struct
     checksum_struct default_check = supportedChecksums.value(
@@ -154,16 +152,27 @@ void GUI_COMM_BRIDGE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
 
 void GUI_COMM_BRIDGE::add_gui(GUI_BASE *new_gui)
 {
-    uint8_t gui_list_pos = (new_gui->get_GUI_key() >> s1_major_key_bit_shift)-1;
-    if (known_guis.length() < gui_list_pos) return;
+    // Get value list to insert in
+    if (!known_guis.contains(new_gui))
+        known_guis.append(new_gui);
+}
 
-    ((QList<GUI_BASE*>) known_guis.at(gui_list_pos)).append(new_gui);
+void GUI_COMM_BRIDGE::remove_gui(GUI_BASE *old_gui)
+{
+    // Remove all instances of gui from list
+    known_guis.removeAll(old_gui);
+}
+
+void GUI_COMM_BRIDGE::reset_remote()
+{
+    // Post the reset key, will emit reset()
+    send_chunk(MAJOR_KEY_RESET, 0, QByteArray(), false);
 }
 
 void GUI_COMM_BRIDGE::receive(QByteArray recvData)
 {
     // Check if recieving empty data array or exiting
-    if (recvData.isEmpty() || (base_flags & base_exit_flag)) return;
+    if (recvData.isEmpty() || (bridge_flags & bridge_close_flag)) return;
 
     // Add data to recv
     rcvd_raw.append(recvData);
@@ -173,15 +182,14 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
 
     // Setup loop variables
     bool exit_recv = false;
-    uint8_t major_key, minor_key, bits;
+    uint8_t major_key, minor_key, num_s2_bits;
     uint32_t expected_len, checksum_size;
     uint32_t rcvd_len = rcvd_raw.length();
     QByteArray tmp;
-    uint8_t gui_list_pos;
-    checksum_struct gui_checksum;
+    const checksum_struct* gui_checksum;
 
     // Recv Loop
-    while ((0 < rcvd_len) && !exit_recv && !(base_flags & base_exit_flag))
+    while ((0 < rcvd_len) && !exit_recv && !(bridge_flags & bridge_close_flag))
     {
         // Check to see if keys in rcvd
         expected_len = num_s1_bytes;
@@ -192,32 +200,19 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
         minor_key = (uchar) rcvd_raw.at(s1_minor_key_loc);
 
         // Decode keys
-        bits = major_key & s1_num_s2_bytes_bit_mask;
-        major_key &= s1_major_key_bit_mask;
+        num_s2_bits = (major_key >> s1_num_s2_bits_byte_shift) & s1_num_s2_bits_byte_mask;
+        major_key &= s1_major_key_byte_mask;
 
         // Adjust byte length of 3 (want uint32_t not uint24_t)
-        if (bits == 0x03) bits += 1;
+        if (num_s2_bits == num_s2_bits_3) num_s2_bits = num_s2_bits_4;
 
         // Check if byte length in received
-        expected_len += bits;
+        expected_len += num_s2_bits;
         if (rcvd_len < expected_len) break; // Break out of Recv Loop
 
-        // Get gui & verify gui key
-        gui_list_pos = (major_key >> s1_major_key_bit_shift)-1;
-        if (!(known_guis.length() < gui_list_pos))
-        {
-            // Clear rcvd if key error
-            rcvd_raw.clear();
-
-            // Ack error
-            send_ack(MAJOR_KEY_ERROR);
-
-            // Break out of Recv Loop
-            break;
-        }
-
-        // Select checksum
-        gui_checksum = gui_checksums.at(gui_list_pos);
+        // Select checksum (default to 0)
+        if (!major_key || (gui_checksums.length() < major_key)) gui_checksum = &gui_checksums.at(0);
+        else gui_checksum = &gui_checksums.at(major_key-1);
 
         // Key Switch
         switch (major_key)
@@ -227,17 +222,17 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
             case MAJOR_KEY_RESET:
             {
                 // Set generic checksum executable if using
-                if (gui_checksum.checksum_is_exe)
-                    set_executable_checksum_exe(gui_checksum.checksum_exe);
+                if (gui_checksum->checksum_is_exe)
+                    set_executable_checksum_exe(gui_checksum->checksum_exe);
 
                 // Verify enough bytes
-                checksum_size = gui_checksum.get_checksum_size();
+                checksum_size = gui_checksum->get_checksum_size();
                 exit_recv = (rcvd_len < (expected_len+checksum_size));
                 if (exit_recv) break;  // Break out of Key Switch
 
                 // Check Checksum (checksum failure handled in Act Switch)
                 exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(),
-                                            expected_len, &gui_checksum);
+                                            expected_len, gui_checksum);
 
                 // Act Switch
                 switch (major_key)
@@ -272,7 +267,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                             send_ack(major_key);
 
                             // Set reset flags to breakout of send_chunk
-                            base_flags |= base_send_chunk_flag;
+                            bridge_flags |= bridge_reset_send_chunk_flag;
 
                             // Emit reset to everything
                             emit reset();
@@ -299,7 +294,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
             {
                 // Parse num_s2_bytes
                 num_s2_bytes = GUI_HELPER::byteArray_to_uint32(
-                            rcvd_raw.mid(s1_num_s2_bytes_loc,bits));
+                            rcvd_raw.mid(s1_num_s2_bytes_loc,num_s2_bits));
 
                 // Check if second stage in rcvd
                 expected_len += num_s2_bytes;
@@ -307,9 +302,9 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                 if (exit_recv) break; // Break out of Key Switch
 
                 // Set gui checksum executable if using
-                if (gui_checksum.checksum_is_exe)
-                    set_executable_checksum_exe(gui_checksum.checksum_exe);
-                checksum_size = gui_checksum.get_checksum_size();
+                if (gui_checksum->checksum_is_exe)
+                    set_executable_checksum_exe(gui_checksum->checksum_exe);
+                checksum_size = gui_checksum->get_checksum_size();
 
                 // Check if checksum in rcvd
                 exit_recv = (rcvd_len < (expected_len+checksum_size));
@@ -317,7 +312,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
 
                 // Check Checksum
                 exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(),
-                                            expected_len, &gui_checksum);
+                                            expected_len, gui_checksum);
                 if (exit_recv)
                 {
                     // Clear rcvd if checksum error
@@ -334,14 +329,15 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                 tmp.clear();
                 tmp.append((char) major_key);
                 tmp.append((char) minor_key);
-                tmp.append(rcvd_raw.mid(s1_num_s2_bytes_loc+bits, num_s2_bytes));
+                tmp.append(rcvd_raw.mid(s1_num_s2_bytes_loc+num_s2_bits, num_s2_bytes));
 
                 // Ack success & set data status
                 send_ack(major_key);
                 data_status = true;
 
                 // Emit readyRead - Send to all registered base guis
-                foreach (GUI_BASE* gui, known_guis.at(gui_list_pos))
+                // (Indexing without check encforced by switch statement case)
+                foreach (GUI_BASE* gui, known_guis)
                     emit gui->readyRead(tmp);
 
                 // Remove data from rcvd_raw
@@ -373,40 +369,40 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
     rcvLock.unlock();
 
     // If exiting, check if ready
-    if (base_flags & base_exit_flag) close_bridge();
+    if (bridge_flags & bridge_close_flag) close_bridge();
 }
 
-void GUI_COMM_BRIDGE::send_file(uint8_t major_key, uint8_t minor_key, QString filePath)
+void GUI_COMM_BRIDGE::send_file(quint8 major_key, quint8 minor_key, QString filePath)
 {
     send_chunk(major_key, minor_key, GUI_HELPER::loadFile(filePath), true);
 }
 
-void GUI_COMM_BRIDGE::send_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep)
+void GUI_COMM_BRIDGE::send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep)
 {
     foreach (QByteArray chunk, GUI_HELPER::loadFile(filePath).split(sep))
     {
-        send_chunk(major_key, minor_key, chunk);
+        send_chunk(major_key, minor_key, chunk, false);
     }
 }
 
-void GUI_COMM_BRIDGE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk, bool force_envelope)
+void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope)
 {
-    // Verify this will terminate & not exiting
-    if ((chunk_size == 0) || (base_flags & base_exit_flag)) return;
+    // Verify this will terminate & bridge is open
+    if ((chunk_size == 0) || (bridge_flags & bridge_close_flag)) return;
 
     // Check if reset & packet not the resetting packet
     // Assumes reset occurs before any other signals and that
     // any packets calling this will be after a reset
-    if ((base_flags & base_reset_flag) && (major_key != MAJOR_KEY_RESET))
+    if ((bridge_flags & bridge_reset_flag) && (major_key != MAJOR_KEY_RESET))
     {
         return;  // Still sending data return
-    } else if ((base_flags & base_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
+    } else if ((bridge_flags & bridge_reset_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
     {
-        base_flags &= ~base_send_chunk_flag; // Clear base_send_chunk bit
+        bridge_flags &= ~bridge_reset_send_chunk_flag; // Clear base_send_chunk bit
     } else if (major_key == MAJOR_KEY_RESET)
     {
         // Enter reset (set active and send_chunk flags, clear sent flag)
-        base_flags |= (base_reset_flag | base_send_chunk_flag);
+        bridge_flags |= (bridge_reset_flag | bridge_reset_send_chunk_flag);
 
         // Clear any pending messages
         msgList.clear();
@@ -422,7 +418,7 @@ void GUI_COMM_BRIDGE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArra
     QByteArray data, curr;
     uint32_t pos = 0;
     uint32_t end_pos = chunk.length();
-    bool emit_progress = (major_key == sending_gui->get_GUI_key());
+    bool emit_progress = (sending_gui && (major_key == sending_gui->get_GUI_key()));
 
     // Reset progress (if sending from gui)
     if (emit_progress) emit sending_gui->progress_update_send(0, "");
@@ -438,11 +434,11 @@ void GUI_COMM_BRIDGE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArra
         transmit(data);
 
         // Check if reset set during transmission eventloop
-        if (base_flags) return;
+        if (bridge_flags) return;
     }
 
     // Send data chunk
-    uint32_t data_len, bits;
+    uint32_t data_len, num_s2_bits;
     do
     {
         // Clear data
@@ -453,20 +449,20 @@ void GUI_COMM_BRIDGE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArra
 
         // Compute size of data chunk
         data_len = curr.length();
-        if (data_len == 0) bits = 0x00;
-        else if (data_len <= 0xFF) bits = 0x01;
-        else if (data_len <= 0xFFFF) bits = 0x02;
-        else bits = 0x03;
+        if (data_len == 0) num_s2_bits = num_s2_bits_0;
+        else if (data_len <= 0xFF) num_s2_bits = num_s2_bits_1;
+        else if (data_len <= 0xFFFF) num_s2_bits = num_s2_bits_2;
+        else num_s2_bits = num_s2_bits_3;
 
         // Load into data array
-        data.append((char) (major_key | bits));
+        data.append((char) (major_key | (num_s2_bits << s1_num_s2_bits_byte_shift)));
         data.append((char) minor_key);
 
         // Adjust byte length of 3 (want uint32_t not uint24_t)
-        if (bits == 0x03) bits += 1;
+        if (num_s2_bits == num_s2_bits_3) num_s2_bits = num_s2_bits_4;
 
         // Load data_len into data
-        data.append(GUI_HELPER::uint32_to_byteArray(data_len).right(bits));
+        data.append(GUI_HELPER::uint32_to_byteArray(data_len).right(num_s2_bits));
 
         // Append data
         data.append(curr);
@@ -475,7 +471,7 @@ void GUI_COMM_BRIDGE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArra
         transmit(data);
 
         // Check if reset set during transmission eventloop
-        if (base_flags) return;
+        if (bridge_flags) return;
 
         // Increment position counter
         // Do not use chunk_size to enable dyanmic setting
@@ -495,7 +491,7 @@ void GUI_COMM_BRIDGE::send_chunk(uint8_t major_key, uint8_t minor_key, QByteArra
         transmit(data);
 
         // Check if reset set during transmission eventloop
-        if (base_flags) return;
+        if (bridge_flags) return;
     }
 
     // Signal done to user if from gui
@@ -546,7 +542,7 @@ void GUI_COMM_BRIDGE::checkAck(QByteArray ack)
     emit ackChecked(ack_status);
 }
 
-bool GUI_COMM_BRIDGE::check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check)
+bool GUI_COMM_BRIDGE::check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct* check)
 {
     // Create checksum variables
     uint32_t checksum_size = check->get_checksum_size();
@@ -569,31 +565,72 @@ void GUI_COMM_BRIDGE::waitForData(int msecs)
     dataTimer.stop();
 }
 
-void GUI_COMM_BRIDGE::closing()
+bool GUI_COMM_BRIDGE::open_bridge()
 {
-    // Set exit to true
-    base_flags |= base_exit_flag;
+    // Clear everything but the exit flag
+    bridge_flags &= bridge_exit_flag;
 
-    // Clear any pending messages
+    // Clear any accidental sends/recvs
+    msgList.clear();
+    rcvd_raw.clear();
+
+    // True if all flags cleared, false if bridge_exit_flag set
+    return !bridge_flags;
+}
+
+bool GUI_COMM_BRIDGE::close_bridge()
+{
+    // Set close bridge (if not already set)
+    bridge_flags |= bridge_close_flag;
+
+    // Clear send list
     msgList.clear();
 
-    // Emit reset to free timers
+    // Emit reset to try and free timers
     emit reset();
 
-    // See if ready to exit
-    close_bridge();
+    // Try acquire sendLock if not already done
+    if (!(bridge_flags & bridge_close_send_flag) && sendLock.tryLock())
+    {
+        bridge_flags |= bridge_close_send_flag;
+        sendLock.unlock();
+    }
+
+    // Try acquire rcvLock if not already done
+    if (!(bridge_flags & bridge_close_recv_flag) && rcvLock.tryLock())
+    {
+        bridge_flags |= bridge_close_recv_flag;
+        rcvLock.unlock();
+    }
+
+    // Check close successful
+    if (!(bridge_flags & (bridge_close_send_flag | bridge_close_recv_flag))) return false;
+
+    // If exit flag set, tell object to destroy itself
+    if (bridge_flags & bridge_exit_flag) destroy_bridge();
+
+    // Return object closed
+    return true;
+}
+
+void GUI_COMM_BRIDGE::destroy_bridge()
+{
+    // Set exit flag (if not already set)
+    bridge_flags |= bridge_exit_flag;
+
+    // If not closed, close
+    // Else, schedule object for deletion
+    if (!(bridge_flags & (bridge_close_send_flag | bridge_close_recv_flag))) close_bridge();
+    else this->deleteLater();
 }
 
 void GUI_COMM_BRIDGE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
                                   uint8_t** checksum_array, uint32_t* checksum_size)
 {
-    // Adjust type for correct bit shifts
-    uint8_t gui_list_pos = (checksum_key >> s1_major_key_bit_shift)-1;
-
-    // Get checksum
+    // Get checksum (if key is 0 or not recognized, use default key)
     const checksum_struct* check;
-    if (gui_checksums.length() < gui_list_pos) return;
-    check = &(gui_checksums.at(gui_list_pos));
+    if (!checksum_key || (gui_checksums.length() < checksum_key)) check = &gui_checksums.at(0);
+    else check = &gui_checksums.at(checksum_key-1);
 
     // Set executable if using
     if (check->checksum_is_exe)
@@ -711,7 +748,7 @@ void GUI_COMM_BRIDGE::set_checksum_start(checksum_struct *check, QString checksu
 void GUI_COMM_BRIDGE::transmit(QByteArray data)
 {
     // Check if trying to send empty data array or exiting
-    if (data.isEmpty() || (base_flags & base_exit_flag)) return;
+    if (data.isEmpty() || (bridge_flags & bridge_close_flag)) return;
 
     // Append to msgList
     msgList.append(data);
@@ -726,13 +763,13 @@ void GUI_COMM_BRIDGE::transmit(QByteArray data)
     uint32_t checksum_size = 0;
 
     // Send all messages in list
-    while (!msgList.isEmpty() && !(base_flags & base_exit_flag))
+    while (!msgList.isEmpty() && !(bridge_flags & bridge_close_flag))
     {
         // Get next data to send
         currData = msgList.takeFirst();
         ack_status = false;
         data_status = false;
-        ack_key = ((char) currData.at(s1_major_key_loc) & s1_major_key_bit_mask);
+        ack_key = ((char) currData.at(s1_major_key_loc) & s1_major_key_byte_mask);
         isReset = (ack_key == MAJOR_KEY_RESET);
 
         // Get checksum
@@ -754,32 +791,33 @@ void GUI_COMM_BRIDGE::transmit(QByteArray data)
             // Wait for CMD ack back
             waitForAck(packet_timeout);
         } while (!ack_status
-                 && (!(base_flags & base_reset_flag) || isReset)
-                 && !(base_flags & base_exit_flag));
+                 && (!(bridge_flags & bridge_reset_flag) || isReset)
+                 && !(bridge_flags & bridge_close_flag));
 
         // Wait for data read if CMD success and was data request
         // Resets will never request data back (only an ack)
-        if (ack_status
-                && !base_flags)
+        // Is this required? Why block in sending other than to limit device spam?
+//        if (ack_status
+//                && !bridge_flags)
 //                && isDataRequest(currData.at(s1_minor_key_loc)))
-        {
-            do
-            {
-                // Wait for data packet back
-                waitForData(packet_timeout);
-            } while (!data_status
-                     && !base_flags);
-        }
+//        {
+//            do
+//            {
+//                // Wait for data packet back
+//                waitForData(packet_timeout);
+//            } while (!data_status
+//                     && !bridge_flags);
+//        }
 
         // Check if reseting and was reset
-        if ((base_flags & base_reset_flag) && isReset)
+        if ((bridge_flags & bridge_reset_flag) && isReset)
         {
             // Clear buffers (prevents key errors after reset)
             rcvd_raw.clear();
             msgList.clear();
 
             // Clear reset active flag
-            base_flags &= ~base_reset_flag;
+            bridge_flags &= ~bridge_reset_flag;
         }
     }
 
@@ -787,33 +825,5 @@ void GUI_COMM_BRIDGE::transmit(QByteArray data)
     sendLock.unlock();
 
     // If exiting, check if ready
-    if (base_flags & base_exit_flag) close_bridge();
+    if (bridge_flags & bridge_close_flag) close_bridge();
 }
-
-void GUI_COMM_BRIDGE::close_bridge()
-{
-    // Ensure exit is set
-    if (!(base_flags & base_exit_flag)) return;
-
-    // Try acquire sendLock if not already done
-    if (!(base_flags & base_exit_send_flag) && sendLock.tryLock())
-    {
-        base_flags |= base_exit_send_flag;
-        sendLock.unlock();
-    }
-
-
-    // Try acquire rcvLock if not already done
-    if (!(base_flags & base_exit_recv_flag) && rcvLock.tryLock())
-    {
-        base_flags |= base_exit_recv_flag;
-        rcvLock.unlock();
-    }
-
-    // Check status
-    if (!(base_flags & (base_exit_send_flag | base_exit_recv_flag))) return;
-
-    // Schedule for deletion
-    this->deleteLater();
-}
-

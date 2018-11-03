@@ -211,7 +211,7 @@ void GUI_8AIO_16DIO_COMM::updateValues()
     else if (caller == &AIO_READ) requestType = MINOR_KEY_IO_AIO_READ_ALL;
     else return;
 
-    send_chunk(gui_key, requestType);
+    emit transmit_chunk(gui_key, requestType);
 }
 
 void GUI_8AIO_16DIO_COMM::recordLogData()
@@ -315,7 +315,7 @@ void GUI_8AIO_16DIO_COMM::on_ConnConnect_Button_clicked()
     msg.append(ui->ConnSpeed_Combo->currentText());
     msg.append(ui->ConnAddr_Combo->currentText());
 
-    send_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN, msg);
+    emit transmit_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN, msg);
 }
 
 void GUI_8AIO_16DIO_COMM::on_ConnSend_Button_clicked()
@@ -323,7 +323,7 @@ void GUI_8AIO_16DIO_COMM::on_ConnSend_Button_clicked()
     QByteArray msg;
     msg.append(ui->ConnMsg_LineEdit->text());
 
-    send_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN, msg);
+    emit transmit_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN, msg);
 }
 
 void GUI_8AIO_16DIO_COMM::on_ConnClearRecv_Button_clicked()

@@ -71,7 +71,7 @@ MainWindow::MainWindow(QWidget *parent) :
     welcome_tab_label = "Welcome";
 
     // Setup More Options Dialog
-    main_options_settings.reset_on_tab_switch = true;
+    main_options_settings.reset_on_tab_switch = false;
     main_options_settings.send_little_endian = false;
     main_options_settings.chunk_size = GUI_COMM_BRIDGE::default_chunk_size;
     more_options = new GUI_MORE_OPTIONS(&main_options_settings, &local_options_settings,
@@ -124,11 +124,16 @@ MainWindow::~MainWindow()
         on_DeviceDisconnect_Button_clicked();
     }
 
+    // Stop connection timers
     updateConnInfo->stop();
+
+    // Tell bridge to exit (once locks freed)
+    comm_bridge->destroy_bridge();
+
+    // Delete objects
     delete updateConnInfo;
     delete welcome_tab;
     delete more_options;
-    delete comm_bridge;
     delete ui;
 }
 
@@ -142,16 +147,6 @@ void MainWindow::closeEvent(QCloseEvent* e)
     updateConnInfo->stop();
 
     e->accept();
-}
-
-void MainWindow::reset_remote()
-{
-    // Verify device is connected
-    if (!deviceConnected()) return;
-
-    // Send reset command (only need to call once)
-    GUI_BASE* curr = (GUI_BASE*) ui->ucOptions->currentWidget();
-    if (curr) curr->reset_remote();
 }
 
 void MainWindow::on_Device_Combo_activated(int)
@@ -334,6 +329,8 @@ void MainWindow::on_DeviceConnected() {
     // Disconnect connection signals from device
     if (device)
     {
+        // Remove device connected connections
+        // Prevents accidental loops if emitted more than once
         disconnect(device, SIGNAL(deviceConnected()),
                    this, SLOT(on_DeviceConnected()));
     }
@@ -345,7 +342,14 @@ void MainWindow::on_DeviceConnected() {
         // Remove all existing tabs
         ucOptionsClear();
 
-        // Connect bridge connections
+        // Try to open the bridge
+        if (!comm_bridge->open_bridge())
+        {
+            on_DeviceDisconnect_Button_clicked();
+            return;
+        }
+
+        // Connect bridge to device connections if bridge opened
         connect(device, SIGNAL(readyRead(QByteArray)),
                 comm_bridge, SLOT(receive(QByteArray)),
                 Qt::QueuedConnection);
@@ -377,10 +381,10 @@ void MainWindow::on_DeviceConnected() {
                 {
                     comm_bridge->parseGenericConfigMap(groupMap);
 
-                    // Check reset tab setting (forces false from INI)
-                    if (!groupMap->value("reset_tabs_on_switch", "true").toBool())
+                    // Check reset tab setting (forces true from INI)
+                    if (groupMap->value("reset_tabs_on_switch", "false").toBool())
                     {
-                        main_options_settings.reset_on_tab_switch = false;
+                        main_options_settings.reset_on_tab_switch = true;
                     }
 
                     // Check little endian setting (forces a true from INI)
@@ -396,7 +400,8 @@ void MainWindow::on_DeviceConnected() {
                         main_options_settings.chunk_size = groupMap->value("chunk_size").toInt();
                     }
 
-                    break;
+                    // If general settings, move to next (no GUI)
+                    continue;
                 }
                 case MAJOR_KEY_WELCOME:
                 {
@@ -433,20 +438,27 @@ void MainWindow::on_DeviceConnected() {
             // Call config map parser
             tab_holder->parseConfigMap(groupMap);
 
-            // Tab to bridge connections
-            connect(tab_holder, SIGNAL(transmit_file(uint8_t, uint8_t, QString)),
-                    comm_bridge, SLOT(send_file(uint8_t, uint8_t, QString)));
-            connect(tab_holder, SIGNAL(transmit_file_chunked(uint8_t, uint8_t, QString, char)),
-                    comm_bridge, SLOT(send_file_chunked(uint8_t, uint8_t, QString, char)));
-            connect(tab_holder, SIGNAL(transmit_chunk(uint8_t, uint8_t, QString)),
-                    comm_bridge, SLOT(send_chunk(uint8_t, uint8_t, QString)));
-
-            // Bridge to tab connections
-            connect(comm_bridge, SIGNAL(reset()),
-                    tab_holder, SLOT(reset_gui()));
-
             // Add new GUI to tabs
             ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());
+
+            // Add new GUI to comm bridge
+            comm_bridge->add_gui(tab_holder);
+
+            // Connect tab signals to bridge slots
+            connect(tab_holder, SIGNAL(transmit_file(quint8, quint8, QString)),
+                    comm_bridge, SLOT(send_file(quint8, quint8, QString)),
+                    Qt::QueuedConnection);
+            connect(tab_holder, SIGNAL(transmit_file_chunked(quint8, quint8, QString, char)),
+                    comm_bridge, SLOT(send_file_chunked(quint8, quint8, QString, char)),
+                    Qt::QueuedConnection);
+            connect(tab_holder, SIGNAL(transmit_chunk(quint8, quint8, QByteArray, bool)),
+                    comm_bridge, SLOT(send_chunk(quint8, quint8, QByteArray, bool)),
+                    Qt::QueuedConnection);
+
+            // Connect bridge signals to tab slots
+            connect(comm_bridge, SIGNAL(reset()),
+                    tab_holder, SLOT(reset_gui()),
+                    Qt::QueuedConnection);
         }
 
         // Force any changes in more options
@@ -460,8 +472,8 @@ void MainWindow::on_DeviceConnected() {
 
         // Commands generally fail the first time after new connection
         // Manually call reset remote (if shut off for tab switches)
-        if (!main_options_settings.reset_on_tab_switch)
-            reset_remote();
+        if (!main_options_settings.reset_on_tab_switch && deviceConnected())
+            comm_bridge->reset_remote();
     } else
     {
         GUI_HELPER::showMessage("Error: Unable to connect to target!");
@@ -482,18 +494,18 @@ void MainWindow::on_DeviceDisconnected()
 void MainWindow::on_DeviceDisconnect_Button_clicked()
 {
     // Reset the remote
-    reset_remote();
+    if (deviceConnected()) comm_bridge->reset_remote();
 
     // Disconnect any connected slots
     if (device)
     {
-        // Remove on connected/disconnected connections
+        // Remove device connected/disconnected connections
         disconnect(device, SIGNAL(deviceConnected()),
                    this, SLOT(on_DeviceConnected()));
         disconnect(device, SIGNAL(deviceDisconnected()),
                    this, SLOT(on_DeviceDisconnected()));
 
-        // Remove bridge connections
+        // Remove device to bridge connections
         disconnect(device, SIGNAL(readyRead(QByteArray)),
                    comm_bridge, SLOT(receive(QByteArray)));
         disconnect(comm_bridge, SIGNAL(write_data(QByteArray)),
@@ -510,6 +522,9 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
 
     // Remove widgets
     ucOptionsClear();
+
+    // Close bridge
+    comm_bridge->close_bridge();
 
     // Add welcome widget
     ui->ucOptions->addTab(welcome_tab, welcome_tab_label);
@@ -548,23 +563,21 @@ void MainWindow::on_ucOptions_currentChanged(int index)
     if (prev_tab == index) return;
 
     // Disconnet old signals
+    GUI_BASE* tab_holder;
     if (prev_tab != -1)
     {
-        QObject* prev_widget = ui->ucOptions->widget(prev_tab);
-        if (prev_widget)
-        {
-            // Reset the previous GUI
-            if (main_options_settings.reset_on_tab_switch)
-                ((GUI_BASE*) prev_widget)->reset_gui();
-        }
+        tab_holder = (GUI_BASE*) ui->ucOptions->widget(prev_tab);
+        // Reset the previous GUI
+        if (tab_holder && main_options_settings.reset_on_tab_switch)
+            tab_holder->reset_gui();
     }
 
     // Update previous tab index
     prev_tab = index;
 
     // Reset the Remote for the new tab (if connected)
-    if (main_options_settings.reset_on_tab_switch)
-        reset_remote();
+    if (main_options_settings.reset_on_tab_switch && deviceConnected())
+        comm_bridge->reset_remote();
 }
 
 void MainWindow::updateConnInfoCombo()
@@ -666,12 +679,13 @@ void MainWindow::setConnected(bool conn)
 void MainWindow::ucOptionsClear()
 {
     bool prev_block_status = ui->ucOptions->blockSignals(true);
-    QWidget* tab_holder;
+    GUI_BASE* tab_holder;
     for (int i = (ui->ucOptions->count() - 1); 0 <= i; i--)
     {
-        tab_holder = ui->ucOptions->widget(i);
+        tab_holder = (GUI_BASE*) ui->ucOptions->widget(i);
         tab_holder->blockSignals(true);
         ui->ucOptions->removeTab(i);
+        comm_bridge->remove_gui(tab_holder);
         if (tab_holder != welcome_tab) delete tab_holder;
     }
     ui->ucOptions->blockSignals(prev_block_status);
@@ -701,19 +715,16 @@ uint8_t MainWindow::getDevType()
 uint8_t MainWindow::getGUIType(QString type)
 {
     // indexOf() returns -1 on error which maps to MAJOR_KEY_ERROR (0 == universal error)
-    return (uint8_t) ((supportedGUIsList.indexOf(type)+1) << s1_major_key_bit_shift);
+    return (uint8_t) (supportedGUIsList.indexOf(type)+1);
 }
 
 QString MainWindow::getGUIName(uint8_t type)
 {
-    // Adjust type for correct bit shifts
-    uint8_t gui_list_pos = (type >> s1_major_key_bit_shift)-1;
-
     // Check that type is valid
-    if (supportedGUIsList.length() < gui_list_pos) return "ERROR";
+    if (!type || (supportedGUIsList.length() < type)) return "GUI TYPE ERROR";
 
     // Return the string
-    return supportedGUIsList.at(gui_list_pos);
+    return supportedGUIsList.at(type-1);
 }
 
 QStringList MainWindow::getConnSpeeds()

@@ -85,6 +85,7 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
         switch (recvData.at(s1_minor_key_loc))
         {
             case MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE:
+            {
                 // Clear recv if clear on set checked
                 if (ui->RecvClearOnSet_CheckBox->isChecked())
                     on_RecvClear_Button_clicked();
@@ -92,11 +93,18 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
                 // Set expected length
                 set_expected_recv_length(data);
                 return;
+            }
             case MINOR_KEY_DATA_TRANSMIT_DATA:
+            {
                 // Update current recv length with each packet
                 update_current_recv_length(data);
                 break;
+            }
         }
+    } else
+    {
+        // Ignore any CMDs not meant for this GUI
+        return;
     }
 
     // Check if any data to add
@@ -141,22 +149,22 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
         QString filePath = ui->SendFilePath_LineEdit->text();
 
         // Send size
-        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                   GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
+        emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+                            GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
 
         // Send file
-        send_file(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
+        emit transmit_file(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
     } else if (ui->SendInput_Radio->isChecked())
     {
         // Get data
         QByteArray data = ui->Send_PlainText->toPlainText().toUtf8();
 
         // Send size
-        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                   GUI_HELPER::uint32_to_byteArray(data.length()));
+        emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+                            GUI_HELPER::uint32_to_byteArray(data.length()));
 
         // Send plaintext
-        send_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
+        emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
     }
 }
 

@@ -56,8 +56,9 @@ public:
     // Parse input array
     void parseGenericConfigMap(QMap<QString, QVariant>* configMap);
 
-    // Add gui tab to known list
+    // Add/remove knowns guis
     void add_gui(GUI_BASE *new_gui);
+    void remove_gui(GUI_BASE *old_gui);
 
     // Default chunk size
     static const uint32_t default_chunk_size = 32;
@@ -74,43 +75,53 @@ signals:
     void reset();
 
 public slots:
+    // Reset remtoe
+    void reset_remote();
+
     // Receive data
     void receive(QByteArray recvData);
 
     // File sending
-    void send_file(uint8_t major_key, uint8_t minor_key, QString filePath);
-    void send_file_chunked(uint8_t major_key, uint8_t minor_key, QString filePath, char sep);
+    void send_file(quint8 major_key, quint8 minor_key, QString filePath);
+    void send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep);
 
     // Chunk sending
-    void send_chunk(uint8_t major_key, uint8_t minor_key, QByteArray chunk = QByteArray(), bool force_envelope = false);
+    void send_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope);
 
     // Ack
     void send_ack(uint8_t majorKey);
     void waitForAck(int msecs = 5000);
     void checkAck(QByteArray ack);
-    bool check_checksum(const uint8_t* data, uint32_t data_len, checksum_struct* check);
+    bool check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct *check);
 
     // Wait for data
     void waitForData(int msecs = 5000);
 
-    // Signal ready to close
-    void closing();
+    // Signal bridge to open, close, or exit
+    bool open_bridge();
+    bool close_bridge();
+    void destroy_bridge();
 
 private:
-    // Base flag. Bits as follows:
-    //  1) Exit General
-    //  2) Exit Send Done
-    //  3) Exit Recv Done
-    //  4) Reset active
-    //  5) Reset send_chunk
-    uint8_t base_flags;
+    /* Bridge flag. Bits as follows:
+     *  1) Exit Bridge
+     *  2) Close Bridge
+     *  3) Close Send Done
+     *  4) Close Recv Done
+     *  5) Reset remote active
+     *  6) Reset send_chunk active
+     *  7) Nothing
+     *  8) Nothing
+     */
+    uint8_t bridge_flags;
     typedef enum {
-        base_exit_flag = 0x01,
-        base_exit_send_flag = 0x02,
-        base_exit_recv_flag = 0x04,
-        base_reset_flag = 0x08,
-        base_send_chunk_flag = 0x10
-    } base_flags_enum;
+        bridge_exit_flag = 0x01,
+        bridge_close_flag = 0x02,
+        bridge_close_send_flag = 0x04,
+        bridge_close_recv_flag = 0x08,
+        bridge_reset_flag = 0x10,
+        bridge_reset_send_chunk_flag = 0x20
+    } bridge_flags_enum;
 
     // Send helper variables
     QMutex sendLock;
@@ -136,7 +147,7 @@ private:
     uint32_t chunk_size;
 
     // GUI List - Position == key
-    QList<QList<GUI_BASE*>> known_guis;
+    QList<GUI_BASE*> known_guis;
 
     // Checksum info
     QList<checksum_struct> gui_checksums;
@@ -152,9 +163,6 @@ private:
 
     // Transmit across connection
     void transmit(QByteArray data);
-
-    // Checks if ready to exit
-    void close_bridge();
 };
 
 #endif // GUI_COMM_BRIDGE_H
