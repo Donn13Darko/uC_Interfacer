@@ -31,9 +31,11 @@ TCP_CLIENT::TCP_CLIENT(QString ip, int port, QObject *parent) :
     server_port = port;
 
     connect(client, SIGNAL(readyRead()),
-            this, SLOT(read()));
+            this, SLOT(read()),
+            Qt::DirectConnection);
     connect(client, SIGNAL(disconnected()),
-            this, SLOT(disconnectClient()));
+            this, SLOT(disconnectClient()),
+            Qt::DirectConnection);
 }
 
 TCP_CLIENT::~TCP_CLIENT()
@@ -46,7 +48,9 @@ TCP_CLIENT::~TCP_CLIENT()
 void TCP_CLIENT::open()
 {
     // Connect signals and slots
-    connect(client, SIGNAL(connected()), this, SLOT(connectClient()));
+    connect(client, SIGNAL(connected()),
+            this, SLOT(connectClient()),
+            Qt::DirectConnection);
 
     // Attempt to connect
     client->connectToHost(server_ip, server_port, QIODevice::ReadWrite);
@@ -61,7 +65,7 @@ void TCP_CLIENT::close()
 {
     // Remove close slot to prevent infinite loop
     disconnect(client, SIGNAL(disconnected()),
-            this, SLOT(disconnectClient()));
+               this, SLOT(disconnectClient()));
 
     // Disconnect
     client->disconnectFromHost();
@@ -69,7 +73,8 @@ void TCP_CLIENT::close()
 
 void TCP_CLIENT::connectClient()
 {
-    disconnect(client, SIGNAL(connected()), this, SLOT(connectClient()));
+    disconnect(client, SIGNAL(connected()),
+               this, SLOT(connectClient()));
     emit deviceConnected();
 }
 
@@ -80,22 +85,30 @@ void TCP_CLIENT::disconnectClient()
 
 void TCP_CLIENT::write(QByteArray writeData)
 {
+    // Acquire Lock
     writeLock->lock();
 
+    // Write data (try to force start)
     qDebug() << "S: " << writeData;
     client->write((const QByteArray) writeData);
     client->flush();
 
+    // Unlock lock
     writeLock->unlock();
 }
 
 void TCP_CLIENT::read()
 {
+    // Acquire Lock
     readLock->lock();
 
+    // Read data
     QByteArray recvData = client->readAll();
-    emit readyRead(recvData);
     qDebug() << "R: " << recvData;
 
+    // Emit signal
+    emit readyRead(recvData);
+
+    // Unlock lock
     readLock->unlock();
 }

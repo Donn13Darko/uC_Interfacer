@@ -56,9 +56,6 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     uint8_t rowNum, colNum;
     bool prev_block_status;
 
-    // Disconnect sending slot for setup
-    emit connect_signals(false);
-
     // Stop logging and updating if running
     on_StopLog_Button_clicked();
     on_StopUpdater_Button_clicked();
@@ -85,9 +82,6 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
             }
         }
     }
-
-    // Reconnect sending slot
-    emit connect_signals(true);
 
     // Clear any rcvd data
     rcvd_formatted.clear();
@@ -220,10 +214,7 @@ void GUI_8AIO_16DIO_COMM::updateValues()
     else if (caller == &AIO_READ) requestType = MINOR_KEY_IO_AIO_READ_ALL;
     else return;
 
-    send({
-             gui_key,
-             requestType
-         });
+    send_chunk(gui_key, requestType);
 }
 
 void GUI_8AIO_16DIO_COMM::recordLogData()
@@ -313,19 +304,13 @@ void GUI_8AIO_16DIO_COMM::on_StopLog_Button_clicked()
 void GUI_8AIO_16DIO_COMM::on_ConnConnect_Button_clicked()
 {
     QByteArray msg;
-    msg.append(controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(ui->ConnType_Combo->currentText()));
-
     if (devConnected)
     {
-        msg.append(MINOR_KEY_IO_REMOTE_CONN);
-
         ui->ConnConnect_Button->setText("Connect");
         ui->ConnSend_Button->setEnabled(false);
         devConnected = false;
     } else
     {
-        msg.append(MINOR_KEY_IO_REMOTE_CONN);
-
         ui->ConnConnect_Button->setText("Disconnect");
         ui->ConnSend_Button->setEnabled(true);
         devConnected = true;
@@ -333,19 +318,15 @@ void GUI_8AIO_16DIO_COMM::on_ConnConnect_Button_clicked()
     msg.append(ui->ConnSpeed_Combo->currentText());
     msg.append(ui->ConnAddr_Combo->currentText());
 
-    send(msg);
+    send_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN, msg);
 }
 
 void GUI_8AIO_16DIO_COMM::on_ConnSend_Button_clicked()
 {
     QByteArray msg;
-    msg.append(controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(ui->ConnType_Combo->currentText()));
-    msg.append(MINOR_KEY_IO_REMOTE_CONN);
     msg.append(ui->ConnMsg_LineEdit->text());
-    msg.append(MINOR_KEY_IO_REMOTE_CONN);
-    msg.append(MINOR_KEY_IO_REMOTE_CONN);
 
-    send(msg);
+    send_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN, msg);
 }
 
 void GUI_8AIO_16DIO_COMM::on_ConnClearRecv_Button_clicked()
@@ -417,9 +398,15 @@ void GUI_8AIO_16DIO_COMM::initialize()
 
 void GUI_8AIO_16DIO_COMM::setupUpdaters()
 {
-    connect(&DIO_READ, SIGNAL(timeout()), this, SLOT(updateValues()));
-    connect(&AIO_READ, SIGNAL(timeout()), this, SLOT(updateValues()));
-    connect(&logTimer, SIGNAL(timeout()), this, SLOT(recordLogData()));
+    connect(&DIO_READ, SIGNAL(timeout()),
+            this, SLOT(updateValues()),
+            Qt::DirectConnection);
+    connect(&AIO_READ, SIGNAL(timeout()),
+            this, SLOT(updateValues()),
+            Qt::DirectConnection);
+    connect(&logTimer, SIGNAL(timeout()),
+            this, SLOT(recordLogData()),
+            Qt::DirectConnection);
 }
 
 void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
@@ -445,7 +432,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         {
             connect((QComboBox*) item, SIGNAL(currentIndexChanged(int)),
                     this, SLOT(AIO_ComboChanged()),
-                    Qt::QueuedConnection);
+                    Qt::DirectConnection);
         }
 
         // Connect AIO Slider
@@ -453,7 +440,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         {
             connect((QSlider*) item, SIGNAL(valueChanged(int)),
                     this, SLOT(AIO_SliderValueChanged()),
-                    Qt::QueuedConnection);
+                    Qt::DirectConnection);
         }
 
         // Connect AIO Text
@@ -461,7 +448,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         {
             connect((QLineEdit*) item, SIGNAL(editingFinished()),
                     this, SLOT(AIO_LineEditValueChanged()),
-                    Qt::QueuedConnection);
+                    Qt::DirectConnection);
         }
     }
 
@@ -482,7 +469,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         {
             connect((QComboBox*) item, SIGNAL(currentIndexChanged(int)),
                     this, SLOT(DIO_ComboChanged()),
-                    Qt::QueuedConnection);
+                    Qt::DirectConnection);
         }
 
         // Connect DIO Slider
@@ -490,7 +477,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         {
             connect((QSlider*) item, SIGNAL(valueChanged(int)),
                     this, SLOT(DIO_SliderValueChanged()),
-                    Qt::QueuedConnection);
+                    Qt::DirectConnection);
         }
 
         // Connect DIO Text
@@ -498,7 +485,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
         {
             connect((QLineEdit*) item, SIGNAL(editingFinished()),
                     this, SLOT(DIO_LineEditValueChanged()),
-                    Qt::QueuedConnection);
+                    Qt::DirectConnection);
         }
     }
 }

@@ -46,7 +46,8 @@ SOURCES += \
     checksums/checksum-exe.c \
     gui-helpers/gui-helper.cpp \
     gui-helpers/gui-more-options.cpp \
-    communication/serial-com-port.cpp
+    communication/serial-com-port.cpp \
+    gui-helpers/gui-comm-bridge.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -78,7 +79,8 @@ HEADERS += \
     checksums/checksum-exe.h \
     gui-helpers/gui-helper.h \
     gui-helpers/gui-more-options.h \
-    communication/serial-com-port.h
+    communication/serial-com-port.h \
+    gui-helpers/gui-comm-bridge.h
 
 FORMS += \
     mainwindow.ui \

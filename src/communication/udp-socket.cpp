@@ -34,9 +34,11 @@ UDP_SOCKET::UDP_SOCKET(QString client_ip, int client_port, int server_port, QObj
     udp_server_port = server_port;
 
     connect(server, SIGNAL(readyRead()),
-            this, SLOT(read()));
+            this, SLOT(read()),
+            Qt::DirectConnection);
     connect(server, SIGNAL(disconnected()),
-            this, SLOT(disconnectClient()));
+            this, SLOT(disconnectClient()),
+            Qt::DirectConnection);
 }
 
 UDP_SOCKET::~UDP_SOCKET()
@@ -79,27 +81,35 @@ void UDP_SOCKET::disconnectClient()
 
 void UDP_SOCKET::write(QByteArray writeData)
 {
+    // Acquire Lock
     writeLock->lock();
 
+    // Write data (try to force start)
     qDebug() << "S: " << writeData;
     client->writeDatagram((const QByteArray) writeData,
                           udp_client_ip, udp_client_port);
     client->flush();
 
+    // Unlock lock
     writeLock->unlock();
 }
 
 void UDP_SOCKET::read()
 {
+    // Acquire Lock
     readLock->lock();
 
+    // Read data
     QByteArray recvData;
     while (server->hasPendingDatagrams())
     {
         recvData += server->receiveDatagram().data();
     }
-    emit readyRead(recvData);
     qDebug() << "R: " << recvData;
 
+    // Emit signal
+    emit readyRead(recvData);
+
+    // Unlock lock
     readLock->unlock();
 }

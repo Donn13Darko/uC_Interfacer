@@ -51,7 +51,7 @@ MainWindow::supportedDevicesList({
 // Setup static supported protocols list
 QStringList
 MainWindow::supportedProtocolsList({
-                                       "RS-232",
+                                       "COM Port",
                                        "TCP Client",
                                        "TCP Server",
                                        "UDP Socket"
@@ -73,12 +73,17 @@ MainWindow::MainWindow(QWidget *parent) :
     // Setup More Options Dialog
     main_options_settings.reset_on_tab_switch = true;
     main_options_settings.send_little_endian = false;
-    main_options_settings.chunk_size = GUI_BASE::default_chunk_size;
+    main_options_settings.chunk_size = GUI_COMM_BRIDGE::default_chunk_size;
     more_options = new GUI_MORE_OPTIONS(&main_options_settings, &local_options_settings,
-                                        supportedGUIsList, GUI_BASE::get_supported_checksums());
+                                        supportedGUIsList, GUI_COMM_BRIDGE::get_supported_checksums(),
+                                        this);
     more_options->setModal(true);
     connect(more_options, SIGNAL(accepted()),
-            this, SLOT(moreOptions_accepted()));
+            this, SLOT(moreOptions_accepted()),
+            Qt::DirectConnection);
+
+    // Setup Comm Bridge
+    comm_bridge = new GUI_COMM_BRIDGE(supportedGUIsList.length(), this);
 
     // Set base parameters
     prev_tab = -1;
@@ -108,7 +113,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Add connections
     connect(updateConnInfo, SIGNAL(timeout()),
-            this, SLOT(updateConnInfoCombo()));
+            this, SLOT(updateConnInfoCombo()),
+            Qt::DirectConnection);
 }
 
 MainWindow::~MainWindow()
@@ -123,6 +129,7 @@ MainWindow::~MainWindow()
     delete updateConnInfo;
     delete welcome_tab;
     delete more_options;
+    delete comm_bridge;
     delete ui;
 }
 
@@ -138,12 +145,6 @@ void MainWindow::closeEvent(QCloseEvent* e)
     e->accept();
 }
 
-void MainWindow::connect_signals(bool conn)
-{
-    // Connect signals to slots
-    connect2sender(sender(), conn);
-}
-
 void MainWindow::reset_remote()
 {
     // Verify device is connected
@@ -152,22 +153,6 @@ void MainWindow::reset_remote()
     // Send reset command (only need to call once)
     GUI_BASE* curr = (GUI_BASE*) ui->ucOptions->currentWidget();
     if (curr) curr->reset_remote();
-
-    // Reset all guis
-    reset_guis();
-}
-
-void MainWindow::reset_guis()
-{
-    // Only reset if not resetting between tab switches
-    if (main_options_settings.reset_on_tab_switch) return;
-
-    // Reset all tabs
-    uint8_t num_tabs = ui->ucOptions->count();
-    for (uint8_t i = 0; i < num_tabs; i++)
-    {
-        ((GUI_BASE*) ui->ucOptions->widget(i))->reset_gui();
-    }
 }
 
 void MainWindow::on_Device_Combo_activated(int)
@@ -336,9 +321,11 @@ void MainWindow::on_DeviceConnect_Button_clicked()
 
     // Connect signals and slots
     connect(device, SIGNAL(deviceConnected()),
-               this, SLOT(on_DeviceConnected()));
+            this, SLOT(on_DeviceConnected()),
+            Qt::QueuedConnection);
     connect(device, SIGNAL(deviceDisconnected()),
-               this, SLOT(on_DeviceDisconnected()));
+            this, SLOT(on_DeviceDisconnected()),
+            Qt::QueuedConnection);
 
     // Try to connect
     device->open();
@@ -359,13 +346,21 @@ void MainWindow::on_DeviceConnected() {
         // Remove all existing tabs
         ucOptionsClear();
 
+        // Connect bridge connections
+        connect(device, SIGNAL(readyRead(QByteArray)),
+                comm_bridge, SLOT(receive(QByteArray)),
+                Qt::QueuedConnection);
+        connect(comm_bridge, SIGNAL(write_data(QByteArray)),
+                device, SLOT(write(QByteArray)),
+                Qt::QueuedConnection);
+
         // Block signals from tab group
         bool prev_block_status = ui->ucOptions->blockSignals(true);
 
         // Setup tabs
         uint8_t gui_key;
         QMap<QString, QVariant>* groupMap;
-        QWidget* tab_holder;
+        GUI_BASE* tab_holder;
         foreach (QString childGroup, configMap->keys())
         {
             // Verify that its a known GUI
@@ -381,7 +376,7 @@ void MainWindow::on_DeviceConnected() {
             {
                 case MAJOR_KEY_GENERAL_SETTINGS:
                 {
-                    GUI_BASE::parseGenericConfigMap(groupMap);
+                    comm_bridge->parseGenericConfigMap(groupMap);
 
                     // Check reset tab setting (forces false from INI)
                     if (!groupMap->value("reset_tabs_on_switch", "true").toBool())
@@ -437,7 +432,19 @@ void MainWindow::on_DeviceConnected() {
             if (!tab_holder) continue;
 
             // Call config map parser
-            ((GUI_BASE*) tab_holder)->parseConfigMap(groupMap);
+            tab_holder->parseConfigMap(groupMap);
+
+            // Tab to bridge connections
+            connect(tab_holder, SIGNAL(transmit_file(uint8_t, uint8_t, QString)),
+                    comm_bridge, SLOT(send_file(uint8_t, uint8_t, QString)));
+            connect(tab_holder, SIGNAL(transmit_file_chunked(uint8_t, uint8_t, QString, char)),
+                    comm_bridge, SLOT(send_file_chunked(uint8_t, uint8_t, QString, char)));
+            connect(tab_holder, SIGNAL(transmit_chunk(uint8_t, uint8_t, QString)),
+                    comm_bridge, SLOT(send_chunk(uint8_t, uint8_t, QString)));
+
+            // Bridge to tab connections
+            connect(comm_bridge, SIGNAL(reset()),
+                    tab_holder, SLOT(reset_gui()));
 
             // Add new GUI to tabs
             ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());
@@ -481,16 +488,18 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     // Disconnect any connected slots
     if (device)
     {
+        // Remove on connected/disconnected connections
         disconnect(device, SIGNAL(deviceConnected()),
                    this, SLOT(on_DeviceConnected()));
         disconnect(device, SIGNAL(deviceDisconnected()),
                    this, SLOT(on_DeviceDisconnected()));
-    }
 
-    // Disconnect connections
-    connect2sender(ui->ucOptions->currentWidget(), false);
-    disconnect(ui->ucOptions->currentWidget(), SIGNAL(connect_signals(bool)),
-               this, SLOT(connect_signals(bool)));
+        // Remove bridge connections
+        disconnect(device, SIGNAL(readyRead(QByteArray)),
+                   comm_bridge, SLOT(receive(QByteArray)));
+        disconnect(comm_bridge, SIGNAL(write_data(QByteArray)),
+                   device, SLOT(write(QByteArray)));
+    }
 
     // Remove device
     if (device)
@@ -545,27 +554,10 @@ void MainWindow::on_ucOptions_currentChanged(int index)
         QObject* prev_widget = ui->ucOptions->widget(prev_tab);
         if (prev_widget)
         {
-            // Force disconnect slots/signals from previous tab
-            connect2sender(prev_widget, false);
-
-            disconnect(prev_widget, SIGNAL(connect_signals(bool)),
-                       this, SLOT(connect_signals(bool)));
-
             // Reset the previous GUI
             if (main_options_settings.reset_on_tab_switch)
                 ((GUI_BASE*) prev_widget)->reset_gui();
         }
-    }
-
-    // Connect new signals
-    QObject* curr_widget = (QObject*) ui->ucOptions->currentWidget();
-    if (curr_widget)
-    {
-        // Set signal acceptance to true
-        connect2sender(curr_widget, true);
-
-        connect(curr_widget, SIGNAL(connect_signals(bool)),
-                this, SLOT(connect_signals(bool)));
     }
 
     // Update previous tab index
@@ -672,39 +664,6 @@ void MainWindow::setConnected(bool conn)
     ui->DeviceDisconnect_Button->setEnabled(conn);
 }
 
-void MainWindow::connect2sender(QObject* obj, bool conn)
-{
-    // Get connection type & verify connection
-    if (!obj || !device) return;
-
-    // Connect or disconnect signals
-    if (conn) {
-        // Tab to device
-        connect(obj, SIGNAL(write_data(QByteArray)),
-                device, SLOT(write(QByteArray)));
-
-        // Device to tab
-        connect(device, SIGNAL(readyRead(QByteArray)),
-                obj, SLOT(receive(QByteArray)));
-
-        // Tab to window
-        connect(obj, SIGNAL(resetting()),
-                this, SLOT(reset_guis()));
-    } else {
-        // Tab to device
-        disconnect(obj, SIGNAL(write_data(QByteArray)),
-                   device, SLOT(write(QByteArray)));
-
-        // Device to tab
-        disconnect(device, SIGNAL(readyRead(QByteArray)),
-                   obj, SLOT(receive(QByteArray)));
-
-        // Tab to window
-        disconnect(obj, SIGNAL(resetting()),
-                   this, SLOT(reset_guis()));
-    }
-}
-
 void MainWindow::ucOptionsClear()
 {
     bool prev_block_status = ui->ucOptions->blockSignals(true);
@@ -714,7 +673,7 @@ void MainWindow::ucOptionsClear()
         tab_holder = ui->ucOptions->widget(i);
         tab_holder->blockSignals(true);
         ui->ucOptions->removeTab(i);
-        if (tab_holder != welcome_tab) ((GUI_BASE*) tab_holder)->closing();
+        if (tab_holder != welcome_tab) delete tab_holder;
     }
     ui->ucOptions->blockSignals(prev_block_status);
 
@@ -749,13 +708,13 @@ uint8_t MainWindow::getGUIType(QString type)
 QString MainWindow::getGUIName(uint8_t type)
 {
     // Adjust type for correct bit shifts
-    uint8_t type_shifted = (type >> s1_major_key_bit_shift) - 1;
+    uint8_t gui_list_pos = (type >> s1_major_key_bit_shift)-1;
 
     // Check that type is valid
-    if (supportedGUIsList.length() < type_shifted) return "ERROR";
+    if (supportedGUIsList.length() < gui_list_pos) return "ERROR";
 
     // Return the string
-    return supportedGUIsList.at(type_shifted);
+    return supportedGUIsList.at(gui_list_pos);
 }
 
 QStringList MainWindow::getConnSpeeds()
@@ -782,8 +741,20 @@ void MainWindow::update_options(MoreOptions_struct* options)
         checksum_info = options->checksum_map.value(gui_name);
 
         // Set the new generic checksum
-        GUI_BASE::set_generic_checksum(checksum_info);
+        comm_bridge->set_generic_checksum(checksum_info);
     };
+
+    foreach (QString gui_name, supportedGUIsList)
+    {
+        if (options->checksum_map.contains(gui_name))
+        {
+            // Get checksum setting
+            checksum_info = options->checksum_map.value(gui_name);
+
+            // Set the new checksum
+            comm_bridge->set_gui_checksum(getGUIType(gui_name), checksum_info);
+        }
+    }
 
     // Iterate over each tab and apply any changes
     GUI_BASE* tab_holder;

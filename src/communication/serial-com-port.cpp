@@ -38,7 +38,8 @@ SERIAL_COM_PORT::SERIAL_COM_PORT(Serial_COM_Port_Settings* serial_settings, QObj
     parseSettings(serial_settings);
 
     connect(serial_com_port, SIGNAL(readyRead()),
-            this, SLOT(read()));
+            this, SLOT(read()),
+            Qt::DirectConnection);
 }
 
 SERIAL_COM_PORT::~SERIAL_COM_PORT()
@@ -60,7 +61,8 @@ void SERIAL_COM_PORT::open()
     if (isConnected())
     {
         connect(serial_com_port, SIGNAL(errorOccurred(QSerialPort::SerialPortError)),
-                this, SLOT(checkError(QSerialPort::SerialPortError)));
+                this, SLOT(checkError(QSerialPort::SerialPortError)),
+                Qt::DirectConnection);
         emit deviceConnected();
     } else
     {
@@ -93,21 +95,31 @@ void SERIAL_COM_PORT::close()
 
 void SERIAL_COM_PORT::write(QByteArray writeData)
 {
+    // Acquire Lock
     writeLock->lock();
 
+    // Write data (try to force start)
     qDebug() << "S: " << writeData;
     serial_com_port->write((const QByteArray) writeData);
     serial_com_port->flush();
 
+    // Unlock lock
     writeLock->unlock();
 }
 
 void SERIAL_COM_PORT::read()
 {
+    // Acquire Lock
     readLock->lock();
+
+    // Read data
     QByteArray recvData = serial_com_port->readAll();
-    emit readyRead(recvData);
     qDebug() << "R: " << recvData;
+
+    // Emit signal
+    emit readyRead(recvData);
+
+    // Unlock lock
     readLock->unlock();
 }
 

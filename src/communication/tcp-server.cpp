@@ -56,9 +56,11 @@ void TCP_SERVER::open()
 {
     // Connect signals before use
     connect(server, SIGNAL(newConnection()),
-            this, SLOT(connectClient()));
+            this, SLOT(connectClient()),
+            Qt::DirectConnection);
     connect(connecting_msg, SIGNAL(finished(int)),
-            this, SLOT(connecting_finished(int)));
+            this, SLOT(connecting_finished(int)),
+            Qt::DirectConnection);
 
     // Begin listening
     server->listen(listen_addr, listen_port);
@@ -86,23 +88,31 @@ void TCP_SERVER::close()
 
 void TCP_SERVER::write(QByteArray writeData)
 {
+    // Acquire Lock
     writeLock->lock();
 
+    // Write data (try to force start)
     qDebug() << "S: " << writeData;
     server_client->write((const QByteArray) writeData);
     server_client->flush();
 
+    // Unlock lock
     writeLock->unlock();
 }
 
 void TCP_SERVER::read()
 {
+    // Acquire Lock
     readLock->lock();
 
+    // Read data
     QByteArray recvData = server_client->readAll();
-    emit readyRead(recvData);
     qDebug() << "R: " << recvData;
 
+    // Emit signal
+    emit readyRead(recvData);
+
+    // Unlock lock
     readLock->unlock();
 }
 
@@ -117,13 +127,18 @@ void TCP_SERVER::connectClient()
         connecting_msg->hide();
 
         // Connect client signals and slots
-        connect(server_client, SIGNAL(readyRead()), this, SLOT(read()));
-        connect(server_client, SIGNAL(disconnected()), this, SLOT(disconnectClient()));
+        connect(server_client, SIGNAL(readyRead()),
+                this, SLOT(read()),
+                Qt::DirectConnection);
+        connect(server_client, SIGNAL(disconnected()),
+                this, SLOT(disconnectClient()),
+                Qt::DirectConnection);
 
         // Remove uneeded connections
-        disconnect(server, SIGNAL(newConnection()), this, SLOT(connectClient()));
+        disconnect(server, SIGNAL(newConnection()),
+                   this, SLOT(connectClient()));
         disconnect(connecting_msg, SIGNAL(finished(int)),
-                this, SLOT(connecting_finished(int)));
+                   this, SLOT(connecting_finished(int)));
 
         // Notify host to conitnue
         emit deviceConnected();

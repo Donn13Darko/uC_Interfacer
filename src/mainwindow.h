@@ -27,6 +27,7 @@
 #include <QSettings>
 
 #include "gui-helpers/gui-more-options.h"
+#include "gui-helpers/gui-comm-bridge.h"
 
 #include "communication/serial-com-port.h"
 #include "communication/tcp-client.h"
@@ -69,7 +70,6 @@ public:
     void closeEvent(QCloseEvent* e);
 
 public slots:
-    void connect_signals(bool connect);
     void reset_remote();
     void reset_guis();
 
@@ -96,13 +96,16 @@ private:
     Ui::MainWindow *ui;
 
     // Default Welcome tab
-    GUI_WELCOME* welcome_tab;
+    GUI_WELCOME *welcome_tab;
     QString welcome_tab_label;
 
     // More options dialog
-    GUI_MORE_OPTIONS* more_options;
+    GUI_MORE_OPTIONS *more_options;
     MoreOptions_struct main_options_settings;
-    MoreOptions_struct* local_options_settings;
+    MoreOptions_struct *local_options_settings;
+
+    // Comm Bridge
+    GUI_COMM_BRIDGE *comm_bridge;
 
     // Tab holder
     int prev_tab;
@@ -122,7 +125,6 @@ private:
 
     void updateSpeedCombo();
     void setConnected(bool conn);
-    void connect2sender(QObject* obj, bool conn);
     void ucOptionsClear();
     bool deviceConnected();
 
