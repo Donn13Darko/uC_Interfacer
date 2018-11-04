@@ -622,7 +622,7 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
         case MINOR_KEY_IO_DIO_SET:
         {
             // Parse & verify info from set data
-            // Formatted as [pinNum, io_combo, val_high, val_low]
+            // Formatted as [pinNum, val_high, val_low, io_combo]
             pin_num = values.at(s2_io_pin_num_loc);
             value = ((uint16_t) values.at(s2_io_value_high_loc) << 8) | ((uchar) values.at(s2_io_value_low_loc));
             QString combo_text = pinMap->key(values.at(s2_io_combo_loc), "");
@@ -667,7 +667,46 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
                 textValue->blockSignals(prev_block_text);
             }
 
-            // Leave parse loop
+            // Break out after setting and writing new value
+            break;
+        }
+        // If write data
+        case MINOR_KEY_IO_AIO_WRITE:
+        case MINOR_KEY_IO_DIO_WRITE:
+        {
+            // Parse & verify info from set data
+            // Formatted as [pinNum, val_high, val_low]
+            pin_num = values.at(s2_io_pin_num_loc);
+            value = ((uint16_t) values.at(s2_io_value_high_loc) << 8) | ((uchar) values.at(s2_io_value_low_loc));
+
+            // Find pin location on GUI
+            getPinLocation(&rowNum, &colNum, &pInfo, pin_num);
+
+            // Get all widgets for setting
+            if (getItemWidget((QWidget**) &comboBox, pInfo.grid, rowNum, colNum+io_combo_pos)
+                    && getItemWidget((QWidget**) &sliderValue, pInfo.grid, rowNum, colNum+io_slider_pos)
+                    && getItemWidget((QWidget**) &textValue, pInfo.grid, rowNum, colNum+io_line_edit_pos))
+            {
+                // Block combo signals before setting
+                prev_block_combo = comboBox->blockSignals(true);
+                prev_block_slider = sliderValue->blockSignals(true);
+                prev_block_text = textValue->blockSignals(true);
+
+                // Get combo value
+                comboVal = pinMap->value(comboBox->currentText());
+
+                // Set slider and divisor
+                divisor = pinRangeMap->value(comboVal)->div;
+                sliderValue->setSliderPosition(value);
+                textValue->setText(QString::number(((float) value) / divisor));
+
+                // Unblock signals now that they are set
+                comboBox->blockSignals(prev_block_combo);
+                sliderValue->blockSignals(prev_block_slider);
+                textValue->blockSignals(prev_block_text);
+            }
+
+            // Break out after writing new value
             break;
         }
     }

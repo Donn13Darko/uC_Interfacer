@@ -103,37 +103,36 @@ void GUI_PIN_BASE::receive_gui(QByteArray recvData)
 
 void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io_pos, QByteArray *data)
 {
-    // Get info of button clicked
-    int index, col, row, rowSp, colSp;
-    index = pInfo->grid->indexOf((QWidget*) caller);
-    pInfo->grid->getItemPosition(index, &row, &col, &rowSp, &colSp);
-    col = col - io_pos;
-
-    // Get pin info
-    QLayoutItem *itemLabel = pInfo->grid->itemAtPosition(row, col+io_label_pos);
-    QLayoutItem *itemCombo = pInfo->grid->itemAtPosition(row, col+io_combo_pos);
-    QLayoutItem *itemSliderValue = pInfo->grid->itemAtPosition(row, col+io_slider_pos);
-    QLayoutItem *itemTextValue = pInfo->grid->itemAtPosition(row, col+io_line_edit_pos);
-    if (!(itemLabel && itemCombo && itemSliderValue && itemTextValue)) return;
-
     // Get mapping info
     QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo->pinType);
     QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pInfo->pinType);
     QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo->pinType);
     if (!(pinMap && pinRangeMap && pinDisabledSet)) return;
 
+    // Get info of button clicked
+    int index, colNum, rowNum, rowSp, colSp;
+    index = pInfo->grid->indexOf((QWidget*) caller);
+    pInfo->grid->getItemPosition(index, &rowNum, &colNum, &rowSp, &colSp);
+    colNum = colNum - io_pos;
+
     // Get widgets
-    QLabel *label = (QLabel*) itemLabel->widget();
-    QComboBox *combo = (QComboBox*) itemCombo->widget();
-    QSlider *sliderValue = (QSlider*) itemSliderValue->widget();
-    QLineEdit *textValue = (QLineEdit*) itemTextValue->widget();
-    if (!(label && combo && sliderValue && textValue)) return;
+    QLabel *label;
+    QComboBox *comboBox;
+    QSlider *sliderValue;
+    QLineEdit *textValue;
+    if (!(getItemWidget((QWidget**) &label, pInfo->grid, rowNum, colNum+io_label_pos)
+          && getItemWidget((QWidget**) &comboBox, pInfo->grid, rowNum, colNum+io_combo_pos)
+          && getItemWidget((QWidget**) &sliderValue, pInfo->grid, rowNum, colNum+io_slider_pos)
+          && getItemWidget((QWidget**) &textValue, pInfo->grid, rowNum, colNum+io_line_edit_pos)))
+    {
+        return;
+    }
 
     // Set Pin Num
     QString pinNum = QString::number(label->text().toInt());
 
     // Clarify IO selection
-    uint8_t io_combo = pinMap->value(combo->currentText());
+    uint8_t io_combo = pinMap->value(comboBox->currentText());
 
     // Get range list for use in next sections
     RangeList* rList = pinRangeMap->value(io_combo);
@@ -296,10 +295,10 @@ void GUI_PIN_BASE::setPinNumbers(PinTypeInfo *pInfo, uint8_t start_num)
 
 bool GUI_PIN_BASE::getItemWidget(QWidget** itemWidget, QGridLayout *grid, uint8_t row, uint8_t col)
 {
-    *itemWidget = 0;
+    *itemWidget = nullptr;
     QLayoutItem *item = grid->itemAtPosition(row, col);
     if (item) *itemWidget = item->widget();
-    return (*itemWidget != 0);
+    return (*itemWidget != nullptr);
 }
 
 void GUI_PIN_BASE::getPinLocation(uint8_t *row, uint8_t *col, PinTypeInfo *pInfo, uint8_t pin)

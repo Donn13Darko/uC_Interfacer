@@ -26,7 +26,7 @@ void software_spi_master_setup(SPI_MASTER_INFO *spi_info)
 {
     // Set SCLK to start polarity
     // Negate value once to set as 0 or 1, negate again to set to idle state value
-    uc_dio_set(spi_info->SCLK_PIN, uc_dio_output)
+    uc_dio_set(spi_info->SCLK_PIN, uc_dio_output);
     uc_dio_write(spi_info->SCLK_PIN, !!(spi_info->SPI_FLAGS & SPI_MASTER_CLK_POL));
 
     // Set MOSI to output
@@ -111,55 +111,59 @@ uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO
     uint8_t i = 8;
     if (spi_info->SPI_FLAGS & SPI_MASTER_CLK_PHA)
     {
-        // CPHA = 1, set data before leading edge and read data after leading edge
+        // CPHA = 1
+        // "out" changes data on/after leading edge
+        // "in" captures data on/after trailing edge
         do
         {
             // Decrement i
             i -= 1;
 
-            // Set data
-            uc_dio_set(spi_info->MOSI_PIN, uc_dio_output, ((write_byte >> i) & 0x01));
+            // Change clk edge (to pulse state) - leading edge
+            uc_dio_write(spi_info->SCLK_PIN, sclk_pulse);
 
-            // Change clk edge (to pulse state)
-            uc_dio_set(spi_info->SCLK_PIN, uc_dio_output, sclk_pulse);
-
-            // Read data
-            read_byte |= uc_dio_read(spi_info->MISO_PIN) << i;
+            // Set data (on/after leading edge)
+            uc_dio_write(spi_info->MOSI_PIN, ((write_byte >> i) & 0x01));
 
             // Hold SCLK for timeout
             uc_delay_us(spi_info->SCLK_PULSE_US);
 
-            // Change clk edge (back to idle state)
-            uc_dio_set(spi_info->SCLK_PIN, uc_dio_output, sclk_idle);
+            // Change clk edge (back to idle state) - trailing edge
+            uc_dio_write(spi_info->SCLK_PIN, sclk_idle);
+
+            // Read data (on/after trailing edge)
+            read_byte |= uc_dio_read(spi_info->MISO_PIN) << i;
 
             // Hold SCLK for timeout
             uc_delay_us(spi_info->SCLK_PULSE_US);
         } while (i);
     } else
     {
-        // CPHA = 0, set data after leading edge and read data after trailing eadge
+        // CPHA = 0
+        // "out" changes data before leading edge (on trailing edge of previous clock)
+        // "in" captures data on/after leading edge
         do
         {
             // Decrement i
             i -= 1;
-            
-            // Change clk edge (to pulse state)
-            uc_dio_set(spi_info->SCLK_PIN, uc_dio_output, sclk_pulse);
 
-            // Set data
-            uc_dio_set(spi_info->MOSI_PIN, uc_dio_output, ((write_byte >> i) & 0x01));
+            // Set data (before leading edge)
+            uc_dio_write(spi_info->MOSI_PIN, ((write_byte >> i) & 0x01));
 
             // Hold SCLK for timeout
             uc_delay_us(spi_info->SCLK_PULSE_US);
+            
+            // Change clk edge (to pulse state) - leading edge
+            uc_dio_write(spi_info->SCLK_PIN, sclk_pulse);
 
-            // Change clk edge (back to idle state)
-            uc_dio_set(spi_info->SCLK_PIN, uc_dio_output, sclk_idle);
-
-            // Read data
+            // Read data (right on/after leading edge)
             read_byte |= uc_dio_read(spi_info->MISO_PIN) << i;
 
             // Hold SCLK for timeout
             uc_delay_us(spi_info->SCLK_PULSE_US);
+
+            // Change clk edge (back to idle state) - trailing edge
+            uc_dio_write(spi_info->SCLK_PIN, sclk_idle);
         } while (i);
     }
 
