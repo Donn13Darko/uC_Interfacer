@@ -34,88 +34,84 @@ extern "C"
 
 /* SPI Master Structure */
 typedef struct SPI_MASTER_INFO {
-    uint8_t MOSI_PIN;
-    uint8_t MISO_PIN;
-    uint8_t SCLK_PIN;
-    uint32_t SCLK_PULSE_US; // SPI Clock width (period/2)
-    uint8_t SPI_FLAGS; // See SPI_MASTER_FLAGS_ENUM
-    uint8_t SPI_DATA_BITS;  // Min 0, Max 32, Default 8
+    uint8_t MOSI_PIN;       // SPI MOSI Pin
+    uint8_t MISO_PIN;       // SPI MISO Pin
+    uint8_t SCLK_PIN;       // SPI SCLK Pin
+    uint8_t SPI_FLAGS;      // See SPI_MASTER_FLAGS_ENUM
 } SPI_MASTER_INFO;
-#define SPI_MASTER_DEFAULT {0, 0, 0, 0, 0, 8}
+#define SPI_MASTER_DEFAULT {0, 0, 0, 0}
 
 typedef enum {
     // Set after setup called
     SPI_MASTER_SETUP = 0x01,
     // Set after begin transaction called
-    SPI_MASTER_TRANS_STARTED = 0x02,
+    SPI_MASTER_TRANS_STARTED = 0x02
+} SPI_MASTER_FLAGS_ENUM;
+
+
+/* SPI Slave Struct */
+typedef struct SPI_SLAVE_INFO {
+    uint8_t SLAVE_PIN_ADDR;         // Pin for slave select (if 0xFF, ignored)
+    uint32_t SETUP_DELAY_US;        // Time to wait after setting slave select
+    uint32_t SCLK_ACTIVE_PULSE_US;  // Clock tick pulse time (leading edge time)
+    uint32_t SCLK_IDLE_PULSE_US;    // Same as IDLE state (tailing edge time)
+    uint32_t TRANSACTION_DELAY_US;  // Wait between transmissions
+    uint32_t READ_WRITE_DELAY_US;   // Wait between reading and writing data
+    uint8_t SLAVE_DATA_BITS;        // Number of bits per transaction (Min: 0, Max: 32, Default: 8)
+    uint8_t SLAVE_FLAGS;            // See SPI_SLAVE_FLAGS_ENUM
+} SPI_SLAVE_INFO;
+#define SPI_SLAVE_DEFAULT {0xFF, 0, 0, 0, 0, 0, 8, 0}
+
+typedef enum {
+    // Set after setup called
+    SPI_SLAVE_SETUP = 0x01,
+    // Inverts the polarity of slave select
+    // If set, slave selected = HIGH and not selected = LOW
+    SPI_SLAVE_SELECTED_POL = 0x02,
     // If set, transmits LSB first
-    SPI_MASTER_MSB_LSB_TOGGLE = 0x04,
+    SPI_SLAVE_MSB_LSB_TOGGLE = 0x04,
     // Select if reading or writing first
     // If neither or both set, performs at same time
-    SPI_MASTER_WRITE_FIRST = 0x08,
-    SPI_MASTER_READ_FIRST = 0x10,
+    SPI_SLAVE_WRITE_FIRST = 0x08,
+    SPI_SLAVE_READ_FIRST = 0x10,
     // Use if send_len and read_len not same length
     // And reading at the same time
-    SPI_MASTER_ALIGN_RIGHT = 0x20,
+    SPI_SLAVE_ALIGN_RIGHT = 0x20,
     // Defines SCLK polarity
     // setting 0 is pulse high/idle low, 1 is pulse low/idle high
-    SPI_MASTER_CLK_POL = 0x40,
+    SPI_SLAVE_CLK_POL = 0x40,
     // Defines read/write phase and timing
-    SPI_MASTER_CLK_PHA = 0x80
-} SPI_MASTER_FLAGS_ENUM;
+    SPI_SLAVE_CLK_PHA = 0x80
+} SPI_SLAVE_FLAGS_ENUM;
 
 
 /* SPI MASTER Functions */
 
 /* Setup SPI interface for communication */
-void software_spi_master_setup(SPI_MASTER_INFO *spi_info);
+void software_spi_master_setup(SPI_MASTER_INFO *spi_master);
 
 /* Setup slave pin for communication */
-void software_spi_master_setup_slave(uint8_t slave_select);
+void software_spi_master_setup_slave(SPI_SLAVE_INFO *spi_slave);
 
 /* Exit SPI interface */
-void software_spi_master_exit(SPI_MASTER_INFO *spi_info);
+void software_spi_master_exit(SPI_MASTER_INFO *spi_master);
+
+/* End slave pin for communication */
+void software_spi_master_exit_slave(SPI_SLAVE_INFO *spi_slave);
 
 /* Start SPI transaction */
-void software_spi_master_begin_transaction(SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                            uint32_t setup_delay_us);
+void software_spi_master_begin_transaction(SPI_MASTER_INFO *spi_master, SPI_SLAVE_INFO *spi_slave);
 
 /* End SPI transaction */
-void software_spi_master_end_transaction(SPI_MASTER_INFO *spi_info, uint8_t slave_select);
+void software_spi_master_end_transaction(SPI_MASTER_INFO *spi_master, SPI_SLAVE_INFO *spi_slave);
 
 /* Perform a SPI read & write transaction */
-uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *spi_info);
+uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *spi_master, SPI_SLAVE_INFO *spi_slave);
 
 /* Performs multiple SPI transactions */
 void software_spi_master_perform_transaction(void *write_data, uint32_t write_data_len,
                                               void *read_data, uint32_t read_data_len,
-                                              SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                              uint32_t setup_delay_us, uint32_t transaction_delay_us,
-                                              uint32_t read_write_delay_us);
-
-/* Sends write_data_len transactions from write_data array. */
-void software_spi_master_write_data(void *write_data, uint32_t write_data_len,
-                                      SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                      uint32_t setup_delay_us, uint32_t transaction_delay_us);
-
-/* Reads read_data_len transaction into read_data array */
-void software_spi_master_read_data(void *read_data, uint32_t read_data_len,
-                                    SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                     uint32_t setup_delay_us, uint32_t transaction_delay_us);
-
-/* Sends a single transaction acorss the SPI connection */
-void software_spi_master_write_single(uint32_t write_data,
-                                        SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                        uint32_t setup_delay_us);
-
-/* Reads and returns a single transaction */
-uint32_t software_spi_master_read_single(SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                          uint32_t setup_delay_us);
-
-/* Writes & reads a single transaction */
-uint32_t software_spi_master_read_write_single(uint32_t write_data, 
-                                                SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                                uint32_t setup_delay_us);
+                                              SPI_MASTER_INFO *spi_master, SPI_SLAVE_INFO *spi_slave);
 
 
 /*** Following extern functions must be defined on a per uC basis ***/

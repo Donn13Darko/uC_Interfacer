@@ -26,94 +26,118 @@ void set_next_bits(uint32_t bits, void *data, uint32_t pos, uint8_t bit_width);
 uint32_t reverse_bits(uint32_t data, uint8_t bits);
 
 /* Setup SPI interface for communication */
-void software_spi_master_setup(SPI_MASTER_INFO *spi_info)
+void software_spi_master_setup(SPI_MASTER_INFO *spi_master)
 {
-    // Set SCLK to start polarity
-    // Negate value once to set as 0 or 1, negate again to set to idle state value
-    uc_dio_set(spi_info->SCLK_PIN, uc_dio_output);
-    uc_dio_write(spi_info->SCLK_PIN, !!(spi_info->SPI_FLAGS & SPI_MASTER_CLK_POL));
+    // Check if already setup
+    if (spi_master->SPI_FLAGS & SPI_MASTER_SETUP) return;
+
+    // Setup SCLK to output
+    uc_dio_set(spi_master->SCLK_PIN, uc_dio_output);
 
     // Set MOSI to output
-    uc_dio_set(spi_info->MOSI_PIN, uc_dio_output);
-    uc_dio_write(spi_info->MOSI_PIN, 0);
+    uc_dio_set(spi_master->MOSI_PIN, uc_dio_output);
 
     // Set MISO to input
-    uc_dio_set(spi_info->MISO_PIN, uc_dio_input);
+    uc_dio_set(spi_master->MISO_PIN, uc_dio_input);
 
-    // Set setup flag
-    spi_info->SPI_FLAGS |= SPI_MASTER_SETUP;
+    // Set master setup flag
+    spi_master->SPI_FLAGS |= SPI_MASTER_SETUP;
 }
 
 /* Setup slave pin for communication */
-void software_spi_master_setup_slave(uint8_t slave_select)
+void software_spi_master_setup_slave(SPI_SLAVE_INFO *spi_slave)
 {
-    // Set slave for use with bus
-    uc_dio_set(slave_select, uc_dio_output);
-    uc_dio_write(slave_select, 1);
+    // Check if already setup
+    if (spi_slave->SLAVE_FLAGS & SPI_SLAVE_SETUP) return;
+
+    // Setup slave as unselected
+    if (spi_slave->SLAVE_PIN_ADDR != 0xFF)
+    {
+        uc_dio_set(spi_slave->SLAVE_PIN_ADDR, uc_dio_output);
+        uc_dio_write(spi_slave->SLAVE_PIN_ADDR, !(spi_slave->SLAVE_FLAGS & SPI_SLAVE_SELECTED_POL));
+    }
+
+    // Set slave setup flag
+    spi_slave->SLAVE_FLAGS |= SPI_SLAVE_SETUP;
 }
 
 /* Exit SPI interface */
-void software_spi_master_exit(SPI_MASTER_INFO *spi_info)
+void software_spi_master_exit(SPI_MASTER_INFO *spi_master)
 {
     // Set all pins to inputs
-    uc_dio_set(spi_info->SCLK_PIN, uc_dio_input);
-    uc_dio_set(spi_info->MOSI_PIN, uc_dio_input);
-    uc_dio_set(spi_info->MISO_PIN, uc_dio_input);
+    uc_dio_set(spi_master->SCLK_PIN, uc_dio_input);
+    uc_dio_set(spi_master->MOSI_PIN, uc_dio_input);
+    uc_dio_set(spi_master->MISO_PIN, uc_dio_input);
 
-    // Clear setup flag
-    spi_info->SPI_FLAGS &= ~SPI_MASTER_SETUP;
+    // Clear master setup flag
+    spi_master->SPI_FLAGS &= ~SPI_MASTER_SETUP;
 }
 
-void software_spi_master_begin_transaction(SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                            uint32_t setup_delay_us)
+/* Exit slave interface */
+void software_spi_master_exit_slave(SPI_SLAVE_INFO *spi_slave)
 {
-    // Pull slave select low and wait for slave ready (delay)
-    if (slave_select != 0xFF)
+    // Setup slave as unselected
+    if (spi_slave->SLAVE_PIN_ADDR != 0xFF)
     {
-        uc_dio_set(slave_select, uc_dio_output);
-        uc_dio_write(slave_select, 0);
-        uc_delay_us(setup_delay_us);
+        uc_dio_set(spi_slave->SLAVE_PIN_ADDR, uc_dio_input);
     }
 
-    // Set started bit in spi_info
-    spi_info->SPI_FLAGS |= SPI_MASTER_TRANS_STARTED;
+    // Clear slave setup flag
+    spi_slave->SLAVE_FLAGS &= ~SPI_SLAVE_SETUP;
 }
 
-void software_spi_master_end_transaction(SPI_MASTER_INFO *spi_info, uint8_t slave_select)
+void software_spi_master_begin_transaction(SPI_MASTER_INFO *spi_master, SPI_SLAVE_INFO *spi_slave)
 {
-    // Pull slave select high to end transaction
-    if (slave_select != 0xFF)
+    // Set SCLK to slave start polarity
+    // Negate value once to set as 0 or 1, negate again to set to idle state value
+    uc_dio_write(spi_master->SCLK_PIN, !!(spi_slave->SLAVE_FLAGS & SPI_SLAVE_CLK_POL));
+
+    // Set slave selected and wait for slave ready (setup_delay)
+    if (spi_slave->SLAVE_PIN_ADDR != 0xFF)
     {
-        uc_dio_write(slave_select, 1);
+        uc_dio_write(spi_slave->SLAVE_PIN_ADDR, !!(spi_slave->SLAVE_FLAGS & SPI_SLAVE_SELECTED_POL));
+        uc_delay_us(spi_slave->SETUP_DELAY_US);
     }
 
-    // Clear started bit in spi_info
-    spi_info->SPI_FLAGS &= ~SPI_MASTER_TRANS_STARTED;
+    // Set started bit in spi_master
+    spi_master->SPI_FLAGS |= SPI_MASTER_TRANS_STARTED;
+}
+
+void software_spi_master_end_transaction(SPI_MASTER_INFO *spi_master, SPI_SLAVE_INFO *spi_slave)
+{
+    // Set slave unselected
+    if (spi_slave->SLAVE_PIN_ADDR != 0xFF)
+    {
+        uc_dio_write(spi_slave->SLAVE_PIN_ADDR, !(spi_slave->SLAVE_FLAGS & SPI_SLAVE_SELECTED_POL));
+    }
+
+    // Can leave SCLK at slaves IDLE (gets overwritten during begin transaction)
+    // Clear started bit in spi_master
+    spi_master->SPI_FLAGS &= ~SPI_MASTER_TRANS_STARTED;
 }
 
 /* Perform a SPI read & write transaction 
- * Expects that software_spi_master_setup & software_spi_master_begin_transaction
- * have already been called
+ * Expects that setup and begin transaction have already been called
  */
-uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *spi_info)
+uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *spi_master, SPI_SLAVE_INFO *spi_slave)
 {
     // Setup variabless
     uint32_t read_data = 0;
-    uint8_t i = spi_info->SPI_DATA_BITS;
+    uint8_t i = spi_slave->SLAVE_DATA_BITS;
 
     // Set clk pulse and idle states
     // Negate to set as 0 or 1
-    uint8_t sclk_pulse = !(spi_info->SPI_FLAGS & SPI_MASTER_CLK_POL);
+    uint8_t sclk_pulse = !(spi_slave->SLAVE_FLAGS & SPI_SLAVE_CLK_POL);
     uint8_t sclk_idle = !sclk_pulse;
 
     // Reverse bits if sending LSB first
-    if (write_data && (spi_info->SPI_FLAGS & SPI_MASTER_MSB_LSB_TOGGLE))
+    if (write_data && (spi_slave->SLAVE_FLAGS & SPI_SLAVE_MSB_LSB_TOGGLE))
     {
-        write_data = reverse_bits(write_data, spi_info->SPI_DATA_BITS);
+        write_data = reverse_bits(write_data, spi_slave->SLAVE_DATA_BITS);
     }
 
     // Select which clock phase we are using
-    if (spi_info->SPI_FLAGS & SPI_MASTER_CLK_PHA)
+    if (spi_slave->SLAVE_FLAGS & SPI_SLAVE_CLK_PHA)
     {
         // CPHA = 1
         // "out" changes data on/after leading edge
@@ -124,22 +148,22 @@ uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *s
             i -= 1;
 
             // Change clk edge (to pulse state) - leading edge
-            uc_dio_write(spi_info->SCLK_PIN, sclk_pulse);
+            uc_dio_write(spi_master->SCLK_PIN, sclk_pulse);
 
             // Set data (on/after leading edge)
-            uc_dio_write(spi_info->MOSI_PIN, ((write_data >> i) & 0x01));
+            uc_dio_write(spi_master->MOSI_PIN, ((write_data >> i) & 0x01));
 
             // Hold SCLK for timeout
-            uc_delay_us(spi_info->SCLK_PULSE_US);
+            uc_delay_us(spi_slave->SCLK_ACTIVE_PULSE_US);
 
             // Change clk edge (back to idle state) - trailing edge
-            uc_dio_write(spi_info->SCLK_PIN, sclk_idle);
+            uc_dio_write(spi_master->SCLK_PIN, sclk_idle);
 
             // Read data (on/after trailing edge)
-            read_data |= uc_dio_read(spi_info->MISO_PIN) << i;
+            read_data |= uc_dio_read(spi_master->MISO_PIN) << i;
 
             // Hold SCLK for timeout
-            uc_delay_us(spi_info->SCLK_PULSE_US);
+            uc_delay_us(spi_slave->SCLK_IDLE_PULSE_US);
         }
     } else
     {
@@ -152,29 +176,29 @@ uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *s
             i -= 1;
 
             // Set data (before leading edge)
-            uc_dio_write(spi_info->MOSI_PIN, ((write_data >> i) & 0x01));
+            uc_dio_write(spi_master->MOSI_PIN, ((write_data >> i) & 0x01));
 
             // Hold SCLK for timeout
-            uc_delay_us(spi_info->SCLK_PULSE_US);
+            uc_delay_us(spi_slave->SCLK_IDLE_PULSE_US);
             
             // Change clk edge (to pulse state) - leading edge
-            uc_dio_write(spi_info->SCLK_PIN, sclk_pulse);
+            uc_dio_write(spi_master->SCLK_PIN, sclk_pulse);
 
             // Read data (right on/after leading edge)
-            read_data |= uc_dio_read(spi_info->MISO_PIN) << i;
+            read_data |= uc_dio_read(spi_master->MISO_PIN) << i;
 
             // Hold SCLK for timeout
-            uc_delay_us(spi_info->SCLK_PULSE_US);
+            uc_delay_us(spi_slave->SCLK_ACTIVE_PULSE_US);
 
             // Change clk edge (back to idle state) - trailing edge
-            uc_dio_write(spi_info->SCLK_PIN, sclk_idle);
+            uc_dio_write(spi_master->SCLK_PIN, sclk_idle);
         }
     }
 
     // Reverse bits if receiving LSB first
-    if (read_data && (spi_info->SPI_FLAGS & SPI_MASTER_MSB_LSB_TOGGLE))
+    if (read_data && (spi_slave->SLAVE_FLAGS & SPI_SLAVE_MSB_LSB_TOGGLE))
     {
-        read_data = reverse_bits(read_data, spi_info->SPI_DATA_BITS);
+        read_data = reverse_bits(read_data, spi_slave->SLAVE_DATA_BITS);
     }
 
     // Return the read info
@@ -182,78 +206,69 @@ uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *s
 }
 
 /* Performs multiple SPI transactions
- * Will call setup, transaction begin, and transaction end if not already called
+ * Assumes setup already called. Will call transaction begin and end
  * 
  * Args:
  * write_data & write_data_len: send data across MOSI
  * read_data & read_data_len: read & store data from MISO
- * spi_info: struct that describes the SPI connection
- * slave_select: Which, if any, slave to use
- * setup_delay_us: Microseconds to wait after setting up
- * transaction_delay_us: Microseconds to wait between each byte transaction
- * read_write_delay_us: Microseconds to wait between reading or writing if not doing at the same time
+ * spi_master: struct that describes the SPI connection
+ * spi_slave: Which, if any, slave to use
  */
 void software_spi_master_perform_transaction(void *write_data, uint32_t write_data_len,
                                               void *read_data, uint32_t read_data_len,
-                                              SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                              uint32_t setup_delay_us, uint32_t transaction_delay_us,
-                                              uint32_t read_write_delay_us)
+                                              SPI_MASTER_INFO *spi_master, SPI_SLAVE_INFO *spi_slave)
 {
-    // Setup SPI interface (if not already setup)
-    if (!(spi_info->SPI_FLAGS & SPI_MASTER_SETUP))
-        software_spi_master_setup(spi_info);
-
     // Start transaction
-    software_spi_master_begin_transaction(spi_info, slave_select, setup_delay_us);
+    software_spi_master_begin_transaction(spi_master, spi_slave);
 
     // Select transaction method
     uint32_t i, j, curr_data;
-    switch ((spi_info->SPI_FLAGS & SPI_MASTER_WRITE_FIRST) | (spi_info->SPI_FLAGS & SPI_MASTER_READ_FIRST))
+    switch ((spi_slave->SLAVE_FLAGS & SPI_SLAVE_WRITE_FIRST) | (spi_slave->SLAVE_FLAGS & SPI_SLAVE_READ_FIRST))
     {
-        case SPI_MASTER_WRITE_FIRST:
+        case SPI_SLAVE_WRITE_FIRST:
         {
             // Write data
             for (i = 0; i < write_data_len; i++)
             {
-                curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
-                software_spi_master_transaction(curr_data, spi_info);
-                uc_delay_us(transaction_delay_us);
+                curr_data = get_next_bits(write_data, i, spi_slave->SLAVE_DATA_BITS);
+                software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
             }
 
             // Delay between read and writes
             if (write_data_len && read_data_len)
-              uc_delay_us(read_write_delay_us);
+              uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
 
             // Read data
             for (i = 0; i < read_data_len; i++)
             {
-                curr_data = software_spi_master_transaction(0, spi_info);
-                set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
-                uc_delay_us(transaction_delay_us);
+                curr_data = software_spi_master_transaction(0, spi_master, spi_slave);
+                set_next_bits(curr_data, read_data, i, spi_slave->SLAVE_DATA_BITS);
+                uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
             }
 
             break;
         }
-        case SPI_MASTER_READ_FIRST:
+        case SPI_SLAVE_READ_FIRST:
         {
             // Read data
             for (i = 0; i < read_data_len; i++)
             {
-                curr_data = software_spi_master_transaction(0, spi_info);
-                set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
-                uc_delay_us(transaction_delay_us);
+                curr_data = software_spi_master_transaction(0, spi_master, spi_slave);
+                set_next_bits(curr_data, read_data, i, spi_slave->SLAVE_DATA_BITS);
+                uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
             }
 
             // Delay between read and writes
             if (write_data_len && read_data_len)
-              uc_delay_us(read_write_delay_us);
+              uc_delay_us(spi_slave->READ_WRITE_DELAY_US);
 
             // Write data
             for (i = 0; i < write_data_len; i++)
             {
-                curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
-                software_spi_master_transaction(curr_data, spi_info);
-                uc_delay_us(transaction_delay_us);
+                curr_data = get_next_bits(write_data, i, spi_slave->SLAVE_DATA_BITS);
+                software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
             }
 
             break;
@@ -266,108 +281,108 @@ void software_spi_master_perform_transaction(void *write_data, uint32_t write_da
             {
                 for (i = 0; i < read_data_len; i++)
                 {
-                    curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
-                    curr_data = software_spi_master_transaction(curr_data, spi_info);
-                    set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
-                    uc_delay_us(transaction_delay_us);
+                    curr_data = get_next_bits(write_data, i, spi_slave->SLAVE_DATA_BITS);
+                    curr_data = software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                    set_next_bits(curr_data, read_data, i, spi_slave->SLAVE_DATA_BITS);
+                    uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                 }
             } else if (read_data_len < write_data_len)
             {
                 // Align right means fix smaller to tail end
-                if (spi_info->SPI_FLAGS & SPI_MASTER_ALIGN_RIGHT)
+                if (spi_slave->SLAVE_FLAGS & SPI_SLAVE_ALIGN_RIGHT)
                 {
                     // Begin by writing only
                     for (i = 0; i < (write_data_len - read_data_len); i++)
                     {
-                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
-                        software_spi_master_transaction(curr_data, spi_info);
-                        uc_delay_us(transaction_delay_us);
+                        curr_data = get_next_bits(write_data, i, spi_slave->SLAVE_DATA_BITS);
+                        software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                        uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                     }
 
                     // Delay between read and writes
                     if (write_data_len && read_data_len)
-                      uc_delay_us(read_write_delay_us);
+                      uc_delay_us(spi_slave->READ_WRITE_DELAY_US);
 
                     // Finish by writing and reading data packets
                     j = 0;
                     for (i = (write_data_len - read_data_len); i < write_data_len; i++)
                     {
 
-                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
-                        curr_data = software_spi_master_transaction(curr_data, spi_info);
-                        set_next_bits(curr_data, read_data, j++, spi_info->SPI_DATA_BITS);
-                        uc_delay_us(transaction_delay_us);
+                        curr_data = get_next_bits(write_data, i, spi_slave->SLAVE_DATA_BITS);
+                        curr_data = software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                        set_next_bits(curr_data, read_data, j++, spi_slave->SLAVE_DATA_BITS);
+                        uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                     }
                 } else
                 {
                     // Begin by writing & reading
                     for (i = 0; i < read_data_len; i++)
                     {
-                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
-                        curr_data = software_spi_master_transaction(curr_data, spi_info);
-                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
-                        uc_delay_us(transaction_delay_us);
+                        curr_data = get_next_bits(write_data, i, spi_slave->SLAVE_DATA_BITS);
+                        curr_data = software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                        set_next_bits(curr_data, read_data, i, spi_slave->SLAVE_DATA_BITS);
+                        uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                     }
 
                     // Delay between read and writes
                     if (write_data_len && read_data_len)
-                      uc_delay_us(read_write_delay_us);
+                      uc_delay_us(spi_slave->READ_WRITE_DELAY_US);
 
                     // Finish by writing remaining data packets
                     for (i = read_data_len; i < write_data_len; i++)
                     {
-                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
-                        software_spi_master_transaction(curr_data, spi_info);
-                        uc_delay_us(transaction_delay_us);
+                        curr_data = get_next_bits(write_data, i, spi_slave->SLAVE_DATA_BITS);
+                        software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                        uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                     }
                 }
             } else if (write_data_len < read_data_len)
             {
                 // Align right means fix smaller to tail end
-                if (spi_info->SPI_FLAGS & SPI_MASTER_ALIGN_RIGHT)
+                if (spi_slave->SLAVE_FLAGS & SPI_SLAVE_ALIGN_RIGHT)
                 {
                     // Begin by reading only
                     for (i = 0; i < (read_data_len - write_data_len); i++)
                     {
-                        curr_data = software_spi_master_transaction(0, spi_info);
-                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
-                        uc_delay_us(transaction_delay_us);
+                        curr_data = software_spi_master_transaction(0, spi_master, spi_slave);
+                        set_next_bits(curr_data, read_data, i, spi_slave->SLAVE_DATA_BITS);
+                        uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                     }
 
                     // Delay between read and writes
                     if (write_data_len && read_data_len)
-                      uc_delay_us(read_write_delay_us);
+                      uc_delay_us(spi_slave->READ_WRITE_DELAY_US);
 
                     // Finish by writing and reading data packets
                     j = 0;
                     for (i = (read_data_len - write_data_len); i < read_data_len; i++)
                     {
-                        curr_data = get_next_bits(write_data, j++, spi_info->SPI_DATA_BITS);
-                        curr_data = software_spi_master_transaction(curr_data, spi_info);
-                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
-                        uc_delay_us(transaction_delay_us);
+                        curr_data = get_next_bits(write_data, j++, spi_slave->SLAVE_DATA_BITS);
+                        curr_data = software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                        set_next_bits(curr_data, read_data, i, spi_slave->SLAVE_DATA_BITS);
+                        uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                     }
                 } else
                 {
                     // Begin by writing & reading
                     for (i = 0; i < write_data_len; i++)
                     {
-                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
-                        curr_data = software_spi_master_transaction(curr_data, spi_info);
-                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
-                        uc_delay_us(transaction_delay_us);
+                        curr_data = get_next_bits(write_data, i, spi_slave->SLAVE_DATA_BITS);
+                        curr_data = software_spi_master_transaction(curr_data, spi_master, spi_slave);
+                        set_next_bits(curr_data, read_data, i, spi_slave->SLAVE_DATA_BITS);
+                        uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                     }
 
                     // Delay between read and writes
                     if (write_data_len && read_data_len)
-                      uc_delay_us(read_write_delay_us);
+                      uc_delay_us(spi_slave->READ_WRITE_DELAY_US);
 
                     // Finish by reading remaining data bytes
                     for (i = write_data_len; i < read_data_len; i++)
                     {
-                        curr_data = software_spi_master_transaction(0, spi_info);
-                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
-                        uc_delay_us(transaction_delay_us);
+                        curr_data = software_spi_master_transaction(0, spi_master, spi_slave);
+                        set_next_bits(curr_data, read_data, i, spi_slave->SLAVE_DATA_BITS);
+                        uc_delay_us(spi_slave->TRANSACTION_DELAY_US);
                     }
                 }
             }
@@ -376,81 +391,7 @@ void software_spi_master_perform_transaction(void *write_data, uint32_t write_da
     }
 
     // End transaction
-    software_spi_master_end_transaction(spi_info, slave_select);
-}
-
-/* Sends write_data_len transactions from write_data array.
- * Makes a call to software_spi_master_perform_transaction with provided arguments.
- *
- * Args:
- * write_data & write_data_len: send data across MOSI
- * spi_info: struct that describes the SPI connection
- * slave_select: Which, if any, slave to use
- */
-void software_spi_master_write_data(void *write_data, uint32_t write_data_len,
-                                      SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                      uint32_t setup_delay_us, uint32_t transaction_delay_us)
-{
-  // Call perform transaction
-  software_spi_master_perform_transaction(write_data, write_data_len, 0, 0,
-                                          spi_info, slave_select,
-                                          setup_delay_us, transaction_delay_us, 0);
-}
-
-/* Reads read_data_len transactions into read_data array
- * Makes a call to software_spi_master_perform_transaction with provided arguments.
- *
- * Args:
- * read_data & read_data_len: read & store data from MISO
- * spi_info: struct that describes the SPI connection
- * slave_select: Which, if any, slave to use
- */
-void software_spi_master_read_data(void *read_data, uint32_t read_data_len,
-                                    SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                    uint32_t setup_delay_us, uint32_t transaction_delay_us)
-{
-  // Call perform transaction
-  software_spi_master_perform_transaction(0, 0, read_data, read_data_len,
-                                          spi_info, slave_select,
-                                          setup_delay_us, transaction_delay_us, 0);
-}
-
-/* Sends a single transaction acorss the SPI connection. */
-void software_spi_master_write_single(uint32_t write_data,
-                                        SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                        uint32_t setup_delay_us)
-{
-    // Call perform transaction
-    software_spi_master_perform_transaction(&write_data, 1, 0, 0, spi_info, slave_select, setup_delay_us, 0, 0);
-}
-
-/* Reads and returns a single transaction. */
-uint32_t software_spi_master_read_single(SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                        uint32_t setup_delay_us)
-{
-    // Setup variables
-    uint32_t read_data;
-
-    // Call perform transaction
-    software_spi_master_perform_transaction(0, 0, &read_data, 1, spi_info, slave_select, setup_delay_us, 0, 0);
-
-    // Return data
-    return read_data;
-}
-
-/* Sends a single transaction acorss the SPI connection. */
-uint32_t software_spi_master_read_write_single(uint32_t write_data,
-                                                SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                                uint32_t setup_delay_us)
-{
-    // Setup variables
-    uint32_t read_data;
-
-    // Call perform transaction
-    software_spi_master_perform_transaction(&write_data, 1, &read_data, 1, spi_info, slave_select, setup_delay_us, 0, 0);
-
-    // Return data
-    return read_data;
+    software_spi_master_end_transaction(spi_master, spi_slave);
 }
 
 /* Get the next bits of data */
