@@ -26,25 +26,35 @@ void software_spi_master_setup(SPI_MASTER_INFO *spi_info)
 {
     // Set SCLK to start polarity
     // Negate value once to set as 0 or 1, negate again to set to idle state value
-    uc_dio_set(spi_info->SCLK_PIN, uc_dio_output, !!(spi_info->SPI_FLAGS & SPI_MASTER_CLK_POL));
+    uc_dio_set(spi_info->SCLK_PIN, uc_dio_output)
+    uc_dio_write(spi_info->SCLK_PIN, !!(spi_info->SPI_FLAGS & SPI_MASTER_CLK_POL));
 
     // Set MOSI to output
-    uc_dio_set(spi_info->MOSI_PIN, uc_dio_output, 0);
+    uc_dio_set(spi_info->MOSI_PIN, uc_dio_output);
+    uc_dio_write(spi_info->MOSI_PIN, 0);
 
     // Set MISO to input
-    uc_dio_set(spi_info->MISO_PIN, uc_dio_input, 0);
+    uc_dio_set(spi_info->MISO_PIN, uc_dio_input);
 
     // Set setup flag
     spi_info->SPI_FLAGS |= SPI_MASTER_SETUP;
+}
+
+/* Setup slave pin for communication */
+void software_spi_master_setup_slave(uint8_t slave_select)
+{
+    // Set slave for use with bus
+    uc_dio_set(slave_select, uc_dio_output);
+    uc_dio_write(slave_select, 1);
 }
 
 /* Exit SPI interface */
 void software_spi_master_exit(SPI_MASTER_INFO *spi_info)
 {
     // Set all pins to inputs
-    uc_dio_set(spi_info->SCLK_PIN, uc_dio_input, 0);
-    uc_dio_set(spi_info->MOSI_PIN, uc_dio_input, 0);
-    uc_dio_set(spi_info->MISO_PIN, uc_dio_input, 0);
+    uc_dio_set(spi_info->SCLK_PIN, uc_dio_input);
+    uc_dio_set(spi_info->MOSI_PIN, uc_dio_input);
+    uc_dio_set(spi_info->MISO_PIN, uc_dio_input);
 
     // Clear setup flag
     spi_info->SPI_FLAGS &= ~SPI_MASTER_SETUP;
@@ -56,7 +66,8 @@ void software_spi_master_begin_transaction(SPI_MASTER_INFO *spi_info, uint8_t sl
     // Pull slave select low and wait for slave ready (delay)
     if (slave_select != 0xFF)
     {
-        uc_dio_set(slave_select, uc_dio_output, 0);
+        uc_dio_set(slave_select, uc_dio_output);
+        uc_dio_write(slave_select, 0);
         uc_delay_us(setup_delay_us);
     }
 
@@ -69,7 +80,7 @@ void software_spi_master_end_transaction(SPI_MASTER_INFO *spi_info, uint8_t slav
     // Pull slave select high to end transaction
     if (slave_select != 0xFF)
     {
-        uc_dio_set(slave_select, uc_dio_output, 1);
+        uc_dio_write(slave_select, 1);
     }
 
     // Clear started bit in spi_info
@@ -116,13 +127,13 @@ uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO
             read_byte |= uc_dio_read(spi_info->MISO_PIN) << i;
 
             // Hold SCLK for timeout
-            uc_delay_us(spi_info->SCLK_DELAY_US);
+            uc_delay_us(spi_info->SCLK_PULSE_US);
 
             // Change clk edge (back to idle state)
             uc_dio_set(spi_info->SCLK_PIN, uc_dio_output, sclk_idle);
 
             // Hold SCLK for timeout
-            uc_delay_us(spi_info->SCLK_DELAY_US);
+            uc_delay_us(spi_info->SCLK_PULSE_US);
         } while (i);
     } else
     {
@@ -139,7 +150,7 @@ uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO
             uc_dio_set(spi_info->MOSI_PIN, uc_dio_output, ((write_byte >> i) & 0x01));
 
             // Hold SCLK for timeout
-            uc_delay_us(spi_info->SCLK_DELAY_US);
+            uc_delay_us(spi_info->SCLK_PULSE_US);
 
             // Change clk edge (back to idle state)
             uc_dio_set(spi_info->SCLK_PIN, uc_dio_output, sclk_idle);
@@ -148,7 +159,7 @@ uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO
             read_byte |= uc_dio_read(spi_info->MISO_PIN) << i;
 
             // Hold SCLK for timeout
-            uc_delay_us(spi_info->SCLK_DELAY_US);
+            uc_delay_us(spi_info->SCLK_PULSE_US);
         } while (i);
     }
 

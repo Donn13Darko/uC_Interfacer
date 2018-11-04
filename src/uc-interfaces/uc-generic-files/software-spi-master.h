@@ -37,7 +37,7 @@ typedef struct SPI_MASTER_INFO {
     uint8_t MOSI_PIN;
     uint8_t MISO_PIN;
     uint8_t SCLK_PIN;
-    uint32_t SCLK_DELAY_US;
+    uint32_t SCLK_PULSE_US; // SPI Clock width (period/2)
     uint8_t SPI_FLAGS; // See SPI_MASTER_FLAGS_ENUM
 } SPI_MASTER_INFO;
 #define SPI_MASTER_DEFAULT {0, 0, 0, 0, 0}
@@ -68,6 +68,9 @@ typedef enum {
 
 /* Setup SPI interface for communication */
 void software_spi_master_setup(SPI_MASTER_INFO *spi_info);
+
+/* Setup slave pin for communication */
+void software_spi_master_setup_slave(uint8_t slave_select);
 
 /* Exit SPI interface */
 void software_spi_master_exit(SPI_MASTER_INFO *spi_info);
@@ -112,7 +115,8 @@ uint8_t software_spi_master_read_byte(SPI_MASTER_INFO *spi_info, uint8_t slave_s
 /*** Following extern functions must be defined on a per uC basis ***/
 
 /* Set or read the DIO value */
-extern void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value);
+extern void uc_dio_set(uint8_t pin_num, uint8_t setting);
+extern void uc_dio_write(uint8_t pin_num, uint16_t value);
 extern uint16_t uc_dio_read(uint8_t pin_num);
 
 /* Waits for timeout microseconds (args: timeout) */

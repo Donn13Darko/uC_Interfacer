@@ -109,7 +109,6 @@ protected:
         io_line_edit_pos
     } io_gui_positions;
 
-    void send_io(PinTypeInfo *pInfo, QByteArray data);
     void inputsChanged(PinTypeInfo *pInfo, QObject* caller, uint8_t io_pos, QByteArray* data = nullptr);
     void updateSliderRange(QSlider *slider, RangeList *rList);
 

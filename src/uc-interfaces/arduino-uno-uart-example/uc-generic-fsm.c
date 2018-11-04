@@ -478,8 +478,8 @@ void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uin
     fsm_buffer_ptr = fsm_buffer;
 
     // Fill in major and minor key (handle special case of 4 bytes)
-    if (num_s2_bits == num_s2_bits_4) fsm_buffer[s1_major_key_loc] = s_major_key | num_s2_bits_3;
-    else fsm_buffer[s1_major_key_loc] = s_major_key | num_s2_bits;
+    if (num_s2_bits == num_s2_bits_4) fsm_buffer[s1_major_key_loc] = s_major_key | (num_s2_bits_3 << s1_num_s2_bits_byte_shift);
+    else fsm_buffer[s1_major_key_loc] = s_major_key | (num_s2_bits << s1_num_s2_bits_byte_shift);
     fsm_buffer[s1_minor_key_loc] = s_minor_key;
     fsm_buffer_ptr += num_s1_bytes;
 

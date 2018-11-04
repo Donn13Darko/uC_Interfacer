@@ -57,7 +57,8 @@ float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 uint16_t read_data[uc_dio_num_pins];
 
 // Ignore uc_aio_set (can't use on arudino)
-void uc_aio_set(uint8_t, uint8_t, uint16_t) {}
+void uc_aio_set(uint8_t, uint8_t) {}
+void uc_aio_write(uint8_t, uint16_t) {}
 
 // Ignore uc_remote_conn (not implemented yet)
 void uc_remote_conn() {}
@@ -271,8 +272,8 @@ void set_pwm_off(uint8_t pin)
     }
 }
 
-// Set the DIO as per the command
-void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value)
+// Set the DIO setting
+void uc_dio_set(uint8_t pin_num, uint8_t setting)
 {
     // Verify pin_num in range
     if (uc_dio_num_pins < pin_num) return;
@@ -314,8 +315,15 @@ void uc_dio_set(uint8_t pin_num, uint8_t setting, uint16_t value)
 
         DIO_SET[pin_num] = setting;
     }
+}
 
-    switch (setting)
+// Set the DIO value
+void uc_dio_write(uint8_t pin_num, uint16_t value)
+{
+    // Verify pin_num in range
+    if (uc_dio_num_pins < pin_num) return;
+    
+    switch (DIO_SET[pin_num])
     {
         case IO_PWM:
             if (value && (value != 100))

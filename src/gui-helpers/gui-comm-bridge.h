@@ -51,7 +51,7 @@ public:
     static QStringList get_supported_checksums();
 
     // Checksum setters
-    void set_gui_checksum(uint8_t gui_key, QStringList new_gui_checksum);
+    void set_tab_checksum(uint8_t gui_key, QStringList new_tab_checksum);
 
     // Parse input array
     void parseGenericConfigMap(QMap<QString, QVariant>* configMap);
@@ -150,7 +150,7 @@ private:
     QList<GUI_BASE*> known_guis;
 
     // Checksum info
-    QList<checksum_struct> gui_checksums;
+    QList<checksum_struct> tab_checksums;
     static QMap<QString, checksum_struct> supportedChecksums;
 
     // Checksum helpers

@@ -53,7 +53,7 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     for (uint8_t i = 0; i < num_guis; i++)
     {
         // Set default checksum
-        gui_checksums.append(DEFAULT_CHECKSUM_STRUCT);
+        tab_checksums.append(DEFAULT_CHECKSUM_STRUCT);
     }
 
     // Connect data loop signals and slots
@@ -82,9 +82,9 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
 GUI_COMM_BRIDGE::~GUI_COMM_BRIDGE()
 {
     // Delete each GUIs checksum info
-    foreach (checksum_struct gui_checksum, gui_checksums)
+    foreach (checksum_struct check, tab_checksums)
     {
-        delete_checksum_info(&gui_checksum);
+        delete_checksum_info(&check);
     }
 }
 
@@ -103,15 +103,15 @@ QStringList GUI_COMM_BRIDGE::get_supported_checksums()
     return supportedChecksums.keys();
 }
 
-void GUI_COMM_BRIDGE::set_gui_checksum(uint8_t gui_key, QStringList new_gui_checksum)
+void GUI_COMM_BRIDGE::set_tab_checksum(uint8_t gui_key, QStringList new_tab_checksum)
 {
     // Get current checksum
-    if (!gui_key || (gui_checksums.length() < gui_key)) return;
-    checksum_struct current_check = gui_checksums.at(gui_key-1);
+    if (!gui_key || (tab_checksums.length() < gui_key)) return;
+    checksum_struct current_check = tab_checksums.at(gui_key-1);
 
     // Get default struct
     checksum_struct default_check = supportedChecksums.value(
-                new_gui_checksum.at(checksum_name_pos),
+                new_tab_checksum.at(checksum_name_pos),
                 DEFAULT_CHECKSUM_STRUCT
                 );
 
@@ -120,12 +120,15 @@ void GUI_COMM_BRIDGE::set_gui_checksum(uint8_t gui_key, QStringList new_gui_chec
 
     // Copy executable path if new checksum is exe & exe provided
     set_checksum_exe(&current_check,
-                     new_gui_checksum.at(checksum_exe_pos));
+                     new_tab_checksum.at(checksum_exe_pos));
 
     // If checksum_start provided, overwrite default
     set_checksum_start(&current_check,
-                       new_gui_checksum.at(checksum_start_pos),
-                       new_gui_checksum.at(checksum_start_base_pos).toInt());
+                       new_tab_checksum.at(checksum_start_pos),
+                       new_tab_checksum.at(checksum_start_base_pos).toInt());
+
+    // Save replaced checksum
+    tab_checksums.replace(gui_key-1, current_check);
 }
 
 void GUI_COMM_BRIDGE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
@@ -139,7 +142,7 @@ void GUI_COMM_BRIDGE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
     if (!setting.isNull())
     {
         // Set generic checksum type
-        set_gui_checksum(MAJOR_KEY_GENERAL_SETTINGS, setting.toStringList());
+        set_tab_checksum(MAJOR_KEY_GENERAL_SETTINGS, setting.toStringList());
     }
 
     // Set chunk size
@@ -186,7 +189,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
     uint32_t expected_len, checksum_size;
     uint32_t rcvd_len = rcvd_raw.length();
     QByteArray tmp;
-    const checksum_struct* gui_checksum;
+    const checksum_struct* check;
 
     // Recv Loop
     while ((0 < rcvd_len) && !exit_recv && !(bridge_flags & bridge_close_flag))
@@ -211,8 +214,8 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
         if (rcvd_len < expected_len) break; // Break out of Recv Loop
 
         // Select checksum (default to 0)
-        if (!major_key || (gui_checksums.length() < major_key)) gui_checksum = &gui_checksums.at(0);
-        else gui_checksum = &gui_checksums.at(major_key-1);
+        if (!major_key || (tab_checksums.length() < major_key)) check = &tab_checksums.at(MAJOR_KEY_GENERAL_SETTINGS-1);
+        else check = &tab_checksums.at(major_key-1);
 
         // Key Switch
         switch (major_key)
@@ -222,17 +225,17 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
             case MAJOR_KEY_RESET:
             {
                 // Set generic checksum executable if using
-                if (gui_checksum->checksum_is_exe)
-                    set_executable_checksum_exe(gui_checksum->checksum_exe);
+                if (check->checksum_is_exe)
+                    set_executable_checksum_exe(check->checksum_exe);
 
                 // Verify enough bytes
-                checksum_size = gui_checksum->get_checksum_size();
+                checksum_size = check->get_checksum_size();
                 exit_recv = (rcvd_len < (expected_len+checksum_size));
                 if (exit_recv) break;  // Break out of Key Switch
 
                 // Check Checksum (checksum failure handled in Act Switch)
                 exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(),
-                                            expected_len, gui_checksum);
+                                            expected_len, check);
 
                 // Act Switch
                 switch (major_key)
@@ -294,7 +297,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
             {
                 // Parse num_s2_bytes
                 num_s2_bytes = GUI_HELPER::byteArray_to_uint32(
-                            rcvd_raw.mid(s1_num_s2_bytes_loc,num_s2_bits));
+                            rcvd_raw.mid(s1_end_loc, num_s2_bits));
 
                 // Check if second stage in rcvd
                 expected_len += num_s2_bytes;
@@ -302,9 +305,9 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                 if (exit_recv) break; // Break out of Key Switch
 
                 // Set gui checksum executable if using
-                if (gui_checksum->checksum_is_exe)
-                    set_executable_checksum_exe(gui_checksum->checksum_exe);
-                checksum_size = gui_checksum->get_checksum_size();
+                if (check->checksum_is_exe)
+                    set_executable_checksum_exe(check->checksum_exe);
+                checksum_size = check->get_checksum_size();
 
                 // Check if checksum in rcvd
                 exit_recv = (rcvd_len < (expected_len+checksum_size));
@@ -312,7 +315,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
 
                 // Check Checksum
                 exit_recv = !check_checksum((const uint8_t*) rcvd_raw.constData(),
-                                            expected_len, gui_checksum);
+                                            expected_len, check);
                 if (exit_recv)
                 {
                     // Clear rcvd if checksum error
@@ -329,7 +332,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                 tmp.clear();
                 tmp.append((char) major_key);
                 tmp.append((char) minor_key);
-                tmp.append(rcvd_raw.mid(s1_num_s2_bytes_loc+num_s2_bits, num_s2_bytes));
+                tmp.append(rcvd_raw.mid(s1_end_loc+num_s2_bits, num_s2_bytes));
 
                 // Ack success & set data status
                 send_ack(major_key);
@@ -629,8 +632,8 @@ void GUI_COMM_BRIDGE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_
 {
     // Get checksum (if key is 0 or not recognized, use default key)
     const checksum_struct* check;
-    if (!checksum_key || (gui_checksums.length() < checksum_key)) check = &gui_checksums.at(0);
-    else check = &gui_checksums.at(checksum_key-1);
+    if (!checksum_key || (tab_checksums.length() < checksum_key)) check = &tab_checksums.at(MAJOR_KEY_GENERAL_SETTINGS-1);
+    else check = &tab_checksums.at(checksum_key-1);
 
     // Set executable if using
     if (check->checksum_is_exe)

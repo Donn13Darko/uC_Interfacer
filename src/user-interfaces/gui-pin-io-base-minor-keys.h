@@ -32,26 +32,28 @@ typedef enum {
     // AIO Keys
     MINOR_KEY_IO_AIO,
     MINOR_KEY_IO_AIO_SET,
-    MINOR_KEY_IO_AIO_READ_PIN,
+    MINOR_KEY_IO_AIO_WRITE,
+    MINOR_KEY_IO_AIO_READ,
     MINOR_KEY_IO_AIO_READ_ALL,
 
     // DIO Keys
     MINOR_KEY_IO_DIO,
     MINOR_KEY_IO_DIO_SET,
-    MINOR_KEY_IO_DIO_READ_PIN,
+    MINOR_KEY_IO_DIO_WRITE,
+    MINOR_KEY_IO_DIO_READ,
     MINOR_KEY_IO_DIO_READ_ALL,
 
     // Leave this key at end (used for child GUI keys)
     MINOR_KEY_IO_MAIN_END
 } MINOR_KEYS_IO;
 
-/* Stage #2 (s2) io key positions enum */
+/* Stage #2 (s2) io set key positions enum */
 typedef enum {
     s2_io_pin_num_loc = 0,
-    s2_io_combo_loc,
     s2_io_value_high_loc,
     s2_io_value_low_loc,
-    s2_io_end_loc
+    s2_io_combo_loc,
+    s2_io_set_end_loc
 } S2_IO_Settings;
 
 #ifdef __cplusplus

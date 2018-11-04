@@ -61,8 +61,7 @@ typedef enum {
 typedef enum {
     s1_major_key_loc = 0,
     s1_minor_key_loc,
-    s1_num_s2_bytes_loc,
-    s1_end_loc = s1_num_s2_bytes_loc
+    s1_end_loc
 } S1_Major_Settings;
 
 // Variables

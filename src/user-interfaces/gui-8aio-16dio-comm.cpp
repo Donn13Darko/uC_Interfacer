@@ -130,35 +130,41 @@ void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()
     inputsChanged(&pInfo, sender(), io_combo_pos, &data);
 
     // Send update
-    send_io(&pInfo, data);
+    emit transmit_chunk(gui_key, pInfo.minorKey, data);
 }
 
 void GUI_8AIO_16DIO_COMM::DIO_SliderValueChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(MINOR_KEY_IO_DIO_SET, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_DIO_WRITE, &pInfo)) return;
 
     // Set message for clicked button
     QByteArray data;
     inputsChanged(&pInfo, sender(), io_slider_pos, &data);
 
+    // Remove combo setting (unneeded)
+    data.remove(s2_io_combo_loc, 1);
+
     // Send update
-    send_io(&pInfo, data);
+    emit transmit_chunk(gui_key, pInfo.minorKey, data);
 }
 
 void GUI_8AIO_16DIO_COMM::DIO_LineEditValueChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(MINOR_KEY_IO_DIO_SET, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_DIO_WRITE, &pInfo)) return;
 
     // Set message for clicked button
     QByteArray data;
     inputsChanged(&pInfo, sender(), io_line_edit_pos, &data);
 
+    // Remove combo setting (unneeded)
+    data.remove(s2_io_combo_loc, 1);
+
     // Send update
-    send_io(&pInfo, data);
+    emit transmit_chunk(gui_key, pInfo.minorKey, data);
 }
 
 void GUI_8AIO_16DIO_COMM::AIO_ComboChanged()
@@ -172,35 +178,41 @@ void GUI_8AIO_16DIO_COMM::AIO_ComboChanged()
     inputsChanged(&pInfo, sender(), io_combo_pos, &data);
 
     // Send update
-    send_io(&pInfo, data);
+    emit transmit_chunk(gui_key, pInfo.minorKey, data);
 }
 
 void GUI_8AIO_16DIO_COMM::AIO_SliderValueChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(MINOR_KEY_IO_AIO_SET, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_AIO_WRITE, &pInfo)) return;
 
     // Send message for edited button
     QByteArray data;
     inputsChanged(&pInfo, sender(), io_slider_pos, &data);
 
+    // Remove combo setting (unneeded)
+    data.remove(s2_io_combo_loc, 1);
+
     // Send update
-    send_io(&pInfo, data);
+    emit transmit_chunk(gui_key, pInfo.minorKey, data);
 }
 
 void GUI_8AIO_16DIO_COMM::AIO_LineEditValueChanged()
 {
     // Grab pin info
     PinTypeInfo pInfo;
-    if (!getPinTypeInfo(MINOR_KEY_IO_AIO_SET, &pInfo)) return;
+    if (!getPinTypeInfo(MINOR_KEY_IO_AIO_WRITE, &pInfo)) return;
 
     // Send message for edited button
     QByteArray data;
     inputsChanged(&pInfo, sender(), io_line_edit_pos, &data);
 
+    // Remove combo setting (unneeded)
+    data.remove(s2_io_combo_loc, 1);
+
     // Send update
-    send_io(&pInfo, data);
+    emit transmit_chunk(gui_key, pInfo.minorKey, data);
 }
 
 void GUI_8AIO_16DIO_COMM::updateValues()
@@ -413,7 +425,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     uint8_t rowNum, colNum;
 
     // Get AIO pin info
-    if (!getPinTypeInfo(MINOR_KEY_IO_AIO_SET, &pInfo))
+    if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo))
     {
         GUI_HELPER::showMessage("Error: Unable to connect AIO!");
         QTimer::singleShot(0, this, SLOT(close()));
@@ -450,7 +462,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Get DIO pin info
-    if (!getPinTypeInfo(MINOR_KEY_IO_DIO_SET, &pInfo))
+    if (!getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo))
     {
         GUI_HELPER::showMessage("Error: Unable to connect DIO!");
         QTimer::singleShot(0, this, SLOT(close()));
@@ -496,13 +508,15 @@ bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
     {
         case MINOR_KEY_IO_AIO:
         case MINOR_KEY_IO_AIO_SET:
-        case MINOR_KEY_IO_AIO_READ_PIN:
+        case MINOR_KEY_IO_AIO_WRITE:
+        case MINOR_KEY_IO_AIO_READ:
         case MINOR_KEY_IO_AIO_READ_ALL:
             infoPtr->grid = ui->AIO_Grid;
             return base;
         case MINOR_KEY_IO_DIO:
         case MINOR_KEY_IO_DIO_SET:
-        case MINOR_KEY_IO_DIO_READ_PIN:
+        case MINOR_KEY_IO_DIO_WRITE:
+        case MINOR_KEY_IO_DIO_READ:
         case MINOR_KEY_IO_DIO_READ_ALL:
             infoPtr->grid = ui->DIO_Grid;
             return base;
@@ -544,13 +558,12 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
     QComboBox *comboBox;
     QSlider *sliderValue;
     QLineEdit *textValue;
-    uint32_t value;
+    uint16_t value;
     uint8_t rowNum, colNum, comboVal, divisor;
     bool prev_block_combo, prev_block_slider, prev_block_text;
 
     // Set loop variables
-    uint8_t i = 0, j = 0, pin_num = 0;
-    uint8_t val_len = values.length();
+    uint8_t pin_num = 0;
 
     switch (minorKey)
     {
@@ -558,15 +571,17 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
         case MINOR_KEY_IO_AIO_READ_ALL:
         case MINOR_KEY_IO_DIO_READ_ALL:
         {
-            // values is an array of uint16_t's for each pin in the set
-            // Loop over each pin setting its value
+            // Setup variables
+            uint8_t i = 0, j = 0, val_len = values.length();
+
+            // Loop over all pins and set their value
             while (i < val_len)
             {
                 // Value is big endian
                 value = 0;
-                for (j = bytesPerPin; 0 < j; j--)
+                for (j = 0; j < bytesPerPin; j++)
                 {
-                    value = ((value << 8) | (values[i++] & 0xFF));
+                    value = (value << 8) | ((uchar) values[i++]);
                 }
 
                 // Find pin location on GUI
@@ -598,6 +613,9 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
                     }
                 }
             }
+
+            // Leave parse loop
+            break;
         }
         // If set data
         case MINOR_KEY_IO_AIO_SET:
@@ -605,9 +623,9 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
         {
             // Parse & verify info from set data
             // Formatted as [pinNum, io_combo, val_high, val_low]
-            pin_num = values.at(0);
-            value = ((uint16_t) values.at(2) << 8) | ((uchar) values.at(3));
-            QString combo_text = pinMap->key(values.at(1), "");
+            pin_num = values.at(s2_io_pin_num_loc);
+            value = ((uint16_t) values.at(s2_io_value_high_loc) << 8) | ((uchar) values.at(s2_io_value_low_loc));
+            QString combo_text = pinMap->key(values.at(s2_io_combo_loc), "");
             if (combo_text.isEmpty()) return;
 
             // Find pin location on GUI
@@ -648,6 +666,9 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
                 sliderValue->blockSignals(prev_block_slider);
                 textValue->blockSignals(prev_block_text);
             }
+
+            // Leave parse loop
+            break;
         }
     }
 }

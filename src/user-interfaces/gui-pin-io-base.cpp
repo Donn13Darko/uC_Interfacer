@@ -199,9 +199,9 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
         // Build pin data array
         uint16_t v = (uint16_t) QString::number(newVAL).toInt();
         data->append((char) pinNum.toInt());    // Pin Num
-        data->append((char) io_combo);          // Combo setting
         data->append((char) ((v >> 8) & 0xFF)); // Value High
         data->append((char) (v & 0xFF));        // Value Low
+        data->append((char) io_combo);          // Combo setting
     }
 }
 
@@ -434,9 +434,9 @@ bool GUI_PIN_BASE::isDataRequest(uint8_t minorKey)
 {
     switch (minorKey)
     {
-        case MINOR_KEY_IO_AIO_READ_PIN:
+        case MINOR_KEY_IO_AIO_READ:
         case MINOR_KEY_IO_AIO_READ_ALL:
-        case MINOR_KEY_IO_DIO_READ_PIN:
+        case MINOR_KEY_IO_DIO_READ:
         case MINOR_KEY_IO_DIO_READ_ALL:
             return true;
         default:
@@ -458,7 +458,8 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
     {
         case MINOR_KEY_IO_AIO:
         case MINOR_KEY_IO_AIO_SET:
-        case MINOR_KEY_IO_AIO_READ_PIN:
+        case MINOR_KEY_IO_AIO_WRITE:
+        case MINOR_KEY_IO_AIO_READ:
         case MINOR_KEY_IO_AIO_READ_ALL:
             infoPtr->numButtons = num_AIObuttons;
             infoPtr->numPins_GUI = num_AIOpins_GUI;
@@ -470,7 +471,8 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
             return true;
         case MINOR_KEY_IO_DIO:
         case MINOR_KEY_IO_DIO_SET:
-        case MINOR_KEY_IO_DIO_READ_PIN:
+        case MINOR_KEY_IO_DIO_WRITE:
+        case MINOR_KEY_IO_DIO_READ:
         case MINOR_KEY_IO_DIO_READ_ALL:
             infoPtr->numButtons = num_DIObuttons;
             infoPtr->numPins_GUI = num_DIOpins_GUI;
@@ -485,12 +487,6 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
             *infoPtr = EMPTY_PIN_TYPE_INFO;
             return false;
     }
-}
-
-void GUI_PIN_BASE::send_io(PinTypeInfo *pInfo, QByteArray data)
-{
-    // Send msg (should only require a single send)
-    emit transmit_chunk(gui_key, pInfo->minorKey, data);
 }
 
 RangeList* GUI_PIN_BASE::makeRangeList(QString rangeInfo)

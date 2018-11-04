@@ -750,7 +750,7 @@ void MainWindow::update_options(MoreOptions_struct* options)
         checksum_info = options->checksum_map.value(gui_name);
 
         // Set the new checksum
-        comm_bridge->set_gui_checksum(getGUIType(gui_name), checksum_info);
+        comm_bridge->set_tab_checksum(getGUIType(gui_name), checksum_info);
     }
 }
 
