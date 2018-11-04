@@ -39,8 +39,9 @@ typedef struct SPI_MASTER_INFO {
     uint8_t SCLK_PIN;
     uint32_t SCLK_PULSE_US; // SPI Clock width (period/2)
     uint8_t SPI_FLAGS; // See SPI_MASTER_FLAGS_ENUM
+    uint8_t SPI_DATA_BITS;  // Min 0, Max 32, Default 8
 } SPI_MASTER_INFO;
-#define SPI_MASTER_DEFAULT {0, 0, 0, 0, 0}
+#define SPI_MASTER_DEFAULT {0, 0, 0, 0, 0, 8}
 
 typedef enum {
     // Set after setup called
@@ -59,7 +60,7 @@ typedef enum {
     // Defines SCLK polarity
     // setting 0 is pulse high/idle low, 1 is pulse low/idle high
     SPI_MASTER_CLK_POL = 0x40,
-    // Defines SCLK data bit timing
+    // Defines read/write phase and timing
     SPI_MASTER_CLK_PHA = 0x80
 } SPI_MASTER_FLAGS_ENUM;
 
@@ -83,33 +84,38 @@ void software_spi_master_begin_transaction(SPI_MASTER_INFO *spi_info, uint8_t sl
 void software_spi_master_end_transaction(SPI_MASTER_INFO *spi_info, uint8_t slave_select);
 
 /* Perform a SPI read & write transaction */
-uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO *spi_info);
+uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *spi_info);
 
-/* Performs a SPI transaction */
-void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write_data_len,
-                                              uint8_t *read_data, uint32_t read_data_len,
+/* Performs multiple SPI transactions */
+void software_spi_master_perform_transaction(void *write_data, uint32_t write_data_len,
+                                              void *read_data, uint32_t read_data_len,
                                               SPI_MASTER_INFO *spi_info, uint8_t slave_select,
                                               uint32_t setup_delay_us, uint32_t transaction_delay_us,
                                               uint32_t read_write_delay_us);
 
-/* Sends write_data_len bytes from write_data array. */
-void software_spi_master_write_bytes(uint8_t *write_data, uint32_t write_data_len,
+/* Sends write_data_len transactions from write_data array. */
+void software_spi_master_write_data(void *write_data, uint32_t write_data_len,
                                       SPI_MASTER_INFO *spi_info, uint8_t slave_select,
                                       uint32_t setup_delay_us, uint32_t transaction_delay_us);
 
-/* Reads read_data_len bytes into read_data array */
-void software_spi_master_read_bytes(uint8_t *read_data, uint32_t read_data_len,
-                                      SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                      uint32_t setup_delay_us, uint32_t transaction_delay_us);
-
-/* Sends a single byte acorss the SPI connection */
-void software_spi_master_write_byte(uint8_t write_byte,
+/* Reads read_data_len transaction into read_data array */
+void software_spi_master_read_data(void *read_data, uint32_t read_data_len,
                                     SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                    uint32_t setup_delay_us);
+                                     uint32_t setup_delay_us, uint32_t transaction_delay_us);
 
-/* Reads and returns a single byte */
-uint8_t software_spi_master_read_byte(SPI_MASTER_INFO *spi_info, uint8_t slave_select,
+/* Sends a single transaction acorss the SPI connection */
+void software_spi_master_write_single(uint32_t write_data,
+                                        SPI_MASTER_INFO *spi_info, uint8_t slave_select,
                                         uint32_t setup_delay_us);
+
+/* Reads and returns a single transaction */
+uint32_t software_spi_master_read_single(SPI_MASTER_INFO *spi_info, uint8_t slave_select,
+                                          uint32_t setup_delay_us);
+
+/* Writes & reads a single transaction */
+uint32_t software_spi_master_read_write_single(uint32_t write_data, 
+                                                SPI_MASTER_INFO *spi_info, uint8_t slave_select,
+                                                uint32_t setup_delay_us);
 
 
 /*** Following extern functions must be defined on a per uC basis ***/

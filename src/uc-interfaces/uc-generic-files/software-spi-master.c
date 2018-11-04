@@ -18,8 +18,12 @@
 
 #include "software-spi-master.h"
 
-/* Reverse bytes (used for MSB and LSB send/recv) */
-uint8_t reverse_byte(uint8_t byte);
+/* Reverse bits (used for MSB and LSB send/recv) */
+uint32_t get_next_bits(void *data, uint32_t pos, uint8_t bit_width);
+void set_next_bits(uint32_t bits, void *data, uint32_t pos, uint8_t bit_width);
+
+/* Reverse bits (used for MSB and LSB send/recv) */
+uint32_t reverse_bits(uint32_t data, uint8_t bits);
 
 /* Setup SPI interface for communication */
 void software_spi_master_setup(SPI_MASTER_INFO *spi_info)
@@ -91,30 +95,30 @@ void software_spi_master_end_transaction(SPI_MASTER_INFO *spi_info, uint8_t slav
  * Expects that software_spi_master_setup & software_spi_master_begin_transaction
  * have already been called
  */
-uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO *spi_info)
+uint32_t software_spi_master_transaction(uint32_t write_data, SPI_MASTER_INFO *spi_info)
 {
-    // Setup read_byte
-    uint8_t read_byte = 0;
+    // Setup variabless
+    uint32_t read_data = 0;
+    uint8_t i = spi_info->SPI_DATA_BITS;
 
     // Set clk pulse and idle states
     // Negate to set as 0 or 1
     uint8_t sclk_pulse = !(spi_info->SPI_FLAGS & SPI_MASTER_CLK_POL);
     uint8_t sclk_idle = !sclk_pulse;
 
-    // Reverse byte if sending LSB first
-    if (write_byte && (spi_info->SPI_FLAGS & SPI_MASTER_MSB_LSB_TOGGLE))
+    // Reverse bits if sending LSB first
+    if (write_data && (spi_info->SPI_FLAGS & SPI_MASTER_MSB_LSB_TOGGLE))
     {
-        write_byte = reverse_byte(write_byte);
+        write_data = reverse_bits(write_data, spi_info->SPI_DATA_BITS);
     }
 
     // Select which clock phase we are using
-    uint8_t i = 8;
     if (spi_info->SPI_FLAGS & SPI_MASTER_CLK_PHA)
     {
         // CPHA = 1
         // "out" changes data on/after leading edge
         // "in" captures data on/after trailing edge
-        do
+        while (i)
         {
             // Decrement i
             i -= 1;
@@ -123,7 +127,7 @@ uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO
             uc_dio_write(spi_info->SCLK_PIN, sclk_pulse);
 
             // Set data (on/after leading edge)
-            uc_dio_write(spi_info->MOSI_PIN, ((write_byte >> i) & 0x01));
+            uc_dio_write(spi_info->MOSI_PIN, ((write_data >> i) & 0x01));
 
             // Hold SCLK for timeout
             uc_delay_us(spi_info->SCLK_PULSE_US);
@@ -132,23 +136,23 @@ uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO
             uc_dio_write(spi_info->SCLK_PIN, sclk_idle);
 
             // Read data (on/after trailing edge)
-            read_byte |= uc_dio_read(spi_info->MISO_PIN) << i;
+            read_data |= uc_dio_read(spi_info->MISO_PIN) << i;
 
             // Hold SCLK for timeout
             uc_delay_us(spi_info->SCLK_PULSE_US);
-        } while (i);
+        }
     } else
     {
         // CPHA = 0
         // "out" changes data before leading edge (on trailing edge of previous clock)
         // "in" captures data on/after leading edge
-        do
+        while (i)
         {
             // Decrement i
             i -= 1;
 
             // Set data (before leading edge)
-            uc_dio_write(spi_info->MOSI_PIN, ((write_byte >> i) & 0x01));
+            uc_dio_write(spi_info->MOSI_PIN, ((write_data >> i) & 0x01));
 
             // Hold SCLK for timeout
             uc_delay_us(spi_info->SCLK_PULSE_US);
@@ -157,27 +161,27 @@ uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO
             uc_dio_write(spi_info->SCLK_PIN, sclk_pulse);
 
             // Read data (right on/after leading edge)
-            read_byte |= uc_dio_read(spi_info->MISO_PIN) << i;
+            read_data |= uc_dio_read(spi_info->MISO_PIN) << i;
 
             // Hold SCLK for timeout
             uc_delay_us(spi_info->SCLK_PULSE_US);
 
             // Change clk edge (back to idle state) - trailing edge
             uc_dio_write(spi_info->SCLK_PIN, sclk_idle);
-        } while (i);
+        }
     }
 
-    // Reverse byte if receiving LSB first
-    if (read_byte && (spi_info->SPI_FLAGS & SPI_MASTER_MSB_LSB_TOGGLE))
+    // Reverse bits if receiving LSB first
+    if (read_data && (spi_info->SPI_FLAGS & SPI_MASTER_MSB_LSB_TOGGLE))
     {
-        read_byte = reverse_byte(read_byte);
+        read_data = reverse_bits(read_data, spi_info->SPI_DATA_BITS);
     }
 
-    // Return the read byte
-    return read_byte;
+    // Return the read info
+    return read_data;
 }
 
-/* Performs a SPI transaction
+/* Performs multiple SPI transactions
  * Will call setup, transaction begin, and transaction end if not already called
  * 
  * Args:
@@ -189,8 +193,8 @@ uint8_t software_spi_master_byte_transaction(uint8_t write_byte, SPI_MASTER_INFO
  * transaction_delay_us: Microseconds to wait between each byte transaction
  * read_write_delay_us: Microseconds to wait between reading or writing if not doing at the same time
  */
-void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write_data_len,
-                                              uint8_t *read_data, uint32_t read_data_len,
+void software_spi_master_perform_transaction(void *write_data, uint32_t write_data_len,
+                                              void *read_data, uint32_t read_data_len,
                                               SPI_MASTER_INFO *spi_info, uint8_t slave_select,
                                               uint32_t setup_delay_us, uint32_t transaction_delay_us,
                                               uint32_t read_write_delay_us)
@@ -203,7 +207,7 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
     software_spi_master_begin_transaction(spi_info, slave_select, setup_delay_us);
 
     // Select transaction method
-    uint32_t i;
+    uint32_t i, j, curr_data;
     switch ((spi_info->SPI_FLAGS & SPI_MASTER_WRITE_FIRST) | (spi_info->SPI_FLAGS & SPI_MASTER_READ_FIRST))
     {
         case SPI_MASTER_WRITE_FIRST:
@@ -211,7 +215,8 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
             // Write data
             for (i = 0; i < write_data_len; i++)
             {
-                software_spi_master_byte_transaction(write_data[i], spi_info);
+                curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
+                software_spi_master_transaction(curr_data, spi_info);
                 uc_delay_us(transaction_delay_us);
             }
 
@@ -222,7 +227,8 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
             // Read data
             for (i = 0; i < read_data_len; i++)
             {
-                read_data[i] = software_spi_master_byte_transaction(0, spi_info);
+                curr_data = software_spi_master_transaction(0, spi_info);
+                set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
                 uc_delay_us(transaction_delay_us);
             }
 
@@ -233,7 +239,8 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
             // Read data
             for (i = 0; i < read_data_len; i++)
             {
-                read_data[i] = software_spi_master_byte_transaction(0, spi_info);
+                curr_data = software_spi_master_transaction(0, spi_info);
+                set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
                 uc_delay_us(transaction_delay_us);
             }
 
@@ -244,7 +251,8 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
             // Write data
             for (i = 0; i < write_data_len; i++)
             {
-                software_spi_master_byte_transaction(write_data[i], spi_info);
+                curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
+                software_spi_master_transaction(curr_data, spi_info);
                 uc_delay_us(transaction_delay_us);
             }
 
@@ -258,7 +266,9 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
             {
                 for (i = 0; i < read_data_len; i++)
                 {
-                    read_data[i] = software_spi_master_byte_transaction(write_data[i], spi_info);
+                    curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
+                    curr_data = software_spi_master_transaction(curr_data, spi_info);
+                    set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
                     uc_delay_us(transaction_delay_us);
                 }
             } else if (read_data_len < write_data_len)
@@ -269,7 +279,8 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
                     // Begin by writing only
                     for (i = 0; i < (write_data_len - read_data_len); i++)
                     {
-                        software_spi_master_byte_transaction(write_data[i], spi_info);
+                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
+                        software_spi_master_transaction(curr_data, spi_info);
                         uc_delay_us(transaction_delay_us);
                     }
 
@@ -277,11 +288,14 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
                     if (write_data_len && read_data_len)
                       uc_delay_us(read_write_delay_us);
 
-                    // Finish by writing and reading data bytes
-                    uint8_t j = 0;
+                    // Finish by writing and reading data packets
+                    j = 0;
                     for (i = (write_data_len - read_data_len); i < write_data_len; i++)
                     {
-                        read_data[j++] = software_spi_master_byte_transaction(write_data[i], spi_info);
+
+                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
+                        curr_data = software_spi_master_transaction(curr_data, spi_info);
+                        set_next_bits(curr_data, read_data, j++, spi_info->SPI_DATA_BITS);
                         uc_delay_us(transaction_delay_us);
                     }
                 } else
@@ -289,7 +303,9 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
                     // Begin by writing & reading
                     for (i = 0; i < read_data_len; i++)
                     {
-                        read_data[i] = software_spi_master_byte_transaction(write_data[i], spi_info);
+                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
+                        curr_data = software_spi_master_transaction(curr_data, spi_info);
+                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
                         uc_delay_us(transaction_delay_us);
                     }
 
@@ -297,10 +313,11 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
                     if (write_data_len && read_data_len)
                       uc_delay_us(read_write_delay_us);
 
-                    // Finish by writing remaining data bytes
+                    // Finish by writing remaining data packets
                     for (i = read_data_len; i < write_data_len; i++)
                     {
-                        software_spi_master_byte_transaction(write_data[i], spi_info);
+                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
+                        software_spi_master_transaction(curr_data, spi_info);
                         uc_delay_us(transaction_delay_us);
                     }
                 }
@@ -312,7 +329,8 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
                     // Begin by reading only
                     for (i = 0; i < (read_data_len - write_data_len); i++)
                     {
-                        read_data[i] = software_spi_master_byte_transaction(0, spi_info);
+                        curr_data = software_spi_master_transaction(0, spi_info);
+                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
                         uc_delay_us(transaction_delay_us);
                     }
 
@@ -320,11 +338,13 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
                     if (write_data_len && read_data_len)
                       uc_delay_us(read_write_delay_us);
 
-                    // Finish by writing and reading data bytes
-                    uint8_t j = 0;
+                    // Finish by writing and reading data packets
+                    j = 0;
                     for (i = (read_data_len - write_data_len); i < read_data_len; i++)
                     {
-                        read_data[i] = software_spi_master_byte_transaction(write_data[j++], spi_info);
+                        curr_data = get_next_bits(write_data, j++, spi_info->SPI_DATA_BITS);
+                        curr_data = software_spi_master_transaction(curr_data, spi_info);
+                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
                         uc_delay_us(transaction_delay_us);
                     }
                 } else
@@ -332,7 +352,9 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
                     // Begin by writing & reading
                     for (i = 0; i < write_data_len; i++)
                     {
-                        read_data[i] = software_spi_master_byte_transaction(write_data[i], spi_info);
+                        curr_data = get_next_bits(write_data, i, spi_info->SPI_DATA_BITS);
+                        curr_data = software_spi_master_transaction(curr_data, spi_info);
+                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
                         uc_delay_us(transaction_delay_us);
                     }
 
@@ -343,7 +365,8 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
                     // Finish by reading remaining data bytes
                     for (i = write_data_len; i < read_data_len; i++)
                     {
-                        read_data[i] = software_spi_master_byte_transaction(0, spi_info);
+                        curr_data = software_spi_master_transaction(0, spi_info);
+                        set_next_bits(curr_data, read_data, i, spi_info->SPI_DATA_BITS);
                         uc_delay_us(transaction_delay_us);
                     }
                 }
@@ -356,7 +379,7 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
     software_spi_master_end_transaction(spi_info, slave_select);
 }
 
-/* Sends write_data_len bytes from write_data array.
+/* Sends write_data_len transactions from write_data array.
  * Makes a call to software_spi_master_perform_transaction with provided arguments.
  *
  * Args:
@@ -364,7 +387,7 @@ void software_spi_master_perform_transaction(uint8_t *write_data, uint32_t write
  * spi_info: struct that describes the SPI connection
  * slave_select: Which, if any, slave to use
  */
-void software_spi_master_write_bytes(uint8_t *write_data, uint32_t write_data_len,
+void software_spi_master_write_data(void *write_data, uint32_t write_data_len,
                                       SPI_MASTER_INFO *spi_info, uint8_t slave_select,
                                       uint32_t setup_delay_us, uint32_t transaction_delay_us)
 {
@@ -374,7 +397,7 @@ void software_spi_master_write_bytes(uint8_t *write_data, uint32_t write_data_le
                                           setup_delay_us, transaction_delay_us, 0);
 }
 
-/* Reads read_data_len bytes into read_data array
+/* Reads read_data_len transactions into read_data array
  * Makes a call to software_spi_master_perform_transaction with provided arguments.
  *
  * Args:
@@ -382,7 +405,7 @@ void software_spi_master_write_bytes(uint8_t *write_data, uint32_t write_data_le
  * spi_info: struct that describes the SPI connection
  * slave_select: Which, if any, slave to use
  */
-void software_spi_master_read_bytes(uint8_t *read_data, uint32_t read_data_len,
+void software_spi_master_read_data(void *read_data, uint32_t read_data_len,
                                     SPI_MASTER_INFO *spi_info, uint8_t slave_select,
                                     uint32_t setup_delay_us, uint32_t transaction_delay_us)
 {
@@ -392,34 +415,83 @@ void software_spi_master_read_bytes(uint8_t *read_data, uint32_t read_data_len,
                                           setup_delay_us, transaction_delay_us, 0);
 }
 
-/* Sends a single byte acorss the SPI connection. */
-void software_spi_master_write_byte(uint8_t write_byte,
-                                    SPI_MASTER_INFO *spi_info, uint8_t slave_select,
-                                    uint32_t setup_delay_us)
+/* Sends a single transaction acorss the SPI connection. */
+void software_spi_master_write_single(uint32_t write_data,
+                                        SPI_MASTER_INFO *spi_info, uint8_t slave_select,
+                                        uint32_t setup_delay_us)
 {
     // Call perform transaction
-    software_spi_master_perform_transaction(&write_byte, 1, 0, 0, spi_info, slave_select, setup_delay_us, 0, 0);
+    software_spi_master_perform_transaction(&write_data, 1, 0, 0, spi_info, slave_select, setup_delay_us, 0, 0);
 }
 
-/* Reads and returns a single byte. */
-uint8_t software_spi_master_read_byte(SPI_MASTER_INFO *spi_info, uint8_t slave_select,
+/* Reads and returns a single transaction. */
+uint32_t software_spi_master_read_single(SPI_MASTER_INFO *spi_info, uint8_t slave_select,
                                         uint32_t setup_delay_us)
 {
     // Setup variables
-    uint8_t read_byte;
+    uint32_t read_data;
 
     // Call perform transaction
-    software_spi_master_perform_transaction(0, 0, &read_byte, 1, spi_info, slave_select, setup_delay_us, 0, 0);
+    software_spi_master_perform_transaction(0, 0, &read_data, 1, spi_info, slave_select, setup_delay_us, 0, 0);
 
-    // Return byte
-    return read_byte;
+    // Return data
+    return read_data;
 }
 
-/* Reverse bytes (used for MSB and LSB send/recv) */
-uint8_t reverse_byte(uint8_t byte)
+/* Sends a single transaction acorss the SPI connection. */
+uint32_t software_spi_master_read_write_single(uint32_t write_data,
+                                                SPI_MASTER_INFO *spi_info, uint8_t slave_select,
+                                                uint32_t setup_delay_us)
 {
-    byte = (byte & 0xF0) >> 4 | (byte & 0x0F) << 4;
-    byte = (byte & 0xCC) >> 2 | (byte & 0x33) << 2;
-    byte = (byte & 0xAA) >> 1 | (byte & 0x55) << 1;
-    return byte;
+    // Setup variables
+    uint32_t read_data;
+
+    // Call perform transaction
+    software_spi_master_perform_transaction(&write_data, 1, &read_data, 1, spi_info, slave_select, setup_delay_us, 0, 0);
+
+    // Return data
+    return read_data;
+}
+
+/* Get the next bits of data */
+uint32_t get_next_bits(void *data, uint32_t pos, uint8_t data_len)
+{
+    if (data_len <= 8)
+        return ((uint8_t*) data)[pos];
+    else if (data_len <= 16)
+        return ((uint16_t*) data)[pos];
+    else if (data_len <= 32)
+        return ((uint32_t*) data)[pos];
+    else
+        return 0;
+}
+
+/* Set the next bits of data */
+void set_next_bits(uint32_t bits, void *data, uint32_t pos, uint8_t data_len)
+{
+    if (data_len <= 8)
+        ((uint8_t*) data)[pos] = (uint8_t) bits;
+    else if (data_len <= 16)
+        ((uint16_t*) data)[pos] = (uint16_t) bits;
+    else if (data_len <= 32)
+        ((uint32_t*) data)[pos] = bits;
+}
+
+/* Reverse bits (used for LSB send/recv) */
+uint32_t reverse_bits(uint32_t data, uint8_t bits)
+{
+    // Copy data
+    uint32_t r_data = 0;
+
+    // Loop until zero
+    while (data && bits)
+    {
+        r_data = (r_data << 1) | (data & 0x01);
+        data >>= 1;
+        bits -= 1;
+    }
+    r_data <<= bits;
+
+    // Return the data reversed
+    return r_data;
 }
