@@ -142,7 +142,8 @@ void GUI_PROGRAMMER::reset_gui()
     curr_hexFormat = ui->HexFormat_Combo->currentText();
     on_HexFormat_Combo_activated(0);
 
-    // Set clear on set
+    // Set checkboxes
+    ui->HexPreview_CheckBox->setChecked(true);
     ui->ReadDataClearOnSet_CheckBox->setChecked(true);
     progress_divisor = 1;
     progress_adjuster = 0;
@@ -318,6 +319,12 @@ void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
     ui->Instructions_PlainText->moveCursor(QTextCursor::Start);
 }
 
+void GUI_PROGRAMMER::on_HexPreview_CheckBox_stateChanged(int)
+{
+    // If state changes, refresh the hex preview
+    refresh_hex();
+}
+
 void GUI_PROGRAMMER::on_ReadData_RadioGroup_buttonClicked(int)
 {
     bool enable_addr = ui->ReadAddr_Radio->isChecked();
@@ -374,11 +381,13 @@ QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
 
 void GUI_PROGRAMMER::refresh_hex()
 {
+    // Clear current data entry
+    ui->HexPreview_PlainText->clear();
+
     // Only update format if file loaded
-    if (loadedHex.isEmpty()) return;
+    if (loadedHex.isEmpty() || !ui->HexPreview_CheckBox->isChecked()) return;
 
     // Update Hex
-    ui->HexPreview_PlainText->clear();
     ui->HexPreview_PlainText->appendPlainText(format_hex(loadedHex));
 
     // Set cursor to top

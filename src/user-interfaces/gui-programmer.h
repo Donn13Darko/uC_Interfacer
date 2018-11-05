@@ -61,6 +61,7 @@ private slots:
     void on_BurnData_Button_clicked();
     void on_HexFormat_Combo_activated(int);
     void on_BurnMethod_Combo_currentIndexChanged(int);
+    void on_HexPreview_CheckBox_stateChanged(int);
 
     void on_ReadData_RadioGroup_buttonClicked(int);
     void on_ReadDataClear_Button_clicked();

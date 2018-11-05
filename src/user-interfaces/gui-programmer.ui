@@ -466,6 +466,19 @@
     <string>Address Base:</string>
    </property>
   </widget>
+  <widget class="QCheckBox" name="HexPreview_CheckBox">
+   <property name="geometry">
+    <rect>
+     <x>350</x>
+     <y>80</y>
+     <width>91</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Show Preview</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
