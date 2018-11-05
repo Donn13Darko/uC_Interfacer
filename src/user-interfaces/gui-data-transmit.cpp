@@ -164,7 +164,7 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
                             GUI_HELPER::uint32_to_byteArray(data.length()));
 
         // Send plaintext
-        emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
+        emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data, true);
     }
 }
 

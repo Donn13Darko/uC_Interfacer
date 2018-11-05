@@ -44,8 +44,8 @@ public:
     ~GUI_COMM_BRIDGE();
 
     // Chunk getter & setters
-    size_t get_chunk_size();
-    void set_chunk_size(size_t chunk);
+    uint32_t get_chunk_size();
+    void set_chunk_size(uint32_t chunk);
 
     // Supported checksums
     static QStringList get_supported_checksums();
@@ -74,6 +74,11 @@ signals:
     // Reset connected GUIs
     void reset();
 
+    // Re-emit transmission signals
+    void transmit_file(quint8 major_key, quint8 minor_key, QString filePath, GUI_BASE *sender);
+    void transmit_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep, GUI_BASE *sender);
+    void transmit_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope, GUI_BASE *sender);
+
 public slots:
     // Reset remtoe
     void reset_remote();
@@ -82,25 +87,25 @@ public slots:
     void receive(QByteArray recvData);
 
     // File sending
-    void send_file(quint8 major_key, quint8 minor_key, QString filePath);
-    void send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep);
+    void send_file(quint8 major_key, quint8 minor_key, QString filePath, GUI_BASE *sender = nullptr);
+    void send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep, GUI_BASE *sender = nullptr);
 
     // Chunk sending
-    void send_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope);
-
-    // Ack
-    void send_ack(uint8_t majorKey);
-    void waitForAck(int msecs = 5000);
-    void checkAck(QByteArray ack);
-    bool check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct *check);
-
-    // Wait for data
-    void waitForData(int msecs = 5000);
+    void send_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope, GUI_BASE *sender = nullptr);
 
     // Signal bridge to open, close, or exit
     bool open_bridge();
     bool close_bridge();
     void destroy_bridge();
+
+private slots:
+    // Ack
+    void send_ack(uint8_t majorKey);
+    void waitForAck(int msecs = 5000);
+    void checkAck(QByteArray ack);
+
+    // Wait for data
+    void waitForData(int msecs = 5000);
 
 private:
     /* Bridge flag. Bits as follows:
@@ -123,9 +128,25 @@ private:
         bridge_reset_send_chunk_flag = 0x20
     } bridge_flags_enum;
 
+    // Holds all info for waiting
+    typedef struct send_struct {
+        uint8_t target;
+        GUI_BASE* sender;
+        uint8_t major_key;
+        uint8_t minor_key;
+        QVariant data;
+        uint8_t sep_fenv;
+    } send_struct;
+
+    typedef enum {
+        SEND_STRUCT_SEND_FILE = 0,
+        SEND_STRUCT_SEND_FILE_CHUNKED,
+        SEND_STRUCT_SEND_CHUNK
+    } SEND_STRUCT_TARGETS_ENUM;
+
     // Send helper variables
     QMutex sendLock;
-    QList<QByteArray> msgList;
+    QList<send_struct> transmitList;
 
     // Rcv helper variables
     QMutex rcvLock;
@@ -153,15 +174,25 @@ private:
     QList<checksum_struct> tab_checksums;
     static QMap<QString, checksum_struct> supportedChecksums;
 
-    // Checksum helpers
+    // Checksum main methods
     void getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
                             uint8_t** checksum_array, uint32_t* checksum_size);
+    bool check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct *check);
+
+    // Checksum static helpers
     static void copy_checksum_info(checksum_struct *cpy_to, checksum_struct *cpy_from);
     static void delete_checksum_info(checksum_struct *check);
     static void set_checksum_exe(checksum_struct *check, QString checksum_exe);
     static void set_checksum_start(checksum_struct *check, QString checksum_start, uint8_t checksum_start_base);
 
+    // Checks if packet requires special action
+    void check_packet(uint8_t major_key);
+
+    // Handle send list
+    void handle_next_send();
+
     // Transmit across connection
+    void parse_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope, GUI_BASE *sending_gui);
     void transmit(QByteArray data);
 };
 

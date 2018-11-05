@@ -77,6 +77,18 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     connect(this, SIGNAL(reset()),
             &ackLoop, SLOT(quit()),
             Qt::DirectConnection);
+
+    // Connect re-emit signals to slots
+    // Use queued connections to return to main event loop first
+    connect(this, SIGNAL(transmit_file(quint8, quint8, QString, GUI_BASE*)),
+            this, SLOT(send_file(quint8, quint8, QString, GUI_BASE*)),
+            Qt::QueuedConnection);
+    connect(this, SIGNAL(transmit_file_chunked(quint8, quint8, QString, char, GUI_BASE*)),
+            this, SLOT(send_file_chunked(quint8, quint8, QString, char, GUI_BASE*)),
+            Qt::QueuedConnection);
+    connect(this, SIGNAL(transmit_chunk(quint8, quint8, QByteArray, bool, GUI_BASE*)),
+            this, SLOT(send_chunk(quint8, quint8, QByteArray, bool, GUI_BASE*)),
+            Qt::QueuedConnection);
 }
 
 GUI_COMM_BRIDGE::~GUI_COMM_BRIDGE()
@@ -88,12 +100,12 @@ GUI_COMM_BRIDGE::~GUI_COMM_BRIDGE()
     }
 }
 
-size_t GUI_COMM_BRIDGE::get_chunk_size()
+uint32_t GUI_COMM_BRIDGE::get_chunk_size()
 {
     return chunk_size;
 }
 
-void GUI_COMM_BRIDGE::set_chunk_size(size_t chunk)
+void GUI_COMM_BRIDGE::set_chunk_size(uint32_t chunk)
 {
     chunk_size = chunk;
 }
@@ -375,136 +387,191 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
     if (bridge_flags & bridge_close_flag) close_bridge();
 }
 
-void GUI_COMM_BRIDGE::send_file(quint8 major_key, quint8 minor_key, QString filePath)
+void GUI_COMM_BRIDGE::send_file(quint8 major_key, quint8 minor_key, QString filePath, GUI_BASE *sending_gui)
 {
-    send_chunk(major_key, minor_key, GUI_HELPER::loadFile(filePath), true);
+    // Verify not exiting or closed
+    if (bridge_flags & (bridge_exit_flag | bridge_close_flag)) return;
+
+    // Check packet
+    check_packet(major_key);
+
+    // Try to acquire the lock to send
+    // If fails, append self to waiting list and return
+    if (!sendLock.tryLock())
+    {
+        // Build struct
+        send_struct temp;
+        temp.target = SEND_STRUCT_SEND_FILE;
+        if (sending_gui) temp.sender = sending_gui;
+        else temp.sender = (GUI_BASE*) sender();
+        temp.major_key = major_key;
+        temp.minor_key = minor_key;
+        temp.data = QVariant(filePath);
+
+        // Add struct to transmitList
+        transmitList.append(temp);
+
+        // Exit and wait to be called
+        return;
+    }
+
+    // Get sending GUI if not present
+    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
+
+    // Send file across
+    parse_chunk(major_key, minor_key, GUI_HELPER::loadFile(filePath), true, sending_gui);
+
+    // Release lock
+    sendLock.unlock();
+
+    // Check if other signals waiting
+    handle_next_send();
 }
 
-void GUI_COMM_BRIDGE::send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep)
+void GUI_COMM_BRIDGE::send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep, GUI_BASE *sending_gui)
 {
+    // Verify not exiting or closed
+    if (bridge_flags & (bridge_exit_flag | bridge_close_flag)) return;
+
+    // Check packet
+    check_packet(major_key);
+
+    // Try to acquire the lock to send
+    // If fails, append self to waiting list and return
+    if (!sendLock.tryLock())
+    {
+        // Build struct
+        send_struct temp;
+        temp.target = SEND_STRUCT_SEND_FILE_CHUNKED;
+        if (sending_gui) temp.sender = sending_gui;
+        else temp.sender = (GUI_BASE*) sender();
+        temp.major_key = major_key;
+        temp.minor_key = minor_key;
+        temp.data = QVariant(filePath);
+        temp.sep_fenv = sep;
+
+        // Add struct to transmitList
+        transmitList.append(temp);
+
+        // Exit and wait to be called
+        return;
+    }
+
+    // Get sending GUI if not present
+    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
+
+    // Send file across chunked
     foreach (QByteArray chunk, GUI_HELPER::loadFile(filePath).split(sep))
     {
-        send_chunk(major_key, minor_key, chunk, false);
+        parse_chunk(major_key, minor_key, chunk, false, sending_gui);
     }
+
+    // Release lock
+    sendLock.unlock();
+
+    // Check if other signals waiting
+    handle_next_send();
 }
 
-void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope)
+void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope, GUI_BASE *sending_gui)
 {
-    // Verify this will terminate & bridge is open
-    if ((chunk_size == 0) || (bridge_flags & bridge_close_flag)) return;
+    // Verify not exiting or closed
+    if (bridge_flags & (bridge_exit_flag | bridge_close_flag)) return;
 
-    // Check if reset & packet not the resetting packet
-    // Assumes reset occurs before any other signals and that
-    // any packets calling this will be after a reset
-    if ((bridge_flags & bridge_reset_flag) && (major_key != MAJOR_KEY_RESET))
-    {
-        return;  // Still sending data return
-    } else if ((bridge_flags & bridge_reset_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
-    {
-        bridge_flags &= ~bridge_reset_send_chunk_flag; // Clear base_send_chunk bit
-    } else if (major_key == MAJOR_KEY_RESET)
-    {
-        // Enter reset (set active and send_chunk flags, clear sent flag)
-        bridge_flags |= (bridge_reset_flag | bridge_reset_send_chunk_flag);
+    // Check packet
+    check_packet(major_key);
 
-        // Clear any pending messages
-        msgList.clear();
+    // Try to acquire the lock to send
+    // If fails, append self to waiting list and return
+    if (!sendLock.tryLock())
+    {
+        // Build struct
+        send_struct temp;
+        temp.target = SEND_STRUCT_SEND_CHUNK;
+        if (sending_gui) temp.sender = sending_gui;
+        else temp.sender = (GUI_BASE*) sender();
+        temp.major_key = major_key;
+        temp.minor_key = minor_key;
+        temp.data = QVariant(chunk);
+        temp.sep_fenv = force_envelope;
 
-        // Force end of timers
-        emit reset();
+        // Add struct to transmitList
+        transmitList.append(temp);
+
+        // Exit and wait to be called
+        return;
     }
 
-    // Get sender info for emiting signals
-    GUI_BASE* sending_gui = (GUI_BASE*) sender();
+    // Get sending GUI if not present
+    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
 
-    // Setup base variables
-    QByteArray data, curr;
-    uint32_t pos = 0;
-    uint32_t end_pos = chunk.length();
-    bool emit_progress = (sending_gui && (major_key == sending_gui->get_GUI_key()));
+    // Send chunk across
+    parse_chunk(major_key, minor_key, chunk, force_envelope, sending_gui);
 
-    // Reset progress (if sending from gui)
-    QString end_pos_str;
-    if (emit_progress)
+    // Release lock
+    sendLock.unlock();
+
+    // Check if other signals waiting
+    handle_next_send();
+}
+
+bool GUI_COMM_BRIDGE::open_bridge()
+{
+    // Clear everything but the exit flag
+    bridge_flags &= bridge_exit_flag;
+
+    // Clear any accidental sends/recvs
+    transmitList.clear();
+    rcvd_raw.clear();
+
+    // True if all flags cleared, false if bridge_exit_flag set
+    return !bridge_flags;
+}
+
+bool GUI_COMM_BRIDGE::close_bridge()
+{
+    // Set close bridge (if not already set)
+    bridge_flags |= bridge_close_flag;
+
+    // Clear send list
+    transmitList.clear();
+
+    // Emit reset to try and free timers
+    emit reset();
+
+    // Try acquire sendLock if not already done
+    if (!(bridge_flags & bridge_close_send_flag) && sendLock.tryLock())
     {
-        end_pos_str += "/" + QString::number(end_pos) + "KB";
-        emit sending_gui->progress_update_send(0, "");
+        bridge_flags |= bridge_close_send_flag;
+        sendLock.unlock();
     }
 
-    // Send start of data chunk
-    force_envelope |= (chunk_size < end_pos);
-    if (force_envelope)
+    // Try acquire rcvLock if not already done
+    if (!(bridge_flags & bridge_close_recv_flag) && rcvLock.tryLock())
     {
-        // Make start packet and send
-        data.clear();
-        data.append((char) major_key);
-        data.append((char) minor_key);
-        transmit(data);
-
-        // Check if reset set during transmission eventloop
-        if (bridge_flags) return;
+        bridge_flags |= bridge_close_recv_flag;
+        rcvLock.unlock();
     }
 
-    // Send data chunk
-    uint32_t data_len, num_s2_bits;
-    do
-    {
-        // Clear data
-        data.clear();
+    // Check close successful
+    if (!(bridge_flags & (bridge_close_send_flag | bridge_close_recv_flag))) return false;
 
-        // Get next data chunk and add info
-        curr = chunk.mid(pos, chunk_size);
+    // If exit flag set, tell object to destroy itself
+    if (bridge_flags & bridge_exit_flag) destroy_bridge();
 
-        // Compute size of data chunk
-        data_len = curr.length();
-        if (data_len == 0) num_s2_bits = num_s2_bits_0;
-        else if (data_len <= 0xFF) num_s2_bits = num_s2_bits_1;
-        else if (data_len <= 0xFFFF) num_s2_bits = num_s2_bits_2;
-        else num_s2_bits = num_s2_bits_3;
+    // Return object closed
+    return true;
+}
 
-        // Load into data array
-        data.append((char) (major_key | (num_s2_bits << s1_num_s2_bits_byte_shift)));
-        data.append((char) minor_key);
+void GUI_COMM_BRIDGE::destroy_bridge()
+{
+    // Set exit flag (if not already set)
+    bridge_flags |= bridge_exit_flag;
 
-        // Adjust byte length of 3 (want uint32_t not uint24_t)
-        if (num_s2_bits == num_s2_bits_3) num_s2_bits = num_s2_bits_4;
-
-        // Load data_len into data
-        data.append(GUI_HELPER::uint32_to_byteArray(data_len).right(num_s2_bits));
-
-        // Append data
-        data.append(curr);
-
-        // Transmit data to device
-        transmit(data);
-
-        // Check if reset set during transmission eventloop
-        if (bridge_flags) return;
-
-        // Increment position counter
-        // Do not use chunk_size to enable dyanmic setting
-        pos += curr.length();
-
-        // Update progress
-        if (emit_progress)
-            emit sending_gui->progress_update_send(qRound(((float) pos / end_pos) * 100.0f),
-                                                   QString::number((float) pos / 1000.0) + end_pos_str);
-    } while (pos < end_pos);
-
-    // Send end of data chunk
-    if (force_envelope)
-    {
-        data.clear();
-        data.append((char) major_key);
-        data.append((char) minor_key);
-        transmit(data);
-
-        // Check if reset set during transmission eventloop
-        if (bridge_flags) return;
-    }
-
-    // Signal done to user if from gui
-    if (emit_progress) emit sending_gui->progress_update_send(100, "Done!");
+    // If not closed, close
+    // Else, schedule object for deletion
+    if (!(bridge_flags & (bridge_close_send_flag | bridge_close_recv_flag))) close_bridge();
+    else this->deleteLater();
 }
 
 void GUI_COMM_BRIDGE::send_ack(uint8_t majorKey)
@@ -551,19 +618,6 @@ void GUI_COMM_BRIDGE::checkAck(QByteArray ack)
     emit ackChecked(ack_status);
 }
 
-bool GUI_COMM_BRIDGE::check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct* check)
-{
-    // Create checksum variables
-    uint32_t checksum_size = check->get_checksum_size();
-    uint8_t fsm_checksum_cmp_buffer[checksum_size];
-
-    // Compute checksum on data
-    check->get_checksum(data, data_len, check->checksum_start, fsm_checksum_cmp_buffer);
-
-    // Compare generated to received checksum
-    return check->check_checksum(data+data_len, fsm_checksum_cmp_buffer);
-}
-
 void GUI_COMM_BRIDGE::waitForData(int msecs)
 {
     // Wait for dataReceived or timeout
@@ -572,65 +626,6 @@ void GUI_COMM_BRIDGE::waitForData(int msecs)
 
     // Stop timer
     dataTimer.stop();
-}
-
-bool GUI_COMM_BRIDGE::open_bridge()
-{
-    // Clear everything but the exit flag
-    bridge_flags &= bridge_exit_flag;
-
-    // Clear any accidental sends/recvs
-    msgList.clear();
-    rcvd_raw.clear();
-
-    // True if all flags cleared, false if bridge_exit_flag set
-    return !bridge_flags;
-}
-
-bool GUI_COMM_BRIDGE::close_bridge()
-{
-    // Set close bridge (if not already set)
-    bridge_flags |= bridge_close_flag;
-
-    // Clear send list
-    msgList.clear();
-
-    // Emit reset to try and free timers
-    emit reset();
-
-    // Try acquire sendLock if not already done
-    if (!(bridge_flags & bridge_close_send_flag) && sendLock.tryLock())
-    {
-        bridge_flags |= bridge_close_send_flag;
-        sendLock.unlock();
-    }
-
-    // Try acquire rcvLock if not already done
-    if (!(bridge_flags & bridge_close_recv_flag) && rcvLock.tryLock())
-    {
-        bridge_flags |= bridge_close_recv_flag;
-        rcvLock.unlock();
-    }
-
-    // Check close successful
-    if (!(bridge_flags & (bridge_close_send_flag | bridge_close_recv_flag))) return false;
-
-    // If exit flag set, tell object to destroy itself
-    if (bridge_flags & bridge_exit_flag) destroy_bridge();
-
-    // Return object closed
-    return true;
-}
-
-void GUI_COMM_BRIDGE::destroy_bridge()
-{
-    // Set exit flag (if not already set)
-    bridge_flags |= bridge_exit_flag;
-
-    // If not closed, close
-    // Else, schedule object for deletion
-    if (!(bridge_flags & (bridge_close_send_flag | bridge_close_recv_flag))) close_bridge();
-    else this->deleteLater();
 }
 
 void GUI_COMM_BRIDGE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
@@ -653,6 +648,19 @@ void GUI_COMM_BRIDGE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_
     memset(*checksum_array, 0, *checksum_size);
 
     check->get_checksum(data, data_len, check->checksum_start, *checksum_array);
+}
+
+bool GUI_COMM_BRIDGE::check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct* check)
+{
+    // Create checksum variables
+    uint32_t checksum_size = check->get_checksum_size();
+    uint8_t fsm_checksum_cmp_buffer[checksum_size];
+
+    // Compute checksum on data
+    check->get_checksum(data, data_len, check->checksum_start, fsm_checksum_cmp_buffer);
+
+    // Compare generated to received checksum
+    return check->check_checksum(data+data_len, fsm_checksum_cmp_buffer);
 }
 
 void GUI_COMM_BRIDGE::copy_checksum_info(checksum_struct *cpy_to, checksum_struct *cpy_from)
@@ -754,84 +762,215 @@ void GUI_COMM_BRIDGE::set_checksum_start(checksum_struct *check, QString checksu
     check->checksum_start = new_check_start;
 }
 
+void GUI_COMM_BRIDGE::check_packet(uint8_t major_key)
+{
+    if ((major_key == MAJOR_KEY_RESET)
+            && (!(bridge_flags & (bridge_reset_flag | bridge_reset_send_chunk_flag))))
+    {
+        // Enter reset (set active and send_chunk flags, clear sent flag)
+        bridge_flags |= (bridge_reset_flag | bridge_reset_send_chunk_flag);
+
+        // Clear any pending messages
+        transmitList.clear();
+
+        // Force end of timers
+        emit reset();
+    }
+}
+
+void GUI_COMM_BRIDGE::handle_next_send()
+{
+    // Process list until we get a hit
+    send_struct next;
+    while (!transmitList.isEmpty())
+    {
+        // Retrieve first one
+        next = transmitList.takeFirst();
+
+        // Have object re-emit slot for us
+        switch (next.target)
+        {
+            case SEND_STRUCT_SEND_FILE:
+                emit transmit_file(next.major_key, next.minor_key, next.data.toString(), next.sender);
+                return;
+            case SEND_STRUCT_SEND_FILE_CHUNKED:
+                emit transmit_file_chunked(next.major_key, next.minor_key, next.data.toString(), next.sep_fenv, next.sender);
+                return;
+            case SEND_STRUCT_SEND_CHUNK:
+                emit transmit_chunk(next.major_key, next.minor_key, next.data.toByteArray(), next.sep_fenv, next.sender);
+                return;
+        }
+    }
+}
+
+void GUI_COMM_BRIDGE::parse_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope, GUI_BASE *sending_gui)
+{
+    // Verify this will terminate
+    if (chunk_size == 0) return;
+
+    // Check if reset & packet not the resetting packet
+    // Assumes reset occurs before any other signals and that
+    // any packets calling this will be after a reset
+    if ((bridge_flags & bridge_reset_flag) && (major_key != MAJOR_KEY_RESET))
+    {
+        return;  // Still waiting for reset send so return
+    } else if ((bridge_flags & bridge_reset_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
+    {
+        bridge_flags &= ~bridge_reset_send_chunk_flag; // Clear base_send_chunk bit
+    }
+
+    // Setup base variables
+    QByteArray data, curr;
+    uint32_t pos = 0;
+    uint32_t end_pos = chunk.length();
+    bool emit_progress = (sending_gui && (major_key == sending_gui->get_GUI_key()));
+
+    // Reset progress (if sending from gui)
+    QString end_pos_str;
+    if (emit_progress)
+    {
+        end_pos_str += "/" + QString::number(end_pos) + "KB";
+        emit sending_gui->progress_update_send(0, "");
+    }
+
+    // Send start of data chunk
+    force_envelope |= (chunk_size < end_pos);
+    if (force_envelope)
+    {
+        // Make start packet and send
+        data.clear();
+        data.append((char) major_key);
+        data.append((char) minor_key);
+        transmit(data);
+
+        // Check if reset set during transmission eventloop
+        if (bridge_flags) return;
+    }
+
+    // Send data chunk
+    uint32_t data_len, num_s2_bits;
+    do
+    {
+        // Clear data
+        data.clear();
+
+        // Get next data chunk and add info
+        curr = chunk.mid(pos, chunk_size);
+
+        // Compute size of data chunk
+        data_len = curr.length();
+        if (data_len == 0) num_s2_bits = num_s2_bits_0;
+        else if (data_len <= 0xFF) num_s2_bits = num_s2_bits_1;
+        else if (data_len <= 0xFFFF) num_s2_bits = num_s2_bits_2;
+        else num_s2_bits = num_s2_bits_3;
+
+        // Load into data array
+        data.append((char) (major_key | (num_s2_bits << s1_num_s2_bits_byte_shift)));
+        data.append((char) minor_key);
+
+        // Adjust byte length of 3 (want uint32_t not uint24_t)
+        if (num_s2_bits == num_s2_bits_3) num_s2_bits = num_s2_bits_4;
+
+        // Load data_len into data
+        data.append(GUI_HELPER::uint32_to_byteArray(data_len).right(num_s2_bits));
+
+        // Append data
+        data.append(curr);
+
+        // Transmit data to device
+        transmit(data);
+
+        // Check if reset set during transmission eventloop
+        if (bridge_flags) return;
+
+        // Increment position counter
+        // Do not use chunk_size to enable dyanmic setting
+        pos += curr.length();
+
+        // Update progress
+        if (emit_progress)
+            emit sending_gui->progress_update_send(qRound(((float) pos / end_pos) * 100.0f),
+                                                   QString::number((float) pos / 1000.0) + end_pos_str);
+    } while (pos < end_pos);
+
+    // Send end of data chunk
+    if (force_envelope)
+    {
+        data.clear();
+        data.append((char) major_key);
+        data.append((char) minor_key);
+        transmit(data);
+
+        // Check if reset set during transmission eventloop
+        if (bridge_flags) return;
+    }
+
+    // Signal done to user if from gui
+    if (emit_progress) emit sending_gui->progress_update_send(100, "Done!");
+}
+
 void GUI_COMM_BRIDGE::transmit(QByteArray data)
 {
     // Check if trying to send empty data array or exiting
     if (data.isEmpty() || (bridge_flags & bridge_close_flag)) return;
 
-    // Append to msgList
-    msgList.append(data);
-
-    // Lock send to prevent spamming/blocking
-    if (!sendLock.tryLock()) return;
-
     // Loop variables
-    bool isReset;
-    QByteArray currData;
     uint8_t* checksum_array;
     uint32_t checksum_size = 0;
 
-    // Send all messages in list
-    while (!msgList.isEmpty() && !(bridge_flags & bridge_close_flag))
+    // Get next data to send
+    ack_status = false;
+    data_status = false;
+    ack_key = ((char) data.at(s1_major_key_loc) & s1_major_key_byte_mask);
+    bool isReset = (ack_key == MAJOR_KEY_RESET);
+
+    // Get checksum
+    getChecksum((const uint8_t*) data.constData(), data.length(),
+                ack_key, &checksum_array, &checksum_size);
+
+    // Append checksum
+    data.append((const char*) checksum_array, checksum_size);
+
+    // Delete checksum array (done using)
+    delete[] checksum_array;
+
+    // Send data and verify ack
+    do
     {
-        // Get next data to send
-        currData = msgList.takeFirst();
-        ack_status = false;
-        data_status = false;
-        ack_key = ((char) currData.at(s1_major_key_loc) & s1_major_key_byte_mask);
-        isReset = (ack_key == MAJOR_KEY_RESET);
+        // Emit write command to connected device
+        emit write_data(data);
 
-        // Get checksum
-        getChecksum((const uint8_t*) currData.constData(), currData.length(),
-                    ack_key, &checksum_array, &checksum_size);
+        // Wait for CMD ack back
+        waitForAck(packet_timeout);
+    } while (!ack_status
+             && (!(bridge_flags & bridge_reset_flag) || isReset)
+             && !(bridge_flags & bridge_close_flag));
 
-        // Append checksum
-        currData.append((const char*) checksum_array, checksum_size);
-
-        // Delete checksum array (done using)
-        delete[] checksum_array;
-
-        // Send data and verify ack
-        do
-        {
-            // Emit write command to connected device
-            emit write_data(currData);
-
-            // Wait for CMD ack back
-            waitForAck(packet_timeout);
-        } while (!ack_status
-                 && (!(bridge_flags & bridge_reset_flag) || isReset)
-                 && !(bridge_flags & bridge_close_flag));
-
-        // Wait for data read if CMD success and was data request
-        // Resets will never request data back (only an ack)
-        // Is this required? Why block in sending other than to limit device spam?
-//        if (ack_status
-//                && !bridge_flags)
-//                && isDataRequest(currData.at(s1_minor_key_loc)))
+    // Wait for data read if CMD success and was data request
+    // Resets will never request data back (only an ack)
+    // Is this required? Why block in sending other than to limit device spam?
+//    if (ack_status
+//            && !bridge_flags)
+//            && isDataRequest(data.at(s1_minor_key_loc)))
+//    {
+//        do
 //        {
-//            do
-//            {
-//                // Wait for data packet back
-//                waitForData(packet_timeout);
-//            } while (!data_status
-//                     && !bridge_flags);
-//        }
+//            // Wait for data packet back
+//            waitForData(packet_timeout);
+//        } while (!data_status
+//                 && !bridge_flags);
+//    }
 
-        // Check if reseting and was reset
-        if ((bridge_flags & bridge_reset_flag) && isReset)
-        {
-            // Clear buffers (prevents key errors after reset)
-            rcvd_raw.clear();
-            msgList.clear();
+    // Check if reseting and was reset
+    if ((bridge_flags & bridge_reset_flag) && isReset)
+    {
+        // Clear buffers (prevents key errors after reset)
+        rcvd_raw.clear();
+        transmitList.clear();
 
-            // Clear reset active flag
-            bridge_flags &= ~bridge_reset_flag;
-        }
+        // Clear reset active flag
+        bridge_flags &= ~bridge_reset_flag;
     }
-
-    // Unlock send lock
-    sendLock.unlock();
 
     // If exiting, check if ready
     if (bridge_flags & bridge_close_flag) close_bridge();
