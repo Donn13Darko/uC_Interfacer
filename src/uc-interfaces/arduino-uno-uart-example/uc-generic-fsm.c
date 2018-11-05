@@ -112,11 +112,11 @@ void fsm_setup(uint32_t buffer_len)
     fsm_buffer_len = buffer_len + checksum_max_size;
 
     // Malloc static buffers
-    fsm_ack_buffer = malloc((num_s1_bytes+checksum_max_size)*sizeof(*fsm_ack_buffer));
-    fsm_checksum_buffer = malloc(checksum_max_size*sizeof(*fsm_checksum_buffer));
+    fsm_ack_buffer = (uint8_t*) malloc((num_s1_bytes+checksum_max_size)*sizeof(uint8_t));
+    fsm_checksum_buffer = (uint8_t*) malloc(checksum_max_size*sizeof(uint8_t));
 
     // Malloc initial dynamic buffer (attempt to prevent fragmentation by mallocing last)
-    fsm_buffer = malloc(fsm_buffer_len*sizeof(*fsm_buffer));
+    fsm_buffer = (uint8_t*) malloc(fsm_buffer_len*sizeof(uint8_t));
 
     // Reset to start defaults
     uc_reset();
@@ -171,7 +171,7 @@ void fsm_poll()
         {
             // Make the buffer just large enough, prioritize space over speed
             fsm_buffer_len = min_buffer_len;
-            fsm_buffer = realloc(fsm_buffer, fsm_buffer_len * sizeof(*fsm_buffer));
+            fsm_buffer = (uint8_t*) realloc(fsm_buffer, fsm_buffer_len * sizeof(uint8_t));
 
             // Verify realloc
             fsm_error |= !fsm_buffer;
@@ -220,7 +220,7 @@ void fsm_poll()
         {
             // Make the buffer just large enough, prioritize space over speed
             fsm_buffer_len = min_buffer_len;
-            fsm_buffer = realloc(fsm_buffer, fsm_buffer_len * sizeof(*fsm_buffer));
+            fsm_buffer = (uint8_t*) realloc(fsm_buffer, fsm_buffer_len * sizeof(uint8_t));
 
             // Verify realloc
             fsm_error |= !fsm_buffer;
@@ -469,7 +469,7 @@ void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uin
     {
         // Make the buffer just large enough, prioritize space over speed
         fsm_buffer_len = min_buffer_len;
-        fsm_buffer = realloc(fsm_buffer, fsm_buffer_len * sizeof(*fsm_buffer));
+        fsm_buffer = (uint8_t*) realloc(fsm_buffer, fsm_buffer_len * sizeof(uint8_t));
 
         // Verify realloc
         fsm_error |= !fsm_buffer;

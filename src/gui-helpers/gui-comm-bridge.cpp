@@ -644,7 +644,7 @@ void GUI_COMM_BRIDGE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_
     *checksum_size = check->get_checksum_size();
 
     // Malloc checksum array
-    *checksum_array = (uint8_t*) malloc((*checksum_size)*sizeof(**checksum_array));
+    *checksum_array = (uint8_t*) malloc((*checksum_size)*sizeof(uint8_t));
     memset(*checksum_array, 0, *checksum_size);
 
     check->get_checksum(data, data_len, check->checksum_start, *checksum_array);
