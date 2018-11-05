@@ -32,7 +32,7 @@ extern "C"
 
 #include <stdint.h>
 
-/* SPI Master Structure */
+/* SPI Master Structure & Enum*/
 typedef struct SPI_MASTER_INFO {
     uint8_t MOSI_PIN;       // SPI MOSI Pin
     uint8_t MISO_PIN;       // SPI MISO Pin
@@ -49,14 +49,14 @@ typedef enum {
 } SPI_MASTER_FLAGS_ENUM;
 
 
-/* SPI Slave Struct */
+/* SPI Slave Structucture & Enum */
 typedef struct SPI_SLAVE_INFO {
     uint8_t SLAVE_PIN_ADDR;         // Pin for slave select (if 0xFF, ignored)
     uint32_t SETUP_DELAY_US;        // Time to wait after setting slave select
-    uint32_t SCLK_ACTIVE_PULSE_US;  // Clock tick pulse time (leading edge time)
-    uint32_t SCLK_IDLE_PULSE_US;    // Same as IDLE state (tailing edge time)
-    uint32_t TRANSACTION_DELAY_US;  // Wait between transmissions
-    uint32_t READ_WRITE_DELAY_US;   // Wait between reading and writing data
+    uint32_t SCLK_ACTIVE_PULSE_US;  // Clock tick pulse timeout (leading edge/signal time)
+    uint32_t SCLK_IDLE_PULSE_US;    // Clock tick idle timeout (tailing edge/signal time)
+    uint32_t TRANSACTION_DELAY_US;  // Wait timeout between transmissions
+    uint32_t READ_WRITE_DELAY_US;   // Wait timeout between reading and writing data
     uint8_t SLAVE_DATA_BITS;        // Number of bits per transaction (Min: 0, Max: 32, Default: 8)
     uint8_t SLAVE_FLAGS;            // See SPI_SLAVE_FLAGS_ENUM
 } SPI_SLAVE_INFO;

@@ -76,7 +76,8 @@ void GUI_CUSTOM_CMD::reset_gui()
     ui->CustomCMDKeysInInput_CheckBox->setChecked(false);
     on_CustomCMD_RadioGroup_buttonClicked(0);
 
-    // Set clear on set
+    // Set Feedback checkboxes
+    ui->FeedbackLogAllCMDs_CheckBox->setChecked(false);
     ui->FeedbackClearOnSet_CheckBox->setChecked(true);
     ui->FeedbackAppendNewline_CheckBox->setChecked(true);
 
@@ -132,7 +133,8 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
         }
     } else
     {
-        // Default just log any CMDs not meant for this GUI
+        // If not log all CMDs set, return (will only log GUI_CUSTOM_CMD cmds)
+        if (!ui->FeedbackLogAllCMDs_CheckBox->isChecked()) return;
     }
 
     // Parse key pair and data based on bases

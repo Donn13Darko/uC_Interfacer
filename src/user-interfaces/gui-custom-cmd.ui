@@ -429,6 +429,19 @@
     </rect>
    </property>
   </widget>
+  <widget class="QCheckBox" name="FeedbackLogAllCMDs_CheckBox">
+   <property name="geometry">
+    <rect>
+     <x>590</x>
+     <y>20</y>
+     <width>81</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Log All CMDs</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

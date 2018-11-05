@@ -765,7 +765,7 @@ void GUI_COMM_BRIDGE::set_checksum_start(checksum_struct *check, QString checksu
 void GUI_COMM_BRIDGE::check_packet(uint8_t major_key)
 {
     if ((major_key == MAJOR_KEY_RESET)
-            && (!(bridge_flags & (bridge_reset_flag | bridge_reset_send_chunk_flag))))
+            && (!(bridge_flags & bridge_reset_flag)))
     {
         // Enter reset (set active and send_chunk flags, clear sent flag)
         bridge_flags |= (bridge_reset_flag | bridge_reset_send_chunk_flag);
@@ -813,10 +813,12 @@ void GUI_COMM_BRIDGE::parse_chunk(quint8 major_key, quint8 minor_key, QByteArray
     // any packets calling this will be after a reset
     if ((bridge_flags & bridge_reset_flag) && (major_key != MAJOR_KEY_RESET))
     {
-        return;  // Still waiting for reset send so return
+        // Still waiting for reset send so return
+        return;
     } else if ((bridge_flags & bridge_reset_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
     {
-        bridge_flags &= ~bridge_reset_send_chunk_flag; // Clear base_send_chunk bit
+        // Reset has been sent so clear base_send_chunk bit
+        bridge_flags &= ~bridge_reset_send_chunk_flag;
     }
 
     // Setup base variables
