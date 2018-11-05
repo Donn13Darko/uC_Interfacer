@@ -34,8 +34,10 @@ public:
     explicit GUI_DATA_TRANSMIT(QWidget *parent = 0);
     ~GUI_DATA_TRANSMIT();
 
-    virtual void reset_gui();
     virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+
+public slots:
+    virtual void reset_gui();
 
 protected slots:
     virtual void receive_gui(QByteArray recvData);

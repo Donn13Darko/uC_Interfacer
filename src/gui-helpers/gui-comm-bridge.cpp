@@ -424,7 +424,12 @@ void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key, QByteArray 
     bool emit_progress = (sending_gui && (major_key == sending_gui->get_GUI_key()));
 
     // Reset progress (if sending from gui)
-    if (emit_progress) emit sending_gui->progress_update_send(0, "");
+    QString end_pos_str;
+    if (emit_progress)
+    {
+        end_pos_str += "/" + QString::number(end_pos) + "KB";
+        emit sending_gui->progress_update_send(0, "");
+    }
 
     // Send start of data chunk
     force_envelope |= (chunk_size < end_pos);
@@ -482,7 +487,8 @@ void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key, QByteArray 
 
         // Update progress
         if (emit_progress)
-            emit sending_gui->progress_update_send(qRound(((float) pos / end_pos) * 100.0f), "");
+            emit sending_gui->progress_update_send(qRound(((float) pos / end_pos) * 100.0f),
+                                                   QString::number((float) pos / 1000.0) + end_pos_str);
     } while (pos < end_pos);
 
     // Send end of data chunk

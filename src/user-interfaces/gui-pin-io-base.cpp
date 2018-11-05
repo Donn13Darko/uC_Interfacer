@@ -52,16 +52,16 @@ GUI_PIN_BASE::~GUI_PIN_BASE()
     }
 }
 
-void GUI_PIN_BASE::reset_gui()
-{
-    // Reset base
-    GUI_BASE::reset_gui();
-}
-
 void GUI_PIN_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Pass to parent for additional parsing
     GUI_BASE::parseConfigMap(configMap);
+}
+
+void GUI_PIN_BASE::reset_gui()
+{
+    // Reset base
+    GUI_BASE::reset_gui();
 }
 
 void GUI_PIN_BASE::recordPinValues(PinTypeInfo *pInfo)

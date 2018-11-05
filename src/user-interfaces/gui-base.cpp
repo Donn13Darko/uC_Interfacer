@@ -22,8 +22,8 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
 {
     // Init progress bars
-    set_expected_recv_length(QByteArray());
-    update_current_recv_length(QByteArray());
+    set_expected_recv_length(0);
+    update_current_recv_length(0);
 
     // Connect read signals and slots
     connect(this, SIGNAL(readyRead(QByteArray)),
@@ -50,7 +50,6 @@ void GUI_BASE::reset_gui()
     rcvd_formatted.clear();
 
     // Reset progress bars info
-    start_data = true;
     current_recv_length = 0;
     expected_recv_length = 1;
 
@@ -121,45 +120,45 @@ void GUI_BASE::save_rcvd_formatted()
         GUI_HELPER::showMessage("ERROR: Failed to save file!");
 }
 
-void GUI_BASE::set_expected_recv_length(QByteArray recv_length)
+void GUI_BASE::set_expected_recv_length(uint32_t expected_length)
 {
     // Convert and set qbytearray
-    expected_recv_length = GUI_HELPER::byteArray_to_uint32(recv_length);
+    if (expected_length) expected_recv_length = expected_length;
+    else expected_recv_length = 1;
+
+    // Reset expected recv length str
+    expected_recv_length_str = "/" + QString::number(expected_recv_length / 1000.0) + "KB";
 
     // Reset progress bar
     emit progress_update_recv(0, "");
 }
 
-void GUI_BASE::update_current_recv_length(QByteArray recvData)
+void GUI_BASE::update_current_recv_length(uint32_t recv_len)
 {
-    // Find length of data
-    int data_len = recvData.length();
-
     // Start and stop sent by
-    if (data_len == 0)
+    if (recv_len == 0)
     {
         // See if starting new file
-        if (start_data)
+        if (current_recv_length == expected_recv_length)
         {
-            current_recv_length = 0;
-            emit progress_update_recv(0, "");
+            emit progress_update_recv(100, "Done!");
         } else
         {
-            expected_recv_length = 0;
-            emit progress_update_recv(100, "Done!");
+            emit progress_update_recv(0, "");
         }
 
-        // Toggle start_data
-        start_data = !start_data;
+        // Reset recv length
+        current_recv_length = 0;
 
         // Exit after setting
         return;
     }
 
     // Update received length
-    current_recv_length += data_len;
+    current_recv_length += recv_len;
 
     // Update progress bar if total recv length known
     if (expected_recv_length != 0)
-        emit progress_update_recv(qRound(((float) current_recv_length/expected_recv_length) * 100.0f), "");
+        emit progress_update_recv(qRound(((float) current_recv_length/expected_recv_length) * 100.0f),
+                                  QString::number((float) current_recv_length / 1000.0) + expected_recv_length_str);
 }

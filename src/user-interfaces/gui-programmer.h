@@ -37,12 +37,14 @@ public:
     explicit GUI_PROGRAMMER(QWidget *parent = 0);
     ~GUI_PROGRAMMER();
 
-    virtual void reset_gui();
     virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
     void addHexFormats(QStringList hexFormatsMap);
     void removeHexFormats(QStringList hexFormatsList);
     void addBurnMethods(QStringList burnMethodsMap);
+
+public slots:
+    virtual void reset_gui();
 
 protected slots:
     virtual void receive_gui(QByteArray recvData);

@@ -63,8 +63,10 @@ public:
     GUI_PIN_BASE(QWidget *parent = 0);
     ~GUI_PIN_BASE();
 
-    virtual void reset_gui();
     virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+
+public slots:
+    virtual void reset_gui();
 
 protected slots:
     void recordPinValues(PinTypeInfo *pInfo);

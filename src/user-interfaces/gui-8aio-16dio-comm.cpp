@@ -48,6 +48,38 @@ GUI_8AIO_16DIO_COMM::~GUI_8AIO_16DIO_COMM()
     delete ui;
 }
 
+void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
+{
+    // Setup pintypes variable
+    PinTypeInfo pInfo;
+
+    // Add DIO controls
+    if (!getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo)) return;
+    setNumPins(&pInfo, configMap->value("dio_num").toInt(),
+                          configMap->value("dio_start_num").toInt());
+    addNewPinSettings(&pInfo, configMap->value("dio_pin_settings").toStringList());
+    setCombos(&pInfo, configMap->value("dio_combo_settings").toStringList());
+
+    // Add AIO controls
+    if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo)) return;
+    setNumPins(&pInfo, configMap->value("aio_num").toInt(),
+                          configMap->value("aio_start_num").toInt());
+    addNewPinSettings(&pInfo, configMap->value("aio_pin_settings").toStringList());
+    setCombos(&pInfo, configMap->value("aio_combo_settings").toStringList());
+
+    // Add Remote controls
+    if (!getPinTypeInfo(MINOR_KEY_IO_REMOTE_CONN, &pInfo)) return;
+    addNewPinSettings(&pInfo, configMap->value("remote_pin_settings").toStringList());
+
+    bool prev_block_status = ui->ConnType_Combo->blockSignals(true);
+    ui->ConnType_Combo->clear();
+    ui->ConnType_Combo->addItems(controlMap.value(pInfo.pinType)->keys());
+    ui->ConnType_Combo->blockSignals(prev_block_status);
+
+    // Pass to parent for additional parsing
+    GUI_PIN_BASE::parseConfigMap(configMap);
+}
+
 void GUI_8AIO_16DIO_COMM::reset_gui()
 {
     // Setup loop variables
@@ -85,38 +117,6 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
 
     // Reset pin base
     GUI_PIN_BASE::reset_gui();
-}
-
-void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
-{
-    // Setup pintypes variable
-    PinTypeInfo pInfo;
-
-    // Add DIO controls
-    if (!getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo)) return;
-    setNumPins(&pInfo, configMap->value("dio_num").toInt(),
-                          configMap->value("dio_start_num").toInt());
-    addNewPinSettings(&pInfo, configMap->value("dio_pin_settings").toStringList());
-    setCombos(&pInfo, configMap->value("dio_combo_settings").toStringList());
-
-    // Add AIO controls
-    if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo)) return;
-    setNumPins(&pInfo, configMap->value("aio_num").toInt(),
-                          configMap->value("aio_start_num").toInt());
-    addNewPinSettings(&pInfo, configMap->value("aio_pin_settings").toStringList());
-    setCombos(&pInfo, configMap->value("aio_combo_settings").toStringList());
-
-    // Add Remote controls
-    if (!getPinTypeInfo(MINOR_KEY_IO_REMOTE_CONN, &pInfo)) return;
-    addNewPinSettings(&pInfo, configMap->value("remote_pin_settings").toStringList());
-
-    bool prev_block_status = ui->ConnType_Combo->blockSignals(true);
-    ui->ConnType_Combo->clear();
-    ui->ConnType_Combo->addItems(controlMap.value(pInfo.pinType)->keys());
-    ui->ConnType_Combo->blockSignals(prev_block_status);
-
-    // Pass to parent for additional parsing
-    GUI_PIN_BASE::parseConfigMap(configMap);
 }
 
 void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()

@@ -58,39 +58,6 @@ GUI_PROGRAMMER::~GUI_PROGRAMMER()
     delete ui;
 }
 
-void GUI_PROGRAMMER::reset_gui()
-{
-    // Clear received data
-    on_ReadDataClear_Button_clicked();
-
-    // Clear entered data
-    ui->HexFile_LineEdit->clear();
-    ui->HexPreview_PlainText->clear();
-    loadedHex.clear();
-
-    // Reset radio selection
-    ui->ReadAll_Radio->setChecked(true);
-    on_ReadData_RadioGroup_buttonClicked(0);
-
-    // Reset address range reading
-    ui->ReadAddrLower_LineEdit->setText("0");
-    ui->ReadAddrUpper_LineEdit->setText("0");
-    ui->ReadAddrBase_LineEdit->setText("16");
-
-    // Reset hex format selection
-    ui->HexFormat_Combo->setCurrentIndex(0);
-    curr_hexFormat = ui->HexFormat_Combo->currentText();
-    on_HexFormat_Combo_activated(0);
-
-    // Set clear on set
-    ui->ReadDataClearOnSet_CheckBox->setChecked(true);
-    progress_divisor = 1;
-    progress_adjuster = 0;
-
-    // Reset base (resets send progress bar)
-    GUI_BASE::reset_gui();
-}
-
 void GUI_PROGRAMMER::parseConfigMap(QMap<QString, QVariant>* configMap)
 {
     // Parse individual values
@@ -151,6 +118,39 @@ void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
     on_BurnMethod_Combo_currentIndexChanged(0);
 }
 
+void GUI_PROGRAMMER::reset_gui()
+{
+    // Clear received data
+    on_ReadDataClear_Button_clicked();
+
+    // Clear entered data
+    ui->HexFile_LineEdit->clear();
+    ui->HexPreview_PlainText->clear();
+    loadedHex.clear();
+
+    // Reset radio selection
+    ui->ReadAll_Radio->setChecked(true);
+    on_ReadData_RadioGroup_buttonClicked(0);
+
+    // Reset address range reading
+    ui->ReadAddrLower_LineEdit->setText("0");
+    ui->ReadAddrUpper_LineEdit->setText("0");
+    ui->ReadAddrBase_LineEdit->setText("16");
+
+    // Reset hex format selection
+    ui->HexFormat_Combo->setCurrentIndex(0);
+    curr_hexFormat = ui->HexFormat_Combo->currentText();
+    on_HexFormat_Combo_activated(0);
+
+    // Set clear on set
+    ui->ReadDataClearOnSet_CheckBox->setChecked(true);
+    progress_divisor = 1;
+    progress_adjuster = 0;
+
+    // Reset base (resets send progress bar)
+    GUI_BASE::reset_gui();
+}
+
 void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
 {
     // Get data without keys
@@ -169,13 +169,13 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
                     on_ReadDataClear_Button_clicked();
 
                 // Set expected length
-                set_expected_recv_length(data);
+                set_expected_recv_length(GUI_HELPER::byteArray_to_uint32(data));
                 return;
             }
             case MINOR_KEY_PROGRAMMER_DATA:
             {
                 // Update current recv length with each packet
-                update_current_recv_length(data);
+                update_current_recv_length(data.length());
                 break;
             }
         }

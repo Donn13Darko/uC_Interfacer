@@ -30,6 +30,7 @@ public:
     explicit GUI_MORE_OPTIONS(MoreOptions_struct* main_options, MoreOptions_struct** local_options_ptr, QStringList GUIs, QStringList checksums, QWidget *parent = 0);
     ~GUI_MORE_OPTIONS();
 
+public slots:
     void reset_gui();
 
 private slots:

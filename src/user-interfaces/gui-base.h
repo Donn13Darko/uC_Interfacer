@@ -79,7 +79,7 @@ protected:
     QByteArray rcvd_formatted;
     uint32_t current_recv_length;
     uint32_t expected_recv_length;
-    bool start_data;
+    QString expected_recv_length_str;
 
     // Returns if send is a data request
     virtual bool isDataRequest(uint8_t minorKey);
@@ -88,8 +88,8 @@ protected:
     void save_rcvd_formatted();
 
     // Other functions
-    void set_expected_recv_length(QByteArray recv_length);
-    void update_current_recv_length(QByteArray recvData);
+    void set_expected_recv_length(uint32_t expected_length);
+    void update_current_recv_length(uint32_t recv_len);
 };
 
 #endif // GUI_BASE_H

@@ -44,6 +44,12 @@ GUI_CUSTOM_CMD::~GUI_CUSTOM_CMD()
     delete ui;
 }
 
+void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant>* configMap)
+{
+    // Pass to parent for additional parsing
+    GUI_BASE::parseConfigMap(configMap);
+}
+
 void GUI_CUSTOM_CMD::reset_gui()
 {
     // Clear received data
@@ -78,12 +84,6 @@ void GUI_CUSTOM_CMD::reset_gui()
     GUI_BASE::reset_gui();
 }
 
-void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant>* configMap)
-{
-    // Pass to parent for additional parsing
-    GUI_BASE::parseConfigMap(configMap);
-}
-
 void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
 {
     // See if this GUI sent CMD
@@ -100,7 +100,7 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
                     on_FeedbackClear_Button_clicked();
 
                 // Set expected length
-                set_expected_recv_length(recvData.mid(s1_end_loc));
+                set_expected_recv_length(GUI_HELPER::byteArray_to_uint32(recvData.mid(s1_end_loc)));
                 return;
             }
             case MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE:
@@ -110,7 +110,7 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
             case MINOR_KEY_CUSTOM_CMD_CMD:
             {
                 // Update current recv length with each packet
-                update_current_recv_length(recvData.mid(s1_end_loc));
+                update_current_recv_length(recvData.mid(s1_end_loc).length());
 
                 if (recvData.length() == 2)
                 {

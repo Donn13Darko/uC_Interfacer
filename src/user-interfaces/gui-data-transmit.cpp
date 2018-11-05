@@ -47,6 +47,12 @@ GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
     delete ui;
 }
 
+void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant>* configMap)
+{
+    // Pass to parent for additional parsing
+    GUI_BASE::parseConfigMap(configMap);
+}
+
 void GUI_DATA_TRANSMIT::reset_gui()
 {
     // Clear received data
@@ -67,12 +73,6 @@ void GUI_DATA_TRANSMIT::reset_gui()
     GUI_BASE::reset_gui();
 }
 
-void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant>* configMap)
-{
-    // Pass to parent for additional parsing
-    GUI_BASE::parseConfigMap(configMap);
-}
-
 void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
 {
     // Get data without keys
@@ -91,13 +91,13 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
                     on_RecvClear_Button_clicked();
 
                 // Set expected length
-                set_expected_recv_length(data);
+                set_expected_recv_length(GUI_HELPER::byteArray_to_uint32(data));
                 return;
             }
             case MINOR_KEY_DATA_TRANSMIT_DATA:
             {
                 // Update current recv length with each packet
-                update_current_recv_length(data);
+                update_current_recv_length(data.length());
                 break;
             }
         }
