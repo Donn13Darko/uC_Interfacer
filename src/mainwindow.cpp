@@ -451,8 +451,11 @@ void MainWindow::on_DeviceConnected() {
             connect(tab_holder, SIGNAL(transmit_file_chunked(quint8, quint8, QString, char)),
                     comm_bridge, SLOT(send_file_chunked(quint8, quint8, QString, char)),
                     Qt::QueuedConnection);
-            connect(tab_holder, SIGNAL(transmit_chunk(quint8, quint8, QByteArray, bool)),
-                    comm_bridge, SLOT(send_chunk(quint8, quint8, QByteArray, bool)),
+            connect(tab_holder, SIGNAL(transmit_chunk(quint8, quint8, QByteArray)),
+                    comm_bridge, SLOT(send_chunk(quint8, quint8, QByteArray)),
+                    Qt::QueuedConnection);
+            connect(tab_holder, SIGNAL(transmit_chunk_pack(quint8, quint8, QByteArray)),
+                    comm_bridge, SLOT(send_chunk_pack(quint8, quint8, QByteArray)),
                     Qt::QueuedConnection);
 
             // Connect bridge signals to tab slots

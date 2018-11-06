@@ -47,7 +47,8 @@ signals:
     void transmit_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep);
 
     // Chunk transmit
-    void transmit_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray(), bool force_envelope = false);
+    void transmit_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray());
+    void transmit_chunk_pack(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray());
 
     // Send progress bar updates
     void progress_update_recv(int progress, QString label);
@@ -69,7 +70,7 @@ protected slots:
     virtual void set_progress_update_send(int progress, QString label);
 
     // Chunk sending from list
-    void send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk, bool force_envelope = false);
+    void send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk);
 
 protected:
     // Local variables
@@ -90,6 +91,11 @@ protected:
     // Other functions
     void set_expected_recv_length(uint32_t expected_length);
     void update_current_recv_length(uint32_t recv_len);
+
+    // Blocking functions - How to get these to work? Stub for now
+    // Disable buttons on click? Prevent until done or gui reset?
+    void wait_for_sent() {}
+    void wait_for_data() {}
 };
 
 #endif // GUI_BASE_H

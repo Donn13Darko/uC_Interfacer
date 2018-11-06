@@ -105,6 +105,8 @@ QByteArray GUI_HELPER::loadFile(QString filePath)
 
     // Read file
     QByteArray data = sFile.readAll();
+
+    // Close file
     sFile.close();
 
     // Return read data

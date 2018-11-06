@@ -148,7 +148,7 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
         // Get filePath
         QString filePath = ui->SendFilePath_LineEdit->text();
 
-        // Send size
+        // Set size
         emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
                             GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
 
@@ -159,12 +159,12 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
         // Get data
         QByteArray data = ui->Send_PlainText->toPlainText().toUtf8();
 
-        // Send size
+        // Set size
         emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
                             GUI_HELPER::uint32_to_byteArray(data.length()));
 
         // Send plaintext
-        emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data, true);
+        emit transmit_chunk_pack(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
     }
 }
 

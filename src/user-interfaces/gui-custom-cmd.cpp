@@ -372,6 +372,5 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
 
     // Send CMD
     emit transmit_chunk(major_key, minor_key,
-                        GUI_HELPER::string_to_byteArray(customCMD_bytes, send_cmd_base_old),
-                        true);
+                        GUI_HELPER::string_to_byteArray(customCMD_bytes, send_cmd_base_old));
 }

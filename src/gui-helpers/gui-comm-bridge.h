@@ -77,7 +77,8 @@ signals:
     // Re-emit transmission signals
     void transmit_file(quint8 major_key, quint8 minor_key, QString filePath, GUI_BASE *sender);
     void transmit_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep, GUI_BASE *sender);
-    void transmit_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope, GUI_BASE *sender);
+    void transmit_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, GUI_BASE *sender);
+    void transmit_chunk_pack(quint8 major_key, quint8 minor_key, QByteArray chunk, GUI_BASE *sender);
 
 public slots:
     // Reset remtoe
@@ -87,11 +88,16 @@ public slots:
     void receive(QByteArray recvData);
 
     // File sending
-    void send_file(quint8 major_key, quint8 minor_key, QString filePath, GUI_BASE *sender = nullptr);
-    void send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep, GUI_BASE *sender = nullptr);
+    void send_file(quint8 major_key, quint8 minor_key,
+                   QString filePath, GUI_BASE *sender = nullptr);
+    void send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath,
+                           char sep, GUI_BASE *sender = nullptr);
 
-    // Chunk sending
-    void send_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope, GUI_BASE *sender = nullptr);
+    // Data chunk sending
+    void send_chunk(quint8 major_key, quint8 minor_key,
+                    QByteArray chunk, GUI_BASE *sender = nullptr);
+    void send_chunk_pack(quint8 major_key, quint8 minor_key,
+                         QByteArray chunk, GUI_BASE *sender = nullptr);
 
     // Signal bridge to open, close, or exit
     bool open_bridge();
@@ -135,13 +141,14 @@ private:
         uint8_t major_key;
         uint8_t minor_key;
         QVariant data;
-        uint8_t sep_fenv;
+        uint8_t sep;
     } send_struct;
 
     typedef enum {
         SEND_STRUCT_SEND_FILE = 0,
         SEND_STRUCT_SEND_FILE_CHUNKED,
-        SEND_STRUCT_SEND_CHUNK
+        SEND_STRUCT_SEND_CHUNK,
+        SEND_STRUCT_SEND_CHUNK_PACK
     } SEND_STRUCT_TARGETS_ENUM;
 
     // Send helper variables
@@ -188,12 +195,20 @@ private:
     // Checks if packet requires special action
     void check_packet(uint8_t major_key);
 
+    // Try to acquire sendLock
+    bool get_send_lock(uint8_t major_key, uint8_t minor_key,
+                       QVariant data, GUI_BASE *sending_gui,
+                       uint8_t target, uint8_t sep = 0);
+
     // Handle send list
     void handle_next_send();
 
-    // Transmit across connection
-    void parse_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, bool force_envelope, GUI_BASE *sending_gui);
-    void transmit(QByteArray data);
+    // Transmit helpers
+    void parse_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk,
+                     bool send_updates = false, GUI_BASE *sender = nullptr,
+                     uint32_t c_pos = 0, uint32_t t_pos = 0);
+    QByteArray prepare_data(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray());
+    void transmit_data(QByteArray data);
 };
 
 #endif // GUI_COMM_BRIDGE_H
