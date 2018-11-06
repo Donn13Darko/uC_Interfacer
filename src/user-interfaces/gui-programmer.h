@@ -39,8 +39,8 @@ public:
 
     virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
 
-    void addHexFormats(QStringList hexFormatsMap);
-    void removeHexFormats(QStringList hexFormatsList);
+    void addFileFormats(QStringList fileFormatsMap);
+    void removeFileFormats(QStringList fileFormatsList);
     void addBurnMethods(QStringList burnMethodsMap);
 
 public slots:
@@ -56,12 +56,12 @@ protected:
     virtual bool isDataRequest(uint8_t minorKey);
 
 private slots:
-    void on_BrowseHexFile_Button_clicked();
+    void on_BrowseFile_Button_clicked();
     void on_RefreshPreview_Button_clicked();
     void on_BurnData_Button_clicked();
-    void on_HexFormat_Combo_activated(int);
+    void on_FileFormat_Combo_activated(int);
     void on_BurnMethod_Combo_currentIndexChanged(int);
-    void on_HexPreview_CheckBox_stateChanged(int);
+    void on_FilePreview_CheckBox_stateChanged(int);
 
     void on_ReadData_RadioGroup_buttonClicked(int);
     void on_ReadDataClear_Button_clicked();
@@ -71,13 +71,12 @@ private slots:
 private:
     Ui::GUI_PROGRAMMER *ui;
 
-    QString curr_hexFormat;
-    QMap<QString, QRegularExpression> hexFormats;
+    QString curr_fileFormat;
+    QMap<QString, QPair<uint8_t, QRegularExpression>> fileFormats;
     QMap<QString, QString> burnMethods;
 
-    QByteArray loadedHex;
-    QString format_hex(QByteArray rawHex);
-    void refresh_hex();
+    QByteArray format_file(QByteArray rawFile);
+    void refresh_file();
 
     uint8_t progress_divisor;
     uint8_t progress_adjuster;

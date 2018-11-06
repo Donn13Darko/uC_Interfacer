@@ -122,7 +122,7 @@ void GUI_MORE_OPTIONS::on_BrowseEXE_Button_clicked()
 {
     // Select file to send
     QString file;
-    if (GUI_HELPER::getOpenFilePath(&file, tr("Executables (*.exe);; All Files (*.*)")))
+    if (GUI_HELPER::getOpenFilePath(&file, tr("Executables (*.exe);; All Files (*)")))
         ui->ChecksumEXE_LineEdit->setText(file);
 }
 

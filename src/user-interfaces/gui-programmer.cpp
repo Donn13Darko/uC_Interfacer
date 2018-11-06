@@ -38,7 +38,7 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     if (configMap->contains("settings"))
     {
         groupMap = configMap->value("settings");
-        addHexFormats(groupMap->value("hex_formats").toStringList());
+        addFileFormats(groupMap->value("file_formats").toStringList());
         addBurnMethods(groupMap->value("burn_methods").toStringList());
     }
 
@@ -61,42 +61,51 @@ GUI_PROGRAMMER::~GUI_PROGRAMMER()
 void GUI_PROGRAMMER::parseConfigMap(QMap<QString, QVariant>* configMap)
 {
     // Parse individual values
-    addHexFormats(configMap->value("hex_formats").toStringList());
-    removeHexFormats(configMap->value("hex_formats_rm").toStringList());
+    addFileFormats(configMap->value("file_formats").toStringList());
+    removeFileFormats(configMap->value("file_formats_rm").toStringList());
     addBurnMethods(configMap->value("burn_methods").toStringList());
 
     // Pass to parent for additional parsing
     GUI_BASE::parseConfigMap(configMap);
 }
 
-void GUI_PROGRAMMER::addHexFormats(QStringList hexFormatsMap)
+void GUI_PROGRAMMER::addFileFormats(QStringList fileFormatsMap)
 {
-    QStringList hexFormat;
-    foreach (QString hexFormatString, hexFormatsMap)
+    uint8_t fileBase;
+    QStringList fileFormat, header_split;
+    foreach (QString fileFormatString, fileFormatsMap)
     {
         // Parse input string
-        hexFormat = hexFormatString.split('=');
-        if (hexFormat.length() != 2
-                || hexFormat[0].isEmpty()) continue;
+        fileFormat = fileFormatString.split('=');
+        if (fileFormat.length() < 2
+                || fileFormat.at(0).isEmpty()) continue;
 
-        // Add hex format to combo and map
-        ui->HexFormat_Combo->addItem(hexFormat[0]);
-        hexFormats.insert(hexFormat[0], QRegularExpression(hexFormat[1]));
+        // See if base encoded
+        header_split = fileFormat.takeFirst().split(',');
+        if (header_split.length() < 2) fileBase = 0;
+        else fileBase = header_split.at(1).toInt(nullptr, 10);
+
+        // Add file format to combo and map
+        ui->FileFormat_Combo->addItem(header_split.at(0));
+        fileFormats.insert(
+                    header_split.at(0),
+                    QPair<uint8_t, QRegularExpression>(
+                        fileBase, QRegularExpression(fileFormat.join('='))));
     }
 }
 
-void GUI_PROGRAMMER::removeHexFormats(QStringList hexFormatsList)
+void GUI_PROGRAMMER::removeFileFormats(QStringList fileFormatsList)
 {
     int pos;
-    foreach (QString hexFormat, hexFormatsList)
+    foreach (QString fileFormat, fileFormatsList)
     {
-        // Get hex format in combo
-        pos = ui->HexFormat_Combo->findText(hexFormat);
+        // Get file format in combo
+        pos = ui->FileFormat_Combo->findText(fileFormat);
         if (pos == -1) continue;
 
-        // Remove hex format from combo and map
-        ui->HexFormat_Combo->removeItem(pos);
-        hexFormats.remove(hexFormat);
+        // Remove file format from combo and map
+        ui->FileFormat_Combo->removeItem(pos);
+        fileFormats.remove(fileFormat);
     }
 }
 
@@ -124,9 +133,8 @@ void GUI_PROGRAMMER::reset_gui()
     on_ReadDataClear_Button_clicked();
 
     // Clear entered data
-    ui->HexFile_LineEdit->clear();
-    ui->HexPreview_PlainText->clear();
-    loadedHex.clear();
+    ui->File_LineEdit->clear();
+    ui->FilePreview_PlainText->clear();
 
     // Reset radio selection
     ui->ReadAll_Radio->setChecked(true);
@@ -137,13 +145,13 @@ void GUI_PROGRAMMER::reset_gui()
     ui->ReadAddrUpper_LineEdit->setText("0");
     ui->ReadAddrBase_LineEdit->setText("16");
 
-    // Reset hex format selection
-    ui->HexFormat_Combo->setCurrentIndex(0);
-    curr_hexFormat = ui->HexFormat_Combo->currentText();
-    on_HexFormat_Combo_activated(0);
+    // Reset file format selection
+    ui->FileFormat_Combo->setCurrentIndex(0);
+    curr_fileFormat = ui->FileFormat_Combo->currentText();
+    on_FileFormat_Combo_activated(0);
 
     // Set checkboxes
-    ui->HexPreview_CheckBox->setChecked(true);
+    ui->FilePreview_CheckBox->setChecked(true);
     ui->ReadDataClearOnSet_CheckBox->setChecked(true);
     progress_divisor = 1;
     progress_adjuster = 0;
@@ -226,14 +234,18 @@ bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
     }
 }
 
-void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()
+void GUI_PROGRAMMER::on_BrowseFile_Button_clicked()
 {
     // Select programmer file
     QString file;
-    if (GUI_HELPER::getOpenFilePath(&file, tr("HEX (*.hex);;All Files (*.*)")))
+    if (GUI_HELPER::getOpenFilePath(&file,
+                                    tr("HEX (*.hex);;"
+                                       "BIN (*.bin);;"
+                                       "SREC (*.s* *.mot *.mxt);;"
+                                       "All Files (*)")))
     {
         // Set file text
-        ui->HexFile_LineEdit->setText(file);
+        ui->File_LineEdit->setText(file);
 
         // Load in file preview
         on_RefreshPreview_Button_clicked();
@@ -242,74 +254,101 @@ void GUI_PROGRAMMER::on_BrowseHexFile_Button_clicked()
 
 void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
 {
-    // Clear existing data
-    loadedHex.clear();
-
-    // Get file path
-    QString filePath = ui->HexFile_LineEdit->text();
-    if (filePath.isEmpty()) return;
-
-    // Reload file if it exists
-    loadedHex = GUI_HELPER::loadFile(filePath);
-
     // Reset preview
-    refresh_hex();
+    refresh_file();
 }
 
 void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 {
-    // Verify that a file has been loaded
-    if (loadedHex.isEmpty()) return;
+    // Get format information pair
+    QPair<uint8_t, QRegularExpression> fileFormat = fileFormats.value(ui->FileFormat_Combo->currentText());
 
-    foreach (QString data_line, loadedHex.split('\n'))
+    // Check if sending as is
+    if (fileFormat.first == 0)
     {
-        // Clear all whitespace other than spaces
-        data_line = data_line.simplified();
+        // Get filePath
+        QString filePath = ui->File_LineEdit->text();
 
-        // Remove all those spaces
-        data_line.replace(" ", "");
+        // Set size
+        emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
+                            GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
 
-        // Convert to bytes and send across (assumes data in hex)
+        // Send file
+        emit transmit_file(gui_key, MINOR_KEY_PROGRAMMER_DATA, filePath);
+
+        // Exit
+        return;
+    }
+
+    /* Should define a singnal and slot interface in comm-bridge
+     * that handles this functionality. Can Assume that entire file is
+     * same encoding. Allows reuse of base code and functionality.
+     */
+
+    // See if file already loaded (load and parse if not)
+    QString loadedInfo = ui->FilePreview_PlainText->toPlainText();
+    if (loadedInfo.isEmpty())
+    {
+        // Get filePath
+        QString filePath = ui->File_LineEdit->text();
+
+        // Load & format entire file (look into streaming)
+        loadedInfo = format_file(GUI_HELPER::loadFile(filePath));
+    }
+
+    // Parse line by line and transfer each character set into uint8_t
+    foreach (QString program_line, loadedInfo.split('\n'))
+    {
         emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_DATA,
-                            QByteArray::fromHex(data_line.toUtf8()));
+                            GUI_HELPER::string_to_byteArray(program_line, fileFormat.first, ' '));
     }
 }
 
-void GUI_PROGRAMMER::on_HexFormat_Combo_activated(int)
+void GUI_PROGRAMMER::on_FileFormat_Combo_activated(int)
 {
     // Check if selection is other and prompt for user input
-    if (ui->HexFormat_Combo->currentText() == "Other")
+    if (ui->FileFormat_Combo->currentText() == "Other")
     {
-        QString hexRegexStr;
-        QRegularExpression otherRegex = hexFormats["Other"];
+        QString fileRegexStr;
+        QPair<uint8_t, QRegularExpression> otherPair = fileFormats["Other"];
+        QRegularExpression otherRegex = otherPair.second;
 
         // Set to current other text
-        hexRegexStr = otherRegex.pattern();
+        fileRegexStr = otherRegex.pattern();
 
         // Get or update the text
-        if (GUI_HELPER::getUserString(&hexRegexStr, "Other Hex Format", "Enter hex format regex:"))
+        if (GUI_HELPER::getUserString(&fileRegexStr, "Other Format", "Enter format as 'base,regex':"))
         {
+            // Parse input string
+            QStringList input_str = fileRegexStr.split(',');
+
+            // Get base
+            uint8_t base = 0;
+            if (1 < input_str.length())
+                base = input_str.takeFirst().toInt(nullptr, 10);
+
             // Only update regex if it changed
-            if (otherRegex.pattern() != hexRegexStr)
+            if ((otherPair.first != base)
+                    && (otherRegex.pattern() != input_str.join(',')))
             {
-                otherRegex.setPattern(hexRegexStr);
-                hexFormats.insert("Other", otherRegex);
+                otherRegex.setPattern(fileRegexStr);
+                fileFormats.insert("Other", QPair<uint8_t, QRegularExpression>(base, otherRegex));
             }
         } else
         {
             // Return to previous entry if change canceled
-            ui->HexFormat_Combo->setCurrentText(curr_hexFormat);
+            ui->FileFormat_Combo->setCurrentText(curr_fileFormat);
             return;
         }
     }
-    curr_hexFormat = ui->HexFormat_Combo->currentText();
+    curr_fileFormat = ui->FileFormat_Combo->currentText();
 
     // Update regex string
-    ui->HexRegex_PlainText->setPlainText(hexFormats.value(curr_hexFormat).pattern());
-    ui->HexRegex_PlainText->moveCursor(QTextCursor::Start);
+    ui->FileRegex_PlainText->setPlainText(fileFormats.value(curr_fileFormat).second.pattern());
+    ui->FileRegex_PlainText->moveCursor(QTextCursor::Start);
 
     // Refresh the preview
-    refresh_hex();
+    refresh_file();
 }
 
 void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
@@ -319,10 +358,10 @@ void GUI_PROGRAMMER::on_BurnMethod_Combo_currentIndexChanged(int)
     ui->Instructions_PlainText->moveCursor(QTextCursor::Start);
 }
 
-void GUI_PROGRAMMER::on_HexPreview_CheckBox_stateChanged(int)
+void GUI_PROGRAMMER::on_FilePreview_CheckBox_stateChanged(int)
 {
-    // If state changes, refresh the hex preview
-    refresh_hex();
+    // If state changes, refresh the file preview
+    refresh_file();
 }
 
 void GUI_PROGRAMMER::on_ReadData_RadioGroup_buttonClicked(int)
@@ -350,47 +389,57 @@ void GUI_PROGRAMMER::on_ReadDataSave_Button_clicked()
     save_rcvd_formatted();
 }
 
-QString GUI_PROGRAMMER::format_hex(QByteArray rawHex)
+QByteArray GUI_PROGRAMMER::format_file(QByteArray rawFile)
 {
+    // Get format information pair
+    QPair<uint8_t, QRegularExpression> fileFormat = fileFormats.value(ui->FileFormat_Combo->currentText());
+
+    // If base is zero return rawFile bytes
+    if (fileFormat.first == 0) return rawFile;
+
     // Prepare loaded file for parsing
-    QStringList hexList = QString(rawHex).split('\n');
+    QList<QByteArray> fileList = rawFile.split('\n');
 
-    // Get regex matcher
-    QRegularExpression hexReg = hexFormats.value(ui->HexFormat_Combo->currentText());
-
-    QString final;
+    // Setup variables for loop
+    QByteArray final;
     QStringList captureList;
-    foreach (QString i, hexList)
+
+    // Loop through each line looking for a match
+    foreach (QByteArray i, fileList)
     {
+        // Skip blank lines
         if (i.isEmpty()) continue;
 
-        // Attempt to match with regex
-        // Should be in format [nnaaaatt_dd_cc] ([NN Addr TT Data CC])
-        // Transfer match to capture groups
-        captureList = hexReg.match(i.trimmed()).capturedTexts();
+        // Attempt to match with regex group
+        captureList = fileFormat.second.match(i.trimmed()).capturedTexts();
         if (!captureList.isEmpty())
         {
+            // First group is entire line
             captureList.removeFirst();
-            final += captureList.join(" ");
+            final += captureList.join(" ") + '\n';
         }
-        final += "\n";
     }
 
     return final;
 }
 
-void GUI_PROGRAMMER::refresh_hex()
+void GUI_PROGRAMMER::refresh_file()
 {
     // Clear current data entry
-    ui->HexPreview_PlainText->clear();
+    ui->FilePreview_PlainText->clear();
+    QString filePath = ui->File_LineEdit->text();
 
-    // Only update format if file loaded
-    if (loadedHex.isEmpty() || !ui->HexPreview_CheckBox->isChecked()) return;
+    // Only update format if selected && file < 10MB (10485760 Bytes)
+    if (!ui->FilePreview_CheckBox->isChecked()
+            || (10485760 < GUI_HELPER::getFileSize(filePath)))
+    {
+        return;
+    }
 
-    // Update Hex
-    ui->HexPreview_PlainText->appendPlainText(format_hex(loadedHex));
+    // Update File
+    ui->FilePreview_PlainText->appendPlainText(format_file(GUI_HELPER::loadFile(filePath)));
 
     // Set cursor to top
-    ui->HexPreview_PlainText->moveCursor(QTextCursor::Start);
+    ui->FilePreview_PlainText->moveCursor(QTextCursor::Start);
 }
 

@@ -13,30 +13,30 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QLineEdit" name="HexFile_LineEdit">
+  <widget class="QLineEdit" name="File_LineEdit">
    <property name="geometry">
     <rect>
-     <x>90</x>
+     <x>60</x>
      <y>10</y>
-     <width>261</width>
+     <width>291</width>
      <height>20</height>
     </rect>
    </property>
   </widget>
-  <widget class="QLabel" name="HexFile_Label">
+  <widget class="QLabel" name="File_Label">
    <property name="geometry">
     <rect>
      <x>20</x>
      <y>10</y>
-     <width>71</width>
+     <width>31</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Hex File:</string>
+    <string>File:</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="BrowseHexFile_Button">
+  <widget class="QPushButton" name="BrowseFile_Button">
    <property name="geometry">
     <rect>
      <x>370</x>
@@ -81,7 +81,7 @@
     <string>Read Data:</string>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="HexPreview_PlainText">
+  <widget class="QPlainTextEdit" name="FilePreview_PlainText">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -97,7 +97,7 @@
     <string/>
    </property>
   </widget>
-  <widget class="QLabel" name="HexPreview_Label">
+  <widget class="QLabel" name="FilePreview_Label">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -113,7 +113,7 @@
   <widget class="QLabel" name="BurnMethod_Label">
    <property name="geometry">
     <rect>
-     <x>240</x>
+     <x>230</x>
      <y>50</y>
      <width>71</width>
      <height>20</height>
@@ -123,23 +123,23 @@
     <string>Burn Method:</string>
    </property>
   </widget>
-  <widget class="QLabel" name="HexFormat_Label">
+  <widget class="QLabel" name="FileFormat_Label">
    <property name="geometry">
     <rect>
      <x>20</x>
      <y>50</y>
-     <width>71</width>
+     <width>41</width>
      <height>20</height>
     </rect>
    </property>
    <property name="text">
-    <string>Hex Format:</string>
+    <string>Format:</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="HexFormat_Combo">
+  <widget class="QComboBox" name="FileFormat_Combo">
    <property name="geometry">
     <rect>
-     <x>90</x>
+     <x>70</x>
      <y>50</y>
      <width>131</width>
      <height>22</height>
@@ -316,7 +316,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Burn Hex</string>
+    <string>Burn Data</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
@@ -332,13 +332,13 @@
     </rect>
    </property>
    <property name="text">
-    <string>Refresh Hex</string>
+    <string>Refresh</string>
    </property>
    <property name="autoDefault">
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QLabel" name="HexRegex_Label">
+  <widget class="QLabel" name="FileRegex_Label">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -348,10 +348,10 @@
     </rect>
    </property>
    <property name="text">
-    <string>Hex Regex:</string>
+    <string>File Regex:</string>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="HexRegex_PlainText">
+  <widget class="QPlainTextEdit" name="FileRegex_PlainText">
    <property name="enabled">
     <bool>true</bool>
    </property>
@@ -466,7 +466,7 @@
     <string>Address Base:</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="HexPreview_CheckBox">
+  <widget class="QCheckBox" name="FilePreview_CheckBox">
    <property name="geometry">
     <rect>
      <x>350</x>

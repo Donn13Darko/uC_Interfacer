@@ -46,8 +46,8 @@ public:
     static bool getUserString(QString *str, QString title, QString label);
 
     // Get file info
-    static bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
-    static bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*.*)"));
+    static bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*)"));
+    static bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*)"));
     static bool saveFile(QString filePath, QByteArray data);
     static uint32_t getFileSize(QString filePath);
     static QByteArray loadFile(QString filePath);
