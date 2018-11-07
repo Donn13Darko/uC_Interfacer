@@ -47,7 +47,7 @@ GUI_MORE_OPTIONS::~GUI_MORE_OPTIONS()
 
 void GUI_MORE_OPTIONS::reset_gui()
 {
-    // Reset vvariables
+    // Reset variables
     reset_updates();
 
     // Reset fields

@@ -44,7 +44,7 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     }
 
     // Delete map after use
-    GUI_HELPER::deleteConfigMap(configMap);
+    GUI_HELPER::deleteConfigMap(&configMap);
 
     // Setup progress bars
     ui->Programmer_ProgressBar->setMinimum(0);

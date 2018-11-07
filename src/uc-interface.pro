@@ -47,7 +47,8 @@ SOURCES += \
     gui-helpers/gui-helper.cpp \
     gui-helpers/gui-more-options.cpp \
     communication/serial-com-port.cpp \
-    gui-helpers/gui-comm-bridge.cpp
+    gui-helpers/gui-comm-bridge.cpp \
+    gui-helpers/gui-create-new-tabs.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -80,7 +81,8 @@ HEADERS += \
     gui-helpers/gui-helper.h \
     gui-helpers/gui-more-options.h \
     communication/serial-com-port.h \
-    gui-helpers/gui-comm-bridge.h
+    gui-helpers/gui-comm-bridge.h \
+    gui-helpers/gui-create-new-tabs.h
 
 FORMS += \
     mainwindow.ui \
@@ -89,7 +91,8 @@ FORMS += \
     user-interfaces/gui-programmer.ui \
     user-interfaces/gui-welcome.ui \
     user-interfaces/gui-custom-cmd.ui \
-    gui-helpers/gui-more-options.ui
+    gui-helpers/gui-more-options.ui \
+    gui-helpers/gui-create-new-tabs.ui
 
 DISTFILES += \
     uc-interfaces/arduino_uno_uart/arduino_uno_uart.ino

@@ -66,13 +66,25 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowFlags(windowFlags()
                    | Qt::MSWindowsFixedSizeDialogHint);
 
+    // Set base parameters
+    prev_tab = -1;
+    device = nullptr;
+    configMap = nullptr;
+    speed = "";
+    updateConnInfo = new QTimer();
+
     // Setup Welcome widget
     welcome_tab = new GUI_WELCOME(this);
     welcome_tab->set_GUI_name("Welcome");
 
-    // Setup blank tab widget
+    // Setup add new tab information (blank GUI_BASE)
     add_new_tab = new GUI_BASE(this);
     add_new_tab->set_GUI_name("+");
+    new_tab_gui = new GUI_CREATE_NEW_TABS(&configMap);
+    new_tab_gui->setModal(true);
+    connect(new_tab_gui, SIGNAL(accepted()),
+            this, SLOT(createNewTabs_accepted()),
+            Qt::DirectConnection);
 
     // Setup More Options Dialog
     main_options_settings.reset_on_tab_switch = false;
@@ -87,13 +99,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Setup Comm Bridge
     comm_bridge = new GUI_COMM_BRIDGE(supportedGUIsList.length(), this);
-
-    // Set base parameters
-    prev_tab = -1;
-    device = nullptr;
-    configMap = nullptr;
-    speed = "";
-    updateConnInfo = new QTimer();
 
     // Add values to Device combo
     bool prev_block_status;
@@ -114,7 +119,7 @@ MainWindow::MainWindow(QWidget *parent) :
     on_ConnType_Combo_currentIndexChanged(0);
     ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_name());
 
-    // Add connections
+    // Add update selections connections
     connect(updateConnInfo, SIGNAL(timeout()),
             this, SLOT(updateConnInfoCombo()),
             Qt::DirectConnection);
@@ -128,6 +133,9 @@ MainWindow::~MainWindow()
         on_DeviceDisconnect_Button_clicked();
     }
 
+    // Delete config map
+    if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+
     // Stop connection timers
     updateConnInfo->stop();
 
@@ -138,6 +146,7 @@ MainWindow::~MainWindow()
     delete updateConnInfo;
     delete welcome_tab;
     delete add_new_tab;
+    delete new_tab_gui;
     delete more_options;
     delete ui;
 }
@@ -227,12 +236,8 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     // Disable input switching
     setConnected(true);
 
-    // Reset the config settings file
-    if (configMap)
-    {
-        GUI_HELPER::deleteConfigMap(configMap);
-        configMap = nullptr;
-    }
+    // Delete the config settings if not already done
+    if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
 
     // Read config settings
     configMap = GUI_HELPER::readConfigINI(deviceINI);
@@ -395,6 +400,9 @@ void MainWindow::on_DeviceConnected() {
         // Enable signals for tab group
         ui->ucOptions->blockSignals(prev_block_status);
 
+        // Delete the config settings after use
+        if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
 
@@ -485,6 +493,47 @@ void MainWindow::moreOptions_accepted()
     }
 }
 
+void MainWindow::createNewTabs_accepted()
+{
+    // Verify settings saved
+    if (!configMap) return;
+
+    // Block signals from tab group
+    bool prev_block_status = ui->ucOptions->blockSignals(true);
+
+    // Get insert position
+    uint32_t tab_pos = ui->ucOptions->count() - 1;
+
+    // Parse config maps and insert before '+'
+    uint8_t gui_key;
+    GUI_BASE *tab_holder;
+    foreach (QString childGroup, configMap->keys())
+    {
+        // Verify that its a known GUI
+        gui_key = getGUIType(childGroup.split('_').last());
+        if (gui_key == MAJOR_KEY_ERROR) continue;
+
+        // Create new tab
+        tab_holder = create_new_tab(gui_key, configMap->value(childGroup));
+
+        // If tab creation failed, continue
+        if (!tab_holder) continue;
+
+        // Add new GUI to tabs
+        ui->ucOptions->insertTab(tab_pos, tab_holder, tab_holder->get_GUI_name());
+        tab_pos += 1;
+    }
+
+    // Force any changes in more options
+    update_options(&main_options_settings);
+
+    // Enable signals for tab group
+    ui->ucOptions->blockSignals(prev_block_status);
+
+    // Delete the config settings after use
+    if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+}
+
 void MainWindow::on_ucOptions_currentChanged(int index)
 {
     // No change
@@ -504,15 +553,14 @@ void MainWindow::on_ucOptions_currentChanged(int index)
             ui->ucOptions->setCurrentIndex(prev_tab);
 
         // Show new tab creation popup/wizard
-        GUI_HELPER::showMessage("Add new tab");
-
-        // If creation successful,
-        // Add new tab to end before '+' tab
-        // and switch to that tab
+        // Will emit accepted() or rejected() when done
+        new_tab_gui->reset_gui();
+        new_tab_gui->show();
 
         // Enable signals
         ui->ucOptions->blockSignals(prev_block_status);
 
+        // Exit function
         return;
     }
 
@@ -701,7 +749,7 @@ QStringList MainWindow::getConnSpeeds()
     }
 }
 
-GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *configMap)
+GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *guiConfigMap)
 {
     // Instantiate and add GUI
     GUI_BASE *tab_holder = nullptr;
@@ -709,25 +757,25 @@ GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *c
     {
         case MAJOR_KEY_GENERAL_SETTINGS:
         {
-            comm_bridge->parseGenericConfigMap(configMap);
+            comm_bridge->parseGenericConfigMap(guiConfigMap);
 
             // Check reset tab setting (forces true from INI)
-            if (configMap->value("reset_tabs_on_switch", "false").toBool())
+            if (guiConfigMap->value("reset_tabs_on_switch", "false").toBool())
             {
                 main_options_settings.reset_on_tab_switch = true;
             }
 
             // Check little endian setting (forces a true from INI)
-            if (configMap->value("send_little_endian", "false").toBool())
+            if (guiConfigMap->value("send_little_endian", "false").toBool())
             {
                 main_options_settings.send_little_endian = true;
             }
 
             // Check chunk size setting (overrides if options setting is default)
             if ((main_options_settings.chunk_size == GUI_COMM_BRIDGE::default_chunk_size)
-                    && configMap->contains("chunk_size"))
+                    && guiConfigMap->contains("chunk_size"))
             {
-                main_options_settings.chunk_size = configMap->value("chunk_size").toInt();
+                main_options_settings.chunk_size = guiConfigMap->value("chunk_size").toInt();
             }
 
             // If general settings, move to next (no GUI)
@@ -766,7 +814,7 @@ GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *c
     if (!tab_holder) return nullptr;
 
     // Call config map parser
-    tab_holder->parseConfigMap(configMap);
+    tab_holder->parseConfigMap(guiConfigMap);
 
     // Add new GUI to comm bridge
     comm_bridge->add_gui(tab_holder);
@@ -822,8 +870,7 @@ void MainWindow::options_serial_com_port(MoreOptions_struct *options,
     settings->baudrate = speed.toInt();
 
     // Parse custom list & config map
-    if (configMap->contains(ui->ConnType_Combo->currentText())
-                         || !options->custom.isEmpty())
+    if (!groupMap->isEmpty() || !options->custom.isEmpty())
     {
         // Create holding list
         QString setting;

@@ -26,6 +26,7 @@
 #include <QCloseEvent>
 #include <QSettings>
 
+#include "gui-helpers/gui-create-new-tabs.h"
 #include "gui-helpers/gui-more-options.h"
 #include "gui-helpers/gui-comm-bridge.h"
 
@@ -80,6 +81,8 @@ private slots:
     void on_MoreOptions_Button_clicked();
     void moreOptions_accepted();
 
+    void createNewTabs_accepted();
+
     void on_DeviceConnected();
     void on_DeviceDisconnected();
 
@@ -94,8 +97,9 @@ private:
     // Default Welcome tab
     GUI_WELCOME *welcome_tab;
 
-    // '+' tab (blank base gui)
+    // '+' tab (blank base gui + create tab dialog)
     GUI_BASE *add_new_tab;
+    GUI_CREATE_NEW_TABS *new_tab_gui;
 
     // More options dialog
     GUI_MORE_OPTIONS *more_options;
@@ -133,7 +137,7 @@ private:
     QStringList getConnSpeeds();
 
     // Create a new gui based on the configuration info
-    GUI_BASE *create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *configMap);
+    GUI_BASE *create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *guiConfigMap);
 
     // More options gui parser
     void update_options(MoreOptions_struct *options);

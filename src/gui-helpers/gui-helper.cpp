@@ -121,12 +121,14 @@ QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::readConfigINI(QString confi
     QMap<QString, QVariant> *groupMap;
     QMap<QString, QMap<QString, QVariant>*> *configMap;
     configMap = new QMap<QString, QMap<QString, QVariant>*>();
+    if (!configMap) return nullptr;
 
     // Loop through all child groups
     foreach (QString childGroup, config_settings.childGroups())
     {
         // Create new group map
         groupMap = new QMap<QString, QVariant>();
+        if (!groupMap) continue;
 
         // Begin GUI group settings
         config_settings.beginGroup(childGroup);
@@ -145,16 +147,29 @@ QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::readConfigINI(QString confi
     return configMap;
 }
 
-void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *> *configMap)
+void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant>*> **configMap)
 {
+    // Verify valid pointer
+    if (!configMap) return;
+
+    // Get direct pointer (instead of pointer to a pointer
+    QMap<QString, QMap<QString, QVariant>*> *configMap_ptr = *configMap;
+    if (!configMap_ptr) return;
+
+    // Loop through elements deleting
     QMap<QString, QVariant> *groupMap;
-    foreach (QString group, configMap->keys())
+    foreach (QString group, configMap_ptr->keys())
     {
-        groupMap = configMap->value(group);
-        configMap->remove(group);
-        delete groupMap;
+        groupMap = configMap_ptr->value(group);
+        configMap_ptr->remove(group);
+        if (groupMap) delete groupMap;
     }
-    delete configMap;
+
+    // Delete main map
+    delete configMap_ptr;
+
+    // Assign pointer to null
+    *configMap = nullptr;
 }
 
 QByteArray GUI_HELPER::initList_to_byteArray(std::initializer_list<uint8_t> initList)
