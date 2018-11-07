@@ -26,18 +26,24 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     update_current_recv_length(0);
 
     // Connect read signals and slots
+    // This gets emited by a reference in comm-bridge
+    // Use queued connection to allow thread compatability
     connect(this, SIGNAL(readyRead(QByteArray)),
             this, SLOT(receive_gui(QByteArray)),
             Qt::QueuedConnection);
 
     // Connect progress signals and slots
     // Wait till return to main event loop to process slots
+    // Additionally, this gets emited by a reference in comm-bridge
+    // Use queued connection to allow thread compatability
     connect(this, SIGNAL(progress_update_recv(int, QString)),
             this, SLOT(set_progress_update_recv(int,QString)),
             Qt::QueuedConnection);
     connect(this, SIGNAL(progress_update_send(int, QString)),
             this, SLOT(set_progress_update_send(int,QString)),
             Qt::QueuedConnection);
+
+    // Connect wait loop to exit signals
 }
 
 GUI_BASE::~GUI_BASE()
@@ -62,9 +68,20 @@ uint8_t GUI_BASE::get_GUI_key()
     return gui_key;
 }
 
-void GUI_BASE::parseConfigMap(QMap<QString, QVariant>*)
+QString GUI_BASE::get_GUI_name()
 {
-    // Default do nothing
+    return gui_name;
+}
+
+void GUI_BASE::set_GUI_name(QString new_name)
+{
+    gui_name = new_name;
+}
+
+void GUI_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
+{
+    // Reset name if present
+    gui_name = configMap->value("tab_name", gui_name).toString();
 }
 
 void GUI_BASE::receive_gui(QByteArray)

@@ -40,14 +40,14 @@ class SERIAL_COM_PORT : public COMMS_BASE
     Q_OBJECT
 
 public:
-    SERIAL_COM_PORT(Serial_COM_Port_Settings* serial_settings, QObject *parent = NULL);
+    SERIAL_COM_PORT(Serial_COM_Port_Settings *serial_settings, QObject *parent = NULL);
     ~SERIAL_COM_PORT();
 
     virtual void open();
     virtual void close();
     virtual bool isConnected();
 
-    static QStringList* getDevices();
+    static QStringList *getDevices();
     static QStringList Baudrate_Defaults;
 
 public slots:
@@ -60,7 +60,7 @@ private slots:
 private:
     QSerialPort *serial_com_port;
 
-    void parseSettings(Serial_COM_Port_Settings* serial_settings);
+    void parseSettings(Serial_COM_Port_Settings *serial_settings);
 };
 
 #endif // SERIAL_COM_PORT_H

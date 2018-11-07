@@ -68,7 +68,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Setup Welcome widget
     welcome_tab = new GUI_WELCOME(this);
-    welcome_tab_label = "Welcome";
+    welcome_tab->set_GUI_name("Welcome");
+
+    // Setup blank tab widget
+    add_new_tab = new GUI_BASE(this);
+    add_new_tab->set_GUI_name("+");
 
     // Setup More Options Dialog
     main_options_settings.reset_on_tab_switch = false;
@@ -108,7 +112,7 @@ MainWindow::MainWindow(QWidget *parent) :
     setConnected(false);
     on_Device_Combo_activated(ui->Device_Combo->currentIndex());
     on_ConnType_Combo_currentIndexChanged(0);
-    ui->ucOptions->addTab(welcome_tab, welcome_tab_label);
+    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_name());
 
     // Add connections
     connect(updateConnInfo, SIGNAL(timeout()),
@@ -133,11 +137,12 @@ MainWindow::~MainWindow()
     // Delete objects
     delete updateConnInfo;
     delete welcome_tab;
+    delete add_new_tab;
     delete more_options;
     delete ui;
 }
 
-void MainWindow::closeEvent(QCloseEvent* e)
+void MainWindow::closeEvent(QCloseEvent *e)
 {
     // If connected, disconnect
     if (deviceConnected())
@@ -314,6 +319,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     }
 
     // Connect signals and slots
+    // Use queued connection for thread expansion
     connect(device, SIGNAL(deviceConnected()),
             this, SLOT(on_DeviceConnected()),
             Qt::QueuedConnection);
@@ -350,6 +356,7 @@ void MainWindow::on_DeviceConnected() {
         }
 
         // Connect bridge to device connections if bridge opened
+        // Use queued connection for thread expansion
         connect(device, SIGNAL(readyRead(QByteArray)),
                 comm_bridge, SLOT(receive(QByteArray)),
                 Qt::QueuedConnection);
@@ -362,107 +369,25 @@ void MainWindow::on_DeviceConnected() {
 
         // Setup tabs
         uint8_t gui_key;
-        QMap<QString, QVariant>* groupMap;
-        GUI_BASE* tab_holder;
+        GUI_BASE *tab_holder;
         foreach (QString childGroup, configMap->keys())
         {
             // Verify that its a known GUI
             gui_key = getGUIType(childGroup.split('_').last());
             if (gui_key == MAJOR_KEY_ERROR) continue;
 
-            // Get group QMap
-            groupMap = configMap->value(childGroup);
+            // Create new tab
+            tab_holder = create_new_tab(gui_key, configMap->value(childGroup));
 
-            // Instantiate and add GUI
-            tab_holder = nullptr;
-            switch (gui_key)
-            {
-                case MAJOR_KEY_GENERAL_SETTINGS:
-                {
-                    comm_bridge->parseGenericConfigMap(groupMap);
-
-                    // Check reset tab setting (forces true from INI)
-                    if (groupMap->value("reset_tabs_on_switch", "false").toBool())
-                    {
-                        main_options_settings.reset_on_tab_switch = true;
-                    }
-
-                    // Check little endian setting (forces a true from INI)
-                    if (groupMap->value("send_little_endian", "false").toBool())
-                    {
-                        main_options_settings.send_little_endian = true;
-                    }
-
-                    // Check chunk size setting (overrides if options setting is default)
-                    if ((main_options_settings.chunk_size == GUI_COMM_BRIDGE::default_chunk_size)
-                            && groupMap->contains("chunk_size"))
-                    {
-                        main_options_settings.chunk_size = groupMap->value("chunk_size").toInt();
-                    }
-
-                    // If general settings, move to next (no GUI)
-                    continue;
-                }
-                case MAJOR_KEY_WELCOME:
-                {
-                    tab_holder = new GUI_WELCOME(this);
-                    break;
-                }
-                case MAJOR_KEY_IO:
-                {
-                    tab_holder = new GUI_8AIO_16DIO_COMM(this);
-                    break;
-                }
-                case MAJOR_KEY_DATA_TRANSMIT:
-                {
-                    tab_holder = new GUI_DATA_TRANSMIT(this);
-                    break;
-                }
-                case MAJOR_KEY_PROGRAMMER:
-                {
-                    tab_holder = new GUI_PROGRAMMER(this);
-                    break;
-                }
-                case MAJOR_KEY_CUSTOM_CMD:
-                {
-                    tab_holder = new GUI_CUSTOM_CMD(this);
-                    break;
-                }
-                default:
-                {
-                    break;
-                }
-            }
+            // If tab creation failed, continue
             if (!tab_holder) continue;
 
-            // Call config map parser
-            tab_holder->parseConfigMap(groupMap);
-
             // Add new GUI to tabs
-            ui->ucOptions->addTab(tab_holder, groupMap->value("tab_name", childGroup).toString());
-
-            // Add new GUI to comm bridge
-            comm_bridge->add_gui(tab_holder);
-
-            // Connect tab signals to bridge slots
-            connect(tab_holder, SIGNAL(transmit_file(quint8, quint8, QString, quint8, QString)),
-                    comm_bridge, SLOT(send_file(quint8, quint8, QString, quint8, QString)),
-                    Qt::QueuedConnection);
-            connect(tab_holder, SIGNAL(transmit_file_pack(quint8, quint8, QString, quint8, QString)),
-                    comm_bridge, SLOT(send_file_pack(quint8, quint8, QString, quint8, QString)),
-                    Qt::QueuedConnection);
-            connect(tab_holder, SIGNAL(transmit_chunk(quint8, quint8, QByteArray, quint8, QString)),
-                    comm_bridge, SLOT(send_chunk(quint8, quint8, QByteArray, quint8, QString)),
-                    Qt::QueuedConnection);
-            connect(tab_holder, SIGNAL(transmit_chunk_pack(quint8, quint8, QByteArray, quint8, QString)),
-                    comm_bridge, SLOT(send_chunk_pack(quint8, quint8, QByteArray, quint8, QString)),
-                    Qt::QueuedConnection);
-
-            // Connect bridge signals to tab slots
-            connect(comm_bridge, SIGNAL(reset()),
-                    tab_holder, SLOT(reset_gui()),
-                    Qt::QueuedConnection);
+            ui->ucOptions->addTab(tab_holder, tab_holder->get_GUI_name());
         }
+
+        // Add dynamic addition tab group ('+' tab)
+        ui->ucOptions->addTab(add_new_tab, add_new_tab->get_GUI_name());
 
         // Force any changes in more options
         update_options(&main_options_settings);
@@ -530,7 +455,7 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     comm_bridge->close_bridge();
 
     // Add welcome widget
-    ui->ucOptions->addTab(welcome_tab, welcome_tab_label);
+    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_name());
 
     // Set to disconnected mode
     setConnected(false);
@@ -565,8 +490,33 @@ void MainWindow::on_ucOptions_currentChanged(int index)
     // No change
     if (prev_tab == index) return;
 
+    // Allocate holder
+    GUI_BASE *tab_holder = (GUI_BASE*) ui->ucOptions->currentWidget();
+
+    // Check if '+' tab
+    if (tab_holder && (tab_holder == add_new_tab))
+    {
+        // Block signals during work
+        bool prev_block_status = ui->ucOptions->blockSignals(true);
+
+        // Show previous tab while adding new tab
+        if (prev_tab != -1)
+            ui->ucOptions->setCurrentIndex(prev_tab);
+
+        // Show new tab creation popup/wizard
+        GUI_HELPER::showMessage("Add new tab");
+
+        // If creation successful,
+        // Add new tab to end before '+' tab
+        // and switch to that tab
+
+        // Enable signals
+        ui->ucOptions->blockSignals(prev_block_status);
+
+        return;
+    }
+
     // Disconnet old signals
-    GUI_BASE* tab_holder;
     if (prev_tab != -1)
     {
         tab_holder = (GUI_BASE*) ui->ucOptions->widget(prev_tab);
@@ -603,7 +553,7 @@ void MainWindow::updateConnInfoCombo()
                 ui->ConnInfo_Combo->setEditable(false);
             }
 
-            QStringList* avail = SERIAL_COM_PORT::getDevices();
+            QStringList *avail = SERIAL_COM_PORT::getDevices();
             if (avail->length() != 0)
             {
                 QString curr = ui->ConnInfo_Combo->currentText();
@@ -682,14 +632,25 @@ void MainWindow::setConnected(bool conn)
 void MainWindow::ucOptionsClear()
 {
     bool prev_block_status = ui->ucOptions->blockSignals(true);
-    GUI_BASE* tab_holder;
+    GUI_BASE *tab_holder;
     for (int i = (ui->ucOptions->count() - 1); 0 <= i; i--)
     {
+        // Get tab at position
         tab_holder = (GUI_BASE*) ui->ucOptions->widget(i);
+
+        // Disable signals to prevent sending close
         tab_holder->blockSignals(true);
+
+        // Remove from gui & bridge
         ui->ucOptions->removeTab(i);
         comm_bridge->remove_gui(tab_holder);
-        if (tab_holder != welcome_tab) delete tab_holder;
+
+        // If not default welcome tab to blank + tab, delete
+        if ((tab_holder != welcome_tab)
+                && (tab_holder != add_new_tab))
+        {
+            delete tab_holder;
+        }
     }
     ui->ucOptions->blockSignals(prev_block_status);
 
@@ -740,7 +701,102 @@ QStringList MainWindow::getConnSpeeds()
     }
 }
 
-void MainWindow::update_options(MoreOptions_struct* options)
+GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *configMap)
+{
+    // Instantiate and add GUI
+    GUI_BASE *tab_holder = nullptr;
+    switch (gui_key)
+    {
+        case MAJOR_KEY_GENERAL_SETTINGS:
+        {
+            comm_bridge->parseGenericConfigMap(configMap);
+
+            // Check reset tab setting (forces true from INI)
+            if (configMap->value("reset_tabs_on_switch", "false").toBool())
+            {
+                main_options_settings.reset_on_tab_switch = true;
+            }
+
+            // Check little endian setting (forces a true from INI)
+            if (configMap->value("send_little_endian", "false").toBool())
+            {
+                main_options_settings.send_little_endian = true;
+            }
+
+            // Check chunk size setting (overrides if options setting is default)
+            if ((main_options_settings.chunk_size == GUI_COMM_BRIDGE::default_chunk_size)
+                    && configMap->contains("chunk_size"))
+            {
+                main_options_settings.chunk_size = configMap->value("chunk_size").toInt();
+            }
+
+            // If general settings, move to next (no GUI)
+            return nullptr;
+        }
+        case MAJOR_KEY_WELCOME:
+        {
+            tab_holder = new GUI_WELCOME(this);
+            break;
+        }
+        case MAJOR_KEY_IO:
+        {
+            tab_holder = new GUI_8AIO_16DIO_COMM(this);
+            break;
+        }
+        case MAJOR_KEY_DATA_TRANSMIT:
+        {
+            tab_holder = new GUI_DATA_TRANSMIT(this);
+            break;
+        }
+        case MAJOR_KEY_PROGRAMMER:
+        {
+            tab_holder = new GUI_PROGRAMMER(this);
+            break;
+        }
+        case MAJOR_KEY_CUSTOM_CMD:
+        {
+            tab_holder = new GUI_CUSTOM_CMD(this);
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+    if (!tab_holder) return nullptr;
+
+    // Call config map parser
+    tab_holder->parseConfigMap(configMap);
+
+    // Add new GUI to comm bridge
+    comm_bridge->add_gui(tab_holder);
+
+    // Connect tab signals to bridge slots
+    // Use queued connection for thread expansion
+    connect(tab_holder, SIGNAL(transmit_file(quint8, quint8, QString, quint8, QString)),
+            comm_bridge, SLOT(send_file(quint8, quint8, QString, quint8, QString)),
+            Qt::QueuedConnection);
+    connect(tab_holder, SIGNAL(transmit_file_pack(quint8, quint8, QString, quint8, QString)),
+            comm_bridge, SLOT(send_file_pack(quint8, quint8, QString, quint8, QString)),
+            Qt::QueuedConnection);
+    connect(tab_holder, SIGNAL(transmit_chunk(quint8, quint8, QByteArray, quint8, QString)),
+            comm_bridge, SLOT(send_chunk(quint8, quint8, QByteArray, quint8, QString)),
+            Qt::QueuedConnection);
+    connect(tab_holder, SIGNAL(transmit_chunk_pack(quint8, quint8, QByteArray, quint8, QString)),
+            comm_bridge, SLOT(send_chunk_pack(quint8, quint8, QByteArray, quint8, QString)),
+            Qt::QueuedConnection);
+
+    // Connect bridge signals to tab slots
+    // Use queued connection for thread expansion
+    connect(comm_bridge, SIGNAL(reset()),
+            tab_holder, SLOT(reset_gui()),
+            Qt::QueuedConnection);
+
+    // Return the new GUI
+    return tab_holder;
+}
+
+void MainWindow::update_options(MoreOptions_struct *options)
 {
     // Set chunk size
     comm_bridge->set_chunk_size(options->chunk_size);

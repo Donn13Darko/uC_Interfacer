@@ -26,8 +26,9 @@ GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :
     // Setup UI
     ui->setupUi(this);
 
-    // Set GUI Type
+    // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_CUSTOM_CMD;
+    gui_name = "GUI Custom CMD";
 
     // Setup Progress bars
     ui->CustomCMD_ProgressBar->setMinimum(0);
@@ -44,7 +45,7 @@ GUI_CUSTOM_CMD::~GUI_CUSTOM_CMD()
     delete ui;
 }
 
-void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant>* configMap)
+void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Pass to parent for additional parsing
     GUI_BASE::parseConfigMap(configMap);

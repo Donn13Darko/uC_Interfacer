@@ -22,6 +22,7 @@
 #include <QWidget>
 #include <QMap>
 #include <QVariant>
+#include <QEventLoop>
 
 #include "gui-base-major-keys.h"
 #include "../gui-helpers/gui-helper.h"
@@ -36,7 +37,9 @@ public:
     ~GUI_BASE();
 
     virtual uint8_t get_GUI_key();
-    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+    virtual QString get_GUI_name();
+    virtual void set_GUI_name(QString new_name);
+    virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
 signals:
     // Read updates
@@ -83,6 +86,7 @@ protected slots:
 protected:
     // Local variables
     uint8_t gui_key;
+    QString gui_name;
 
     // Receive arrays & variables
     QByteArray rcvd_formatted;
@@ -102,6 +106,7 @@ protected:
 
     // Blocking functions - How to get these to work? Stub for now
     // Disable buttons on click? Prevent until done or gui reset?
+    QEventLoop wait;
     void wait_for_sent() {}
     void wait_for_data() {}
 };

@@ -44,13 +44,13 @@ extern "C"
 */
 
 // Sets executable path for next calls
-void set_executable_checksum_exe(const char* new_exe_path);
+void set_executable_checksum_exe(const char *new_exe_path);
 
 // Computes checksum for data_array with start value
-void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, const uint8_t* checksum_start, uint8_t* data_checksum);
+void get_checksum_exe(const uint8_t *data_array, uint32_t data_len, const uint8_t *checksum_start, uint8_t *data_checksum);
 
 // Checks checksum
-bool check_checksum_exe(const uint8_t* data_checksum, const uint8_t* cmp_checksum);
+bool check_checksum_exe(const uint8_t *data_checksum, const uint8_t *cmp_checksum);
 
 // Gets byte length of checksum
 uint32_t get_checksum_exe_size();

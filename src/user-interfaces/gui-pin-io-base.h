@@ -63,7 +63,7 @@ public:
     GUI_PIN_BASE(QWidget *parent = 0);
     ~GUI_PIN_BASE();
 
-    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+    virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
 public slots:
     virtual void reset_gui();
@@ -111,15 +111,15 @@ protected:
         io_line_edit_pos
     } io_gui_positions;
 
-    void inputsChanged(PinTypeInfo *pInfo, QObject* caller, uint8_t io_pos, QByteArray* data = nullptr);
+    void inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io_pos, QByteArray *data = nullptr);
     void updateSliderRange(QSlider *slider, RangeList *rList);
 
     void setNumPins(PinTypeInfo *pInfo, uint8_t num_dev_pins, uint8_t start_num);
     void setPinAttribute(PinTypeInfo *pInfo, uint8_t pinNum, Qt::WidgetAttribute attribute, bool on);
     void setPinNumbers(PinTypeInfo *pInfo, uint8_t start_num);
 
-    bool getItemWidget(QWidget** itemWidget, QGridLayout *grid, uint8_t row, uint8_t col);
-    void getPinLocation(uint8_t *row, uint8_t* col, PinTypeInfo *pInfo, uint8_t pin);
+    bool getItemWidget(QWidget **itemWidget, QGridLayout *grid, uint8_t row, uint8_t col);
+    void getPinLocation(uint8_t *row, uint8_t *col, PinTypeInfo *pInfo, uint8_t pin);
 
     void setCombos(PinTypeInfo *pInfo, QList<QString> combos);
     void addNewPinSettings(PinTypeInfo *pInfo, QList<QString> newSettings);
@@ -129,7 +129,7 @@ protected:
     virtual bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 
 private:
-    RangeList* makeRangeList(QString rangeInfo);
+    RangeList *makeRangeList(QString rangeInfo);
     void addPinControls(uint8_t pinType, QList<QString> keys);
     void addPinRangeMap(uint8_t pinType, QList<QString> keys, QList<RangeList*> values);
 };

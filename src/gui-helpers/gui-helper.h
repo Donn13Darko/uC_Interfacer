@@ -53,8 +53,8 @@ public:
     static QByteArray loadFile(QString filePath);
 
     // Read or delete a config INI
-    static QMap<QString, QMap<QString, QVariant>*>* readConfigINI(QString config);
-    static void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*>* configMap);
+    static QMap<QString, QMap<QString, QVariant>*> *readConfigINI(QString config);
+    static void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*> *configMap);
 
     // Conversions
     static QByteArray initList_to_byteArray(std::initializer_list<uint8_t> initList);

@@ -22,7 +22,7 @@
 static const uint32_t __crc_32_POLY = 0x105EC76F;
 static const uint8_t __crc_32_POLY_LEN = sizeof(uint32_t);
 
-void get_crc_32_POLY(const uint8_t* data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t* data_crc)
+void get_crc_32_POLY(const uint8_t *data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t *data_crc)
 {
     // Make a copy of the pointer
     const uint8_t *data_p = data_array;
@@ -59,7 +59,7 @@ void get_crc_32_POLY(const uint8_t* data_array, uint32_t data_len, const uint8_t
     } while (0 < i--);
 }
 
-bool check_crc_32_POLY(const uint8_t* data_crc, const uint8_t* cmp_crc)
+bool check_crc_32_POLY(const uint8_t *data_crc, const uint8_t *cmp_crc)
 {
     // Check each byte of the crc array
     for (uint8_t i = 0; i < __crc_32_POLY_LEN; i++)

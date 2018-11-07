@@ -22,10 +22,10 @@
 static const uint8_t __crc_8_POLY = 0xE0;
 static const uint8_t __crc_8_POLY_LEN = sizeof(uint8_t);
 
-void get_crc_8_POLY(const uint8_t* data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t* data_crc)
+void get_crc_8_POLY(const uint8_t *data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t *data_crc)
 {
     // Make a copy of the pointer
-    const uint8_t* data_p = data_array;
+    const uint8_t *data_p = data_array;
     uint8_t crc = 0;
     if (crc_start) crc = crc_start[0];
 
@@ -46,7 +46,7 @@ void get_crc_8_POLY(const uint8_t* data_array, uint32_t data_len, const uint8_t 
     data_crc[0] = (uint8_t) (crc & 0xFF);
 }
 
-bool check_crc_8_POLY(const uint8_t* data_crc, const uint8_t* cmp_crc)
+bool check_crc_8_POLY(const uint8_t *data_crc, const uint8_t *cmp_crc)
 {
     // Check each byte of the crc array
     return (data_crc[0] == cmp_crc[0]);

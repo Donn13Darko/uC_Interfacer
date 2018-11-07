@@ -27,8 +27,9 @@ GUI_WELCOME::GUI_WELCOME(QWidget *parent) :
     ui->setupUi(this);
     ui->ResetGUI_Button->hide();
 
-    // Set GUI Type
+    // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_WELCOME;
+    gui_name = "GUI Welcome";
 }
 
 GUI_WELCOME::~GUI_WELCOME()
@@ -56,7 +57,7 @@ QString GUI_WELCOME::getMsg()
     return ui->msg_label->text();
 }
 
-void GUI_WELCOME::parseConfigMap(QMap<QString, QVariant>* configMap)
+void GUI_WELCOME::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Parse individual values
     setHeader(configMap->value("header", "Welcome").toString());

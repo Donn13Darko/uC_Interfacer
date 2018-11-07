@@ -368,7 +368,7 @@ void GUI_8AIO_16DIO_COMM::setConTypes(QStringList connTypes, QList<char> mapValu
 {
     if (connTypes.length() != mapValues.length()) return;
 
-    QMap<QString, uint8_t>* pinMap = controlMap.value(MINOR_KEY_IO_REMOTE_CONN);
+    QMap<QString, uint8_t> *pinMap = controlMap.value(MINOR_KEY_IO_REMOTE_CONN);
     for (uint8_t i = 0; i < connTypes.length(); i++)
     {
         pinMap->insert(connTypes[i], mapValues[i]);
@@ -407,6 +407,8 @@ void GUI_8AIO_16DIO_COMM::initialize()
 
 void GUI_8AIO_16DIO_COMM::setupUpdaters()
 {
+    // Connect updaters
+    // All internal object connections so direct is okay
     connect(&DIO_READ, SIGNAL(timeout()),
             this, SLOT(updateValues()),
             Qt::DirectConnection);
@@ -432,6 +434,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Connect AIO combo changes to the universal slot
+    // All internal object connections so direct is okay
     for (uint8_t i = 0; i < pInfo.numPins_GUI; i++)
     {
         getPinLocation(&rowNum, &colNum, &pInfo, i);
@@ -469,6 +472,7 @@ void GUI_8AIO_16DIO_COMM::connectUniversalSlots()
     }
 
     // Connect DIO combo changes to the universal slot
+    // All internal object connections so direct is okay
     for (uint8_t i = 0; i < pInfo.numPins_GUI; i++)
     {
         getPinLocation(&rowNum, &colNum, &pInfo, i);
@@ -549,9 +553,9 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
     if (!getPinTypeInfo(minorKey, &pInfo)) return;
 
     // Get & verify maps
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo.pinType);
-    QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pInfo.pinType);
-    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo.pinType);
+    QMap<QString, uint8_t> *pinMap = controlMap.value(pInfo.pinType);
+    QMap<uint8_t, RangeList*> *pinRangeMap = rangeMap.value(pInfo.pinType);
+    QList<uint8_t> *pinDisabledSet = disabledValueSet.value(pInfo.pinType);
     if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
 
     // Allocate loop variables
@@ -653,7 +657,7 @@ void GUI_8AIO_16DIO_COMM::setValues(uint8_t minorKey, QByteArray values)
                 textValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
 
                 // Get & update slider range list
-                RangeList* rList = pinRangeMap->value(comboVal);
+                RangeList *rList = pinRangeMap->value(comboVal);
                 updateSliderRange(sliderValue, rList);
 
                 // Set slider and divisor

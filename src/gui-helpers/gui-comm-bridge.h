@@ -56,7 +56,7 @@ public:
     void set_tab_checksum(uint8_t gui_key, QStringList new_tab_checksum);
 
     // Parse input array
-    void parseGenericConfigMap(QMap<QString, QVariant>* configMap);
+    void parseGenericConfigMap(QMap<QString, QVariant> *configMap);
 
     // Add/remove knowns guis
     void add_gui(GUI_BASE *new_gui);
@@ -155,7 +155,7 @@ private:
 
     // Holds all info for waiting
     typedef struct send_struct {
-        GUI_BASE* sender;
+        GUI_BASE *sender;
         uint8_t target;
         uint8_t major_key;
         uint8_t minor_key;
@@ -202,9 +202,9 @@ private:
     static QMap<QString, checksum_struct> supportedChecksums;
 
     // Checksum main methods
-    void getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
-                     uint8_t** checksum_array, uint32_t* checksum_size);
-    bool check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct *check);
+    void getChecksum(const uint8_t *data, uint32_t data_len, uint8_t checksum_key,
+                     uint8_t **checksum_array, uint32_t *checksum_size);
+    bool check_checksum(const uint8_t *data, uint32_t data_len, const checksum_struct *check);
 
     // Checksum static helpers
     static void copy_checksum_info(checksum_struct *cpy_to, checksum_struct *cpy_from);

@@ -1,3 +1,21 @@
+/*
+ * uC Interface - A GUI for Programming & Interfacing with Microcontrollers
+ * Copyright (C) 2018  Mitchell Oleson
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef GUI_MORE_OPTIONS_H
 #define GUI_MORE_OPTIONS_H
 
@@ -27,7 +45,7 @@ class GUI_MORE_OPTIONS : public QDialog
     Q_OBJECT
 
 public:
-    explicit GUI_MORE_OPTIONS(MoreOptions_struct* main_options, MoreOptions_struct** local_options_ptr, QStringList GUIs, QStringList checksums, QWidget *parent = 0);
+    explicit GUI_MORE_OPTIONS(MoreOptions_struct *main_options, MoreOptions_struct **local_options_ptr, QStringList GUIs, QStringList checksums, QWidget *parent = 0);
     ~GUI_MORE_OPTIONS();
 
 public slots:
@@ -48,7 +66,7 @@ private:
     Ui::GUI_MORE_OPTIONS *ui;
     bool updated;
 
-    MoreOptions_struct* main_options_ptr;
+    MoreOptions_struct *main_options_ptr;
     MoreOptions_struct local_options;
 
     void save_updates();

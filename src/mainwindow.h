@@ -67,7 +67,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    void closeEvent(QCloseEvent* e);
+    void closeEvent(QCloseEvent *e);
 
 private slots:
     void on_Device_Combo_activated(int);
@@ -93,7 +93,9 @@ private:
 
     // Default Welcome tab
     GUI_WELCOME *welcome_tab;
-    QString welcome_tab_label;
+
+    // '+' tab (blank base gui)
+    GUI_BASE *add_new_tab;
 
     // More options dialog
     GUI_MORE_OPTIONS *more_options;
@@ -113,7 +115,7 @@ private:
     static QStringList supportedGUIsList;
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
-    QMap<QString, QMap<QString, QVariant>*>* configMap;
+    QMap<QString, QMap<QString, QVariant>*> *configMap;
 
     QTimer *updateConnInfo;
     COMMS_BASE *device;
@@ -130,12 +132,16 @@ private:
     QString getGUIName(uint8_t type);
     QStringList getConnSpeeds();
 
+    // Create a new gui based on the configuration info
+    GUI_BASE *create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *configMap);
+
+    // More options gui parser
     void update_options(MoreOptions_struct *options);
 
     // Connection option parsers
     void options_serial_com_port(MoreOptions_struct *options,
-                                 QMap<QString, QVariant>* groupMap,
-                                 Serial_COM_Port_Settings* settings);
+                                 QMap<QString, QVariant> *groupMap,
+                                 Serial_COM_Port_Settings *settings);
 };
 
 #endif // MAINWINDOW_H

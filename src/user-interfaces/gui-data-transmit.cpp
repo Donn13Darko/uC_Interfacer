@@ -29,8 +29,9 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     // Setup UI
     ui->setupUi(this);
 
-    // Set GUI Type
+    // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_DATA_TRANSMIT;
+    gui_name = "GUI Data Transmit";
 
     // Setup progress bars
     ui->Send_ProgressBar->setMinimum(0);
@@ -47,7 +48,7 @@ GUI_DATA_TRANSMIT::~GUI_DATA_TRANSMIT()
     delete ui;
 }
 
-void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant>* configMap)
+void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Pass to parent for additional parsing
     GUI_BASE::parseConfigMap(configMap);

@@ -26,7 +26,7 @@ SERIAL_COM_PORT::Baudrate_Defaults({
                                     "460800", "921600", "Other"
                                 });
 
-SERIAL_COM_PORT::SERIAL_COM_PORT(Serial_COM_Port_Settings* serial_settings, QObject *parent) :
+SERIAL_COM_PORT::SERIAL_COM_PORT(Serial_COM_Port_Settings *serial_settings, QObject *parent) :
     COMMS_BASE(parent)
 {
     // Create new serial port
@@ -75,9 +75,9 @@ bool SERIAL_COM_PORT::isConnected()
     return connected;
 }
 
-QStringList* SERIAL_COM_PORT::getDevices()
+QStringList *SERIAL_COM_PORT::getDevices()
 {
-    QStringList* portNames = new QStringList();
+    QStringList *portNames = new QStringList();
     QList<QSerialPortInfo> ports = QSerialPortInfo::availablePorts();
     foreach (QSerialPortInfo i, ports)
     {
@@ -129,7 +129,7 @@ void SERIAL_COM_PORT::checkError(QSerialPort::SerialPortError)
     emit deviceDisconnected();
 }
 
-void SERIAL_COM_PORT::parseSettings(Serial_COM_Port_Settings* serial_settings)
+void SERIAL_COM_PORT::parseSettings(Serial_COM_Port_Settings *serial_settings)
 {
     // Set port name
     if (serial_settings->port.isEmpty())

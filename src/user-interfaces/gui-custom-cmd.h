@@ -34,7 +34,7 @@ public:
     explicit GUI_CUSTOM_CMD(QWidget *parent = 0);
     ~GUI_CUSTOM_CMD();
 
-    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+    virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
 public slots:
     virtual void reset_gui();

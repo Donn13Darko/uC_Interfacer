@@ -21,8 +21,9 @@
 GUI_PIN_BASE::GUI_PIN_BASE(QWidget *parent) :
     GUI_BASE(parent)
 {
-    // Set GUI Type
+    // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_IO;
+    gui_name = "GUI PIN I/O";
 }
 
 GUI_PIN_BASE::~GUI_PIN_BASE()
@@ -40,7 +41,7 @@ GUI_PIN_BASE::~GUI_PIN_BASE()
     }
 
     // Clear range map
-    QMap<uint8_t, RangeList*>* rmap;
+    QMap<uint8_t, RangeList*> *rmap;
     foreach (uint8_t pinType, rangeMap.keys())
     {
         rmap = rangeMap.value(pinType);
@@ -104,9 +105,9 @@ void GUI_PIN_BASE::receive_gui(QByteArray recvData)
 void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io_pos, QByteArray *data)
 {
     // Get mapping info
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo->pinType);
-    QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pInfo->pinType);
-    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo->pinType);
+    QMap<QString, uint8_t> *pinMap = controlMap.value(pInfo->pinType);
+    QMap<uint8_t, RangeList*> *pinRangeMap = rangeMap.value(pInfo->pinType);
+    QList<uint8_t> *pinDisabledSet = disabledValueSet.value(pInfo->pinType);
     if (!(pinMap && pinRangeMap && pinDisabledSet)) return;
 
     // Get info of button clicked
@@ -135,7 +136,7 @@ void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io
     uint8_t io_combo = pinMap->value(comboBox->currentText());
 
     // Get range list for use in next sections
-    RangeList* rList = pinRangeMap->value(io_combo);
+    RangeList *rList = pinRangeMap->value(io_combo);
 
     // Set IO if combo changed
     float newVAL;
@@ -293,7 +294,7 @@ void GUI_PIN_BASE::setPinNumbers(PinTypeInfo *pInfo, uint8_t start_num)
     }
 }
 
-bool GUI_PIN_BASE::getItemWidget(QWidget** itemWidget, QGridLayout *grid, uint8_t row, uint8_t col)
+bool GUI_PIN_BASE::getItemWidget(QWidget **itemWidget, QGridLayout *grid, uint8_t row, uint8_t col)
 {
     *itemWidget = nullptr;
     QLayoutItem *item = grid->itemAtPosition(row, col);
@@ -310,9 +311,9 @@ void GUI_PIN_BASE::getPinLocation(uint8_t *row, uint8_t *col, PinTypeInfo *pInfo
 void GUI_PIN_BASE::setCombos(PinTypeInfo *pInfo, QList<QString> combos)
 {
     // Retrieve & verify pin type maps
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pInfo->pinType);
-    QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pInfo->pinType);
-    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pInfo->pinType);
+    QMap<QString, uint8_t> *pinMap = controlMap.value(pInfo->pinType);
+    QMap<uint8_t, RangeList*> *pinRangeMap = rangeMap.value(pInfo->pinType);
+    QList<uint8_t> *pinDisabledSet = disabledValueSet.value(pInfo->pinType);
     if (!pinMap || !pinRangeMap || !pinDisabledSet) return;
 
     // Setup arrays & constructs for use in the loop
@@ -384,7 +385,7 @@ void GUI_PIN_BASE::setCombos(PinTypeInfo *pInfo, QList<QString> combos)
                         textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
                     }
 
-                    RangeList* rList = pinRangeMap->value(IO);
+                    RangeList *rList = pinRangeMap->value(IO);
                     updateSliderRange((QSlider*) sliderWidget, rList);
                 }
 
@@ -421,8 +422,8 @@ void GUI_PIN_BASE::addNewPinSettings(PinTypeInfo *pInfo, QList<QString> newSetti
     addPinControls(pinType, pinCombos);
     addPinRangeMap(pinType, pinCombos, pinRanges);
 
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
-    QList<uint8_t>* pinDisabledSet = disabledValueSet.value(pinType);
+    QMap<QString, uint8_t> *pinMap = controlMap.value(pinType);
+    QList<uint8_t> *pinDisabledSet = disabledValueSet.value(pinType);
     foreach (QString i, pinSetDisabled)
     {
         pinDisabledSet->append(pinMap->value(i));
@@ -488,7 +489,7 @@ bool GUI_PIN_BASE::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
     }
 }
 
-RangeList* GUI_PIN_BASE::makeRangeList(QString rangeInfo)
+RangeList *GUI_PIN_BASE::makeRangeList(QString rangeInfo)
 {
     // Split range info string into values
     QStringList ril = rangeInfo.split('-');
@@ -504,7 +505,7 @@ RangeList* GUI_PIN_BASE::makeRangeList(QString rangeInfo)
 
 void GUI_PIN_BASE::addPinControls(uint8_t pinType, QList<QString> keys)
 {
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
+    QMap<QString, uint8_t> *pinMap = controlMap.value(pinType);
     uint8_t key_num = pinMap->keys().length();
     foreach (QString i, keys)
     {
@@ -517,8 +518,8 @@ void GUI_PIN_BASE::addPinRangeMap(uint8_t pinType, QList<QString> keys, QList<Ra
 {
     if (keys.length() != values.length()) return;
 
-    QMap<QString, uint8_t>* pinMap = controlMap.value(pinType);
-    QMap<uint8_t, RangeList*>* pinRangeMap = rangeMap.value(pinType);
+    QMap<QString, uint8_t> *pinMap = controlMap.value(pinType);
+    QMap<uint8_t, RangeList*> *pinRangeMap = rangeMap.value(pinType);
     for (uint8_t i = 0; i < keys.length(); i++)
     {
         pinRangeMap->insert(pinMap->value(keys[i]), values[i]);

@@ -37,7 +37,7 @@ public:
     explicit GUI_PROGRAMMER(QWidget *parent = 0);
     ~GUI_PROGRAMMER();
 
-    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+    virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
     void addFileFormats(QStringList fileFormatsMap);
     void removeFileFormats(QStringList fileFormatsList);

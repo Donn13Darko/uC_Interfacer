@@ -89,10 +89,10 @@ static const uint32_t __crc_32_LUT[256] = {
     0xBE2DA0A5, 0x4C4623A6, 0x5F16D052, 0xAD7D5351
 };
 
-void get_crc_32_LUT(const uint8_t* data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t* data_crc)
+void get_crc_32_LUT(const uint8_t *data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t *data_crc)
 {
     // Make a copy of the pointer
-    const uint8_t* data_p = data_array;
+    const uint8_t *data_p = data_array;
 
     // Create the start crc number
     uint8_t i;
@@ -120,7 +120,7 @@ void get_crc_32_LUT(const uint8_t* data_array, uint32_t data_len, const uint8_t 
     } while (0 < i--);
 }
 
-bool check_crc_32_LUT(const uint8_t* data_crc, const uint8_t* cmp_crc)
+bool check_crc_32_LUT(const uint8_t *data_crc, const uint8_t *cmp_crc)
 {
     // Check each byte of the crc array
     for (uint8_t i = 0; i < __crc_32_LUT_LEN; i++)

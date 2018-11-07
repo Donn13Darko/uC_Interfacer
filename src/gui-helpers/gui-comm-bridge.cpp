@@ -59,6 +59,7 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     }
 
     // Connect data loop signals and slots
+    // All internal object connections so direct is okay
     connect(&dataTimer, SIGNAL(timeout()),
             &dataLoop, SLOT(quit()),
             Qt::DirectConnection);
@@ -67,6 +68,7 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
             Qt::DirectConnection);
 
     // Connect ack loop signals and slots
+    // All internal object connections so direct is okay
     connect(this, SIGNAL(ackReceived(QByteArray)),
             this, SLOT(checkAck(QByteArray)),
             Qt::DirectConnection);
@@ -82,6 +84,7 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
 
     // Connect re-emit signals to slots
     // Use queued connections to return to main event loop first
+    // (exits existing function stack to prevent overflow)
     connect(this, SIGNAL(transmit_file(quint8, quint8, QString, quint8, QString, GUI_BASE*)),
             this, SLOT(send_file(quint8, quint8, QString, quint8, QString, GUI_BASE*)),
             Qt::QueuedConnection);
@@ -148,7 +151,7 @@ void GUI_COMM_BRIDGE::set_tab_checksum(uint8_t gui_key, QStringList new_tab_chec
     tab_checksums.replace(gui_key-1, current_check);
 }
 
-void GUI_COMM_BRIDGE::parseGenericConfigMap(QMap<QString, QVariant>* configMap)
+void GUI_COMM_BRIDGE::parseGenericConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Holder for each setting
     QVariant setting;
@@ -206,7 +209,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
     uint32_t expected_len, checksum_size;
     uint32_t rcvd_len = rcvd_raw.length();
     QByteArray tmp;
-    const checksum_struct* check;
+    const checksum_struct *check;
 
     // Recv Loop
     while ((0 < rcvd_len) && !exit_recv && !(bridge_flags & bridge_close_flag))
@@ -357,7 +360,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
 
                 // Emit readyRead - Send to all registered base guis
                 // (Indexing without check encforced by switch statement case)
-                foreach (GUI_BASE* gui, known_guis)
+                foreach (GUI_BASE *gui, known_guis)
                     emit gui->readyRead(tmp);
 
                 // Remove data from rcvd_raw
@@ -592,7 +595,7 @@ void GUI_COMM_BRIDGE::send_ack(uint8_t majorKey)
     ack_packet.append((char) majorKey);
 
     // Get checksum
-    uint8_t* checksum_array;
+    uint8_t *checksum_array;
     uint32_t checksum_size = 0;
     getChecksum((const uint8_t*) ack_packet.constData(), ack_packet.length(),
                 MAJOR_KEY_ACK, &checksum_array, &checksum_size);
@@ -638,11 +641,11 @@ void GUI_COMM_BRIDGE::waitForData(int msecs)
     dataTimer.stop();
 }
 
-void GUI_COMM_BRIDGE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
-                                  uint8_t** checksum_array, uint32_t* checksum_size)
+void GUI_COMM_BRIDGE::getChecksum(const uint8_t *data, uint32_t data_len, uint8_t checksum_key,
+                                  uint8_t **checksum_array, uint32_t *checksum_size)
 {
     // Get checksum (if key is 0 or not recognized, use default key)
-    const checksum_struct* check;
+    const checksum_struct *check;
     if (!checksum_key || (tab_checksums.length() < checksum_key)) check = &tab_checksums.at(MAJOR_KEY_GENERAL_SETTINGS-1);
     else check = &tab_checksums.at(checksum_key-1);
 
@@ -660,7 +663,7 @@ void GUI_COMM_BRIDGE::getChecksum(const uint8_t* data, uint32_t data_len, uint8_
     check->get_checksum(data, data_len, check->checksum_start, *checksum_array);
 }
 
-bool GUI_COMM_BRIDGE::check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct* check)
+bool GUI_COMM_BRIDGE::check_checksum(const uint8_t *data, uint32_t data_len, const checksum_struct *check)
 {
     // Create checksum variables
     uint32_t checksum_size = check->get_checksum_size();
@@ -692,7 +695,7 @@ void GUI_COMM_BRIDGE::copy_checksum_info(checksum_struct *cpy_to, checksum_struc
         if (cpy_from->checksum_exe == nullptr) return;
 
         //
-        char* new_check_exe = (char*) malloc(strlen(cpy_from->checksum_exe)*sizeof(char));
+        char *new_check_exe = (char*) malloc(strlen(cpy_from->checksum_exe)*sizeof(char));
         strcpy(new_check_exe, cpy_from->checksum_exe);
         set_executable_checksum_exe(new_check_exe);
         cpy_to->checksum_exe = new_check_exe;
@@ -702,7 +705,7 @@ void GUI_COMM_BRIDGE::copy_checksum_info(checksum_struct *cpy_to, checksum_struc
     if (cpy_from->checksum_start != nullptr)
     {
         uint32_t checksum_size = cpy_from->get_checksum_size();
-        uint8_t* new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
+        uint8_t *new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
         memcpy(new_check_start, cpy_from->checksum_start, checksum_size);
         cpy_to->checksum_start = new_check_start;
     }
@@ -734,7 +737,7 @@ void GUI_COMM_BRIDGE::set_checksum_exe(checksum_struct *check, QString checksum_
     checksum_exe += '\0';
 
     // Create and copy into new array
-    char* new_exe_path = (char*) malloc(checksum_exe.length()*sizeof(char));
+    char *new_exe_path = (char*) malloc(checksum_exe.length()*sizeof(char));
     strcpy((char*) new_exe_path, checksum_exe.toLatin1().constData());
 
     // Delete and replace current value
@@ -750,7 +753,7 @@ void GUI_COMM_BRIDGE::set_checksum_start(checksum_struct *check, QString checksu
     // Create new array
     if (check->checksum_is_exe) set_executable_checksum_exe(check->checksum_exe);
     uint32_t checksum_size = check->get_checksum_size();
-    uint8_t* new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
+    uint8_t *new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
     memset(new_check_start, 0, checksum_size);
 
     // Build base start from supplied checksum start
@@ -1064,7 +1067,7 @@ QByteArray GUI_COMM_BRIDGE::prepare_data(quint8 major_key, quint8 minor_key, QBy
 {
     // Setup variables
     QByteArray ret_data;
-    uint8_t* checksum_array;
+    uint8_t *checksum_array;
     uint32_t data_len, num_s2_bits, checksum_size;
 
     // Compute size of data chunk

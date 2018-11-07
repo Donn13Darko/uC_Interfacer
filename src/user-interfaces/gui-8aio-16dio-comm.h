@@ -40,7 +40,7 @@ public:
     explicit GUI_8AIO_16DIO_COMM(QWidget *parent = 0);
     ~GUI_8AIO_16DIO_COMM();
 
-    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+    virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
 public slots:
     virtual void reset_gui();

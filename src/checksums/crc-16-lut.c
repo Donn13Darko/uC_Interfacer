@@ -68,10 +68,10 @@ static const uint16_t __crc_16_LUT[256] = {
     0x3DE3, 0x2C6A, 0x1EF1, 0x0F78
 };
 
-void get_crc_16_LUT(const uint8_t* data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t* data_crc)
+void get_crc_16_LUT(const uint8_t *data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t *data_crc)
 {
     // Make a copy of the pointer
-    const uint8_t* data_p = data_array;
+    const uint8_t *data_p = data_array;
     uint16_t crc = 0;
     if (crc_start) crc = ((((uint16_t) crc_start[0]) << 8) | crc_start[1]);
 
@@ -86,7 +86,7 @@ void get_crc_16_LUT(const uint8_t* data_array, uint32_t data_len, const uint8_t 
     data_crc[0] = (uint8_t) ((crc >> 8) & 0xFF);
 }
 
-bool check_crc_16_LUT(const uint8_t* data_crc, const uint8_t* cmp_crc)
+bool check_crc_16_LUT(const uint8_t *data_crc, const uint8_t *cmp_crc)
 {
     // Check each byte of the crc array
     return ((data_crc[0] == cmp_crc[0]) && (data_crc[1] == cmp_crc[1]));

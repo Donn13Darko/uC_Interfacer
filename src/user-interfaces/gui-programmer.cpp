@@ -26,15 +26,16 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     // Setup UI
     ui->setupUi(this);
 
-    // Set GUI Type
+    // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_PROGRAMMER;
+    gui_name = "GUI Programmer";
 
     // Read config settings
-    QMap<QString, QMap<QString, QVariant>*>* configMap = \
+    QMap<QString, QMap<QString, QVariant>*> *configMap = \
             GUI_HELPER::readConfigINI(":/user-interfaces/gui-programmer.ini");
 
     // Add configs to local maps
-    QMap<QString, QVariant>* groupMap;
+    QMap<QString, QVariant> *groupMap;
     if (configMap->contains("settings"))
     {
         groupMap = configMap->value("settings");
@@ -58,7 +59,7 @@ GUI_PROGRAMMER::~GUI_PROGRAMMER()
     delete ui;
 }
 
-void GUI_PROGRAMMER::parseConfigMap(QMap<QString, QVariant>* configMap)
+void GUI_PROGRAMMER::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Parse individual values
     addFileFormats(configMap->value("file_formats").toStringList());

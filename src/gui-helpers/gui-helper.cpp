@@ -113,13 +113,13 @@ QByteArray GUI_HELPER::loadFile(QString filePath)
     return data;
 }
 
-QMap<QString, QMap<QString, QVariant>*>* GUI_HELPER::readConfigINI(QString config)
+QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::readConfigINI(QString config)
 {
     // Reset & load the GUI settings file
     QSettings config_settings(config, QSettings::IniFormat);
 
-    QMap<QString, QVariant>* groupMap;
-    QMap<QString, QMap<QString, QVariant>*>* configMap;
+    QMap<QString, QVariant> *groupMap;
+    QMap<QString, QMap<QString, QVariant>*> *configMap;
     configMap = new QMap<QString, QMap<QString, QVariant>*>();
 
     // Loop through all child groups
@@ -145,9 +145,9 @@ QMap<QString, QMap<QString, QVariant>*>* GUI_HELPER::readConfigINI(QString confi
     return configMap;
 }
 
-void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *>* configMap)
+void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant> *> *configMap)
 {
-    QMap<QString, QVariant>* groupMap;
+    QMap<QString, QVariant> *groupMap;
     foreach (QString group, configMap->keys())
     {
         groupMap = configMap->value(group);

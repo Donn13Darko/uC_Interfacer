@@ -19,16 +19,16 @@
 #include "checksum-exe.h"
 
 // Executable path
-const char* exe_path = "";
+const char *exe_path = "";
 uint32_t exe_len = 0;
 
-void set_executable_checksum_exe(const char* new_exe_path)
+void set_executable_checksum_exe(const char *new_exe_path)
 {
     exe_path = new_exe_path;
     exe_len = strlen(exe_path);
 }
 
-void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, const uint8_t *checksum_start, uint8_t* data_checksum)
+void get_checksum_exe(const uint8_t *data_array, uint32_t data_len, const uint8_t *checksum_start, uint8_t *data_checksum)
 {
     // Get size of checksum
     uint32_t checksum_size = get_checksum_exe_size();
@@ -39,7 +39,7 @@ void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, const uint8_
     snprintf(cmd, cmd_len, "%s -get_checksum %s %s %s", exe_path, data_array, data_len, checksum_start);
 
     // Compute checksum
-    FILE* fp = popen(cmd, "r");
+    FILE *fp = popen(cmd, "r");
     if ((fp == NULL)
             || fgets((char*) data_checksum, checksum_size, fp) == NULL)
     {
@@ -49,7 +49,7 @@ void get_checksum_exe(const uint8_t* data_array, uint32_t data_len, const uint8_
     pclose(fp);
 }
 
-bool check_checksum_exe(const uint8_t* data_checksum, const uint8_t* cmp_checksum)
+bool check_checksum_exe(const uint8_t *data_checksum, const uint8_t *cmp_checksum)
 {
     // Get size of checksum
     uint32_t checksum_size = get_checksum_exe_size();
@@ -61,7 +61,7 @@ bool check_checksum_exe(const uint8_t* data_checksum, const uint8_t* cmp_checksu
 
     // Compare checksums
     char return_val[5];
-    FILE* fp = popen(cmd, "r");
+    FILE *fp = popen(cmd, "r");
     if ((fp == NULL)
             || fgets((char*) return_val, 2, fp) == NULL)
     {
@@ -84,7 +84,7 @@ uint32_t get_checksum_exe_size()
     char checksum_size_str[5];
 
     // Compute size
-    FILE* fp = popen(cmd, "r");
+    FILE *fp = popen(cmd, "r");
     if ((fp == NULL)
             || fgets(checksum_size_str, 4, fp) == NULL)
     {

@@ -28,10 +28,10 @@ extern "C"
 #include <stdbool.h>
 
 // Computes CRC 32 for data_array with start value
-void get_crc_32_LUT(const uint8_t* data_array, uint32_t data_len, const uint8_t* crc_start, uint8_t* data_crc);
+void get_crc_32_LUT(const uint8_t *data_array, uint32_t data_len, const uint8_t *crc_start, uint8_t *data_crc);
 
 // Checks CRC 32
-bool check_crc_32_LUT(const uint8_t* data_crc, const uint8_t* cmp_crc);
+bool check_crc_32_LUT(const uint8_t *data_crc, const uint8_t *cmp_crc);
 
 // Gets byte length of CRC 32 checksum
 uint32_t get_crc_32_LUT_size();

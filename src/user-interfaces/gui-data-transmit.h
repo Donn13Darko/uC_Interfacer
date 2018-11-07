@@ -34,7 +34,7 @@ public:
     explicit GUI_DATA_TRANSMIT(QWidget *parent = 0);
     ~GUI_DATA_TRANSMIT();
 
-    virtual void parseConfigMap(QMap<QString, QVariant>* configMap);
+    virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
 public slots:
     virtual void reset_gui();
