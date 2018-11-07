@@ -153,11 +153,11 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
                             GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
 
         // Send file
-        emit transmit_file(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
+        emit transmit_file_pack(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
     } else if (ui->SendInput_Radio->isChecked())
     {
         // Get data
-        QByteArray data = ui->Send_PlainText->toPlainText().toUtf8();
+        QByteArray data = ui->Send_PlainText->toPlainText().toLatin1();
 
         // Set size
         emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,

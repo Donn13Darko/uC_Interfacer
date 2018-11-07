@@ -43,12 +43,20 @@ signals:
     void readyRead(QByteArray data);
 
     // File transmit
-    void transmit_file(quint8 major_key, quint8 minor_key, QString filePath);
-    void transmit_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep);
+    void transmit_file(quint8 major_key, quint8 minor_key,
+                       QString filePath, quint8 base = 0,
+                       QString encoding = "^(.*)");
+    void transmit_file_pack(quint8 major_key, quint8 minor_key,
+                            QString filePath, quint8 base = 0,
+                            QString encoding = "^(.*)");
 
     // Chunk transmit
-    void transmit_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray());
-    void transmit_chunk_pack(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray());
+    void transmit_chunk(quint8 major_key, quint8 minor_key,
+                        QByteArray chunk = QByteArray(), quint8 base = 0,
+                        QString encoding = "^(.*)");
+    void transmit_chunk_pack(quint8 major_key, quint8 minor_key,
+                             QByteArray chunk = QByteArray(), quint8 base = 0,
+                             QString encoding = "^(.*)");
 
     // Send progress bar updates
     void progress_update_recv(int progress, QString label);

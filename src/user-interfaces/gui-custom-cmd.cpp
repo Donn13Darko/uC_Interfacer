@@ -138,15 +138,15 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
     }
 
     // Parse key pair and data based on bases
-    QString recvPlain = GUI_HELPER::byteArray_to_string(recvData.left(s1_end_loc), recv_key_base);
-    recvPlain += GUI_HELPER::byteArray_to_string(recvData.mid(s1_end_loc), recv_cmd_base);
+    QString recvPlain = GUI_HELPER::encode_byteArray(recvData.left(s1_end_loc), recv_key_base, ' ');
+    recvPlain += GUI_HELPER::encode_byteArray(recvData.mid(s1_end_loc), recv_cmd_base, ' ');
 
     // Append newline if required
     if (ui->FeedbackAppendNewline_CheckBox->isChecked() && !recvPlain.endsWith('\n'))
         recvPlain.append('\n');
 
     // Insert into class array (for saving in sent format)
-    rcvd_formatted.append(recvPlain.toUtf8());
+    rcvd_formatted.append(recvPlain.toLatin1());
 
     // Insert at end of plaintext
     QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
@@ -372,5 +372,6 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
 
     // Send CMD
     emit transmit_chunk(major_key, minor_key,
-                        GUI_HELPER::string_to_byteArray(customCMD_bytes, send_cmd_base_old));
+                        customCMD_bytes.toLatin1(), send_cmd_base_old,
+                        "^(.*?) (.*?)[ (.*?)]*\\w");
 }

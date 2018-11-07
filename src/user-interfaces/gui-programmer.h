@@ -72,7 +72,7 @@ private:
     Ui::GUI_PROGRAMMER *ui;
 
     QString curr_fileFormat;
-    QMap<QString, QPair<uint8_t, QRegularExpression>> fileFormats;
+    QMap<QString, QPair<uint8_t, QString>> fileFormats;
     QMap<QString, QString> burnMethods;
 
     QByteArray format_file(QByteArray rawFile);

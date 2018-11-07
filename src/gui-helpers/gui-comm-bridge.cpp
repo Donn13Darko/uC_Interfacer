@@ -82,17 +82,17 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
 
     // Connect re-emit signals to slots
     // Use queued connections to return to main event loop first
-    connect(this, SIGNAL(transmit_file(quint8, quint8, QString, GUI_BASE*)),
-            this, SLOT(send_file(quint8, quint8, QString, GUI_BASE*)),
+    connect(this, SIGNAL(transmit_file(quint8, quint8, QString, quint8, QString, GUI_BASE*)),
+            this, SLOT(send_file(quint8, quint8, QString, quint8, QString, GUI_BASE*)),
             Qt::QueuedConnection);
-    connect(this, SIGNAL(transmit_file_chunked(quint8, quint8, QString, char, GUI_BASE*)),
-            this, SLOT(send_file_chunked(quint8, quint8, QString, char, GUI_BASE*)),
+    connect(this, SIGNAL(transmit_file_pack(quint8, quint8, QString, quint8, QString, GUI_BASE*)),
+            this, SLOT(send_file_pack(quint8, quint8, QString, quint8, QString, GUI_BASE*)),
             Qt::QueuedConnection);
-    connect(this, SIGNAL(transmit_chunk(quint8, quint8, QByteArray, GUI_BASE*)),
-            this, SLOT(send_chunk(quint8, quint8, QByteArray, GUI_BASE*)),
+    connect(this, SIGNAL(transmit_chunk(quint8, quint8, QByteArray, quint8, QString, GUI_BASE*)),
+            this, SLOT(send_chunk(quint8, quint8, QByteArray, quint8, QString, GUI_BASE*)),
             Qt::QueuedConnection);
-    connect(this, SIGNAL(transmit_chunk_pack(quint8, quint8, QByteArray, GUI_BASE*)),
-            this, SLOT(send_chunk_pack(quint8, quint8, QByteArray, GUI_BASE*)),
+    connect(this, SIGNAL(transmit_chunk_pack(quint8, quint8, QByteArray, quint8, QString, GUI_BASE*)),
+            this, SLOT(send_chunk_pack(quint8, quint8, QByteArray, quint8, QString, GUI_BASE*)),
             Qt::QueuedConnection);
 }
 
@@ -186,7 +186,7 @@ void GUI_COMM_BRIDGE::remove_gui(GUI_BASE *old_gui)
 void GUI_COMM_BRIDGE::reset_remote()
 {
     // Post the reset key, will emit reset()
-    send_chunk(MAJOR_KEY_RESET, 0, QByteArray(), nullptr);
+    send_chunk(MAJOR_KEY_RESET, 0);
 }
 
 void GUI_COMM_BRIDGE::receive(QByteArray recvData)
@@ -393,7 +393,8 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
 }
 
 void GUI_COMM_BRIDGE::send_file(quint8 major_key, quint8 minor_key,
-                                QString filePath, GUI_BASE *sending_gui)
+                                QString filePath, quint8 base,
+                                QString encoding, GUI_BASE *sending_gui)
 {
     // Get sending GUI if not present
     if (!sending_gui) sending_gui = (GUI_BASE*) sender();
@@ -401,63 +402,15 @@ void GUI_COMM_BRIDGE::send_file(quint8 major_key, quint8 minor_key,
     // Try to acquire sendLock (or add to waiting list)
     if (!get_send_lock(major_key, minor_key,
                        QVariant(filePath), sending_gui,
-                       SEND_STRUCT_SEND_FILE))
+                       SEND_STRUCT_SEND_FILE, base, encoding))
     {
         return;
     }
 
-    // Send start of file
-    parse_chunk(major_key, minor_key, QByteArray());
-
-    // Reset progress
-    emit sending_gui->progress_update_send(0, "");
-
-    // Open file for reading
-    QFile data_file(filePath);
-    if (data_file.open(QIODevice::ReadOnly))
-    {
-        // Setup tracking variables
-        uint32_t file_pos = 0;
-        uint32_t file_chunk_size = 1048576; // 1MB Default
-        uint32_t file_size = data_file.size();
-
-        // Read in file in chunk size data bits
-        QByteArray data_chunk;
-        while (!data_file.atEnd() && !bridge_flags)
-        {
-            // See if chunk size updated: max(1MB, chunk_size)
-            if (file_chunk_size < chunk_size) file_chunk_size = chunk_size;
-
-            // Read in next large file chunk
-            data_chunk = data_file.read(file_chunk_size);
-            if (data_chunk.isEmpty()) break;
-
-            // Send file chunks w/ updates
-            parse_chunk(major_key, minor_key, data_chunk,
-                        true, sending_gui, file_pos, file_size);
-
-            // Update pos after send
-            file_pos += file_chunk_size;
-        }
-
-        // Close file
-        data_file.close();
-
-        // If no flags, send end of file and progress updates
-        // (add error signals here too?)
-        if (!bridge_flags)
-        {
-            // Send end of file
-            parse_chunk(major_key, minor_key, QByteArray());
-
-            // Signal done to user
-            emit sending_gui->progress_update_send(100, "Done!");
-        }
-    } else
-    {
-        // Set progress error
-        emit sending_gui->progress_update_send(0, "Error Loading File!");
-    }
+    // Parse the file with the given information
+    parse_file(major_key, minor_key,
+               filePath, base,
+               encoding, sending_gui);
 
     // Release lock
     sendLock.unlock();
@@ -466,8 +419,9 @@ void GUI_COMM_BRIDGE::send_file(quint8 major_key, quint8 minor_key,
     handle_next_send();
 }
 
-void GUI_COMM_BRIDGE::send_file_chunked(quint8 major_key, quint8 minor_key,
-                                        QString filePath, char sep, GUI_BASE *sending_gui)
+void GUI_COMM_BRIDGE::send_file_pack(quint8 major_key, quint8 minor_key,
+                                     QString filePath, quint8 base,
+                                     QString encoding, GUI_BASE *sending_gui)
 {
     // Get sending GUI if not present
     if (!sending_gui) sending_gui = (GUI_BASE*) sender();
@@ -475,76 +429,36 @@ void GUI_COMM_BRIDGE::send_file_chunked(quint8 major_key, quint8 minor_key,
     // Try to acquire sendLock (or add to waiting list)
     if (!get_send_lock(major_key, minor_key,
                        QVariant(filePath), sending_gui,
-                       SEND_STRUCT_SEND_FILE_CHUNKED, sep))
+                       SEND_STRUCT_SEND_FILE_PACK, base, encoding))
     {
         return;
     }
 
-    // Open file for reading
-    QFile data_file(filePath);
-    if (data_file.open(QIODevice::ReadOnly))
+    // Send start of file
+    parse_data(major_key, minor_key);
+
+    // If no flags, parse the file with the given information
+    if (!bridge_flags)
     {
-        // Setup variables
-        uint32_t file_chunk_size = 1048576; // 1MB Default
-
-        // Read in file in chunk size data bits
-        QByteArray data;
-        uint32_t chunked_len, i;
-        QList<QByteArray> chunked_data;
-        while (!data_file.atEnd() && !bridge_flags)
-        {
-            // See if chunk size updated: max(1MB, chunk_size)
-            if (file_chunk_size < chunk_size) file_chunk_size = chunk_size;
-
-            // Read and append next large file chunk
-            data += data_file.read(file_chunk_size);
-            if (data.isEmpty()) break;
-
-            // Split by sep
-            chunked_data = data.split(sep);
-            chunked_len = chunked_data.length();
-
-            // Handle no key at end of last chunk
-            if (!data.endsWith(sep))
-            {
-                // Remove one from chunked len
-                chunked_len -= 1;
-
-                // Set data as last packet
-                data = chunked_data.takeLast();
-            } else
-            {
-                // Otherwise clear data (everything good to send)
-                data.clear();
-            }
-
-            // Handle no complete chunk
-            if (!chunked_len) continue;
-
-            // Send each complete packet
-            for (i = 0; i < chunked_len; i++)
-            {
-                // Parse and send
-                parse_chunk(major_key, minor_key, chunked_data.at(i));
-
-                // Check resets
-                if (bridge_flags) break;
-            }
-        }
-
-        // Close file
-        data_file.close();
+        parse_file(major_key, minor_key,
+                   filePath, base,
+                   encoding, sending_gui);
     }
+
+
+    // If no flags, send end of file
+    if (!bridge_flags) parse_data(major_key, minor_key);
 
     // Release lock
     sendLock.unlock();
 
-    // Check if other signals waiting
+    // Check if other packets waiting
     handle_next_send();
 }
 
 void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key,
-                                 QByteArray chunk, GUI_BASE *sending_gui)
+                                 QByteArray chunk, quint8 base,
+                                 QString encoding, GUI_BASE *sending_gui)
 {
     // Get sending GUI if not present
     if (!sending_gui) sending_gui = (GUI_BASE*) sender();
@@ -552,13 +466,14 @@ void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key,
     // Try to acquire sendLock (or add to waiting list)
     if (!get_send_lock(major_key, minor_key,
                        QVariant(chunk), sending_gui,
-                       SEND_STRUCT_SEND_CHUNK))
+                       SEND_STRUCT_SEND_CHUNK, base, encoding))
     {
         return;
     }
 
     // Send chunk across
-    parse_chunk(major_key, minor_key, chunk);
+    parse_data(major_key, minor_key, chunk,
+               base, QRegularExpression(encoding));
 
     // Release lock
     sendLock.unlock();
@@ -568,7 +483,8 @@ void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key,
 }
 
 void GUI_COMM_BRIDGE::send_chunk_pack(quint8 major_key, quint8 minor_key,
-                                      QByteArray chunk, GUI_BASE *sending_gui)
+                                      QByteArray chunk, quint8 base,
+                                      QString encoding, GUI_BASE *sending_gui)
 {
     // Get sending GUI if not present
     if (!sending_gui) sending_gui = (GUI_BASE*) sender();
@@ -576,25 +492,27 @@ void GUI_COMM_BRIDGE::send_chunk_pack(quint8 major_key, quint8 minor_key,
     // Try to acquire sendLock (or add to waiting list)
     if (!get_send_lock(major_key, minor_key,
                        QVariant(chunk), sending_gui,
-                       SEND_STRUCT_SEND_CHUNK_PACK))
+                       SEND_STRUCT_SEND_CHUNK_PACK, base, encoding))
     {
         return;
     }
 
     // Send start of chunk
-    parse_chunk(major_key, minor_key, QByteArray());
+    parse_data(major_key, minor_key);
 
     // Reset progress
     emit sending_gui->progress_update_send(0, "");
 
     // Send chunk across
-    parse_chunk(major_key, minor_key, chunk);
+    parse_data(major_key, minor_key, chunk,
+               base, QRegularExpression(encoding),
+               true, sending_gui, 0, chunk.length());
 
     // If no flags, send end of file and progress updates
     if (!bridge_flags)
     {
         // Send end of chunk
-        parse_chunk(major_key, minor_key, QByteArray());
+        parse_data(major_key, minor_key);
 
         // Signal done to user
         emit sending_gui->progress_update_send(100, "Done!");
@@ -817,7 +735,7 @@ void GUI_COMM_BRIDGE::set_checksum_exe(checksum_struct *check, QString checksum_
 
     // Create and copy into new array
     char* new_exe_path = (char*) malloc(checksum_exe.length()*sizeof(char));
-    strcpy((char*) new_exe_path, checksum_exe.toUtf8().constData());
+    strcpy((char*) new_exe_path, checksum_exe.toLatin1().constData());
 
     // Delete and replace current value
     if (check->checksum_exe != nullptr) delete[] check->checksum_exe;
@@ -836,7 +754,8 @@ void GUI_COMM_BRIDGE::set_checksum_start(checksum_struct *check, QString checksu
     memset(new_check_start, 0, checksum_size);
 
     // Build base start from supplied checksum start
-    QByteArray start_convert = GUI_HELPER::string_to_byteArray(checksum_start, checksum_start_base);
+    QByteArray start_convert = GUI_HELPER::decode_byteArray(checksum_start.toLatin1(),
+                                                            checksum_start_base, ' ');
 
     // Pad start until its checksum_size
     uint32_t start_len = start_convert.length();
@@ -856,6 +775,7 @@ void GUI_COMM_BRIDGE::set_checksum_start(checksum_struct *check, QString checksu
 
 void GUI_COMM_BRIDGE::check_packet(uint8_t major_key)
 {
+    // Check if packet is reset and not currently reseting
     if ((major_key == MAJOR_KEY_RESET)
             && (!(bridge_flags & bridge_reset_flag)))
     {
@@ -872,7 +792,8 @@ void GUI_COMM_BRIDGE::check_packet(uint8_t major_key)
 
 bool GUI_COMM_BRIDGE::get_send_lock(uint8_t major_key, uint8_t minor_key,
                                     QVariant data, GUI_BASE *sending_gui,
-                                    uint8_t target, uint8_t sep)
+                                    uint8_t target, uint8_t base,
+                                    QString encoding)
 {
     // Verify not exiting or closed
     if (bridge_flags & (bridge_exit_flag | bridge_close_flag))
@@ -891,12 +812,13 @@ bool GUI_COMM_BRIDGE::get_send_lock(uint8_t major_key, uint8_t minor_key,
         send_struct curr = transmitList.first();
 
         // Check if this call is equal to next packet
-        status = ((curr.target == target)
+        status = ((curr.sender == sending_gui)
+                  && (curr.target == target)
                   && (curr.major_key == major_key)
                   && (curr.minor_key == minor_key)
-                  && (curr.sender == sending_gui)
+                  && (curr.base == base)
                   && (curr.data == data)
-                  && (curr.sep == sep));
+                  && (curr.encoding == encoding));
 
         // If equal, try to aquire lock and begin sending
         if (status)
@@ -909,7 +831,7 @@ bool GUI_COMM_BRIDGE::get_send_lock(uint8_t major_key, uint8_t minor_key,
             // from waiting list it is now in sending
             transmitList.takeFirst();
 
-            // Got lock and removed self from list
+            // Acquired lock and removed self from list
             return true;
         }
 
@@ -924,12 +846,13 @@ bool GUI_COMM_BRIDGE::get_send_lock(uint8_t major_key, uint8_t minor_key,
     {
         // Build new struct
         send_struct curr;
+        curr.sender = sending_gui;
         curr.target = target;
         curr.major_key = major_key;
         curr.minor_key = minor_key;
+        curr.base = base;
         curr.data = data;
-        curr.sender = sending_gui;
-        curr.sep = sep;
+        curr.encoding = encoding;
 
         // Add struct to transmitList
         transmitList.append(curr);
@@ -955,35 +878,101 @@ void GUI_COMM_BRIDGE::handle_next_send()
         switch (next.target)
         {
             case SEND_STRUCT_SEND_FILE:
-                emit transmit_file(next.major_key, next.minor_key, next.data.toString(), next.sender);
+                emit transmit_file(next.major_key, next.minor_key,
+                                   next.data.toString(), next.base,
+                                   next.encoding, next.sender);
                 return;
-            case SEND_STRUCT_SEND_FILE_CHUNKED:
-                emit transmit_file_chunked(next.major_key, next.minor_key, next.data.toString(), next.sep, next.sender);
+            case SEND_STRUCT_SEND_FILE_PACK:
+                emit transmit_file_pack(next.major_key, next.minor_key,
+                                        next.data.toString(), next.base,
+                                        next.encoding, next.sender);
                 return;
             case SEND_STRUCT_SEND_CHUNK:
-                emit transmit_chunk(next.major_key, next.minor_key, next.data.toByteArray(), next.sender);
+                emit transmit_chunk(next.major_key, next.minor_key,
+                                    next.data.toByteArray(), next.base,
+                                    next.encoding, next.sender);
                 return;
             case SEND_STRUCT_SEND_CHUNK_PACK:
-                emit transmit_chunk_pack(next.major_key, next.minor_key, next.data.toByteArray(), next.sender);
+                emit transmit_chunk_pack(next.major_key, next.minor_key,
+                                         next.data.toByteArray(), next.base,
+                                         next.encoding, next.sender);
                 return;
         }
     }
 }
 
-void GUI_COMM_BRIDGE::parse_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk,
-                                  bool send_updates, GUI_BASE *sender,
-                                  uint32_t c_pos, uint32_t t_pos)
+void GUI_COMM_BRIDGE::parse_file(quint8 major_key, quint8 minor_key,
+                                 QString filePath, quint8 base,
+                                 QString encoding, GUI_BASE *sender)
+{
+    // Verify encoding not expecting end of data
+    // (May load in parts of file at a time)
+    if (encoding.endsWith('$') && !encoding.endsWith("\\$"))
+    {
+        encoding.chop(1);
+    }
+
+    // Reset progress
+    emit sender->progress_update_send(0, "");
+
+    // Open file for reading
+    QFile data_file(filePath);
+    if (data_file.open(QIODevice::ReadOnly))
+    {
+        // Setup tracking variables
+        uint32_t file_pos = 0;
+        uint32_t file_chunk_size = 1048576; // 1MB Default
+        uint32_t file_size = data_file.size();
+
+        // Read in file in chunk size data bits
+        QByteArray data_chunk;
+        while (!data_file.atEnd() && !bridge_flags)
+        {
+            // See if chunk size updated: max(1MB, chunk_size)
+            if (file_chunk_size < chunk_size) file_chunk_size = chunk_size;
+
+            // Read in next large file chunk
+            data_chunk.append((QByteArray) data_file.read(file_chunk_size));
+            if (data_chunk.isEmpty()) break;
+
+            // Send file chunks w/ updates
+            data_chunk = parse_data(major_key, minor_key, data_chunk,
+                                    base, QRegularExpression(encoding),
+                                    true, sender, file_pos, file_size);
+
+            // Update pos after send
+            file_pos += file_chunk_size - data_chunk.length();
+        }
+
+        // Close file
+        data_file.close();
+
+        // If no flags, send progress update
+        // (add error signals here too?)
+        if (!bridge_flags) emit sender->progress_update_send(100, "Done!");
+    } else
+    {
+        // Set progress error
+        emit sender->progress_update_send(0, "Error: Unable to open file!");
+    }
+}
+
+QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByteArray data,
+                                       quint8 base, QRegularExpression regex,
+                                       bool send_updates, GUI_BASE *sender,
+                                       quint32 c_pos, quint32 t_pos)
 {
     // Verify this will terminate
-    if (chunk_size == 0) return;
+    if (chunk_size == 0) return QByteArray();
 
     // Check if reset & packet not the resetting packet
     // Assumes reset occurs before any other signals and that
     // any packets calling this will be after a reset
-    if ((bridge_flags & bridge_reset_flag) && (major_key != MAJOR_KEY_RESET))
+    if (((bridge_flags & bridge_reset_flag) && (major_key != MAJOR_KEY_RESET))
+            || (bridge_flags & (bridge_close_flag | bridge_exit_flag)))
     {
         // Still waiting for reset send so return
-        return;
+        return QByteArray();
     } else if ((bridge_flags & bridge_reset_send_chunk_flag) && (major_key != MAJOR_KEY_RESET))
     {
         // Reset has been sent so clear base_send_chunk bit
@@ -997,34 +986,74 @@ void GUI_COMM_BRIDGE::parse_chunk(quint8 major_key, quint8 minor_key, QByteArray
         end_pos_str = "/" + QString::number(t_pos / 1000.0f) + "KB";
     }
 
-    // Setup base variables
-    QByteArray curr;
-    uint32_t pos = 0;
-    uint32_t end_pos = chunk.length();
+    // Ensure that regex always begins at start of data
+    if (!regex.pattern().startsWith('^'))
+        regex.setPattern(regex.pattern().prepend('^'));
 
-    // Send all bytes in data chunk
+    // Set dot matches everything
+    regex.setPatternOptions(QRegularExpression::DotMatchesEverythingOption);
+
+    // Setup loop variables
+    QString data_str = QString::fromLatin1((const char*) data.data(), data.length());
+    QStringList curr_parse_match;
+    QByteArray curr_parse, curr_chunk;
+    uint32_t curr_pos, end_pos, parse_len;
+
+    // Try and read entire chunk
+    // Will return what can't/wasn't sent
     do
     {
-        // Get next data chunk and add info
-        curr = chunk.mid(pos, chunk_size);
+        // Try parsing next data chunk
+        curr_parse_match = regex.match(data_str).capturedTexts();
 
-        // Transmit data to device
-        transmit_data(prepare_data(major_key, minor_key, curr));
+        // Return remaining data if parsing failed
+        if (curr_parse_match.isEmpty()) return data_str.toLatin1();
 
-        // Check if reset set during transmission eventloop
-        if (bridge_flags) return;
+        // Take first element (first is entire captured string), length
+        // will be used to remove characters at the end.
+        parse_len = curr_parse_match.takeFirst().length();
 
-        // Increment position counter
-        // Do not use chunk_size to enable dyanmic setting
-        pos += curr.length();
+        // Decode pieces using provided base
+        curr_parse.clear();
+        foreach (QString parse_str, curr_parse_match)
+            curr_parse += GUI_HELPER::decode_byteArray(parse_str.toLatin1(), base);
 
-        // Emit an update
-        if (send_updates && sender && t_pos)
+        // Reset position variables
+        curr_pos = 0;
+        end_pos = curr_parse.length();
+
+        // Send all bytes in current parse chunk
+        do
         {
-            emit sender->progress_update_send(qRound(((float) (c_pos + pos) / t_pos) * 100.0f),
-                                              QString::number((float) (c_pos + pos) / 1000.0f) + end_pos_str);
-        }
-    } while ((pos < end_pos) && chunk_size);
+            // Get next data chunk and add info
+            curr_chunk = curr_parse.mid(curr_pos, chunk_size);
+
+            // Transmit data to device
+            transmit_data(prepare_data(major_key, minor_key, curr_chunk));
+
+            // Check if reset set during transmission eventloop
+            if (bridge_flags) return data_str.toLatin1();
+
+            // Increment position counter
+            // Do not use chunk_size to enable dyanmic setting
+            curr_pos += curr_chunk.length();
+
+            // Emit an update
+            if (send_updates && sender && t_pos)
+            {
+                emit sender->progress_update_send(qRound(((float) (c_pos + curr_pos) / t_pos) * 100.0f),
+                                                  QString::number((float) (c_pos + curr_pos) / 1000.0f) + end_pos_str);
+            }
+        } while ((curr_pos < end_pos) && chunk_size);
+
+        // Increment c_pos with new position
+        c_pos += curr_pos;
+
+        // Remove parsed data (including non sent characters)
+        data_str.remove(0, parse_len);
+    } while (!data_str.isEmpty() && !bridge_flags);
+
+    return data_str.toLatin1();
 }
 
 /* Prepares a data packet for sending.

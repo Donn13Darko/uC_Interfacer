@@ -98,8 +98,7 @@ void GUI_BASE::set_progress_update_send(int, QString)
 void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk)
 {
     emit transmit_chunk(major_key, minor_key,
-                        GUI_HELPER::initList_to_byteArray(chunk)
-                        );
+                        GUI_HELPER::initList_to_byteArray(chunk));
 }
 
 bool GUI_BASE::isDataRequest(uint8_t)

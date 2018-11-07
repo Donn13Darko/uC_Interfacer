@@ -28,6 +28,8 @@
 #include <QTimer>
 #include <QVariant>
 #include <QEventLoop>
+#include <QRegularExpression>
+#include <QRegularExpressionMatch>
 
 // Local object includes
 #include "../user-interfaces/gui-base-major-keys.h"
@@ -74,11 +76,21 @@ signals:
     // Reset connected GUIs
     void reset();
 
-    // Re-emit transmission signals
-    void transmit_file(quint8 major_key, quint8 minor_key, QString filePath, GUI_BASE *sender);
-    void transmit_file_chunked(quint8 major_key, quint8 minor_key, QString filePath, char sep, GUI_BASE *sender);
-    void transmit_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk, GUI_BASE *sender);
-    void transmit_chunk_pack(quint8 major_key, quint8 minor_key, QByteArray chunk, GUI_BASE *sender);
+    // File transmits
+    void transmit_file(quint8 major_key, quint8 minor_key,
+                       QString filePath, quint8 base,
+                       QString encoding, GUI_BASE *sender);
+    void transmit_file_pack(quint8 major_key, quint8 minor_key,
+                            QString filePath, quint8 base,
+                            QString encoding, GUI_BASE *sender);
+
+    // Chunk transmits
+    void transmit_chunk(quint8 major_key, quint8 minor_key,
+                        QByteArray chunk, quint8 base,
+                        QString encoding, GUI_BASE *sender);
+    void transmit_chunk_pack(quint8 major_key, quint8 minor_key,
+                             QByteArray chunk, quint8 base,
+                             QString encoding, GUI_BASE *sender);
 
 public slots:
     // Reset remtoe
@@ -89,15 +101,22 @@ public slots:
 
     // File sending
     void send_file(quint8 major_key, quint8 minor_key,
-                   QString filePath, GUI_BASE *sender = nullptr);
-    void send_file_chunked(quint8 major_key, quint8 minor_key, QString filePath,
-                           char sep, GUI_BASE *sender = nullptr);
+                   QString filePath, quint8 base = 0,
+                   QString encoding = "^(.*)",
+                   GUI_BASE *sender = nullptr);
+    void send_file_pack(quint8 major_key, quint8 minor_key,
+                        QString filePath, quint8 base = 0,
+                        QString encoding = "^(.*)",
+                        GUI_BASE *sender = nullptr);
 
     // Data chunk sending
     void send_chunk(quint8 major_key, quint8 minor_key,
-                    QByteArray chunk, GUI_BASE *sender = nullptr);
+                    QByteArray chunk = QByteArray(), quint8 base = 0,
+                    QString encoding = "^(.*)", GUI_BASE *sender = nullptr);
     void send_chunk_pack(quint8 major_key, quint8 minor_key,
-                         QByteArray chunk, GUI_BASE *sender = nullptr);
+                         QByteArray chunk, quint8 base = 0,
+                         QString encoding = "^(.*)",
+                         GUI_BASE *sender = nullptr);
 
     // Signal bridge to open, close, or exit
     bool open_bridge();
@@ -136,17 +155,18 @@ private:
 
     // Holds all info for waiting
     typedef struct send_struct {
-        uint8_t target;
         GUI_BASE* sender;
+        uint8_t target;
         uint8_t major_key;
         uint8_t minor_key;
+        uint8_t base;
         QVariant data;
-        uint8_t sep;
+        QString encoding;
     } send_struct;
 
     typedef enum {
         SEND_STRUCT_SEND_FILE = 0,
-        SEND_STRUCT_SEND_FILE_CHUNKED,
+        SEND_STRUCT_SEND_FILE_PACK,
         SEND_STRUCT_SEND_CHUNK,
         SEND_STRUCT_SEND_CHUNK_PACK
     } SEND_STRUCT_TARGETS_ENUM;
@@ -183,7 +203,7 @@ private:
 
     // Checksum main methods
     void getChecksum(const uint8_t* data, uint32_t data_len, uint8_t checksum_key,
-                            uint8_t** checksum_array, uint32_t* checksum_size);
+                     uint8_t** checksum_array, uint32_t* checksum_size);
     bool check_checksum(const uint8_t* data, uint32_t data_len, const checksum_struct *check);
 
     // Checksum static helpers
@@ -198,15 +218,22 @@ private:
     // Try to acquire sendLock
     bool get_send_lock(uint8_t major_key, uint8_t minor_key,
                        QVariant data, GUI_BASE *sending_gui,
-                       uint8_t target, uint8_t sep = 0);
+                       uint8_t target, uint8_t base = 0,
+                       QString regex = "^(.*)");
 
     // Handle send list
     void handle_next_send();
 
     // Transmit helpers
-    void parse_chunk(quint8 major_key, quint8 minor_key, QByteArray chunk,
-                     bool send_updates = false, GUI_BASE *sender = nullptr,
-                     uint32_t c_pos = 0, uint32_t t_pos = 0);
+    void parse_file(quint8 major_key, quint8 minor_key,
+                    QString filePath, quint8 base = 0,
+                    QString encoding = "^(.*)",
+                    GUI_BASE *sender = nullptr);
+    QByteArray parse_data(quint8 major_key, quint8 minor_key, QByteArray data = QByteArray(),
+                          quint8 base = 0,
+                          QRegularExpression regex = QRegularExpression("^(.*)"),
+                          bool send_updates = false, GUI_BASE *sender = nullptr,
+                          quint32 c_pos = 0, quint32 t_pos = 0);
     QByteArray prepare_data(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray());
     void transmit_data(QByteArray data);
 };

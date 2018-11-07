@@ -87,10 +87,8 @@ void GUI_PROGRAMMER::addFileFormats(QStringList fileFormatsMap)
 
         // Add file format to combo and map
         ui->FileFormat_Combo->addItem(header_split.at(0));
-        fileFormats.insert(
-                    header_split.at(0),
-                    QPair<uint8_t, QRegularExpression>(
-                        fileBase, QRegularExpression(fileFormat.join('='))));
+        fileFormats.insert(header_split.at(0),
+                           QPair<uint8_t, QString>(fileBase, fileFormat.join('=')));
     }
 }
 
@@ -261,47 +259,24 @@ void GUI_PROGRAMMER::on_RefreshPreview_Button_clicked()
 void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 {
     // Get format information pair
-    QPair<uint8_t, QRegularExpression> fileFormat = fileFormats.value(ui->FileFormat_Combo->currentText());
+    QPair<uint8_t, QString> fileFormat = fileFormats.value(ui->FileFormat_Combo->currentText());
 
-    // Check if sending as is
-    if (fileFormat.first == 0)
+    // Get filePath
+    QString filePath = ui->File_LineEdit->text();
+    if (filePath.isEmpty())
     {
-        // Get filePath
-        QString filePath = ui->File_LineEdit->text();
-
-        // Set size
-        emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
-                            GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
-
-        // Send file
-        emit transmit_file(gui_key, MINOR_KEY_PROGRAMMER_DATA, filePath);
-
-        // Exit
+        emit progress_update_send(0, "Error: No file provided!");
         return;
     }
 
-    /* Should define a singnal and slot interface in comm-bridge
-     * that handles this functionality. Can Assume that entire file is
-     * same encoding. Allows reuse of base code and functionality.
-     */
+    // Set size
+    emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
+                        GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
 
-    // See if file already loaded (load and parse if not)
-    QString loadedInfo = ui->FilePreview_PlainText->toPlainText();
-    if (loadedInfo.isEmpty())
-    {
-        // Get filePath
-        QString filePath = ui->File_LineEdit->text();
-
-        // Load & format entire file (look into streaming)
-        loadedInfo = format_file(GUI_HELPER::loadFile(filePath));
-    }
-
-    // Parse line by line and transfer each character set into uint8_t
-    foreach (QString program_line, loadedInfo.split('\n'))
-    {
-        emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_DATA,
-                            GUI_HELPER::string_to_byteArray(program_line, fileFormat.first, ' '));
-    }
+    // Send file
+    emit transmit_file_pack(gui_key, MINOR_KEY_PROGRAMMER_DATA,
+                            filePath, fileFormat.first,
+                            fileFormat.second);
 }
 
 void GUI_PROGRAMMER::on_FileFormat_Combo_activated(int)
@@ -309,12 +284,9 @@ void GUI_PROGRAMMER::on_FileFormat_Combo_activated(int)
     // Check if selection is other and prompt for user input
     if (ui->FileFormat_Combo->currentText() == "Other")
     {
-        QString fileRegexStr;
-        QPair<uint8_t, QRegularExpression> otherPair = fileFormats["Other"];
-        QRegularExpression otherRegex = otherPair.second;
-
-        // Set to current other text
-        fileRegexStr = otherRegex.pattern();
+        // Get current information
+        QPair<uint8_t, QString> otherPair = fileFormats["Other"];
+        QString fileRegexStr = otherPair.second;
 
         // Get or update the text
         if (GUI_HELPER::getUserString(&fileRegexStr, "Other Format", "Enter format as 'base,regex':"))
@@ -326,13 +298,13 @@ void GUI_PROGRAMMER::on_FileFormat_Combo_activated(int)
             uint8_t base = 0;
             if (1 < input_str.length())
                 base = input_str.takeFirst().toInt(nullptr, 10);
+            fileRegexStr = input_str.join(',');
 
             // Only update regex if it changed
             if ((otherPair.first != base)
-                    && (otherRegex.pattern() != input_str.join(',')))
+                    && (otherPair.second != fileRegexStr))
             {
-                otherRegex.setPattern(fileRegexStr);
-                fileFormats.insert("Other", QPair<uint8_t, QRegularExpression>(base, otherRegex));
+                fileFormats.insert("Other", QPair<uint8_t, QString>(base, fileRegexStr));
             }
         } else
         {
@@ -344,7 +316,7 @@ void GUI_PROGRAMMER::on_FileFormat_Combo_activated(int)
     curr_fileFormat = ui->FileFormat_Combo->currentText();
 
     // Update regex string
-    ui->FileRegex_PlainText->setPlainText(fileFormats.value(curr_fileFormat).second.pattern());
+    ui->FileRegex_PlainText->setPlainText(fileFormats.value(curr_fileFormat).second);
     ui->FileRegex_PlainText->moveCursor(QTextCursor::Start);
 
     // Refresh the preview
@@ -392,7 +364,7 @@ void GUI_PROGRAMMER::on_ReadDataSave_Button_clicked()
 QByteArray GUI_PROGRAMMER::format_file(QByteArray rawFile)
 {
     // Get format information pair
-    QPair<uint8_t, QRegularExpression> fileFormat = fileFormats.value(ui->FileFormat_Combo->currentText());
+    QPair<uint8_t, QString> fileFormat = fileFormats.value(ui->FileFormat_Combo->currentText());
 
     // If base is zero return rawFile bytes
     if (fileFormat.first == 0) return rawFile;
@@ -403,6 +375,8 @@ QByteArray GUI_PROGRAMMER::format_file(QByteArray rawFile)
     // Setup variables for loop
     QByteArray final;
     QStringList captureList;
+    QRegularExpression fileRegex = QRegularExpression(fileFormat.second,
+                                                      QRegularExpression::DotMatchesEverythingOption);
 
     // Loop through each line looking for a match
     foreach (QByteArray i, fileList)
@@ -411,7 +385,7 @@ QByteArray GUI_PROGRAMMER::format_file(QByteArray rawFile)
         if (i.isEmpty()) continue;
 
         // Attempt to match with regex group
-        captureList = fileFormat.second.match(i.trimmed()).capturedTexts();
+        captureList = fileRegex.match(i.trimmed()).capturedTexts();
         if (!captureList.isEmpty())
         {
             // First group is entire line

@@ -445,17 +445,17 @@ void MainWindow::on_DeviceConnected() {
             comm_bridge->add_gui(tab_holder);
 
             // Connect tab signals to bridge slots
-            connect(tab_holder, SIGNAL(transmit_file(quint8, quint8, QString)),
-                    comm_bridge, SLOT(send_file(quint8, quint8, QString)),
+            connect(tab_holder, SIGNAL(transmit_file(quint8, quint8, QString, quint8, QString)),
+                    comm_bridge, SLOT(send_file(quint8, quint8, QString, quint8, QString)),
                     Qt::QueuedConnection);
-            connect(tab_holder, SIGNAL(transmit_file_chunked(quint8, quint8, QString, char)),
-                    comm_bridge, SLOT(send_file_chunked(quint8, quint8, QString, char)),
+            connect(tab_holder, SIGNAL(transmit_file_pack(quint8, quint8, QString, quint8, QString)),
+                    comm_bridge, SLOT(send_file_pack(quint8, quint8, QString, quint8, QString)),
                     Qt::QueuedConnection);
-            connect(tab_holder, SIGNAL(transmit_chunk(quint8, quint8, QByteArray)),
-                    comm_bridge, SLOT(send_chunk(quint8, quint8, QByteArray)),
+            connect(tab_holder, SIGNAL(transmit_chunk(quint8, quint8, QByteArray, quint8, QString)),
+                    comm_bridge, SLOT(send_chunk(quint8, quint8, QByteArray, quint8, QString)),
                     Qt::QueuedConnection);
-            connect(tab_holder, SIGNAL(transmit_chunk_pack(quint8, quint8, QByteArray)),
-                    comm_bridge, SLOT(send_chunk_pack(quint8, quint8, QByteArray)),
+            connect(tab_holder, SIGNAL(transmit_chunk_pack(quint8, quint8, QByteArray, quint8, QString)),
+                    comm_bridge, SLOT(send_chunk_pack(quint8, quint8, QByteArray, quint8, QString)),
                     Qt::QueuedConnection);
 
             // Connect bridge signals to tab slots
