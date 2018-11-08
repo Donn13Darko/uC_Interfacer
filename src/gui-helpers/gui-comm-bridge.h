@@ -73,6 +73,9 @@ signals:
     void ackReceived(QByteArray ack);
     void ackChecked(bool ackStatus);
 
+    // Ready info
+    void devReady();
+
     // Reset connected GUIs
     void reset();
 
@@ -129,9 +132,6 @@ private slots:
     void waitForAck(int msecs = 5000);
     void checkAck(QByteArray ack);
 
-    // Wait for data
-    void waitForData(int msecs = 5000);
-
 private:
     /* Bridge flag. Bits as follows:
      *  1) Exit Bridge
@@ -186,10 +186,10 @@ private:
     QEventLoop ackLoop;
 
     // Data helper variables
-    bool data_status;
-    uint8_t data_key;
-    QTimer dataTimer;
-    QEventLoop dataLoop;
+    bool devReadyStatus;
+    uint8_t devReadyKey;
+    QTimer devReadyTimer;
+    QEventLoop devReadyLoop;
 
     // Chunk variables
     uint32_t chunk_size;
@@ -230,9 +230,8 @@ private:
                     QString encoding = "^(.*)",
                     GUI_BASE *sender = nullptr);
     QByteArray parse_data(quint8 major_key, quint8 minor_key, QByteArray data = QByteArray(),
-                          quint8 base = 0,
-                          QRegularExpression regex = QRegularExpression("^(.*)"),
-                          bool send_updates = false, GUI_BASE *sender = nullptr,
+                          quint8 base = 0, QRegularExpression regex = QRegularExpression("^(.*)"),
+                          GUI_BASE *sender = nullptr, bool send_updates = false,
                           quint32 c_pos = 0, quint32 t_pos = 0);
     QByteArray prepare_data(quint8 major_key, quint8 minor_key, QByteArray chunk = QByteArray());
     void transmit_data(QByteArray data);

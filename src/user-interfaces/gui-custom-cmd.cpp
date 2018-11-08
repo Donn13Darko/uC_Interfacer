@@ -45,6 +45,11 @@ GUI_CUSTOM_CMD::~GUI_CUSTOM_CMD()
     delete ui;
 }
 
+bool GUI_CUSTOM_CMD::acceptAllCMDs()
+{
+    return ui->FeedbackLogAllCMDs_CheckBox->isChecked();
+}
+
 void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Pass to parent for additional parsing

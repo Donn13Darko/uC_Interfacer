@@ -128,6 +128,18 @@ void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
     on_BurnMethod_Combo_currentIndexChanged(0);
 }
 
+bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
+{
+    switch (minorKey)
+    {
+        case MINOR_KEY_PROGRAMMER_SET_ADDR:
+        case MINOR_KEY_PROGRAMMER_DATA: // Stall while device is written to (slow)
+            return true;
+        default:
+            return GUI_BASE::isDataRequest(minorKey);
+    }
+}
+
 void GUI_PROGRAMMER::reset_gui()
 {
     // Reset base (resets send progress bar)
@@ -221,18 +233,6 @@ void GUI_PROGRAMMER::set_progress_update_send(int progress, QString label)
 
     if (progress_divisor == 1)
         ui->ProgrammerProgress_Label->setText(label);
-}
-
-bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
-{
-    switch (minorKey)
-    {
-        case MINOR_KEY_PROGRAMMER_SET_ADDR:
-        case MINOR_KEY_PROGRAMMER_DATA:
-            return true;
-        default:
-            return GUI_BASE::isDataRequest(minorKey);
-    }
 }
 
 void GUI_PROGRAMMER::on_BrowseFile_Button_clicked()

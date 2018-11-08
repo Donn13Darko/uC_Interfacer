@@ -82,7 +82,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Setup add new tab (blank GUI_BASE)
     add_new_tab = new GUI_BASE(this);
     add_new_tab->set_GUI_name("+");
-//    add_new_tab->setClosable(false);
+    add_new_tab->setClosable(false);
     add_new_tab->hide();
 
     // Setup add new tab GUI dialog
@@ -126,19 +126,20 @@ MainWindow::MainWindow(QWidget *parent) :
     setConnected(false);
     on_Device_Combo_activated(ui->Device_Combo->currentIndex());
     on_ConnType_Combo_currentIndexChanged(0);
+
+    // Add welcome GUI for setup and to make the next steps possible
     ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_name());
 
-    // 1) Set closable to true to generate button
+    // 1) Set closable to true to generate private button instance
     // 2) Grab genereated button and remove from widget (set to nullptr)
-    // 3) Set closable to false and disconnect button from slots
+    // 3) Disconnect button from all slots and set closable to false
+    // 4) Connect button instance to new slots
     ui->ucOptions->setTabsClosable(true);
     QTabBar *tab_bar = ui->ucOptions->tabBar();
     tab_closeButton = tab_bar->tabButton(0, QTabBar::RightSide);
     tab_bar->setTabButton(0, QTabBar::RightSide, nullptr);
     disconnect(tab_closeButton, 0, 0, 0);
     ui->ucOptions->setTabsClosable(false);
-
-    // Connect tab button to new slot
     connect(tab_closeButton, SIGNAL(clicked()),
             this, SLOT(on_tabCloseRequested()),
             Qt::DirectConnection);
@@ -644,7 +645,7 @@ void MainWindow::on_ucOptions_currentChanged(int index)
 
 void MainWindow::on_ucOptions_tabBarClicked(int index)
 {
-    // Only allow multiple clicks on add_tab
+    // Only allow multiple clicks for add_new_tab
     // Prevents add_tab widget being the last widget and
     // unable to add more (currentChanged() signal not emitted)
     if ((index == prev_tab)

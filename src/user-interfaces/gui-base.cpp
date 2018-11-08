@@ -91,6 +91,11 @@ void GUI_BASE::set_GUI_name(QString new_name)
     gui_name = new_name;
 }
 
+bool GUI_BASE::acceptAllCMDs()
+{
+    return false;
+}
+
 void GUI_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Reset name if present
@@ -98,6 +103,11 @@ void GUI_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
 
     // Set closable
     closable = configMap->value("closable", "true").toBool();
+}
+
+bool GUI_BASE::isDataRequest(uint8_t)
+{
+    return false;
 }
 
 void GUI_BASE::receive_gui(QByteArray)
@@ -132,11 +142,6 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer
 {
     emit transmit_chunk(major_key, minor_key,
                         GUI_HELPER::initList_to_byteArray(chunk));
-}
-
-bool GUI_BASE::isDataRequest(uint8_t)
-{
-    return false;
 }
 
 void GUI_BASE::save_rcvd_formatted()

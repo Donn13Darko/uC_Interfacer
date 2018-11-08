@@ -44,7 +44,11 @@ public:
     virtual QString get_GUI_name();
     virtual void set_GUI_name(QString new_name);
 
+    virtual bool acceptAllCMDs();
+
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
+
+    virtual bool isDataRequest(uint8_t minorKey);
 
 signals:
     // Read updates
@@ -99,9 +103,6 @@ protected:
     uint32_t current_recv_length;
     uint32_t expected_recv_length;
     QString expected_recv_length_str;
-
-    // Returns if send is a data request
-    virtual bool isDataRequest(uint8_t minorKey);
 
     // Save to file
     void save_rcvd_formatted();

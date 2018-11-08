@@ -34,6 +34,8 @@ public:
     explicit GUI_CUSTOM_CMD(QWidget *parent = 0);
     ~GUI_CUSTOM_CMD();
 
+    virtual bool acceptAllCMDs();
+
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
 public slots:

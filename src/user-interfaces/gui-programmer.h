@@ -43,6 +43,8 @@ public:
     void removeFileFormats(QStringList fileFormatsList);
     void addBurnMethods(QStringList burnMethodsMap);
 
+    virtual bool isDataRequest(uint8_t minorKey);
+
 public slots:
     virtual void reset_gui();
 
@@ -51,9 +53,6 @@ protected slots:
 
     virtual void set_progress_update_recv(int progress, QString label);
     virtual void set_progress_update_send(int progress, QString label);
-
-protected:
-    virtual bool isDataRequest(uint8_t minorKey);
 
 private slots:
     void on_BrowseFile_Button_clicked();

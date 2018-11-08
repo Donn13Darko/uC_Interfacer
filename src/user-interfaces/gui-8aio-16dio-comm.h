@@ -41,6 +41,7 @@ public:
     ~GUI_8AIO_16DIO_COMM();
 
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
+    virtual bool isDataRequest(uint8_t minorKey);
 
 public slots:
     virtual void reset_gui();
@@ -76,11 +77,13 @@ protected:
 
     void setConTypes(QStringList connTypes, QList<char> mapValues);
 
-    virtual bool isDataRequest(uint8_t minorKey);
     virtual void setValues(uint8_t minorKey, QByteArray values);
     virtual bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
 
 private:
+    bool devConnected;
+    QMap<QString, QStringList> devSettings;
+
     void initialize();
     void setupUpdaters();
 

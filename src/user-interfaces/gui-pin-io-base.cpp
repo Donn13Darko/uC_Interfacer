@@ -59,6 +59,20 @@ void GUI_PIN_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
     GUI_BASE::parseConfigMap(configMap);
 }
 
+bool GUI_PIN_BASE::isDataRequest(uint8_t minorKey)
+{
+    switch (minorKey)
+    {
+        case MINOR_KEY_IO_AIO_READ:
+        case MINOR_KEY_IO_AIO_READ_ALL:
+        case MINOR_KEY_IO_DIO_READ:
+        case MINOR_KEY_IO_DIO_READ_ALL:
+            return true;
+        default:
+            return GUI_BASE::isDataRequest(minorKey);
+    }
+}
+
 void GUI_PIN_BASE::reset_gui()
 {
     // Reset base
@@ -98,8 +112,63 @@ void GUI_PIN_BASE::receive_gui(QByteArray recvData)
     if (recvData.at(s1_major_key_loc) != (char) gui_key)
         return;
 
-    // Set values with minor key
-    setValues(recvData.at(s1_minor_key_loc), recvData.mid(s1_end_loc));
+    uint8_t minor_key = recvData.at(s1_minor_key_loc);
+    switch (minor_key)
+    {
+        case MINOR_KEY_IO_AIO_READ_ALL:
+        case MINOR_KEY_IO_DIO_READ_ALL:
+        {
+            // Check if request or respone
+            if (recvData.length() == num_s1_bytes)
+            {
+                // Packet is a request so get pin values
+                uint32_t pinValue;
+                QByteArray pinValues;
+                QSlider *sliderValue;
+                uint8_t rowNum, colNum;
+
+                // Get pin info
+                PinTypeInfo pInfo;
+                getPinTypeInfo(minor_key, &pInfo);
+
+                // Parse all pin values
+                for (uint8_t i = 0; i < pInfo.numPins_DEV; i++)
+                {
+                    // Get pin location and slider widget
+                    getPinLocation(&rowNum, &colNum, &pInfo, i);
+                    getItemWidget((QWidget**) &sliderValue, pInfo.grid, rowNum, colNum+io_slider_pos);
+
+                    // Get value
+                    pinValue = sliderValue->value();
+
+                    // Parse value to uint16_t and append to pin values
+                    pinValues.append(GUI_HELPER::uint32_to_byteArray(pinValue).right(2));
+                }
+
+                // Send values back
+                emit transmit_chunk(gui_key, minor_key, pinValues);
+
+                // Send device ready
+                emit transmit_chunk(MAJOR_KEY_DEV_READY, 0);
+
+                // Exit out of parse
+                break;
+            }
+
+            // Otherwise, packet is a response so fall through
+            // and set values to what was sent
+
+        }
+        case MINOR_KEY_IO_AIO_SET:
+        case MINOR_KEY_IO_DIO_SET:
+        case MINOR_KEY_IO_AIO_WRITE:
+        case MINOR_KEY_IO_DIO_WRITE:
+        {
+            // Set values with minor key
+            setValues(minor_key, recvData.mid(s1_end_loc));
+            break;
+        }
+    }
 }
 
 void GUI_PIN_BASE::inputsChanged(PinTypeInfo *pInfo, QObject *caller, uint8_t io_pos, QByteArray *data)
@@ -427,20 +496,6 @@ void GUI_PIN_BASE::addNewPinSettings(PinTypeInfo *pInfo, QList<QString> newSetti
     foreach (QString i, pinSetDisabled)
     {
         pinDisabledSet->append(pinMap->value(i));
-    }
-}
-
-bool GUI_PIN_BASE::isDataRequest(uint8_t minorKey)
-{
-    switch (minorKey)
-    {
-        case MINOR_KEY_IO_AIO_READ:
-        case MINOR_KEY_IO_AIO_READ_ALL:
-        case MINOR_KEY_IO_DIO_READ:
-        case MINOR_KEY_IO_DIO_READ_ALL:
-            return true;
-        default:
-            return GUI_BASE::isDataRequest(minorKey);
     }
 }
 

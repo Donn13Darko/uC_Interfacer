@@ -41,11 +41,14 @@ typedef enum {
     MAJOR_KEY_PROGRAMMER,
     MAJOR_KEY_CUSTOM_CMD,
 
+    // Action confirmations
+    MAJOR_KEY_ACK,
+
     // Reset cmds
     MAJOR_KEY_RESET,
 
-    // Action confirmations
-    MAJOR_KEY_ACK
+    // Ready for more
+    MAJOR_KEY_DEV_READY
 } GUI_BASE_MAJOR_KEYS;
 
 // Num ;en bytes enum

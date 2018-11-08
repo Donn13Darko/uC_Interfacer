@@ -44,10 +44,6 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     ack_status = false;
     ack_key = MAJOR_KEY_ERROR;
 
-    // Setup Data variables
-    data_status = false;
-    data_key = MAJOR_KEY_ERROR;
-
     // Set generic defaults
     chunk_size = GUI_COMM_BRIDGE::default_chunk_size;
 
@@ -58,13 +54,16 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
         tab_checksums.append(DEFAULT_CHECKSUM_STRUCT);
     }
 
-    // Connect data loop signals and slots
+    // Connect dev loop signals and slots
     // All internal object connections so direct is okay
-    connect(&dataTimer, SIGNAL(timeout()),
-            &dataLoop, SLOT(quit()),
+    connect(this, SIGNAL(devReady()),
+            &devReadyLoop, SLOT(quit()),
+            Qt::DirectConnection);
+    connect(&devReadyTimer, SIGNAL(timeout()),
+            &devReadyLoop, SLOT(quit()),
             Qt::DirectConnection);
     connect(this, SIGNAL(reset()),
-            &dataLoop, SLOT(quit()),
+            &devReadyLoop, SLOT(quit()),
             Qt::DirectConnection);
 
     // Connect ack loop signals and slots
@@ -243,6 +242,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
             // Check if ack or reset
             case MAJOR_KEY_ACK:
             case MAJOR_KEY_RESET:
+            case MAJOR_KEY_DEV_READY:
             {
                 // Set generic checksum executable if using
                 if (check->checksum_is_exe)
@@ -294,6 +294,25 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
 
                             // Emit reset to everything
                             emit reset();
+                        }
+
+                        // Break out of Act Switch
+                        break;
+                    }
+                    case MAJOR_KEY_DEV_READY:
+                    {
+                        // Check if error
+                        if (exit_recv)
+                        {
+                            // Ack error if checksum error
+                            send_ack(MAJOR_KEY_ERROR);
+                        } else
+                        {
+                            // Ack success
+                            send_ack(major_key);
+
+                            // Emit device ready for more
+                            emit devReady();
                         }
 
                         // Break out of Act Switch
@@ -354,14 +373,19 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                 tmp.append((char) minor_key);
                 tmp.append(rcvd_raw.mid(s1_end_loc+num_s2_bits, num_s2_bytes));
 
-                // Ack success & set data status
+                // Ack success
                 send_ack(major_key);
-                data_status = true;
 
                 // Emit readyRead - Send to all registered base guis
                 // (Indexing without check encforced by switch statement case)
                 foreach (GUI_BASE *gui, known_guis)
-                    emit gui->readyRead(tmp);
+                {
+                    if ((gui->get_GUI_key() == major_key)
+                            || gui->acceptAllCMDs())
+                    {
+                        emit gui->readyRead(tmp);
+                    }
+                }
 
                 // Remove data from rcvd_raw
                 rcvd_raw.remove(0, expected_len+checksum_size);
@@ -509,7 +533,7 @@ void GUI_COMM_BRIDGE::send_chunk_pack(quint8 major_key, quint8 minor_key,
     // Send chunk across
     parse_data(major_key, minor_key, chunk,
                base, QRegularExpression(encoding),
-               true, sending_gui, 0, chunk.length());
+               sending_gui, true, 0, chunk.length());
 
     // If no flags, send end of file and progress updates
     if (!bridge_flags)
@@ -629,16 +653,6 @@ void GUI_COMM_BRIDGE::checkAck(QByteArray ack)
 
     // Emit checked signal
     emit ackChecked(ack_status);
-}
-
-void GUI_COMM_BRIDGE::waitForData(int msecs)
-{
-    // Wait for dataReceived or timeout
-    dataTimer.start(msecs);
-    dataLoop.exec();
-
-    // Stop timer
-    dataTimer.stop();
 }
 
 void GUI_COMM_BRIDGE::getChecksum(const uint8_t *data, uint32_t data_len, uint8_t checksum_key,
@@ -941,7 +955,7 @@ void GUI_COMM_BRIDGE::parse_file(quint8 major_key, quint8 minor_key,
             // Send file chunks w/ updates
             data_chunk = parse_data(major_key, minor_key, data_chunk,
                                     base, QRegularExpression(encoding),
-                                    true, sender, file_pos, file_size);
+                                    sender, true, file_pos, file_size);
 
             // Update pos after send
             file_pos += file_chunk_size - data_chunk.length();
@@ -961,9 +975,8 @@ void GUI_COMM_BRIDGE::parse_file(quint8 major_key, quint8 minor_key,
 }
 
 QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByteArray data,
-                                       quint8 base, QRegularExpression regex,
-                                       bool send_updates, GUI_BASE *sender,
-                                       quint32 c_pos, quint32 t_pos)
+                                       quint8 base, QRegularExpression regex, GUI_BASE *sender,
+                                       bool send_updates, quint32 c_pos, quint32 t_pos)
 {
     // Verify this will terminate
     if (chunk_size == 0) return QByteArray();
@@ -1001,6 +1014,7 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
     QStringList curr_parse_match;
     QByteArray curr_parse, curr_chunk;
     uint32_t curr_pos, end_pos, parse_len;
+    devReadyKey = major_key;
 
     // Try and read entire chunk
     // Will return what can't/wasn't sent
@@ -1028,6 +1042,9 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
         // Send all bytes in current parse chunk
         do
         {
+            // Reset loop variables
+            devReadyStatus = false;
+
             // Get next data chunk and add info
             curr_chunk = curr_parse.mid(curr_pos, chunk_size);
 
@@ -1046,6 +1063,23 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
             {
                 emit sender->progress_update_send(qRound(((float) (c_pos + curr_pos) / t_pos) * 100.0f),
                                                   QString::number((float) (c_pos + curr_pos) / 1000.0f) + end_pos_str);
+            }
+
+            // Wait for devReady
+            if (sender && sender->isDataRequest(minor_key))
+            {
+                // Start timer for periodic checks
+                devReadyTimer.start(packet_timeout);
+
+                // Enter loop to freeze
+                while (!devReadyStatus && !bridge_flags)
+                    devReadyLoop.exec();
+
+                // Stop timer
+                devReadyTimer.stop();
+
+                // Check if reset set during devReadyLoop
+                if (bridge_flags) return data_str.toLatin1();
             }
         } while ((curr_pos < end_pos) && chunk_size);
 
@@ -1111,7 +1145,6 @@ void GUI_COMM_BRIDGE::transmit_data(QByteArray data)
 
     // Get next data to send
     ack_status = false;
-    data_status = false;
     ack_key = ((char) data.at(s1_major_key_loc) & s1_major_key_byte_mask);
     bool isReset = (ack_key == MAJOR_KEY_RESET);
 
@@ -1126,21 +1159,6 @@ void GUI_COMM_BRIDGE::transmit_data(QByteArray data)
     } while (!ack_status
              && (!(bridge_flags & bridge_reset_flag) || isReset)
              && !(bridge_flags & bridge_close_flag));
-
-    // Wait for data read if CMD success and was data request
-    // Resets will never request data back (only an ack)
-    // Is this required? Why block in sending other than to limit device spam?
-//    if (ack_status
-//            && !bridge_flags)
-//            && isDataRequest(data.at(s1_minor_key_loc)))
-//    {
-//        do
-//        {
-//            // Wait for data packet back
-//            waitForData(packet_timeout);
-//        } while (!data_status
-//                 && !bridge_flags);
-//    }
 
     // Check if reseting and if CMD was reset
     if ((bridge_flags & bridge_reset_flag) && isReset)

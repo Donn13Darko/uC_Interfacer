@@ -95,6 +95,11 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
     on_StopLog_Button_clicked();
     on_StopUpdater_Button_clicked();
 
+    // Set to disconnected state
+    // (Set connected to true to force disconnect)
+    devConnected = true;
+    on_ConnConnect_Button_clicked();
+
     // Reset pin settings
     foreach (uint8_t pinType,
              QList<uint8_t>({MINOR_KEY_IO_AIO, MINOR_KEY_IO_DIO}))
@@ -335,7 +340,7 @@ void GUI_8AIO_16DIO_COMM::on_ConnSend_Button_clicked()
     QByteArray msg;
     msg.append(ui->ConnMsg_LineEdit->text());
 
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN, msg);
+    emit transmit_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN_SEND, msg);
 }
 
 void GUI_8AIO_16DIO_COMM::on_ConnClearRecv_Button_clicked()

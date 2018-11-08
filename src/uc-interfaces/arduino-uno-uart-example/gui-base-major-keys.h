@@ -41,11 +41,14 @@ typedef enum {
     MAJOR_KEY_PROGRAMMER,
     MAJOR_KEY_CUSTOM_CMD,
 
+    // Action confirmations
+    MAJOR_KEY_ACK,
+
     // Reset cmds
     MAJOR_KEY_RESET,
 
-    // Action confirmations
-    MAJOR_KEY_ACK
+    // Ready for more
+    MAJOR_KEY_DEV_READY
 } GUI_BASE_MAJOR_KEYS;
 
 // Num ;en bytes enum
@@ -61,8 +64,7 @@ typedef enum {
 typedef enum {
     s1_major_key_loc = 0,
     s1_minor_key_loc,
-    s1_num_s2_bytes_loc,
-    s1_end_loc = s1_num_s2_bytes_loc
+    s1_end_loc
 } S1_Major_Settings;
 
 // Variables
@@ -82,8 +84,8 @@ typedef struct checksum_struct {
     uint32_t (*get_checksum_size) ();
     void (*get_checksum) (const uint8_t*, uint32_t, const uint8_t*, uint8_t*);
     bool (*check_checksum) (const uint8_t*, const uint8_t*);
-    const uint8_t* checksum_start;
-    const char* checksum_exe;
+    const uint8_t *checksum_start;
+    const char *checksum_exe;
     uint8_t checksum_is_exe;
 } checksum_struct;
 #define DEFAULT_CHECKSUM_STRUCT {get_crc_8_LUT_size, get_crc_8_LUT, check_crc_8_LUT, 0, 0, 0}
