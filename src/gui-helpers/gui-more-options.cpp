@@ -25,8 +25,7 @@ GUI_MORE_OPTIONS::GUI_MORE_OPTIONS(MoreOptions_struct *main_options, MoreOptions
 {
     // Setup ui
     ui->setupUi(this);
-    setWindowFlags(Qt::WindowCloseButtonHint
-                   | Qt::MSWindowsFixedSizeDialogHint);
+    setWindowFlag(Qt::MSWindowsFixedSizeDialogHint);
 
     // Link options
     main_options_ptr = main_options;

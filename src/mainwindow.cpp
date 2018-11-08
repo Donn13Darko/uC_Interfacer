@@ -63,8 +63,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     // Setup ui
     ui->setupUi(this);
-    setWindowFlags(windowFlags()
-                   | Qt::MSWindowsFixedSizeDialogHint);
+    setWindowFlag(Qt::MSWindowsFixedSizeDialogHint);
 
     // Set base parameters
     prev_tab = -1;
@@ -76,6 +75,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Setup Welcome widget
     welcome_tab = new GUI_WELCOME(this);
     welcome_tab->set_GUI_name("Welcome");
+    welcome_tab->setButtonsEnabled(false);
 
     // Setup add new tab information (blank GUI_BASE)
     add_new_tab = new GUI_BASE(this);
@@ -241,6 +241,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
 
     // Read config settings
     configMap = GUI_HELPER::readConfigINI(deviceINI);
+    if (!configMap) return;
 
     // Update selected info
     QString connInfo = ui->ConnInfo_Combo->currentText();
@@ -496,7 +497,7 @@ void MainWindow::moreOptions_accepted()
 void MainWindow::createNewTabs_accepted()
 {
     // Verify settings saved
-    if (!configMap) return;
+    if (!configMap || configMap->isEmpty()) return;
 
     // Block signals from tab group
     bool prev_block_status = ui->ucOptions->blockSignals(true);
@@ -532,6 +533,43 @@ void MainWindow::createNewTabs_accepted()
 
     // Delete the config settings after use
     if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+}
+
+void MainWindow::on_removeTab()
+{
+    // Get the sending GUI_BASE
+    GUI_BASE *tab_holder = (GUI_BASE*) sender();
+    if (!tab_holder) return; // handle nullptr
+
+    // Block signals for sending tab
+    tab_holder->blockSignals(true);
+
+    // Block signals for tab group
+    bool prev_block_status = ui->ucOptions->blockSignals(true);
+
+    // Remove from tabs
+    uint32_t tab_pos = ui->ucOptions->indexOf(tab_holder);
+    ui->ucOptions->removeTab(tab_pos);
+
+    // If possible, set current tab to left position tab
+    if (tab_pos) ui->ucOptions->setCurrentIndex(tab_pos - 1);
+
+    // Remove from comm_bridge
+    comm_bridge->remove_gui(tab_holder);
+
+    // Enable signals for tab group
+    ui->ucOptions->blockSignals(prev_block_status);
+
+    // If not default welcome tab to blank + tab, delete
+    if ((tab_holder != welcome_tab)
+            && (tab_holder != add_new_tab))
+    {
+        delete tab_holder;
+    }
+
+    // Update uc_options
+    prev_tab = -1;
+    on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
 }
 
 void MainWindow::on_ucOptions_currentChanged(int index)
@@ -838,6 +876,12 @@ GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *g
     // Use queued connection for thread expansion
     connect(comm_bridge, SIGNAL(reset()),
             tab_holder, SLOT(reset_gui()),
+            Qt::QueuedConnection);
+
+    // Connect tab signals to mainwindow slots
+    // Use queued connection for thread expansion
+    connect(tab_holder, SIGNAL(remove_tab()),
+            this, SLOT(on_removeTab()),
             Qt::QueuedConnection);
 
     // Return the new GUI

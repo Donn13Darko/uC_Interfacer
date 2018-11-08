@@ -82,6 +82,7 @@ private slots:
     void moreOptions_accepted();
 
     void createNewTabs_accepted();
+    void on_removeTab();
 
     void on_DeviceConnected();
     void on_DeviceDisconnected();

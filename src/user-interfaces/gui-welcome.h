@@ -39,6 +39,8 @@ public:
     void setMsg(QString text);
     QString getMsg();
 
+    void setButtonsEnabled(bool enabled);
+
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
 private:

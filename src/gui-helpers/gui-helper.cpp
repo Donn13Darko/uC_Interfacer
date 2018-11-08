@@ -38,9 +38,23 @@ GUI_HELPER::~GUI_HELPER()
 
 bool GUI_HELPER::showMessage(QString msg)
 {
-    QMessageBox n;
-    n.setText(msg);
-    return n.exec();
+    // Create a new message box & set text
+    QMessageBox *n = new QMessageBox();
+    if (n)
+    {
+        // Set messagebox attributes
+        n->setText(msg);
+        n->setModal(true);
+
+        // Set delete on close attribute
+        n->setAttribute(Qt::WA_DeleteOnClose);
+
+        // Show message box
+        n->show();
+    }
+
+    // Return true (for error cases)
+    return true;
 }
 
 bool GUI_HELPER::getUserString(QString *str, QString title, QString label)
@@ -144,6 +158,19 @@ QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::readConfigINI(QString confi
         configMap->insert(childGroup, groupMap);
     }
 
+    // Handle no settings in ini (return nullptr)
+    if (configMap->isEmpty())
+    {
+        // Show error message
+        GUI_HELPER::showMessage(QString("Error: Failed to load INI file!\n") + config);
+
+        // Delete empty map
+        delete configMap;
+
+        // return a null pointer
+        return nullptr;
+    }
+
     return configMap;
 }
 
@@ -165,8 +192,8 @@ void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant>*> **confi
         if (groupMap) delete groupMap;
     }
 
-    // Delete main map
-    delete configMap_ptr;
+    // Delete main config map
+    delete *configMap;
 
     // Assign pointer to null
     *configMap = nullptr;

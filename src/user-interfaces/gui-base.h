@@ -65,6 +65,9 @@ signals:
     void progress_update_recv(int progress, QString label);
     void progress_update_send(int progress, QString label);
 
+    // Remove tab
+    void remove_tab();
+
 public slots:
     // Resets the GUI (must not call reset_remote())
     virtual void reset_gui();
@@ -75,6 +78,9 @@ protected slots:
 
     // Reset the gui and connected device
     virtual void on_ResetGUI_Button_clicked();
+
+    // Remove the tab from the UI
+    virtual void on_RemoveTab_Button_clicked();
 
     // Set progress bar updates
     virtual void set_progress_update_recv(int progress, QString label);

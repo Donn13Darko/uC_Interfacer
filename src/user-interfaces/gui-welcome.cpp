@@ -25,7 +25,6 @@ GUI_WELCOME::GUI_WELCOME(QWidget *parent) :
 {
     // Setup UI
     ui->setupUi(this);
-    ui->ResetGUI_Button->hide();
 
     // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_WELCOME;
@@ -57,11 +56,18 @@ QString GUI_WELCOME::getMsg()
     return ui->msg_label->text();
 }
 
+void GUI_WELCOME::setButtonsEnabled(bool enabled)
+{
+    ui->RemoveTab_Button->setVisible(enabled);
+    ui->ResetGUI_Button->setVisible(enabled);
+}
+
 void GUI_WELCOME::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Parse individual values
     setHeader(configMap->value("header", "Welcome").toString());
     setMsg(configMap->value("msg").toString());
+    setButtonsEnabled(configMap->value("enable_buttons", "false").toBool());
 
     // Pass to parent for additional parsing
     GUI_BASE::parseConfigMap(configMap);

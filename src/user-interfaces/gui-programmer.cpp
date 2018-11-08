@@ -33,18 +33,20 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     // Read config settings
     QMap<QString, QMap<QString, QVariant>*> *configMap = \
             GUI_HELPER::readConfigINI(":/user-interfaces/gui-programmer.ini");
-
-    // Add configs to local maps
-    QMap<QString, QVariant> *groupMap;
-    if (configMap->contains("settings"))
+    if (configMap)
     {
-        groupMap = configMap->value("settings");
-        addFileFormats(groupMap->value("file_formats").toStringList());
-        addBurnMethods(groupMap->value("burn_methods").toStringList());
-    }
+        // Add configs to local maps
+        QMap<QString, QVariant> *groupMap;
+        if (configMap->contains("settings"))
+        {
+            groupMap = configMap->value("settings");
+            addFileFormats(groupMap->value("file_formats").toStringList());
+            addBurnMethods(groupMap->value("burn_methods").toStringList());
+        }
 
-    // Delete map after use
-    GUI_HELPER::deleteConfigMap(&configMap);
+        // Delete map after use
+        GUI_HELPER::deleteConfigMap(&configMap);
+    }
 
     // Setup progress bars
     ui->Programmer_ProgressBar->setMinimum(0);

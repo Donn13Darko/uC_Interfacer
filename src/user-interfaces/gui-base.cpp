@@ -102,6 +102,17 @@ void GUI_BASE::on_ResetGUI_Button_clicked()
     */
 }
 
+void GUI_BASE::on_RemoveTab_Button_clicked()
+{
+    // Emit remove_tab signal
+    emit remove_tab();
+
+    /* Exiting here to return control to main loop to handle
+     * removing the gui from the qtabwidget and disconnect
+     * its slots/signals
+     */
+}
+
 void GUI_BASE::set_progress_update_recv(int, QString)
 {
     // Default do nothing

@@ -28,8 +28,7 @@ GUI_CREATE_NEW_TABS::GUI_CREATE_NEW_TABS(QMap<QString, QMap<QString, QVariant>*>
 {
     // Setup ui
     ui->setupUi(this);
-    setWindowFlags(Qt::WindowCloseButtonHint
-                   | Qt::MSWindowsFixedSizeDialogHint);
+    setWindowFlag(Qt::MSWindowsFixedSizeDialogHint);
 
     // Link config maps
     local_configMap = configMap;
@@ -81,9 +80,11 @@ void GUI_CREATE_NEW_TABS::on_OK_Button_clicked()
         return;
     }
 
-    // Create temporary file
+    // Create temporary file & set autoremove
     QTemporaryFile tmpINI;
     tmpINI.setAutoRemove(true);
+
+    // Open temporary file for writing data
     if (!tmpINI.open())
     {
         // Show error message
