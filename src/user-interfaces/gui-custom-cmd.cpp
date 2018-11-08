@@ -53,6 +53,9 @@ void GUI_CUSTOM_CMD::parseConfigMap(QMap<QString, QVariant> *configMap)
 
 void GUI_CUSTOM_CMD::reset_gui()
 {
+    // Reset base (resets progress bar)
+    GUI_BASE::reset_gui();
+
     // Clear received data
     on_FeedbackClear_Button_clicked();
 
@@ -81,9 +84,6 @@ void GUI_CUSTOM_CMD::reset_gui()
     ui->FeedbackLogAllCMDs_CheckBox->setChecked(false);
     ui->FeedbackClearOnSet_CheckBox->setChecked(true);
     ui->FeedbackAppendNewline_CheckBox->setChecked(true);
-
-    // Reset base (resets progress bar)
-    GUI_BASE::reset_gui();
 }
 
 void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)

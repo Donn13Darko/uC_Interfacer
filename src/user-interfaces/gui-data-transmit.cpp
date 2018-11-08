@@ -56,6 +56,9 @@ void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant> *configMap)
 
 void GUI_DATA_TRANSMIT::reset_gui()
 {
+    // Reset base (resets progress bars)
+    GUI_BASE::reset_gui();
+
     // Clear received data
     on_RecvClear_Button_clicked();
 
@@ -69,9 +72,6 @@ void GUI_DATA_TRANSMIT::reset_gui()
 
     // Set clear on set
     ui->RecvClearOnSet_CheckBox->setChecked(true);
-
-    // Reset base (resets progress bars)
-    GUI_BASE::reset_gui();
 }
 
 void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)

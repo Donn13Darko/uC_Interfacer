@@ -50,6 +50,9 @@ GUI_8AIO_16DIO_COMM::~GUI_8AIO_16DIO_COMM()
 
 void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
+    // Pass to parent for additional parsing
+    GUI_PIN_BASE::parseConfigMap(configMap);
+
     // Setup pintypes variable
     PinTypeInfo pInfo;
 
@@ -75,13 +78,13 @@ void GUI_8AIO_16DIO_COMM::parseConfigMap(QMap<QString, QVariant> *configMap)
     ui->ConnType_Combo->clear();
     ui->ConnType_Combo->addItems(controlMap.value(pInfo.pinType)->keys());
     ui->ConnType_Combo->blockSignals(prev_block_status);
-
-    // Pass to parent for additional parsing
-    GUI_PIN_BASE::parseConfigMap(configMap);
 }
 
 void GUI_8AIO_16DIO_COMM::reset_gui()
 {
+    // Reset pin base
+    GUI_PIN_BASE::reset_gui();
+
     // Setup loop variables
     PinTypeInfo pInfo;
     QWidget *item;
@@ -114,9 +117,6 @@ void GUI_8AIO_16DIO_COMM::reset_gui()
             }
         }
     }
-
-    // Reset pin base
-    GUI_PIN_BASE::reset_gui();
 }
 
 void GUI_8AIO_16DIO_COMM::DIO_ComboChanged()

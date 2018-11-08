@@ -63,13 +63,13 @@ GUI_PROGRAMMER::~GUI_PROGRAMMER()
 
 void GUI_PROGRAMMER::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
+    // Pass to parent for additional parsing
+    GUI_BASE::parseConfigMap(configMap);
+
     // Parse individual values
     addFileFormats(configMap->value("file_formats").toStringList());
     removeFileFormats(configMap->value("file_formats_rm").toStringList());
     addBurnMethods(configMap->value("burn_methods").toStringList());
-
-    // Pass to parent for additional parsing
-    GUI_BASE::parseConfigMap(configMap);
 }
 
 void GUI_PROGRAMMER::addFileFormats(QStringList fileFormatsMap)
@@ -130,6 +130,9 @@ void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
 
 void GUI_PROGRAMMER::reset_gui()
 {
+    // Reset base (resets send progress bar)
+    GUI_BASE::reset_gui();
+
     // Clear received data
     on_ReadDataClear_Button_clicked();
 
@@ -156,9 +159,6 @@ void GUI_PROGRAMMER::reset_gui()
     ui->ReadDataClearOnSet_CheckBox->setChecked(true);
     progress_divisor = 1;
     progress_adjuster = 0;
-
-    // Reset base (resets send progress bar)
-    GUI_BASE::reset_gui();
 }
 
 void GUI_PROGRAMMER::receive_gui(QByteArray recvData)

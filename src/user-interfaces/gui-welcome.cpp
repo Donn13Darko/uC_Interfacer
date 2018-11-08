@@ -63,11 +63,11 @@ void GUI_WELCOME::setButtonsEnabled(bool enabled)
 
 void GUI_WELCOME::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
+    // Pass to parent for additional parsing
+    GUI_BASE::parseConfigMap(configMap);
+
     // Parse individual values
     setHeader(configMap->value("header", "Welcome").toString());
     setMsg(configMap->value("msg").toString());
     setButtonsEnabled(configMap->value("enable_buttons", "false").toBool());
-
-    // Pass to parent for additional parsing
-    GUI_BASE::parseConfigMap(configMap);
 }
