@@ -382,9 +382,9 @@
   <widget class="QProgressBar" name="Programmer_ProgressBar">
    <property name="geometry">
     <rect>
-     <x>290</x>
+     <x>270</x>
      <y>390</y>
-     <width>561</width>
+     <width>611</width>
      <height>20</height>
     </rect>
    </property>
@@ -395,9 +395,9 @@
   <widget class="QLabel" name="ProgrammerProgress_Label">
    <property name="geometry">
     <rect>
-     <x>290</x>
+     <x>270</x>
      <y>390</y>
-     <width>521</width>
+     <width>571</width>
      <height>20</height>
     </rect>
    </property>
@@ -477,22 +477,6 @@
    </property>
    <property name="text">
     <string>Show Preview</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="RemoveTab_Button">
-   <property name="geometry">
-    <rect>
-     <x>860</x>
-     <y>380</y>
-     <width>75</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Remove Tab</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
    </property>
   </widget>
  </widget>

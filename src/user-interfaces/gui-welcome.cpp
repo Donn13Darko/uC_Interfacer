@@ -58,7 +58,6 @@ QString GUI_WELCOME::getMsg()
 
 void GUI_WELCOME::setButtonsEnabled(bool enabled)
 {
-    ui->RemoveTab_Button->setVisible(enabled);
     ui->ResetGUI_Button->setVisible(enabled);
 }
 

@@ -82,12 +82,13 @@ private slots:
     void moreOptions_accepted();
 
     void createNewTabs_accepted();
-    void on_removeTab();
 
     void on_DeviceConnected();
     void on_DeviceDisconnected();
 
     void on_ucOptions_currentChanged(int index);
+    void on_ucOptions_tabBarClicked(int index);
+    void on_tabCloseRequested();
 
     void updateConnInfoCombo();
 
@@ -112,6 +113,7 @@ private:
 
     // Tab holder
     int prev_tab;
+    QWidget* tab_closeButton;
 
     // Device helpers
     uint8_t deviceType;

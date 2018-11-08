@@ -21,6 +21,9 @@
 GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
 {
+    // Init base variables
+    closable = true;
+
     // Init progress bars
     set_expected_recv_length(0);
     update_current_recv_length(0);
@@ -63,6 +66,16 @@ void GUI_BASE::reset_gui()
     emit progress_update_send(0, "");
 }
 
+bool GUI_BASE::isClosable()
+{
+    return closable;
+}
+
+void GUI_BASE::setClosable(bool new_close)
+{
+    closable = new_close;
+}
+
 uint8_t GUI_BASE::get_GUI_key()
 {
     return gui_key;
@@ -82,6 +95,9 @@ void GUI_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
     // Reset name if present
     gui_name = configMap->value("tab_name", gui_name).toString();
+
+    // Set closable
+    closable = configMap->value("closable", "true").toBool();
 }
 
 void GUI_BASE::receive_gui(QByteArray)
@@ -100,17 +116,6 @@ void GUI_BASE::on_ResetGUI_Button_clicked()
      * conn_bridge will emit reset() once CMD is sent which
      * then calls reset_gui()
     */
-}
-
-void GUI_BASE::on_RemoveTab_Button_clicked()
-{
-    // Emit remove_tab signal
-    emit remove_tab();
-
-    /* Exiting here to return control to main loop to handle
-     * removing the gui from the qtabwidget and disconnect
-     * its slots/signals
-     */
 }
 
 void GUI_BASE::set_progress_update_recv(int, QString)

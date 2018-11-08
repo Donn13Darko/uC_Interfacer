@@ -58,8 +58,8 @@
   <widget class="QLabel" name="CustomCMDBase_Label">
    <property name="geometry">
     <rect>
-     <x>200</x>
-     <y>380</y>
+     <x>190</x>
+     <y>350</y>
      <width>61</width>
      <height>20</height>
     </rect>
@@ -215,8 +215,8 @@
   <widget class="QLineEdit" name="CustomCMDBase_LineEdit">
    <property name="geometry">
     <rect>
-     <x>260</x>
-     <y>380</y>
+     <x>250</x>
+     <y>350</y>
      <width>41</width>
      <height>20</height>
     </rect>
@@ -265,7 +265,7 @@
    <property name="geometry">
     <rect>
      <x>330</x>
-     <y>380</y>
+     <y>350</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -281,7 +281,7 @@
    <property name="geometry">
     <rect>
      <x>510</x>
-     <y>380</y>
+     <y>350</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -297,7 +297,7 @@
    <property name="geometry">
     <rect>
      <x>750</x>
-     <y>380</y>
+     <y>350</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -313,7 +313,7 @@
    <property name="geometry">
     <rect>
      <x>490</x>
-     <y>350</y>
+     <y>380</y>
      <width>391</width>
      <height>23</height>
     </rect>
@@ -326,7 +326,7 @@
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>350</y>
+     <y>380</y>
      <width>391</width>
      <height>23</height>
     </rect>
@@ -339,7 +339,7 @@
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>350</y>
+     <y>380</y>
      <width>351</width>
      <height>20</height>
     </rect>
@@ -355,7 +355,7 @@
    <property name="geometry">
     <rect>
      <x>490</x>
-     <y>350</y>
+     <y>380</y>
      <width>351</width>
      <height>20</height>
     </rect>
@@ -409,8 +409,8 @@
   <widget class="QLabel" name="CustomCMDKeyBase_Label">
    <property name="geometry">
     <rect>
-     <x>60</x>
-     <y>380</y>
+     <x>50</x>
+     <y>350</y>
      <width>61</width>
      <height>20</height>
     </rect>
@@ -422,8 +422,8 @@
   <widget class="QLineEdit" name="CustomCMDKeyBase_LineEdit">
    <property name="geometry">
     <rect>
-     <x>120</x>
-     <y>380</y>
+     <x>110</x>
+     <y>350</y>
      <width>41</width>
      <height>20</height>
     </rect>
@@ -440,22 +440,6 @@
    </property>
    <property name="text">
     <string>Log All CMDs</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="RemoveTab_Button">
-   <property name="geometry">
-    <rect>
-     <x>860</x>
-     <y>380</y>
-     <width>75</width>
-     <height>23</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Remove Tab</string>
-   </property>
-   <property name="autoDefault">
-    <bool>false</bool>
    </property>
   </widget>
  </widget>

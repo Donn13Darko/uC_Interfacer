@@ -76,12 +76,19 @@ MainWindow::MainWindow(QWidget *parent) :
     welcome_tab = new GUI_WELCOME(this);
     welcome_tab->set_GUI_name("Welcome");
     welcome_tab->setButtonsEnabled(false);
+    welcome_tab->setClosable(false);
+    welcome_tab->hide();
 
-    // Setup add new tab information (blank GUI_BASE)
+    // Setup add new tab (blank GUI_BASE)
     add_new_tab = new GUI_BASE(this);
     add_new_tab->set_GUI_name("+");
-    new_tab_gui = new GUI_CREATE_NEW_TABS(&configMap);
+//    add_new_tab->setClosable(false);
+    add_new_tab->hide();
+
+    // Setup add new tab GUI dialog
+    new_tab_gui = new GUI_CREATE_NEW_TABS(&configMap, this);
     new_tab_gui->setModal(true);
+    new_tab_gui->hide();
     connect(new_tab_gui, SIGNAL(accepted()),
             this, SLOT(createNewTabs_accepted()),
             Qt::DirectConnection);
@@ -91,8 +98,10 @@ MainWindow::MainWindow(QWidget *parent) :
     main_options_settings.send_little_endian = false;
     main_options_settings.chunk_size = GUI_COMM_BRIDGE::default_chunk_size;
     more_options = new GUI_MORE_OPTIONS(&main_options_settings, &local_options_settings,
-                                        supportedGUIsList, GUI_COMM_BRIDGE::get_supported_checksums());
+                                        supportedGUIsList, GUI_COMM_BRIDGE::get_supported_checksums(),
+                                        this);
     more_options->setModal(true);
+    more_options->hide();
     connect(more_options, SIGNAL(accepted()),
             this, SLOT(moreOptions_accepted()),
             Qt::DirectConnection);
@@ -118,6 +127,21 @@ MainWindow::MainWindow(QWidget *parent) :
     on_Device_Combo_activated(ui->Device_Combo->currentIndex());
     on_ConnType_Combo_currentIndexChanged(0);
     ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_name());
+
+    // 1) Set closable to true to generate button
+    // 2) Grab genereated button and remove from widget (set to nullptr)
+    // 3) Set closable to false and disconnect button from slots
+    ui->ucOptions->setTabsClosable(true);
+    QTabBar *tab_bar = ui->ucOptions->tabBar();
+    tab_closeButton = tab_bar->tabButton(0, QTabBar::RightSide);
+    tab_bar->setTabButton(0, QTabBar::RightSide, nullptr);
+    disconnect(tab_closeButton, 0, 0, 0);
+    ui->ucOptions->setTabsClosable(false);
+
+    // Connect tab button to new slot
+    connect(tab_closeButton, SIGNAL(clicked()),
+            this, SLOT(on_tabCloseRequested()),
+            Qt::DirectConnection);
 
     // Add update selections connections
     connect(updateConnInfo, SIGNAL(timeout()),
@@ -376,6 +400,7 @@ void MainWindow::on_DeviceConnected() {
         // Setup tabs
         uint8_t gui_key;
         GUI_BASE *tab_holder;
+        QMap<QString, QVariant> *groupMap;
         foreach (QString childGroup, configMap->keys())
         {
             // Verify that its a known GUI
@@ -383,7 +408,8 @@ void MainWindow::on_DeviceConnected() {
             if (gui_key == MAJOR_KEY_ERROR) continue;
 
             // Create new tab
-            tab_holder = create_new_tab(gui_key, configMap->value(childGroup));
+            groupMap = configMap->value(childGroup);
+            tab_holder = create_new_tab(gui_key, groupMap);
 
             // If tab creation failed, continue
             if (!tab_holder) continue;
@@ -503,7 +529,8 @@ void MainWindow::createNewTabs_accepted()
     bool prev_block_status = ui->ucOptions->blockSignals(true);
 
     // Get insert position
-    uint32_t tab_pos = ui->ucOptions->count() - 1;
+    int index = ui->ucOptions->count() - 1;
+    int tab_pos = index;
 
     // Parse config maps and insert before '+'
     uint8_t gui_key;
@@ -525,60 +552,29 @@ void MainWindow::createNewTabs_accepted()
         tab_pos += 1;
     }
 
+    // Delete the config settings after use
+    if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+
     // Force any changes in more options
     update_options(&main_options_settings);
 
-    // Enable signals for tab group
-    ui->ucOptions->blockSignals(prev_block_status);
-
-    // Delete the config settings after use
-    if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
-}
-
-void MainWindow::on_removeTab()
-{
-    // Get the sending GUI_BASE
-    GUI_BASE *tab_holder = (GUI_BASE*) sender();
-    if (!tab_holder) return; // handle nullptr
-
-    // Block signals for sending tab
-    tab_holder->blockSignals(true);
-
-    // Block signals for tab group
-    bool prev_block_status = ui->ucOptions->blockSignals(true);
-
-    // Remove from tabs
-    uint32_t tab_pos = ui->ucOptions->indexOf(tab_holder);
-    ui->ucOptions->removeTab(tab_pos);
-
-    // If possible, set current tab to left position tab
-    if (tab_pos) ui->ucOptions->setCurrentIndex(tab_pos - 1);
-
-    // Remove from comm_bridge
-    comm_bridge->remove_gui(tab_holder);
+    // If index is 0, only add_tab was present at start so set
+    // prev_tab to -1 to force a refresh with current index.
+    // Other cases will force a refresh since pre
+    if (index == 0) prev_tab = -1;
 
     // Enable signals for tab group
     ui->ucOptions->blockSignals(prev_block_status);
 
-    // If not default welcome tab to blank + tab, delete
-    if ((tab_holder != welcome_tab)
-            && (tab_holder != add_new_tab))
-    {
-        delete tab_holder;
-    }
-
-    // Update uc_options
-    prev_tab = -1;
-    on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
+    // Set tab to first new tab added
+    // Calls currentChanged(int)
+    ui->ucOptions->setCurrentIndex(index);
 }
 
 void MainWindow::on_ucOptions_currentChanged(int index)
 {
-    // No change
-    if (prev_tab == index) return;
-
     // Allocate holder
-    GUI_BASE *tab_holder = (GUI_BASE*) ui->ucOptions->currentWidget();
+    GUI_BASE *tab_holder = (GUI_BASE*) ui->ucOptions->widget(index);
 
     // Check if '+' tab
     if (tab_holder && (tab_holder == add_new_tab))
@@ -587,8 +583,18 @@ void MainWindow::on_ucOptions_currentChanged(int index)
         bool prev_block_status = ui->ucOptions->blockSignals(true);
 
         // Show previous tab while adding new tab
+        // If no previous tab, set active widget as previous tab
         if (prev_tab != -1)
+        {
             ui->ucOptions->setCurrentIndex(prev_tab);
+        } else
+        {
+            // This will set tab 0 as prev_tab
+            // Should only be called if '+' tab is last tab
+            // after tabCloseRequested is called
+            prev_tab = 0;
+            ui->ucOptions->setCurrentIndex(prev_tab);
+        }
 
         // Show new tab creation popup/wizard
         // Will emit accepted() or rejected() when done
@@ -602,21 +608,97 @@ void MainWindow::on_ucOptions_currentChanged(int index)
         return;
     }
 
+    // No change
+    // (check here to allow multiple clicks on add_new_tab)
+    if (prev_tab == index) return;
+
+    // Get tab bar
+    QTabBar *tab_bar = ui->ucOptions->tabBar();
+
     // Disconnet old signals
     if (prev_tab != -1)
     {
+        // Remove tab exit button
+        tab_bar->setTabButton(prev_tab, QTabBar::RightSide, nullptr);
+
+        // Get old widget
         tab_holder = (GUI_BASE*) ui->ucOptions->widget(prev_tab);
+
         // Reset the previous GUI
         if (tab_holder && main_options_settings.reset_on_tab_switch)
             tab_holder->reset_gui();
     }
 
-    // Update previous tab index
+    // Update previous tab to index
     prev_tab = index;
 
-    // Reset the Remote for the new tab (if connected)
+    // Add close button if not welcome tab
+    tab_holder = (GUI_BASE*) ui->ucOptions->widget(prev_tab);
+    if (tab_holder && tab_holder->isClosable())
+        tab_bar->setTabButton(prev_tab, QTabBar::RightSide, tab_closeButton);
+
+    // Reset the Remote for the new tab (if connected & enabled on tab switch)
     if (main_options_settings.reset_on_tab_switch && deviceConnected())
         comm_bridge->reset_remote();
+}
+
+void MainWindow::on_ucOptions_tabBarClicked(int index)
+{
+    // Only allow multiple clicks on add_tab
+    // Prevents add_tab widget being the last widget and
+    // unable to add more (currentChanged() signal not emitted)
+    if ((index == prev_tab)
+            && (ui->ucOptions->currentWidget() == add_new_tab))
+    {
+        on_ucOptions_currentChanged(index);
+    }
+}
+
+void MainWindow::on_tabCloseRequested()
+{
+    // Get & check the tab holder
+    // (close button only located on current index)
+    int index = ui->ucOptions->currentIndex();
+    GUI_BASE *tab_holder = (GUI_BASE*) ui->ucOptions->widget(index);
+    if (!tab_holder) return;
+
+    // Ignore if exit called on welcome tab or new tab
+    if ((tab_holder == welcome_tab)
+            && (tab_holder == add_new_tab))
+    {
+        return;
+    }
+
+    // Block signals for sending tab
+    tab_holder->blockSignals(true);
+
+    // Block signals for tab group
+    bool prev_block_status = ui->ucOptions->blockSignals(true);
+
+    // Remove tab close button
+    ui->ucOptions->tabBar()->setTabButton(index, QTabBar::RightSide, nullptr);
+
+    // If possible, set current tab to the tab to the left
+    // of the tab getting removed
+    if (0 < index) ui->ucOptions->setCurrentIndex(index - 1);
+
+    // Remove from tabs
+    if (index != -1) ui->ucOptions->removeTab(index);
+
+    // Remove from comm_bridge
+    comm_bridge->remove_gui(tab_holder);
+
+    // Enable signals for tab group
+    ui->ucOptions->blockSignals(prev_block_status);
+
+    // Delete (will not be called on default welcome tab to blank + tab)
+    delete tab_holder;
+
+    // If closing current tab, set prev_tab to -1
+    if (prev_tab == index) prev_tab = -1;
+
+    // Update uc_options
+    on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
 }
 
 void MainWindow::updateConnInfoCombo()
@@ -876,12 +958,6 @@ GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *g
     // Use queued connection for thread expansion
     connect(comm_bridge, SIGNAL(reset()),
             tab_holder, SLOT(reset_gui()),
-            Qt::QueuedConnection);
-
-    // Connect tab signals to mainwindow slots
-    // Use queued connection for thread expansion
-    connect(tab_holder, SIGNAL(remove_tab()),
-            this, SLOT(on_removeTab()),
             Qt::QueuedConnection);
 
     // Return the new GUI
