@@ -41,7 +41,7 @@ public:
     ~GUI_8AIO_16DIO_COMM();
 
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
-    virtual bool isDataRequest(uint8_t minorKey);
+    virtual bool waitForDevice(uint8_t minorKey);
 
 public slots:
     virtual void reset_gui();

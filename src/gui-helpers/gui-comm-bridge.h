@@ -185,10 +185,7 @@ private:
     QTimer ackTimer;
     QEventLoop ackLoop;
 
-    // Data helper variables
-    bool devReadyStatus;
-    uint8_t devReadyKey;
-    QTimer devReadyTimer;
+    // Device helper variables
     QEventLoop devReadyLoop;
 
     // Chunk variables

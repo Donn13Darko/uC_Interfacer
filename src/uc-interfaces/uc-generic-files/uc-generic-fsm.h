@@ -46,6 +46,7 @@ void fsm_poll();
 bool fsm_isr();
 void fsm_run();
 void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uint32_t data_len);
+void fsm_send_ready();
 
 // Acts as a general flag variable for:
 //   1) malloc or realloc failures (gets set to 1)

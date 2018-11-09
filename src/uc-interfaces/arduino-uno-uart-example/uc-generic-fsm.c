@@ -46,14 +46,16 @@ checksum_struct default_checksum = DEFAULT_CHECKSUM_STRUCT;
 
 // Dynamic buffer
 uint8_t *fsm_buffer;
+uint8_t *fsm_buffer_ptr;
 uint32_t fsm_buffer_len;
 
 // Static buffers
+uint8_t *fsm_ready_buffer;
 uint8_t *fsm_ack_buffer;
 uint8_t *fsm_checksum_buffer;
 
 // Key & packet holders
-uint32_t num_s2_bytes, checksum_max_size;
+uint32_t num_s2_bytes, checksum_max_size, num_default_packet_bytes;
 uint8_t major_key, minor_key, num_s2_bits;
 uint8_t curr_packet_stage;
 
@@ -64,9 +66,6 @@ typedef enum {
     packet_stage_read_data,
     packet_stage_read_checksum
 } packet_stages;
-
-// Buffer pointer holder
-uint8_t *fsm_buffer_ptr;
 
 // Function prototypes (local access only)
 void fsm_ack(uint8_t ack_key);
@@ -86,6 +85,12 @@ void fsm_setup(uint32_t buffer_len)
     uint32_t checksum_size_cmp;
     checksum_max_size = default_checksum.get_checksum_size();
 
+    // Malloc static buffers (will always have default size checksum)
+    num_default_packet_bytes = num_s1_bytes+checksum_max_size;
+    fsm_ready_buffer = (uint8_t*) malloc(num_default_packet_bytes*sizeof(uint8_t));
+    fsm_ack_buffer = (uint8_t*) malloc(num_default_packet_bytes*sizeof(uint8_t));
+
+    // Find max checksum size (for defined interfaces)
 #ifdef UC_IO
     checksum_size_cmp = io_checksum.get_checksum_size();
     if (checksum_max_size < checksum_size_cmp) checksum_max_size = checksum_size_cmp;
@@ -111,8 +116,7 @@ void fsm_setup(uint32_t buffer_len)
     if (buffer_len < 2) buffer_len = 2;
     fsm_buffer_len = buffer_len + checksum_max_size;
 
-    // Malloc static buffers
-    fsm_ack_buffer = (uint8_t*) malloc((num_s1_bytes+checksum_max_size)*sizeof(uint8_t));
+    // Malloc checksum buffer (needs to be maximum size for no reallocs)
     fsm_checksum_buffer = (uint8_t*) malloc(checksum_max_size*sizeof(uint8_t));
 
     // Malloc initial dynamic buffer (attempt to prevent fragmentation by mallocing last)
@@ -121,8 +125,22 @@ void fsm_setup(uint32_t buffer_len)
     // Reset to start defaults
     uc_reset();
 
+    // Preload all info for fsm_ready_buffer
+    // Will never change across execution of program
+    if (fsm_ready_buffer)
+    {
+        // Set ready buffer values
+        fsm_ready_buffer[s1_major_key_loc] = MAJOR_KEY_DEV_READY;
+        fsm_ready_buffer[s1_minor_key_loc] = 0;
+
+        // Computer default checksum on buffer (always default)
+        default_checksum.get_checksum(fsm_ready_buffer, num_s1_bytes,
+                                        default_checksum.checksum_start,
+                                        fsm_ready_buffer+num_s1_bytes);
+    }
+
     // Check mallocs and set error accordingly
-    fsm_error |= !(fsm_buffer && fsm_ack_buffer && fsm_checksum_buffer);
+    fsm_error |= !(fsm_buffer && fsm_ready_buffer && fsm_ack_buffer && fsm_checksum_buffer);
 }
 
 void fsm_destroy()
@@ -131,6 +149,7 @@ void fsm_destroy()
     free(fsm_buffer);
 
     // Free static buffers
+    free(fsm_ready_buffer);
     free(fsm_ack_buffer);
     free(fsm_checksum_buffer);
 
@@ -439,16 +458,17 @@ void fsm_run()
 
 void fsm_ack(uint8_t ack_key)
 {
-    // Load ack buffer
+    // Set ack keys
     fsm_ack_buffer[s1_major_key_loc] = MAJOR_KEY_ACK;
     fsm_ack_buffer[s1_minor_key_loc] = ack_key;
 
-    // Find & compute checksum (fsm_ack_buffer will alawys be large enough)
-    checksum_struct* check = fsm_get_checksum_struct(MAJOR_KEY_ACK);
-    check->get_checksum(fsm_ack_buffer, num_s1_bytes, check->checksum_start, fsm_ack_buffer+num_s1_bytes);
+    // Compute checksum with defualt (fsm_ack_buffer will alawys be large enough)
+    default_checksum.get_checksum(fsm_ack_buffer, num_s1_bytes,
+                                    default_checksum.checksum_start,
+                                    fsm_ack_buffer+num_s1_bytes);
 
     // Send ack
-    uc_send(fsm_ack_buffer, num_s1_bytes+check->get_checksum_size());
+    uc_send(fsm_ack_buffer, num_default_packet_bytes);
 }
 
 void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uint32_t data_len)
@@ -543,6 +563,12 @@ void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uin
             }
         }
     } while (true);
+}
+
+void fsm_send_ready()
+{
+    // Send ready
+    uc_send(fsm_ready_buffer, num_default_packet_bytes);
 }
 
 bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)

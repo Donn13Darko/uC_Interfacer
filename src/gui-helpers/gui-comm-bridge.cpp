@@ -59,9 +59,6 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     connect(this, SIGNAL(devReady()),
             &devReadyLoop, SLOT(quit()),
             Qt::DirectConnection);
-    connect(&devReadyTimer, SIGNAL(timeout()),
-            &devReadyLoop, SLOT(quit()),
-            Qt::DirectConnection);
     connect(this, SIGNAL(reset()),
             &devReadyLoop, SLOT(quit()),
             Qt::DirectConnection);
@@ -1015,7 +1012,6 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
     QStringList curr_parse_match;
     QByteArray curr_parse, curr_chunk;
     uint32_t curr_pos, end_pos, parse_len;
-    devReadyKey = major_key;
 
     // Try and read entire chunk
     // Will return what can't/wasn't sent
@@ -1043,9 +1039,6 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
         // Send all bytes in current parse chunk
         do
         {
-            // Reset loop variables
-            devReadyStatus = false;
-
             // Get next data chunk and add info
             curr_chunk = curr_parse.mid(curr_pos, chunk_size);
 
@@ -1059,28 +1052,27 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
             // Do not use chunk_size to enable dyanmic setting
             curr_pos += curr_chunk.length();
 
-            // Emit an update
-            if (send_updates && sender && t_pos)
-            {
-                emit sender->progress_update_send(qRound(((float) (c_pos + curr_pos) / t_pos) * 100.0f),
-                                                  QString::number((float) (c_pos + curr_pos) / 1000.0f) + end_pos_str);
-            }
 
-            // Wait for devReady
-            if (sender && sender->isDataRequest(minor_key))
+            // If sender available, see if other actions necessary
+            if (sender)
             {
-                // Start timer for periodic checks
-                devReadyTimer.start(packet_timeout);
+                // Emit an update if enabled and t_pos != 0
+                if (send_updates && t_pos)
+                {
+                    emit sender->progress_update_send(qRound(((float) (c_pos + curr_pos) / t_pos) * 100.0f),
+                                                      QString::number((float) (c_pos + curr_pos) / 1000.0f) + end_pos_str);
+                }
 
-                // Enter loop to freeze
-                while (!devReadyStatus && !bridge_flags)
+                // Wait for devReady if command requires it
+                if (sender->waitForDevice(minor_key))
+                {
+                    // Enter loop to return control to the
+                    // main application event loop for cmd waiting
                     devReadyLoop.exec();
 
-                // Stop timer
-                devReadyTimer.stop();
-
-                // Check if reset set during devReadyLoop
-                if (bridge_flags) return data_str.toLatin1();
+                    // Check if reset set during devReadyLoop
+                    if (bridge_flags) return data_str.toLatin1();
+                }
             }
         } while ((curr_pos < end_pos) && chunk_size);
 

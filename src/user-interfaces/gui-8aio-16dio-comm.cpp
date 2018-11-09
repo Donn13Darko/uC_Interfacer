@@ -222,12 +222,25 @@ void GUI_8AIO_16DIO_COMM::AIO_LineEditValueChanged()
 
 void GUI_8AIO_16DIO_COMM::updateValues()
 {
-    uint8_t requestType;
+    // Get caller to find request type
     QTimer *caller = (QTimer*) sender();
-    if (caller == &DIO_READ) requestType = MINOR_KEY_IO_DIO_READ_ALL;
-    else if (caller == &AIO_READ) requestType = MINOR_KEY_IO_AIO_READ_ALL;
-    else return;
 
+    // Find request type & set read_requested
+    uint8_t requestType;
+    if (caller == &DIO_READ)
+    {
+        dio_read_requested = true;
+        requestType = MINOR_KEY_IO_DIO_READ_ALL;
+    } else if (caller == &AIO_READ)
+    {
+        aio_read_requested = true;
+        requestType = MINOR_KEY_IO_AIO_READ_ALL;
+    } else
+    {
+        return;
+    }
+
+    // Emit request for data
     emit transmit_chunk(gui_key, requestType);
 }
 
@@ -540,14 +553,14 @@ bool GUI_8AIO_16DIO_COMM::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
     }
 }
 
-bool GUI_8AIO_16DIO_COMM::isDataRequest(uint8_t minorKey)
+bool GUI_8AIO_16DIO_COMM::waitForDevice(uint8_t minorKey)
 {
     switch (minorKey)
     {
         case MINOR_KEY_IO_REMOTE_CONN_READ:
             return true;
         default:
-            return GUI_PIN_BASE::isDataRequest(minorKey);
+            return GUI_PIN_BASE::waitForDevice(minorKey);
     }
 }
 

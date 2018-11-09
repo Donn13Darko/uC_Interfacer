@@ -867,13 +867,18 @@ void MainWindow::ucOptionsClear()
 {
     bool prev_block_status = ui->ucOptions->blockSignals(true);
     GUI_BASE *tab_holder;
+    QTabBar *tab_bar = ui->ucOptions->tabBar();
     for (int i = (ui->ucOptions->count() - 1); 0 <= i; i--)
     {
         // Get tab at position
         tab_holder = (GUI_BASE*) ui->ucOptions->widget(i);
+        if (!tab_holder) continue;
 
         // Disable signals to prevent sending close
         tab_holder->blockSignals(true);
+
+        // Remove tab close button
+        tab_bar->setTabButton(i, QTabBar::RightSide, nullptr);
 
         // Remove from gui & bridge
         ui->ucOptions->removeTab(i);

@@ -128,7 +128,7 @@ void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
     on_BurnMethod_Combo_currentIndexChanged(0);
 }
 
-bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
+bool GUI_PROGRAMMER::waitForDevice(uint8_t minorKey)
 {
     switch (minorKey)
     {
@@ -136,7 +136,7 @@ bool GUI_PROGRAMMER::isDataRequest(uint8_t minorKey)
         case MINOR_KEY_PROGRAMMER_DATA: // Stall while device is written to (slow)
             return true;
         default:
-            return GUI_BASE::isDataRequest(minorKey);
+            return GUI_BASE::waitForDevice(minorKey);
     }
 }
 

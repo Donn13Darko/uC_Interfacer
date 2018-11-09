@@ -43,7 +43,7 @@ public:
     void removeFileFormats(QStringList fileFormatsList);
     void addBurnMethods(QStringList burnMethodsMap);
 
-    virtual bool isDataRequest(uint8_t minorKey);
+    virtual bool waitForDevice(uint8_t minorKey);
 
 public slots:
     virtual void reset_gui();

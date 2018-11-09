@@ -50,7 +50,7 @@ public:
 
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
-    virtual bool isDataRequest(uint8_t minorKey);
+    virtual bool waitForDevice(uint8_t minorKey);
 
 signals:
     // Read updates

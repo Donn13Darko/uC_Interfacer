@@ -59,22 +59,27 @@ void GUI_PIN_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
     GUI_BASE::parseConfigMap(configMap);
 }
 
-bool GUI_PIN_BASE::isDataRequest(uint8_t minorKey)
+bool GUI_PIN_BASE::waitForDevice(uint8_t minorKey)
 {
     switch (minorKey)
     {
         case MINOR_KEY_IO_AIO_READ:
         case MINOR_KEY_IO_AIO_READ_ALL:
+            return aio_read_requested;
         case MINOR_KEY_IO_DIO_READ:
         case MINOR_KEY_IO_DIO_READ_ALL:
-            return true;
+            return dio_read_requested;
         default:
-            return GUI_BASE::isDataRequest(minorKey);
+            return GUI_BASE::waitForDevice(minorKey);
     }
 }
 
 void GUI_PIN_BASE::reset_gui()
 {
+    // Reset request variables
+    dio_read_requested = false;
+    aio_read_requested = false;
+
     // Reset base
     GUI_BASE::reset_gui();
 }
@@ -155,9 +160,10 @@ void GUI_PIN_BASE::receive_gui(QByteArray recvData)
                 break;
             }
 
-            // Otherwise, packet is a response so fall through
-            // and set values to what was sent
-
+            // Otherwise, packet is a response so clear data request
+            // and fall through to set values
+            if (minor_key == MINOR_KEY_IO_AIO_READ_ALL) aio_read_requested = false;
+            else if (minor_key == MINOR_KEY_IO_DIO_READ_ALL) dio_read_requested = false;
         }
         case MINOR_KEY_IO_AIO_SET:
         case MINOR_KEY_IO_DIO_SET:

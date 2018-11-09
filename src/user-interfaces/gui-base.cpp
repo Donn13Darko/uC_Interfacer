@@ -115,7 +115,7 @@ void GUI_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
     gui_config = GUI_HELPER::encode_configMap(&tmp_map);
 }
 
-bool GUI_BASE::isDataRequest(uint8_t)
+bool GUI_BASE::waitForDevice(uint8_t)
 {
     return false;
 }

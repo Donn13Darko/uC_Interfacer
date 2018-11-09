@@ -64,7 +64,7 @@ public:
     ~GUI_PIN_BASE();
 
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
-    virtual bool isDataRequest(uint8_t minorKey);
+    virtual bool waitForDevice(uint8_t minorKey);
 
 public slots:
     virtual void reset_gui();
@@ -79,7 +79,9 @@ protected:
     QMap<uint8_t, QMap<uint8_t, RangeList*>*> rangeMap;
 
     QTimer DIO_READ;
+    bool dio_read_requested;
     QTimer AIO_READ;
+    bool aio_read_requested;
 
     QFile *logFile;
     QTextStream *logStream;

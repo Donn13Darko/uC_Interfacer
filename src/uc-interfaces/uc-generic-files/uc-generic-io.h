@@ -44,6 +44,7 @@ void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t 
 
 /*** Following externs are defined in uc-generic-fsm (or need to be defiend elsewhere if not using) ***/
 extern void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uint32_t data_len);
+extern void fsm_send_ready();
 
 /*** Following extern functions must be defined on a per uC basis ***/
 
