@@ -24,6 +24,7 @@
 #include <QFileInfo>
 #include <QFileDialog>
 #include <QSettings>
+#include <QTemporaryFile>
 
 const float GUI_HELPER::S2MS = 1000.0f;
 
@@ -172,6 +173,83 @@ QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::readConfigINI(QString confi
     }
 
     return configMap;
+}
+
+QString GUI_HELPER::encode_configMap(QMap<QString, QMap<QString, QVariant>*> *configMap)
+{
+    // Verify configMap
+    if (!configMap) return "";
+
+    // Create qstring to hold config
+    QString configMap_str;
+    QVariant arg_str;
+
+    // Write all values in the configMap
+    QMap<QString, QVariant>* groupMap;
+    foreach (QString group, configMap->keys())
+    {
+        // Get groupMap, skip if nullptr
+        groupMap = configMap->value(group);
+        if (!groupMap) continue;
+
+        // Add group map to string conversion
+        configMap_str += "[" + group + "]\n";
+
+        // Write key and value for each entry in groupMap
+        foreach (QString groupKey, groupMap->keys())
+        {
+            // Add setting key name and start assignment to string
+            configMap_str += groupKey + "=\"";
+
+            // Get the current value
+            arg_str = groupMap->value(groupKey);
+
+            // Parse value
+            if (arg_str.canConvert(QMetaType::QString))
+            {
+                // Add value to assignment
+                configMap_str += arg_str.toString();
+            } else if (arg_str.canConvert(QMetaType::QStringList))
+            {
+                // Join the list with "," and add to assignment
+                configMap_str += arg_str.toStringList().join("\",\"");
+            }
+
+            // Add end assignment to string
+            configMap_str += "\"\n";
+        }
+
+        // Add ending newline
+        configMap_str += "\n";
+    }
+
+    // Return the config data
+    return configMap_str;
+}
+
+QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::decode_configMap(QString configMap)
+{
+    // Create temporary file & set autoremove
+    QTemporaryFile tmpINI;
+    tmpINI.setAutoRemove(true);
+
+    // Open temporary file for writing data
+    if (!tmpINI.open())
+    {
+        // Show error message
+        GUI_HELPER::showMessage("Error: Unable to open temp file!");
+
+        // Return out of function
+        return nullptr;
+    }
+
+    // Write data to temporary file & close
+    tmpINI.write(configMap.toLatin1());
+    QString tmpName = tmpINI.fileName();
+    tmpINI.close();
+
+    // Read in file, create config, and return pointer
+    return GUI_HELPER::readConfigINI(tmpName);
 }
 
 void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant>*> **configMap)

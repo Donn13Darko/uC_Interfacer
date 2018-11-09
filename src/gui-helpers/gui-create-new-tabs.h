@@ -38,10 +38,15 @@ public:
     explicit GUI_CREATE_NEW_TABS(QMap<QString, QMap<QString, QVariant>*> **configMap, QWidget *parent = 0);
     ~GUI_CREATE_NEW_TABS();
 
+    void set_config_tab(int index, QString new_config_str);
+    QString get_tab_config_str();
+    int get_tab_index();
+
 public slots:
     void reset_gui();
 
 private slots:
+    void on_Undo_Button_clicked();
     void on_Clear_Button_clicked();
     void on_Cancel_Button_clicked();
     void on_OK_Button_clicked();
@@ -50,6 +55,9 @@ private:
     Ui::GUI_CREATE_NEW_TABS *ui;
 
     QMap<QString, QMap<QString, QVariant>*> **local_configMap;
+
+    QString local_config_str;
+    int local_index;
 
     void save_updates();
     void reset_updates();

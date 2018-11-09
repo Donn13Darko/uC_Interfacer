@@ -41,8 +41,10 @@ public:
 
     virtual uint8_t get_GUI_key();
 
-    virtual QString get_GUI_name();
-    virtual void set_GUI_name(QString new_name);
+    virtual QString get_GUI_tab_name();
+    virtual void set_GUI_tab_name(QString new_name);
+
+    virtual QString get_GUI_config();
 
     virtual bool acceptAllCMDs();
 
@@ -96,7 +98,9 @@ protected:
     // Local variables
     uint8_t gui_key;
     QString gui_name;
+    QString gui_tab_name;
     bool closable;
+    QString gui_config;
 
     // Receive arrays & variables
     QByteArray rcvd_formatted;

@@ -52,8 +52,10 @@ public:
     static uint32_t getFileSize(QString filePath);
     static QByteArray loadFile(QString filePath);
 
-    // Read or delete a config INI
+    // Read. parse, delete a config INI
     static QMap<QString, QMap<QString, QVariant>*> *readConfigINI(QString config);
+    static QString encode_configMap(QMap<QString, QMap<QString, QVariant>*> *configMap);
+    static QMap<QString, QMap<QString, QVariant>*> *decode_configMap(QString configMap);
     static void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*> **configMap);
 
     // Conversions

@@ -81,14 +81,19 @@ uint8_t GUI_BASE::get_GUI_key()
     return gui_key;
 }
 
-QString GUI_BASE::get_GUI_name()
+QString GUI_BASE::get_GUI_tab_name()
 {
-    return gui_name;
+    return gui_tab_name;
 }
 
-void GUI_BASE::set_GUI_name(QString new_name)
+void GUI_BASE::set_GUI_tab_name(QString new_name)
 {
-    gui_name = new_name;
+    gui_tab_name = new_name;
+}
+
+QString GUI_BASE::get_GUI_config()
+{
+    return gui_config;
 }
 
 bool GUI_BASE::acceptAllCMDs()
@@ -98,11 +103,16 @@ bool GUI_BASE::acceptAllCMDs()
 
 void GUI_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
-    // Reset name if present
-    gui_name = configMap->value("tab_name", gui_name).toString();
+    // Set tab name
+    gui_tab_name = configMap->value("tab_name", gui_name).toString();
 
     // Set closable
     closable = configMap->value("closable", "true").toBool();
+
+    // Save config as local string
+    QMap<QString, QMap<QString, QVariant>*> tmp_map;
+    tmp_map.insert(gui_name, configMap);
+    gui_config = GUI_HELPER::encode_configMap(&tmp_map);
 }
 
 bool GUI_BASE::isDataRequest(uint8_t)

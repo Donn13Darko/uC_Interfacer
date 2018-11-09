@@ -28,7 +28,7 @@ GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :
 
     // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_CUSTOM_CMD;
-    gui_name = "GUI Custom CMD";
+    gui_name = "Custom CMD";
 
     // Setup Progress bars
     ui->CustomCMD_ProgressBar->setMinimum(0);

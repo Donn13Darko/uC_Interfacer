@@ -500,7 +500,8 @@ void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key,
 
     // Send chunk across
     parse_data(major_key, minor_key, chunk,
-               base, QRegularExpression(encoding));
+               base, QRegularExpression(encoding),
+               sending_gui);
 
     // Release lock
     sendLock.unlock();

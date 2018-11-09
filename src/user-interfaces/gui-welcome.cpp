@@ -28,7 +28,7 @@ GUI_WELCOME::GUI_WELCOME(QWidget *parent) :
 
     // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_WELCOME;
-    gui_name = "GUI Welcome";
+    gui_name = "Welcome";
 }
 
 GUI_WELCOME::~GUI_WELCOME()

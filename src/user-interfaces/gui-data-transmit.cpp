@@ -31,7 +31,7 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
 
     // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_DATA_TRANSMIT;
-    gui_name = "GUI Data Transmit";
+    gui_name = "Data Transmit";
 
     // Setup progress bars
     ui->Send_ProgressBar->setMinimum(0);

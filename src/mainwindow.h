@@ -88,6 +88,7 @@ private slots:
 
     void on_ucOptions_currentChanged(int index);
     void on_ucOptions_tabBarClicked(int index);
+    void on_ucOptions_tabBarDoubleClicked(int index);
     void on_tabCloseRequested();
 
     void updateConnInfoCombo();

@@ -28,7 +28,7 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
 
     // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_PROGRAMMER;
-    gui_name = "GUI Programmer";
+    gui_name = "Programmer";
 
     // Read config settings
     QMap<QString, QMap<QString, QVariant>*> *configMap = \

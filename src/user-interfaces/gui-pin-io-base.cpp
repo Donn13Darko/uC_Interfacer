@@ -23,7 +23,7 @@ GUI_PIN_BASE::GUI_PIN_BASE(QWidget *parent) :
 {
     // Set GUI Type & Default Name
     gui_key = MAJOR_KEY_IO;
-    gui_name = "GUI PIN I/O";
+    gui_name = "IO";
 }
 
 GUI_PIN_BASE::~GUI_PIN_BASE()
@@ -306,6 +306,12 @@ void GUI_PIN_BASE::setNumPins(PinTypeInfo *pInfo, uint8_t num_dev_pins, uint8_t 
         case MINOR_KEY_IO_DIO:
             num_DIOpins_DEV = num_dev_pins;
             break;
+    }
+
+    // Enable each button set in the list
+    for (uint8_t i = 0; i < pInfo->numPins_GUI; i++)
+    {
+        setPinAttribute(pInfo, i, Qt::WA_Disabled, false);
     }
 
     // Disable each button set not in the list

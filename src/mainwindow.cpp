@@ -74,14 +74,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Setup Welcome widget
     welcome_tab = new GUI_WELCOME(this);
-    welcome_tab->set_GUI_name("Welcome");
+    welcome_tab->set_GUI_tab_name("Welcome");
     welcome_tab->setButtonsEnabled(false);
     welcome_tab->setClosable(false);
     welcome_tab->hide();
 
     // Setup add new tab (blank GUI_BASE)
     add_new_tab = new GUI_BASE(this);
-    add_new_tab->set_GUI_name("+");
+    add_new_tab->set_GUI_tab_name("+");
     add_new_tab->setClosable(false);
     add_new_tab->hide();
 
@@ -128,7 +128,7 @@ MainWindow::MainWindow(QWidget *parent) :
     on_ConnType_Combo_currentIndexChanged(0);
 
     // Add welcome GUI for setup and to make the next steps possible
-    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_name());
+    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_tab_name());
 
     // 1) Set closable to true to generate private button instance
     // 2) Grab genereated button and remove from widget (set to nullptr)
@@ -416,11 +416,11 @@ void MainWindow::on_DeviceConnected() {
             if (!tab_holder) continue;
 
             // Add new GUI to tabs
-            ui->ucOptions->addTab(tab_holder, tab_holder->get_GUI_name());
+            ui->ucOptions->addTab(tab_holder, tab_holder->get_GUI_tab_name());
         }
 
         // Add dynamic addition tab group ('+' tab)
-        ui->ucOptions->addTab(add_new_tab, add_new_tab->get_GUI_name());
+        ui->ucOptions->addTab(add_new_tab, add_new_tab->get_GUI_tab_name());
 
         // Force any changes in more options
         update_options(&main_options_settings);
@@ -491,7 +491,7 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     comm_bridge->close_bridge();
 
     // Add welcome widget
-    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_name());
+    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_tab_name());
 
     // Set to disconnected mode
     setConnected(false);
@@ -524,33 +524,81 @@ void MainWindow::moreOptions_accepted()
 void MainWindow::createNewTabs_accepted()
 {
     // Verify settings saved
-    if (!configMap || configMap->isEmpty()) return;
+    if (!configMap) return;
 
     // Block signals from tab group
     bool prev_block_status = ui->ucOptions->blockSignals(true);
 
-    // Get insert position
-    int index = ui->ucOptions->count() - 1;
-    int tab_pos = index;
+    // Get insert positions
+    int index;
+    int tab_pos = new_tab_gui->get_tab_index();
 
-    // Parse config maps and insert before '+'
-    uint8_t gui_key;
+    // Setup hold variables
     GUI_BASE *tab_holder;
-    foreach (QString childGroup, configMap->keys())
+
+    if (tab_pos == -1)
     {
-        // Verify that its a known GUI
-        gui_key = getGUIType(childGroup.split('_').last());
-        if (gui_key == MAJOR_KEY_ERROR) continue;
+        // Set tab_pos to index to add before '+' GUI
+        index = ui->ucOptions->count() - 1;
+        tab_pos = index;
 
-        // Create new tab
-        tab_holder = create_new_tab(gui_key, configMap->value(childGroup));
+        // Parse config maps and insert before '+'
+        uint8_t gui_key;
+        foreach (QString childGroup, configMap->keys())
+        {
+            // Verify that its a known GUI
+            gui_key = getGUIType(childGroup.split('_').last());
+            if (gui_key == MAJOR_KEY_ERROR) continue;
 
-        // If tab creation failed, continue
-        if (!tab_holder) continue;
+            // Create new tab
+            tab_holder = create_new_tab(gui_key, configMap->value(childGroup));
 
-        // Add new GUI to tabs
-        ui->ucOptions->insertTab(tab_pos, tab_holder, tab_holder->get_GUI_name());
-        tab_pos += 1;
+            // If tab creation failed, continue
+            if (!tab_holder) continue;
+
+            // Add new GUI to tabs
+            ui->ucOptions->insertTab(tab_pos, tab_holder, tab_holder->get_GUI_tab_name());
+            tab_pos += 1;
+        }
+
+        // If index is 0, only add_tab was present at start so set
+        // prev_tab to -1 to force a refresh with current index.
+        // Other cases will force a refresh since pre
+        if (index == 0) prev_tab = -1;
+    } else
+    {
+        // Set index to tab_pos since we are updating an existing GUI
+        index = tab_pos;
+
+        // Get calling tab
+        tab_holder = (GUI_BASE*) ui->ucOptions->widget(tab_pos);
+
+        // Verify acquired and configMap settings
+        if (tab_holder)
+        {
+            if (configMap->keys().length() == 1)
+            {
+                // Get gui group
+                QString childGroup = configMap->firstKey();
+
+                // Verify that its a known GUI & the GUI of interest
+                uint8_t gui_key = getGUIType(childGroup.split('_').last());
+                if (gui_key == tab_holder->get_GUI_key())
+                {
+                    // Reparse the config map
+                    tab_holder->parseConfigMap(configMap->value(childGroup));
+
+                    // Update the tab text (if reset)
+                    ui->ucOptions->setTabText(index, tab_holder->get_GUI_tab_name());
+                } else
+                {
+                    GUI_HELPER::showMessage("Error: Incorrect GUI key detected!");
+                }
+            } else
+            {
+                GUI_HELPER::showMessage("Error: Multiple or no configurations detected!");
+            }
+        }
     }
 
     // Delete the config settings after use
@@ -558,11 +606,6 @@ void MainWindow::createNewTabs_accepted()
 
     // Force any changes in more options
     update_options(&main_options_settings);
-
-    // If index is 0, only add_tab was present at start so set
-    // prev_tab to -1 to force a refresh with current index.
-    // Other cases will force a refresh since pre
-    if (index == 0) prev_tab = -1;
 
     // Enable signals for tab group
     ui->ucOptions->blockSignals(prev_block_status);
@@ -653,6 +696,28 @@ void MainWindow::on_ucOptions_tabBarClicked(int index)
     {
         on_ucOptions_currentChanged(index);
     }
+}
+
+void MainWindow::on_ucOptions_tabBarDoubleClicked(int index)
+{
+    // Only allow double clicks on current tab
+    if (prev_tab != index) return;
+
+    // Get & verify tab of interest
+    GUI_BASE *tab_holder = (GUI_BASE*) ui->ucOptions->widget(index);
+    if (!tab_holder) return;
+
+    // Check that its not add tab or welcome
+    if ((tab_holder == welcome_tab)
+            || (tab_holder == add_new_tab))
+    {
+        return;
+    }
+
+    // Load into add_
+    new_tab_gui->reset_gui();
+    new_tab_gui->set_config_tab(index, tab_holder->get_GUI_config());
+    new_tab_gui->show();
 }
 
 void MainWindow::on_tabCloseRequested()
@@ -872,6 +937,9 @@ QStringList MainWindow::getConnSpeeds()
 
 GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *guiConfigMap)
 {
+    // Verify gui config
+    if (!guiConfigMap) return nullptr;
+
     // Instantiate and add GUI
     GUI_BASE *tab_holder = nullptr;
     switch (gui_key)
