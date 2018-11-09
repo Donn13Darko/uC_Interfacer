@@ -572,9 +572,10 @@ void MainWindow::createNewTabs_accepted()
 
         // Get calling tab
         tab_holder = (GUI_BASE*) ui->ucOptions->widget(tab_pos);
+        QTabBar *tab_bar = ui->ucOptions->tabBar();
 
         // Verify acquired and configMap settings
-        if (tab_holder)
+        if (tab_holder && tab_bar)
         {
             if (configMap->keys().length() == 1)
             {
@@ -585,11 +586,18 @@ void MainWindow::createNewTabs_accepted()
                 uint8_t gui_key = getGUIType(childGroup.split('_').last());
                 if (gui_key == tab_holder->get_GUI_key())
                 {
-                    // Reparse the config map
+                    // Reparse the config map (will overwrite existing one)
                     tab_holder->parseConfigMap(configMap->value(childGroup));
 
                     // Update the tab text (if reset)
                     ui->ucOptions->setTabText(index, tab_holder->get_GUI_tab_name());
+
+                    // Update close button changes (start by removing then adding if needed)
+                    tab_bar->setTabButton(prev_tab, QTabBar::RightSide, nullptr);
+                    if (tab_holder->isClosable())
+                    {
+                        tab_bar->setTabButton(prev_tab, QTabBar::RightSide, tab_closeButton);
+                    }
                 } else
                 {
                     GUI_HELPER::showMessage("Error: Incorrect GUI key detected!");
@@ -643,6 +651,7 @@ void MainWindow::on_ucOptions_currentChanged(int index)
         // Show new tab creation popup/wizard
         // Will emit accepted() or rejected() when done
         new_tab_gui->reset_gui();
+        new_tab_gui->set_title("Create New Tab(s)");
         new_tab_gui->show();
 
         // Enable signals
@@ -652,8 +661,7 @@ void MainWindow::on_ucOptions_currentChanged(int index)
         return;
     }
 
-    // No change
-    // (check here to allow multiple clicks on add_new_tab)
+    // No change (check here to allow multiple clicks on add_new_tab)
     if (prev_tab == index) return;
 
     // Get tab bar
@@ -714,8 +722,9 @@ void MainWindow::on_ucOptions_tabBarDoubleClicked(int index)
         return;
     }
 
-    // Load into add_
+    // Load info into new_tab
     new_tab_gui->reset_gui();
+    new_tab_gui->set_title("Update Tab Settings");
     new_tab_gui->set_config_tab(index, tab_holder->get_GUI_config());
     new_tab_gui->show();
 }

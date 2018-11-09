@@ -46,6 +46,11 @@ GUI_CREATE_NEW_TABS::~GUI_CREATE_NEW_TABS()
     delete ui;
 }
 
+void GUI_CREATE_NEW_TABS::set_title(QString title)
+{
+    ui->Title_Label->setText(title);
+}
+
 void GUI_CREATE_NEW_TABS::set_config_tab(int index, QString new_config_str)
 {
     // Set information
@@ -70,8 +75,9 @@ void GUI_CREATE_NEW_TABS::reset_gui()
 {
     // Clear fields
     on_Clear_Button_clicked();
+    local_config_str.clear();
 
-    // Reset tab_pos and info
+    // Reset tab_pos
     local_index = -1;
 
     // Delete config map if populated
@@ -86,9 +92,8 @@ void GUI_CREATE_NEW_TABS::on_Undo_Button_clicked()
 
 void GUI_CREATE_NEW_TABS::on_Clear_Button_clicked()
 {
-    // Clear the plaintext & config string
+    // Clear the plaintext (leave config string for undo)
     ui->CreateNewTabs_PlainText->clear();
-    local_config_str.clear();
 }
 
 void GUI_CREATE_NEW_TABS::on_Cancel_Button_clicked()

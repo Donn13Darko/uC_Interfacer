@@ -28,7 +28,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Create New Tab(s)</string>
+    <string/>
    </property>
    <property name="alignment">
     <set>Qt::AlignCenter</set>

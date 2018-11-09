@@ -38,6 +38,7 @@ public:
     explicit GUI_CREATE_NEW_TABS(QMap<QString, QMap<QString, QVariant>*> **configMap, QWidget *parent = 0);
     ~GUI_CREATE_NEW_TABS();
 
+    void set_title(QString title);
     void set_config_tab(int index, QString new_config_str);
     QString get_tab_config_str();
     int get_tab_index();
