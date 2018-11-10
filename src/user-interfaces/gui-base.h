@@ -22,7 +22,6 @@
 #include <QWidget>
 #include <QMap>
 #include <QVariant>
-#include <QEventLoop>
 
 #include "gui-base-major-keys.h"
 #include "../gui-helpers/gui-helper.h"
@@ -114,12 +113,6 @@ protected:
     // Other functions
     void set_expected_recv_length(uint32_t expected_length);
     void update_current_recv_length(uint32_t recv_len);
-
-    // Blocking functions - How to get these to work? Stub for now
-    // Disable buttons on click? Prevent until done or gui reset?
-    QEventLoop wait;
-    void wait_for_sent() {}
-    void wait_for_data() {}
 };
 
 #endif // GUI_BASE_H

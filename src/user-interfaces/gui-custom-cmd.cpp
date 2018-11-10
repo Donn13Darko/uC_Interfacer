@@ -279,6 +279,9 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
     // Parse custom file line by line
     foreach (QString customCMD_line, customCMD_bytes.split('\n'))
     {
+        // Check if empty
+        if (customCMD_line.isEmpty()) continue;
+
         // If keys inside cmd line, split and parse the command line
         if (parseKeys)
         {
@@ -329,11 +332,11 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
     uint8_t major_key, minor_key;
 
     // Read, parse, and add Major/Minor keys
-    if (send_key_base < 2)
+    if (send_key_base < 1)
     {
         // Add directly
-        major_key = majorKey_char.at(0).cell();
-        minor_key = minorKey_char.at(0).cell();
+        major_key = (uchar) majorKey_char.toLatin1().at(0);
+        minor_key = (uchar) minorKey_char.toLatin1().at(0);
     } else
     {
         // Convert keys to correct base
@@ -343,41 +346,35 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
 
     // Check if line is key settings & update locals if so
     uint8_t send_cmd_base_old = send_cmd_base;
-    switch (major_key)
+    if ((major_key == MAJOR_KEY_CUSTOM_CMD)
+            && (minor_key == MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE))
     {
-        case MAJOR_KEY_CUSTOM_CMD:
+        // Split bases and verify length
+        QStringList bases = customCMD_bytes.split(' ');
+        if (2 < bases.length()) return;
+
+        // Parse new bases (uses old cmd_base)
+        uint8_t send_key_base_new = bases.at(0).toInt(nullptr, send_cmd_base);
+        uint8_t send_cmd_base_new = bases.at(1).toInt(nullptr, send_cmd_base);
+
+        // Only set and send if new values (removes duplicate sends)
+        if ((send_key_base_new == send_key_base)
+                && (send_cmd_base_new == send_cmd_base))
         {
-            switch (minor_key)
-            {
-                case MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE:
-                {
-                    // Split bases and verify length
-                    QStringList bases = customCMD_bytes.split(' ');
-                    if (2 < bases.length()) return;
-
-                    // Parse new bases (uses old cmd_base)
-                    uint8_t send_key_base_new = bases.at(0).toInt(nullptr, send_cmd_base);
-                    uint8_t send_cmd_base_new = bases.at(1).toInt(nullptr, send_cmd_base);
-
-                    // Only set and send if new values (removes duplicate sends)
-                    if ((send_key_base_new == send_key_base)
-                            && (send_cmd_base_new == send_cmd_base))
-                    {
-                        return;
-                    } else
-                    {
-                        send_key_base = send_key_base_new;
-                        send_cmd_base = send_cmd_base_new;
-                    }
-                    break;
-                }
-                break;
-            }
+            return;
+        } else
+        {
+            send_key_base = send_key_base_new;
+            send_cmd_base = send_cmd_base_new;
         }
     }
 
+    // Replace spaces with null chars and convert to byte array
+    // Null chars are split in GUI_HELPER::decode_byteArray which
+    // is called before sending in comm-bridge
+    QByteArray cmd_bytes = customCMD_bytes.replace(QChar(' '), QChar((char) 0)).toLatin1();
+
     // Send CMD
     emit transmit_chunk(major_key, minor_key,
-                        customCMD_bytes.toLatin1(), send_cmd_base_old,
-                        "^(.*?) (.*?)[ (.*?)]*\\w");
+                        cmd_bytes, send_cmd_base_old);
 }

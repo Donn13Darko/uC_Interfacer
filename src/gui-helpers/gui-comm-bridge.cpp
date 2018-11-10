@@ -420,9 +420,6 @@ void GUI_COMM_BRIDGE::send_file(quint8 major_key, quint8 minor_key,
                                 QString filePath, quint8 base,
                                 QString encoding, GUI_BASE *sending_gui)
 {
-    // Get sending GUI if not present
-    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
-
     // Try to acquire sendLock (or add to waiting list)
     if (!get_send_lock(major_key, minor_key,
                        QVariant(filePath), sending_gui,
@@ -430,6 +427,9 @@ void GUI_COMM_BRIDGE::send_file(quint8 major_key, quint8 minor_key,
     {
         return;
     }
+
+    // Get sending GUI if not present
+    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
 
     // Parse the file with the given information
     parse_file(major_key, minor_key,
@@ -447,9 +447,6 @@ void GUI_COMM_BRIDGE::send_file_pack(quint8 major_key, quint8 minor_key,
                                      QString filePath, quint8 base,
                                      QString encoding, GUI_BASE *sending_gui)
 {
-    // Get sending GUI if not present
-    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
-
     // Try to acquire sendLock (or add to waiting list)
     if (!get_send_lock(major_key, minor_key,
                        QVariant(filePath), sending_gui,
@@ -457,6 +454,9 @@ void GUI_COMM_BRIDGE::send_file_pack(quint8 major_key, quint8 minor_key,
     {
         return;
     }
+
+    // Get sending GUI if not present
+    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
 
     // Send start of file
     parse_data(major_key, minor_key);
@@ -484,9 +484,6 @@ void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key,
                                  QByteArray chunk, quint8 base,
                                  QString encoding, GUI_BASE *sending_gui)
 {
-    // Get sending GUI if not present
-    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
-
     // Try to acquire sendLock (or add to waiting list)
     if (!get_send_lock(major_key, minor_key,
                        QVariant(chunk), sending_gui,
@@ -494,6 +491,9 @@ void GUI_COMM_BRIDGE::send_chunk(quint8 major_key, quint8 minor_key,
     {
         return;
     }
+
+    // Get sending GUI if not present
+    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
 
     // Send chunk across
     parse_data(major_key, minor_key, chunk,
@@ -511,9 +511,6 @@ void GUI_COMM_BRIDGE::send_chunk_pack(quint8 major_key, quint8 minor_key,
                                       QByteArray chunk, quint8 base,
                                       QString encoding, GUI_BASE *sending_gui)
 {
-    // Get sending GUI if not present
-    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
-
     // Try to acquire sendLock (or add to waiting list)
     if (!get_send_lock(major_key, minor_key,
                        QVariant(chunk), sending_gui,
@@ -521,6 +518,9 @@ void GUI_COMM_BRIDGE::send_chunk_pack(quint8 major_key, quint8 minor_key,
     {
         return;
     }
+
+    // Get sending GUI if not present
+    if (!sending_gui) sending_gui = (GUI_BASE*) sender();
 
     // Send start of chunk
     parse_data(major_key, minor_key);
@@ -861,13 +861,16 @@ bool GUI_COMM_BRIDGE::get_send_lock(uint8_t major_key, uint8_t minor_key,
     {
         // Build new struct
         send_struct curr;
-        curr.sender = sending_gui;
         curr.target = target;
         curr.major_key = major_key;
         curr.minor_key = minor_key;
         curr.base = base;
         curr.data = data;
         curr.encoding = encoding;
+
+        // If sender null, get sender
+        if (!sending_gui) curr.sender = (GUI_BASE*) sender();
+        else curr.sender = sending_gui;
 
         // Add struct to transmitList
         transmitList.append(curr);
@@ -1030,7 +1033,9 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
         // Decode pieces using provided base
         curr_parse.clear();
         foreach (QString parse_str, curr_parse_match)
+        {
             curr_parse += GUI_HELPER::decode_byteArray(parse_str.toLatin1(), base);
+        }
 
         // Reset position variables
         curr_pos = 0;
