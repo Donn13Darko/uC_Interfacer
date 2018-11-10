@@ -848,6 +848,11 @@ bool GUI_COMM_BRIDGE::get_send_lock(uint8_t major_key, uint8_t minor_key,
 
             // Acquired lock and removed self from list
             return true;
+        } else if (sending_gui)
+        {
+            // Handles case that this packet has already been added
+            // sendList but is not the first element
+            return false;
         }
 
         // If not equal, add to back of transmitList
