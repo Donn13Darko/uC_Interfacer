@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_PIN_BASE_MINOR_KEYS_H
-#define GUI_PIN_BASE_MINOR_KEYS_H
+#ifndef GUI_PIN_IO_MINOR_KEYS_H
+#define GUI_PIN_IO_MINOR_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// IO Minor Keys enum
+// IO Control Minor Keys enum
 typedef enum {
     // Error and reset
     MINOR_KEY_IO_ERROR = 0,
@@ -43,8 +43,11 @@ typedef enum {
     MINOR_KEY_IO_DIO_READ,
     MINOR_KEY_IO_DIO_READ_ALL,
 
-    // Leave this key at end (used for child GUI keys)
-    MINOR_KEY_IO_MAIN_END
+    // Remote Communications
+    MINOR_KEY_IO_REMOTE_CONN,
+    MINOR_KEY_IO_REMOTE_CONN_SET,
+    MINOR_KEY_IO_REMOTE_CONN_READ,
+    MINOR_KEY_IO_REMOTE_CONN_SEND
 } MINOR_KEYS_IO;
 
 /* Stage #2 (s2) io set key positions enum */
@@ -60,4 +63,4 @@ typedef enum {
 }
 #endif
 
-#endif // GUI_PIN_BASE_MINOR_KEYS_H
+#endif // GUI_PIN_IO_MINOR_KEYS_H

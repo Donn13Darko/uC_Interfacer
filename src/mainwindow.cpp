@@ -19,7 +19,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include "user-interfaces/gui-8aio-16dio-comm.h"
+#include "user-interfaces/gui-io-control.h"
 #include "user-interfaces/gui-data-transmit.h"
 #include "user-interfaces/gui-programmer.h"
 #include "user-interfaces/gui-custom-cmd.h"
@@ -63,7 +63,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     // Setup ui
     ui->setupUi(this);
-    setWindowFlag(Qt::MSWindowsFixedSizeDialogHint);
 
     // Set base parameters
     prev_tab = -1;
@@ -185,6 +184,20 @@ void MainWindow::closeEvent(QCloseEvent *e)
     }
     updateConnInfo->stop();
 
+    e->accept();
+}
+
+void MainWindow::resizeEvent(QResizeEvent *e)
+{
+    // Get size information
+    QSize new_size = e->size();
+    int x_pos = ui->ucOptions->x();
+    int y_pos = ui->ucOptions->y();
+
+    // Resize qtabwidget
+    ui->ucOptions->resize(new_size.width() - (2 * x_pos), new_size.height() - (y_pos + 10));
+
+    // Accept event
     e->accept();
 }
 
@@ -991,7 +1004,7 @@ GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *g
         }
         case MAJOR_KEY_IO:
         {
-            tab_holder = new GUI_8AIO_16DIO_COMM(this);
+            tab_holder = new GUI_IO_CONTROL(this);
             break;
         }
         case MAJOR_KEY_DATA_TRANSMIT:

@@ -27,8 +27,6 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     user-interfaces/gui-base.cpp \
-    user-interfaces/gui-pin-io-base.cpp \
-    user-interfaces/gui-8aio-16dio-comm.cpp \
     user-interfaces/gui-data-transmit.cpp \
     user-interfaces/gui-programmer.cpp \
     user-interfaces/gui-welcome.cpp \
@@ -48,13 +46,12 @@ SOURCES += \
     gui-helpers/gui-more-options.cpp \
     communication/serial-com-port.cpp \
     gui-helpers/gui-comm-bridge.cpp \
-    gui-helpers/gui-create-new-tabs.cpp
+    gui-helpers/gui-create-new-tabs.cpp \
+    user-interfaces/gui-io-control.cpp
 
 HEADERS += \
     mainwindow.h \
     user-interfaces/gui-base.h \
-    user-interfaces/gui-pin-io-base.h \
-    user-interfaces/gui-8aio-16dio-comm.h \
     user-interfaces/gui-data-transmit.h \
     user-interfaces/gui-programmer.h \
     user-interfaces/gui-welcome.h \
@@ -68,11 +65,9 @@ HEADERS += \
     checksums/crc-16-poly.h \
     checksums/crc-32-lut.h \
     checksums/crc-32-poly.h \
-    user-interfaces/gui-pin-io-base-minor-keys.h \
     user-interfaces/gui-programmer-minor-keys.h \
     user-interfaces/gui-custom-cmd.h \
     user-interfaces/gui-data-transmit-minor-keys.h \
-    user-interfaces/gui-8aio-16dio-comm-minor-keys.h \
     user-interfaces/gui-custom-cmd-minor-keys.h \
     user-interfaces/gui-welcome-minor-keys.h \
     communication/comms-base.h \
@@ -82,20 +77,19 @@ HEADERS += \
     gui-helpers/gui-more-options.h \
     communication/serial-com-port.h \
     gui-helpers/gui-comm-bridge.h \
-    gui-helpers/gui-create-new-tabs.h
+    gui-helpers/gui-create-new-tabs.h \
+    user-interfaces/gui-io-control.h \
+    user-interfaces/gui-io-control-minor-keys.h
 
 FORMS += \
     mainwindow.ui \
-    user-interfaces/gui-8aio-16dio-comm.ui \
     user-interfaces/gui-data-transmit.ui \
     user-interfaces/gui-programmer.ui \
     user-interfaces/gui-welcome.ui \
     user-interfaces/gui-custom-cmd.ui \
     gui-helpers/gui-more-options.ui \
-    gui-helpers/gui-create-new-tabs.ui
-
-DISTFILES += \
-    uc-interfaces/arduino_uno_uart/arduino_uno_uart.ino
+    gui-helpers/gui-create-new-tabs.ui \
+    user-interfaces/gui-io-control.ui
 
 RESOURCES += \
     uc-interfaces.qrc

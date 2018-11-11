@@ -68,7 +68,9 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    void closeEvent(QCloseEvent *e);
+protected slots:
+    virtual void closeEvent(QCloseEvent *e);
+    virtual void resizeEvent(QResizeEvent *e);
 
 private slots:
     void on_Device_Combo_activated(int);
