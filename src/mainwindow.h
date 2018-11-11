@@ -70,7 +70,6 @@ public:
 
 protected slots:
     virtual void closeEvent(QCloseEvent *e);
-    virtual void resizeEvent(QResizeEvent *e);
 
 private slots:
     void on_Device_Combo_activated(int);

@@ -461,7 +461,7 @@ void GUI_IO_CONTROL::on_ConnConnect_Button_clicked()
 void GUI_IO_CONTROL::on_ConnSend_Button_clicked()
 {
     QByteArray msg;
-    msg.append(ui->ConnMsg_LineEdit->text());
+    msg.append(ui->ConnMsg_PlainText->toPlainText());
 
     emit transmit_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN_SEND, msg);
 }
@@ -499,13 +499,13 @@ void GUI_IO_CONTROL::initialize()
 
     // Setup AIO info
     AIO_Grid = new QGridLayout();
-    ui->AIOVertLayout->insertLayout(1, AIO_Grid);
+    ui->AIOVLayout->insertLayout(1, AIO_Grid);
     num_AIOcols = 1;
     num_AIOrows = 0 / num_AIOcols;
 
     // Setup DIO info
     DIO_Grid = new QGridLayout();
-    ui->DIOVertLayout->insertLayout(1, DIO_Grid);
+    ui->DIOVLayout->insertLayout(1, DIO_Grid);
     num_DIOcols = 2;
     num_DIOrows = 0 / num_DIOcols;
 
@@ -1236,17 +1236,17 @@ QHBoxLayout *GUI_IO_CONTROL::create_pin()
     }
 
     // Set size attributes
-    pin_label->resize(20, 20);
-    pin_combo->resize(75, 20);
-    pin_slider->resize(85, 20);
-    pin_edit->resize(50, 20);
+    pin_label->setMaximumSize(20, 20);
+    pin_combo->setMaximumSize(75, 20);
+    pin_slider->setMaximumSize(85, 20);
+    pin_edit->setMaximumSize(50, 20);
 
     // Set size policy
-    pin->setSizeConstraint(QLayout::SetFixedSize);
-    pin_label->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    pin_combo->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    pin_slider->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    pin_edit->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    pin->setSizeConstraint(QLayout::SetMaximumSize);
+    pin_label->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    pin_combo->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    pin_slider->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
+    pin_edit->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
     // Set pin attributes
     pin_label->setAlignment(Qt::AlignRight);
@@ -1368,6 +1368,15 @@ void GUI_IO_CONTROL::update_pin_grid(PinTypeInfo *pInfo)
             curr_col = 0;
         }
     }
+
+    // Resise vertical layout
+//    switch (pInfo->pinType)
+//    {
+//        case MINOR_KEY_IO_AIO:
+//        {
+//            ui->AIOVertLayout->
+//        }
+//    }
 }
 
 void GUI_IO_CONTROL::clear_all_maps()

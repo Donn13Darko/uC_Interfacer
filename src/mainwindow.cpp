@@ -187,20 +187,6 @@ void MainWindow::closeEvent(QCloseEvent *e)
     e->accept();
 }
 
-void MainWindow::resizeEvent(QResizeEvent *e)
-{
-    // Get size information
-    QSize new_size = e->size();
-    int x_pos = ui->ucOptions->x();
-    int y_pos = ui->ucOptions->y();
-
-    // Resize qtabwidget
-    ui->ucOptions->resize(new_size.width() - (2 * x_pos), new_size.height() - (y_pos + 10));
-
-    // Accept event
-    e->accept();
-}
-
 void MainWindow::on_Device_Combo_activated(int)
 {
     // Save previous value

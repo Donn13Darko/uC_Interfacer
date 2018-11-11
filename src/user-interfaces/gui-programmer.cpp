@@ -221,9 +221,11 @@ void GUI_PROGRAMMER::set_progress_update_recv(int progress, QString label)
 {
     if (progress_divisor != 0)
         ui->Programmer_ProgressBar->setValue((progress_adjuster + progress) / progress_divisor);
+    ui->ProgrammerRead_ProgressBar->setValue(progress);
 
     if (progress_divisor == 1)
         ui->ProgrammerProgress_Label->setText(label);
+    ui->ProgrammerRead_Label->setText(label);
 }
 
 void GUI_PROGRAMMER::set_progress_update_send(int progress, QString label)
