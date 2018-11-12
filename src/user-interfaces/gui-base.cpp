@@ -24,6 +24,10 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     // Init base variables
     closable = true;
 
+    // Open temporary file and set autoremove
+    rcvd_formatted.open();
+    rcvd_formatted.setAutoRemove(true);
+
     // Init progress bars
     set_expected_recv_length(0);
     update_current_recv_length(0);
@@ -51,12 +55,16 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
 
 GUI_BASE::~GUI_BASE()
 {
+    // Close temporary file
+    // Gets deleted on close
+    if (rcvd_formatted.isOpen())
+        rcvd_formatted.close();
 }
 
 void GUI_BASE::reset_gui()
 {
     // Clear formatted
-    rcvd_formatted.clear();
+    rcvd_formatted.resize(0);
 
     // Reset progress bars info
     current_recv_length = 0;
@@ -161,9 +169,16 @@ void GUI_BASE::save_rcvd_formatted()
     if (!GUI_HELPER::getSaveFilePath(&fileName))
         return;
 
-    // Save file
-    if (!GUI_HELPER::saveFile(fileName, rcvd_formatted))
+    // Close temporary file (for copying)
+    rcvd_formatted.close();
+
+    // Copy file
+    if (!GUI_HELPER::copyFile(rcvd_formatted.fileName(), fileName, true))
         GUI_HELPER::showMessage("ERROR: Failed to save file!");
+
+    // Reopen temporary (and go to end)
+    rcvd_formatted.open();
+    rcvd_formatted.seek(rcvd_formatted.size());
 }
 
 void GUI_BASE::set_expected_recv_length(uint32_t expected_length)

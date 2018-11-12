@@ -22,6 +22,7 @@
 #include <QWidget>
 #include <QMap>
 #include <QVariant>
+#include <QTemporaryFile>
 
 #include "gui-base-major-keys.h"
 #include "../gui-helpers/gui-helper.h"
@@ -102,7 +103,7 @@ protected:
     QString gui_config;
 
     // Receive arrays & variables
-    QByteArray rcvd_formatted;
+    QTemporaryFile rcvd_formatted;
     uint32_t current_recv_length;
     uint32_t expected_recv_length;
     QString expected_recv_length_str;

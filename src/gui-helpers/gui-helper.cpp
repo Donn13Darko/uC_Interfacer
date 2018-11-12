@@ -101,6 +101,25 @@ bool GUI_HELPER::saveFile(QString filePath, QByteArray data)
     return (0 <= res);
 }
 
+bool GUI_HELPER::copyFile(QString pathFrom, QString pathTo, bool overwrite)
+{
+    // Verify pathFrom exists
+    if (!QFile::exists(pathFrom)) return false;
+
+    // Check if exits (delete it before copy as copy doesn't overwrite)
+    if (QFile::exists(pathTo))
+    {
+        // Check that we want to overwrite
+        if (!overwrite) return false;
+
+        // Delete old file
+        QFile::remove(pathTo);
+    }
+
+    // Copy file
+    return QFile::copy(pathFrom, pathTo);
+}
+
 uint32_t GUI_HELPER::getFileSize(QString filePath)
 {
     QFileInfo file(filePath);

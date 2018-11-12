@@ -68,6 +68,9 @@ private:
     uint8_t recv_key_base;
     uint8_t recv_cmd_base;
 
+    // Recv helper
+    bool ends_with_newline;
+
     void input_select(bool fileIN, bool manualIN);
     void send_custom_cmd(QString majorKey_char, QString minorKey_char, QString customCMD_bytes);
 };

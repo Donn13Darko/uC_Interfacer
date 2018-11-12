@@ -72,6 +72,7 @@ void GUI_DATA_TRANSMIT::reset_gui()
 
     // Set clear on set
     ui->RecvClearOnSet_CheckBox->setChecked(true);
+    ui->RecvShowRecv_CheckBox->setChecked(false);
 }
 
 void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
@@ -112,13 +113,17 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
     if (data.isEmpty()) return;
 
     // Insert into global array (for saving in original format)
-    rcvd_formatted.append(data);
+    rcvd_formatted.write(data);
 
-    // Insert at end of plaintext
-    QTextCursor prev_cursor = ui->Recv_PlainText->textCursor();
-    ui->Recv_PlainText->moveCursor(QTextCursor::End);
-    ui->Recv_PlainText->insertPlainText(QString(data));
-    ui->Recv_PlainText->setTextCursor(prev_cursor);
+    // Check if loading into plaintext
+    if (ui->RecvShowRecv_CheckBox->isChecked())
+    {
+        // Insert at end of plaintext
+        QTextCursor prev_cursor = ui->Recv_PlainText->textCursor();
+        ui->Recv_PlainText->moveCursor(QTextCursor::End);
+        ui->Recv_PlainText->insertPlainText(QString(data));
+        ui->Recv_PlainText->setTextCursor(prev_cursor);
+    }
 }
 
 void GUI_DATA_TRANSMIT::set_progress_update_recv(int progress, QString label)
@@ -185,7 +190,7 @@ void GUI_DATA_TRANSMIT::on_RecvSave_Button_clicked()
 void GUI_DATA_TRANSMIT::on_RecvClear_Button_clicked()
 {
     ui->Recv_PlainText->clear();
-    rcvd_formatted.clear();
+    rcvd_formatted.resize(0);
     set_expected_recv_length(0);
 }
 

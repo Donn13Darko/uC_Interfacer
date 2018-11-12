@@ -208,7 +208,7 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
     }
 
     // Insert into global array (for saving in original format)
-    rcvd_formatted.append(data);
+    rcvd_formatted.write(data);
 
     // Insert at end of plaintext
     QTextCursor prev_cursor = ui->ReadData_PlainText->textCursor();
@@ -352,7 +352,7 @@ void GUI_PROGRAMMER::on_ReadData_RadioGroup_buttonClicked(int)
 void GUI_PROGRAMMER::on_ReadDataClear_Button_clicked()
 {
     ui->ReadData_PlainText->clear();
-    rcvd_formatted.clear();
+    rcvd_formatted.resize(0);
     set_expected_recv_length(0);
 }
 

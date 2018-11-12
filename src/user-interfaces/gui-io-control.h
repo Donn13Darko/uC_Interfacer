@@ -174,11 +174,9 @@ private:
     // Set pin group attributes
     void setPinAttribute(PinTypeInfo *pInfo, uint8_t pinNum, Qt::WidgetAttribute attribute, bool on);
 
-    // Get pin layouts and widgets
+    // Get pin layout
     bool getPinLayout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout);
     bool getWidgetLayout(uint8_t pinType, QWidget *item, QLayout **itemLayout);
-    bool getItemWidget(QGridLayout *grid, uint8_t row, uint8_t col, uint8_t io_pos, QWidget **itemWidget);
-    void getPinLocation(uint8_t *row, uint8_t *col, PinTypeInfo *pInfo, uint8_t pin);
 
     // Set pin settings
     void setPinCombos(PinTypeInfo *pInfo, QList<QString> combos);

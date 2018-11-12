@@ -49,6 +49,7 @@ public:
     static bool getOpenFilePath(QString *filePath, QString fileTypes = tr("All Files (*)"));
     static bool getSaveFilePath(QString *filePath, QString fileTypes = tr("All Files (*)"));
     static bool saveFile(QString filePath, QByteArray data);
+    static bool copyFile(QString pathFrom, QString pathTo, bool overwrite = false);
     static uint32_t getFileSize(QString filePath);
     static QByteArray loadFile(QString filePath);
 
