@@ -26,93 +26,14 @@
    <string>Form</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="10">
-    <layout class="QVBoxLayout" name="InstructionsVLayout">
-     <item>
-      <widget class="QLabel" name="Instructions_Label">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>20</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Instructions:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPlainTextEdit" name="Instructions_PlainText">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>155</width>
-         <height>340</height>
-        </size>
-       </property>
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Sunken</enum>
-       </property>
-       <property name="undoRedoEnabled">
-        <bool>false</bool>
-       </property>
-       <property name="textInteractionFlags">
-        <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
-       </property>
-       <property name="backgroundVisible">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="1" column="10" alignment="Qt::AlignRight">
-    <widget class="QPushButton" name="ResetGUI_Button">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="minimumSize">
-      <size>
-       <width>75</width>
-       <height>23</height>
-      </size>
-     </property>
-     <property name="layoutDirection">
-      <enum>Qt::LeftToRight</enum>
-     </property>
-     <property name="text">
-      <string>RESET</string>
-     </property>
-     <property name="autoDefault">
-      <bool>false</bool>
-     </property>
-    </widget>
-   </item>
-   <item row="0" column="1" rowspan="2">
+   <item row="0" column="0">
     <layout class="QVBoxLayout" name="ProgramVLayout">
      <property name="sizeConstraint">
       <enum>QLayout::SetMaximumSize</enum>
      </property>
      <item>
-      <layout class="QGridLayout" name="gridLayout_3">
-       <item row="0" column="0">
+      <layout class="QHBoxLayout" name="ProgramFileHLayout">
+       <item>
         <widget class="QLabel" name="File_Label">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -131,7 +52,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="1">
+       <item>
         <widget class="QLineEdit" name="File_LineEdit">
          <property name="sizePolicy">
           <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -147,7 +68,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="2">
+       <item>
         <widget class="QPushButton" name="BrowseFile_Button">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -169,44 +90,9 @@
       </layout>
      </item>
      <item>
-      <layout class="QGridLayout" name="gridLayout_4">
-       <item row="0" column="4">
-        <widget class="QLabel" name="BurnMethod_Label">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>23</height>
-          </size>
-         </property>
-         <property name="text">
-          <string>Burn Method:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="5">
-        <widget class="QComboBox" name="BurnMethod_Combo">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-           <horstretch>1</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="minimumSize">
-          <size>
-           <width>150</width>
-           <height>23</height>
-          </size>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="6">
-        <spacer name="horizontalSpacer_2">
+      <layout class="QHBoxLayout" name="ProgramFormatHLayout">
+       <item>
+        <spacer name="FormatSpacerLeft">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -218,20 +104,7 @@
          </property>
         </spacer>
        </item>
-       <item row="0" column="0">
-        <spacer name="horizontalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="1">
+       <item>
         <widget class="QLabel" name="FileFormat_Label">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -250,7 +123,7 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="2">
+       <item>
         <widget class="QComboBox" name="FileFormat_Combo">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -266,8 +139,56 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="3">
-        <spacer name="horizontalSpacer">
+       <item>
+        <spacer name="FormatSpacerCenter">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="BurnMethod_Label">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>23</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Burn Method:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="BurnMethod_Combo">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+           <horstretch>1</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>23</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="FormatSpacerRight">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -282,8 +203,8 @@
       </layout>
      </item>
      <item>
-      <layout class="QGridLayout" name="ProgramControlGridLayou">
-       <item row="2" column="0">
+      <layout class="QHBoxLayout" name="ProgramControlHLayout">
+       <item>
         <widget class="QLabel" name="FilePreview_Label">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -302,7 +223,20 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="3" alignment="Qt::AlignRight">
+       <item>
+        <spacer name="ProgramControlSpacerCenter">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
         <widget class="QCheckBox" name="FilePreview_CheckBox">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -315,19 +249,6 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="1">
-        <spacer name="horizontalSpacer_3">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
       </layout>
      </item>
      <item>
@@ -335,7 +256,7 @@
        <property name="minimumSize">
         <size>
          <width>425</width>
-         <height>250</height>
+         <height>220</height>
         </size>
        </property>
        <property name="readOnly">
@@ -457,7 +378,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <layout class="QHBoxLayout" name="ProgramProgressHLayout">
        <item>
         <widget class="QProgressBar" name="Programmer_ProgressBar">
          <property name="sizePolicy">
@@ -506,15 +427,69 @@
      </item>
     </layout>
    </item>
-   <item row="0" column="9" rowspan="2">
+   <item row="0" column="2">
+    <layout class="QVBoxLayout" name="InstructionsVLayout">
+     <item>
+      <widget class="QLabel" name="Instructions_Label">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>20</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>Instructions:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPlainTextEdit" name="Instructions_PlainText">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Maximum" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>155</width>
+         <height>340</height>
+        </size>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Sunken</enum>
+       </property>
+       <property name="undoRedoEnabled">
+        <bool>false</bool>
+       </property>
+       <property name="textInteractionFlags">
+        <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByMouse</set>
+       </property>
+       <property name="backgroundVisible">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="0" column="1">
     <layout class="QVBoxLayout" name="ReadVLayout">
      <item>
       <layout class="QGridLayout" name="ReadControlGridLayout"/>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="ReadSelectHLayout">
        <item>
-        <spacer name="horizontalSpacer_8">
+        <spacer name="ReadSelectSpacerLeft">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -615,7 +590,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_9">
+        <spacer name="ReadSelectSpacerRight">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -630,7 +605,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
+      <layout class="QHBoxLayout" name="ReadControlHLayout">
        <item>
         <widget class="QLabel" name="ReadData_Label">
          <property name="sizePolicy">
@@ -651,7 +626,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_7">
+        <spacer name="ReadControlSpacerLeft">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -699,7 +674,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_10">
+        <spacer name="ReadControlSpacerRight">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -731,7 +706,7 @@
        <property name="minimumSize">
         <size>
          <width>425</width>
-         <height>275</height>
+         <height>240</height>
         </size>
        </property>
        <property name="undoRedoEnabled">
@@ -754,7 +729,7 @@
         <number>0</number>
        </property>
        <item>
-        <spacer name="horizontalSpacer_5">
+        <spacer name="ReadDisplaySpacerLeft">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -833,7 +808,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_6">
+        <spacer name="ReadDisplaySpacerRight">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -848,7 +823,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <layout class="QHBoxLayout" name="ReadProgressHLayout">
        <item>
         <widget class="QProgressBar" name="ProgrammerRead_ProgressBar">
          <property name="minimumSize">
@@ -890,6 +865,31 @@
       </layout>
      </item>
     </layout>
+   </item>
+   <item row="1" column="2" alignment="Qt::AlignRight">
+    <widget class="QPushButton" name="ResetGUI_Button">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>75</width>
+       <height>23</height>
+      </size>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="text">
+      <string>RESET</string>
+     </property>
+     <property name="autoDefault">
+      <bool>false</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
