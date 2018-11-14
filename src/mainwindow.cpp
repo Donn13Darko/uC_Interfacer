@@ -23,7 +23,7 @@
 #include "user-interfaces/gui-data-transmit.h"
 #include "user-interfaces/gui-programmer.h"
 #include "user-interfaces/gui-custom-cmd.h"
-#include "gui-helpers/gui-helper.h"
+#include "gui-helpers/gui-generic-helper.h"
 
 #include <QMessageBox>
 #include <QFileDialog>

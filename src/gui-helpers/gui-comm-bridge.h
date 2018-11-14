@@ -35,7 +35,7 @@
 #include "../user-interfaces/gui-base-major-keys.h"
 #include "../user-interfaces/gui-base.h"
 #include "../checksums/checksums.h"
-#include "gui-helper.h"
+#include "gui-generic-helper.h"
 
 class GUI_COMM_BRIDGE : public QObject
 {

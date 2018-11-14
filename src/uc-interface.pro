@@ -42,12 +42,14 @@ SOURCES += \
     user-interfaces/gui-custom-cmd.cpp \
     communication/comms-base.cpp \
     checksums/checksum-exe.c \
-    gui-helpers/gui-helper.cpp \
     gui-helpers/gui-more-options.cpp \
     communication/serial-com-port.cpp \
     gui-helpers/gui-comm-bridge.cpp \
     gui-helpers/gui-create-new-tabs.cpp \
-    user-interfaces/gui-io-control.cpp
+    user-interfaces/gui-io-control.cpp \
+    gui-helpers/gui-generic-helper.cpp \
+    gui-helpers/gui-chart-element.cpp \
+    gui-helpers/gui-chart-view.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -73,13 +75,15 @@ HEADERS += \
     communication/comms-base.h \
     user-interfaces/gui-base-major-keys.h \
     checksums/checksum-exe.h \
-    gui-helpers/gui-helper.h \
     gui-helpers/gui-more-options.h \
     communication/serial-com-port.h \
     gui-helpers/gui-comm-bridge.h \
     gui-helpers/gui-create-new-tabs.h \
     user-interfaces/gui-io-control.h \
-    user-interfaces/gui-io-control-minor-keys.h
+    user-interfaces/gui-io-control-minor-keys.h \
+    gui-helpers/gui-generic-helper.h \
+    gui-helpers/gui-chart-element.h \
+    gui-helpers/gui-chart-view.h
 
 FORMS += \
     mainwindow.ui \
@@ -89,7 +93,9 @@ FORMS += \
     user-interfaces/gui-custom-cmd.ui \
     gui-helpers/gui-more-options.ui \
     gui-helpers/gui-create-new-tabs.ui \
-    user-interfaces/gui-io-control.ui
+    user-interfaces/gui-io-control.ui \
+    gui-helpers/gui-chart-element.ui \
+    gui-helpers/gui-chart-view.ui
 
 RESOURCES += \
     uc-interfaces.qrc

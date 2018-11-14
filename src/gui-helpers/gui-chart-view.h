@@ -16,52 +16,30 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_CREATE_NEW_TABS_H
-#define GUI_CREATE_NEW_TABS_H
+#ifndef GUI_CHART_VIEW_H
+#define GUI_CHART_VIEW_H
 
 #include <QDialog>
-#include <QMap>
-#include <QString>
-#include <QVariant>
 
 #include "gui-generic-helper.h"
 
 namespace Ui {
-class GUI_CREATE_NEW_TABS;
+class GUI_CHART_VIEW;
 }
 
-class GUI_CREATE_NEW_TABS : public QDialog
+class GUI_CHART_VIEW : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit GUI_CREATE_NEW_TABS(QMap<QString, QMap<QString, QVariant>*> **configMap, QWidget *parent = 0);
-    ~GUI_CREATE_NEW_TABS();
-
-    void set_title(QString title);
-    void set_config_tab(int index, QString new_config_str);
-    QString get_tab_config_str();
-    int get_tab_index();
+    explicit GUI_CHART_VIEW(QWidget *parent = 0);
+    ~GUI_CHART_VIEW();
 
 public slots:
     void reset_gui();
 
-private slots:
-    void on_Undo_Button_clicked();
-    void on_Clear_Button_clicked();
-    void on_Cancel_Button_clicked();
-    void on_OK_Button_clicked();
-
 private:
-    Ui::GUI_CREATE_NEW_TABS *ui;
-
-    QMap<QString, QMap<QString, QVariant>*> **local_configMap;
-
-    QString local_config_str;
-    int local_index;
-
-    void save_updates();
-    void reset_updates();
+    Ui::GUI_CHART_VIEW *ui;
 };
 
-#endif // GUI_CREATE_NEW_TABS_H
+#endif // GUI_CHART_VIEW_H

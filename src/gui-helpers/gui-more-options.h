@@ -23,7 +23,7 @@
 #include <QMap>
 #include <QString>
 
-#include "gui-helper.h"
+#include "gui-generic-helper.h"
 
 typedef struct MoreOptions_struct {
     bool reset_on_tab_switch;

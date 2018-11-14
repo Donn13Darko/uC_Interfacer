@@ -25,7 +25,7 @@
 #include <QTemporaryFile>
 
 #include "gui-base-major-keys.h"
-#include "../gui-helpers/gui-helper.h"
+#include "../gui-helpers/gui-generic-helper.h"
 #include <QDebug>
 
 class GUI_BASE : public QWidget

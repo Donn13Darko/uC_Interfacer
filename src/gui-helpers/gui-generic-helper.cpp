@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-helper.h"
+#include "gui-generic-helper.h"
 
 #include <QMessageBox>
 #include <QInputDialog>
