@@ -118,7 +118,7 @@ private slots:
     void on_ConnType_Combo_currentIndexChanged(int);
 
     // Graphing handler
-    void on_ShowGraphs_Button_clicked();
+    void on_CreatePlots_Button_clicked();
 
 private:
     // UI element

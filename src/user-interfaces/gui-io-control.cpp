@@ -492,7 +492,7 @@ void GUI_IO_CONTROL::on_ConnType_Combo_currentIndexChanged(int)
     else ui->ConnAddr_Combo->setEditable(false);
 }
 
-void GUI_IO_CONTROL::on_ShowGraphs_Button_clicked()
+void GUI_IO_CONTROL::on_CreatePlots_Button_clicked()
 {
     // Setup graph
     GUI_CHART_VIEW *chart_view = new GUI_CHART_VIEW();

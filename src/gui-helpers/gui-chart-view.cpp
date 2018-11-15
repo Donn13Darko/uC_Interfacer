@@ -125,19 +125,33 @@ void GUI_CHART_VIEW::update_chart_grid()
                                           QSizePolicy::Expanding, QSizePolicy::Maximum);;
     }
 
+    /** Update entries in grid **/
+
     // Replace items in grid if changed
     for (int i = 0; i < num_charts; i++)
     {
+        // Set column stretchs during first row
+        if (curr_row == 0)
+        {
+            ui->ChartGridLayout->setColumnStretch(curr_col, 1);
+        }
+
+        // Set row stretchs at first column
+        if (curr_col == 0)
+        {
+            ui->ChartGridLayout->setRowStretch(curr_row, 1);
+        }
+
         // Set grid item to current chart
         new_item = (QWidget*) charts.at(i);
         old_item = ui->ChartGridLayout->itemAtPosition(curr_row, curr_col);
         if (!old_item)
         {
-            ui->ChartGridLayout->addWidget(new_item, curr_row, curr_col);
+            ui->ChartGridLayout->addWidget(new_item, curr_row, curr_col, 1, 1);
         } else if (new_item != old_item->widget())
         {
             ui->ChartGridLayout->removeItem(old_item);
-            ui->ChartGridLayout->addWidget(new_item, curr_row, curr_col);
+            ui->ChartGridLayout->addWidget(new_item, curr_row, curr_col, 1, 1);
         }
 
         // Increment column and adjust row if overflows
@@ -149,6 +163,28 @@ void GUI_CHART_VIEW::update_chart_grid()
             curr_col = 0;
         }
     }
+
+    /** Handle streching & sizing **/
+
+    // Get last used row
+    if (curr_col != 0) curr_row += 1;
+
+    // Set unused row strech to zero
+    int grid_rows = ui->ChartGridLayout->rowCount();
+    while (curr_row < grid_rows)
+    {
+        ui->ChartGridLayout->setRowStretch(curr_row++, 0);
+    }
+
+    // Get last used column
+    curr_col = num_chart_cols;
+
+    // Set unused column strech to zero
+    int grid_cols = ui->ChartGridLayout->columnCount();
+    while (curr_col < grid_cols)
+    {
+        ui->ChartGridLayout->setColumnStretch(curr_col++, 0);
+    }
 }
 
 void GUI_CHART_VIEW::destroy_chart_elements()
@@ -158,7 +194,7 @@ void GUI_CHART_VIEW::destroy_chart_elements()
 
     // Get and delete all grid elements
     QLayoutItem *item;
-    while ((item = ui->ChartGridLayout->itemAt(0)) != nullptr)
+    while ((item = ui->ChartGridLayout->itemAt(0)))
     {
         delete item->widget();
         delete item;

@@ -978,7 +978,7 @@
     </layout>
    </item>
    <item row="1" column="0">
-    <widget class="QPushButton" name="ShowGraphs_Button">
+    <widget class="QPushButton" name="CreatePlots_Button">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
        <horstretch>0</horstretch>
@@ -992,7 +992,7 @@
       </size>
      </property>
      <property name="text">
-      <string>Graph(s)</string>
+      <string>Plot</string>
      </property>
     </widget>
    </item>
