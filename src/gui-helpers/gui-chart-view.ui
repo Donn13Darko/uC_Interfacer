@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>520</width>
+    <width>400</width>
     <height>450</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>520</width>
+    <width>400</width>
     <height>450</height>
    </size>
   </property>
@@ -26,7 +26,7 @@
    <string>Charts</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
+   <item alignment="Qt::AlignHCenter|Qt::AlignTop">
     <widget class="QLabel" name="Title_Label">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -56,7 +56,7 @@
    <item>
     <layout class="QHBoxLayout" name="ChartControlHLayout">
      <property name="sizeConstraint">
-      <enum>QLayout::SetFixedSize</enum>
+      <enum>QLayout::SetMaximumSize</enum>
      </property>
      <item>
       <spacer name="ControlSpacerLeft">
@@ -69,7 +69,7 @@
        <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
-         <height>20</height>
+         <height>10</height>
         </size>
        </property>
       </spacer>
@@ -77,9 +77,9 @@
      <item>
       <layout class="QGridLayout" name="ControlGridLayout">
        <property name="sizeConstraint">
-        <enum>QLayout::SetFixedSize</enum>
+        <enum>QLayout::SetMaximumSize</enum>
        </property>
-       <item row="0" column="0">
+       <item row="0" column="0" alignment="Qt::AlignTop">
         <widget class="QComboBox" name="ChartType_Combo">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -93,9 +93,15 @@
            <height>23</height>
           </size>
          </property>
+         <property name="maximumSize">
+          <size>
+           <width>75</width>
+           <height>23</height>
+          </size>
+         </property>
         </widget>
        </item>
-       <item row="0" column="1">
+       <item row="0" column="1" alignment="Qt::AlignTop">
         <widget class="QPushButton" name="AddChart_Button">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -109,12 +115,21 @@
            <height>23</height>
           </size>
          </property>
+         <property name="maximumSize">
+          <size>
+           <width>75</width>
+           <height>23</height>
+          </size>
+         </property>
          <property name="text">
           <string>Add Chart</string>
          </property>
+         <property name="autoDefault">
+          <bool>false</bool>
+         </property>
         </widget>
        </item>
-       <item row="1" column="0" alignment="Qt::AlignRight">
+       <item row="1" column="0" alignment="Qt::AlignRight|Qt::AlignTop">
         <widget class="QLineEdit" name="NumColumns_LineEdit">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -139,7 +154,7 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
+       <item row="1" column="1" alignment="Qt::AlignTop">
         <widget class="QLabel" name="NumColumns_Label">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -148,6 +163,12 @@
           </sizepolicy>
          </property>
          <property name="minimumSize">
+          <size>
+           <width>75</width>
+           <height>23</height>
+          </size>
+         </property>
+         <property name="maximumSize">
           <size>
            <width>75</width>
            <height>23</height>
@@ -174,7 +195,7 @@
        <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
-         <height>20</height>
+         <height>10</height>
         </size>
        </property>
       </spacer>
@@ -189,17 +210,17 @@
     </layout>
    </item>
    <item>
-    <spacer name="verticalSpacer">
+    <spacer name="ChartVSpacerBottom">
      <property name="orientation">
       <enum>Qt::Vertical</enum>
      </property>
      <property name="sizeType">
-      <enum>QSizePolicy::Expanding</enum>
+      <enum>QSizePolicy::Maximum</enum>
      </property>
      <property name="sizeHint" stdset="0">
       <size>
        <width>20</width>
-       <height>40</height>
+       <height>16777215</height>
       </size>
      </property>
     </spacer>

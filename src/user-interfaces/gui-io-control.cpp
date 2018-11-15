@@ -56,7 +56,6 @@ GUI_IO_CONTROL::~GUI_IO_CONTROL()
     // Delete local variables
     delete AIO_Grid;
     delete DIO_Grid;
-    delete chart_view;
     delete ui;
 }
 
@@ -495,7 +494,17 @@ void GUI_IO_CONTROL::on_ConnType_Combo_currentIndexChanged(int)
 
 void GUI_IO_CONTROL::on_ShowGraphs_Button_clicked()
 {
-    // Show the chart
+    // Setup graph
+    GUI_CHART_VIEW *chart_view = new GUI_CHART_VIEW();
+    chart_view->setAttribute(Qt::WA_DeleteOnClose);
+    chart_view->setModal(false);
+
+    // Connect destroy signal to close signal
+    connect(this, SIGNAL(destroyed()),
+            chart_view, SLOT(close()),
+            Qt::QueuedConnection);
+
+    // Show the chart view
     chart_view->show();
 }
 
@@ -520,10 +529,6 @@ void GUI_IO_CONTROL::initialize()
     logFile = NULL;
     logStream = NULL;
     logIsRecording = false;
-
-    // Setup graph
-    chart_view = new GUI_CHART_VIEW(this);
-    chart_view->setModal(false);
 }
 
 void GUI_IO_CONTROL::setupUpdaters()
@@ -1254,8 +1259,8 @@ QHBoxLayout *GUI_IO_CONTROL::create_pin()
     pin_edit->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Maximum);
 
     // Set pin attributes
-    pin_label->setAlignment(Qt::AlignRight);
-    pin_edit->setAlignment(Qt::AlignRight);
+    pin_label->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
+    pin_edit->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
 
     // Add elements to pin layout
     pin->addWidget(pin_label);

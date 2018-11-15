@@ -63,7 +63,7 @@ void GUI_CHART_VIEW::destroy_chart_element()
     int index = ui->ChartGridLayout->indexOf((QWidget*) item);
 
     // Remove from charts lists
-    charts.removeOne(item);
+    charts.removeAll(item);
 
     // Delete item of interest from grid
     QLayoutItem *item_layout = ui->ChartGridLayout->takeAt(index);
@@ -82,6 +82,7 @@ void GUI_CHART_VIEW::on_AddChart_Button_clicked()
     // Create new chart element
     GUI_CHART_ELEMENT *new_elem = \
             new GUI_CHART_ELEMENT(ui->ChartType_Combo->currentIndex() + 1, this);
+    new_elem->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Connect to disconnect & remove slot
     connect(new_elem, SIGNAL(exit_clicked()),
@@ -113,14 +114,29 @@ void GUI_CHART_VIEW::update_chart_grid()
     QWidget *new_item;
     QLayoutItem *old_item;
 
+    // Disable spacer if charts
+    if (num_charts != 0)
+    {
+        ui->ChartVSpacerBottom->changeSize(20, 0,
+                                          QSizePolicy::Expanding, QSizePolicy::Maximum);
+    } else
+    {
+        ui->ChartVSpacerBottom->changeSize(20, 16777215,
+                                          QSizePolicy::Expanding, QSizePolicy::Maximum);;
+    }
+
     // Replace items in grid if changed
     for (int i = 0; i < num_charts; i++)
     {
         // Set grid item to current chart
         new_item = (QWidget*) charts.at(i);
         old_item = ui->ChartGridLayout->itemAtPosition(curr_row, curr_col);
-        if (!old_item || (new_item != old_item->widget()))
+        if (!old_item)
         {
+            ui->ChartGridLayout->addWidget(new_item, curr_row, curr_col);
+        } else if (new_item != old_item->widget())
+        {
+            ui->ChartGridLayout->removeItem(old_item);
             ui->ChartGridLayout->addWidget(new_item, curr_row, curr_col);
         }
 

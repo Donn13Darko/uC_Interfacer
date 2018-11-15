@@ -19,6 +19,8 @@
 #include "gui-chart-element.h"
 #include "ui_gui-chart-element.h"
 
+QT_CHARTS_USE_NAMESPACE
+
 // Setup supported Charts list
 QStringList
 GUI_CHART_ELEMENT::supportedChartsList({
@@ -39,6 +41,9 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
     // Setup UI
     ui->setupUi(this);
 
+    // Set start update rate
+    ui->UpdateRate_LineEdit->setText("1");
+
     // Set and create the desired chart
     chart_type = type;
     create_chart_element();
@@ -46,6 +51,10 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
 
 GUI_CHART_ELEMENT::~GUI_CHART_ELEMENT()
 {
+    // Delete chart element
+    destroy_chart_element();
+
+    // Delete ui
     delete ui;
 }
 
@@ -70,6 +79,32 @@ void GUI_CHART_ELEMENT::create_chart_element()
         case CHART_TYPE_3D_SCATTER:
         case CHART_TYPE_3D_BAR:
         case CHART_TYPE_3D_SURFACE:
+            chart_element = (QWidget*) new QChartView(new QChart(), this);
+            break;
+        default:
+            return;
+    }
+    chart_element->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    ui->ChartGridLayout->addWidget(chart_element, 0, 0, 0, 0);
+}
+
+void GUI_CHART_ELEMENT::destroy_chart_element()
+{
+    switch (chart_type)
+    {
+        case CHART_TYPE_2D_LINE:
+        case CHART_TYPE_2D_SCATTER:
+        case CHART_TYPE_2D_BAR:
+        case CHART_TYPE_3D_LINE:
+        case CHART_TYPE_3D_SCATTER:
+        case CHART_TYPE_3D_BAR:
+        case CHART_TYPE_3D_SURFACE:
+        {
+            delete ((QChartView*) chart_element)->chart();
+            delete chart_element;
+            break;
+        }
+        default:
             return;
     }
 }

@@ -19,10 +19,22 @@
 #ifndef GUI_CHART_ELEMENT_H
 #define GUI_CHART_ELEMENT_H
 
+// Inheritance
 #include <QWidget>
+
+// Graphical views
 #include <QGraphicsWidget>
 
+// Charts
+#include <QChart>
+#include <QChartView>
+
+// Data members
 #include <QStringList>
+#include <QLineSeries>
+
+// Helpers
+#include <QTimer>
 
 // Needs to be in same order as supportedChartsList
 typedef enum {
@@ -62,11 +74,17 @@ private:
     Ui::GUI_CHART_ELEMENT *ui;
 
     int chart_type;
-    QGraphicsWidget *chart;
+    QWidget *chart_element;
+
+    QTimer update_timer;
 
     static QStringList supportedChartsList;
 
+    // Create or destroy the chart
     void create_chart_element();
+    void destroy_chart_element();
+
+    // Add & update data series
     void add_data_series(int series_uid, void *data);
     void update_data_series(int series_uid, void *data);
 };

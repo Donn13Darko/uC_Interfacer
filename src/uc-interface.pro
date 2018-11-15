@@ -4,9 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui serialport network
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += core gui serialport network charts widgets
 
 TARGET = uc-interface
 TEMPLATE = app

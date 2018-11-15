@@ -170,9 +170,6 @@ private:
     bool devConnected;
     QMap<QString, QStringList> devSettings;
 
-    // Graphing helpers
-    GUI_CHART_VIEW *chart_view;
-
     // Setup variables
     void initialize();
     void setupUpdaters();
