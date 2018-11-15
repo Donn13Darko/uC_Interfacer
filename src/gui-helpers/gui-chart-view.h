@@ -37,9 +37,15 @@ public:
 
 public slots:
     void reset_gui();
+    void destroy_chart_element();
+
+private slots:
+    void on_AddChart_Button_clicked();
 
 private:
     Ui::GUI_CHART_VIEW *ui;
+
+    void destroy_chart_elements();
 };
 
 #endif // GUI_CHART_VIEW_H

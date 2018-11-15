@@ -41,6 +41,9 @@
 #include <QTextStream>
 #include <QTimer>
 
+// Graphs
+#include "../gui-helpers/gui-chart-view.h"
+
 namespace Ui {
 class GUI_IO_CONTROL;
 }
@@ -114,6 +117,9 @@ private slots:
     // Connection combo handler
     void on_ConnType_Combo_currentIndexChanged(int);
 
+    // Graphing handler
+    void on_ShowGraphs_Button_clicked();
+
 private:
     // UI element
     Ui::GUI_IO_CONTROL *ui;
@@ -160,8 +166,12 @@ private:
         io_num_entries
     } io_gui_positions;
 
+    // Connection settings
     bool devConnected;
     QMap<QString, QStringList> devSettings;
+
+    // Graphing helpers
+    GUI_CHART_VIEW *chart_view;
 
     // Setup variables
     void initialize();

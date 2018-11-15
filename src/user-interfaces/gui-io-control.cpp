@@ -56,6 +56,7 @@ GUI_IO_CONTROL::~GUI_IO_CONTROL()
     // Delete local variables
     delete AIO_Grid;
     delete DIO_Grid;
+    delete chart_view;
     delete ui;
 }
 
@@ -492,6 +493,12 @@ void GUI_IO_CONTROL::on_ConnType_Combo_currentIndexChanged(int)
     else ui->ConnAddr_Combo->setEditable(false);
 }
 
+void GUI_IO_CONTROL::on_ShowGraphs_Button_clicked()
+{
+    // Show the chart
+    chart_view->show();
+}
+
 void GUI_IO_CONTROL::initialize()
 {
     // Set class pin variables
@@ -513,6 +520,10 @@ void GUI_IO_CONTROL::initialize()
     logFile = NULL;
     logStream = NULL;
     logIsRecording = false;
+
+    // Setup graph
+    chart_view = new GUI_CHART_VIEW(this);
+    chart_view->setModal(false);
 }
 
 void GUI_IO_CONTROL::setupUpdaters()

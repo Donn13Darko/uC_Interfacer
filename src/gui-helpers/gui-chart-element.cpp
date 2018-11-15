@@ -19,15 +19,57 @@
 #include "gui-chart-element.h"
 #include "ui_gui-chart-element.h"
 
-GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(QWidget *parent) :
+// Setup supported Charts list
+QStringList
+GUI_CHART_ELEMENT::supportedChartsList({
+                                           "2D Line",
+                                           "2D Scatter",
+                                           "2D Bar",
+                                           "2D Area",
+                                           "3D Line",
+                                           "3D Scatter",
+                                           "3D Surface",
+                                           "3D Surface"
+                                       });
+
+GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::GUI_CHART_ELEMENT)
 {
     // Setup UI
     ui->setupUi(this);
+
+    // Set and create the desired chart
+    chart_type = type;
+    create_chart_element();
 }
 
 GUI_CHART_ELEMENT::~GUI_CHART_ELEMENT()
 {
     delete ui;
+}
+
+QStringList GUI_CHART_ELEMENT::get_chart_types()
+{
+    return supportedChartsList;
+}
+
+void GUI_CHART_ELEMENT::on_Exit_Button_clicked()
+{
+    emit exit_clicked();
+}
+
+void GUI_CHART_ELEMENT::create_chart_element()
+{
+    switch (chart_type)
+    {
+        case CHART_TYPE_2D_LINE:
+        case CHART_TYPE_2D_SCATTER:
+        case CHART_TYPE_2D_BAR:
+        case CHART_TYPE_3D_LINE:
+        case CHART_TYPE_3D_SCATTER:
+        case CHART_TYPE_3D_BAR:
+        case CHART_TYPE_3D_SURFACE:
+            return;
+    }
 }
