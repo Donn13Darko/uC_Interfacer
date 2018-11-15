@@ -21,7 +21,7 @@
 
 #include <QDialog>
 
-#include "gui-generic-helper.h"
+#include "gui-chart-element.h"
 
 namespace Ui {
 class GUI_CHART_VIEW;
@@ -41,10 +41,15 @@ public slots:
 
 private slots:
     void on_AddChart_Button_clicked();
+    void on_NumColumns_LineEdit_editingFinished();
 
 private:
     Ui::GUI_CHART_VIEW *ui;
 
+    int num_chart_cols;
+    QList<GUI_CHART_ELEMENT*> charts;
+
+    void update_chart_grid();
     void destroy_chart_elements();
 };
 

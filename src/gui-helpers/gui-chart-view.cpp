@@ -19,8 +19,6 @@
 #include "gui-chart-view.h"
 #include "ui_gui-chart-view.h"
 
-#include "gui-chart-element.h"
-
 GUI_CHART_VIEW::GUI_CHART_VIEW(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::GUI_CHART_VIEW)
@@ -49,6 +47,10 @@ void GUI_CHART_VIEW::reset_gui()
 {
     // Remove all charts
     destroy_chart_elements();
+
+    // Reset number of columns
+    ui->NumColumns_LineEdit->setText("2");
+    on_NumColumns_LineEdit_editingFinished();
 }
 
 void GUI_CHART_VIEW::destroy_chart_element()
@@ -59,9 +61,11 @@ void GUI_CHART_VIEW::destroy_chart_element()
 
     // Get index of item & number of entries in grid
     int index = ui->ChartGridLayout->indexOf((QWidget*) item);
-    int count = ui->ChartGridLayout->count() - 1;
 
-    // Delete item of interest
+    // Remove from charts lists
+    charts.removeOne(item);
+
+    // Delete item of interest from grid
     QLayoutItem *item_layout = ui->ChartGridLayout->takeAt(index);
     if (item_layout)
     {
@@ -69,20 +73,8 @@ void GUI_CHART_VIEW::destroy_chart_element()
         delete item_layout;
     }
 
-    // Setup variables
-    int row, col, rowSpan, colSpan, i;
-
-    // Set i and loop until done complete
-    i = index;
-    while (i < count)
-    {
-        // Get row & column of current index
-        ui->ChartGridLayout->getItemPosition(i, &row, &col, &rowSpan, &colSpan);
-
-        // Replace current index with item at next index
-        ui->ChartGridLayout->addItem(ui->ChartGridLayout->takeAt(++i),
-                                     row, col, rowSpan, colSpan);
-    }
+    // Update chart grid
+    update_chart_grid();
 }
 
 void GUI_CHART_VIEW::on_AddChart_Button_clicked()
@@ -96,21 +88,60 @@ void GUI_CHART_VIEW::on_AddChart_Button_clicked()
             this, SLOT(destroy_chart_element()),
             Qt::QueuedConnection);
 
-    // Get next grid position
-    int row, col, rowSpan, colSpan;
-    ui->ChartGridLayout->getItemPosition(ui->ChartGridLayout->count(),
-                                         &row, &col, &rowSpan, &colSpan);
+    // Append to charts
+    charts.append(new_elem);
 
-    // Add to grid
-    ui->ChartGridLayout->addWidget((QWidget*) new_elem, row, col);
+    // Update grid layout
+    update_chart_grid();
+}
+
+void GUI_CHART_VIEW::on_NumColumns_LineEdit_editingFinished()
+{
+    // Update number of cols
+    num_chart_cols = ui->NumColumns_LineEdit->text().toInt(nullptr, 10);
+
+    // Update the grid layout
+    update_chart_grid();
+}
+
+void GUI_CHART_VIEW::update_chart_grid()
+{
+    // Setup loop variables
+    int curr_col = 0;
+    int curr_row = 0;
+    int num_charts = charts.length();
+    QWidget *new_item;
+    QLayoutItem *old_item;
+
+    // Replace items in grid if changed
+    for (int i = 0; i < num_charts; i++)
+    {
+        // Set grid item to current chart
+        new_item = (QWidget*) charts.at(i);
+        old_item = ui->ChartGridLayout->itemAtPosition(curr_row, curr_col);
+        if (!old_item || (new_item != old_item->widget()))
+        {
+            ui->ChartGridLayout->addWidget(new_item, curr_row, curr_col);
+        }
+
+        // Increment column and adjust row if overflows
+        curr_col += 1;
+        if ((num_chart_cols - 1) < curr_col)
+        {
+            // Increment row and reset column
+            curr_row += 1;
+            curr_col = 0;
+        }
+    }
 }
 
 void GUI_CHART_VIEW::destroy_chart_elements()
 {
-    // Element holder
-    QLayoutItem *item;
+    // Clear charts list
+    charts.clear();
 
-    // Get and delete all elements
+    // Get and delete all grid elements
+    QLayoutItem *item;
     while ((item = ui->ChartGridLayout->itemAt(0)) != nullptr)
     {
         delete item->widget();

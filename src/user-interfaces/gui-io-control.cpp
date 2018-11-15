@@ -1355,12 +1355,8 @@ void GUI_IO_CONTROL::update_pin_grid(PinTypeInfo *pInfo)
         // Set grid item to current pin
         new_item = pins->at(i);
         old_item = pInfo->grid->itemAtPosition(curr_row, curr_col);
-        if (!old_item)
+        if (!old_item || (new_item != old_item->layout()))
         {
-            pInfo->grid->addLayout(new_item, curr_row, curr_col);
-        } else if (new_item != old_item->layout())
-        {
-            pInfo->grid->removeItem(old_item);
             pInfo->grid->addLayout(new_item, curr_row, curr_col);
         }
 
