@@ -129,6 +129,7 @@ private:
     Ui::GUI_IO_CONTROL *ui;
 
     // Maps for setting control values
+    QStringList pinList;
     QMap<uint8_t, QList<QHBoxLayout*>*> pinMap;
     QMap<uint8_t, QMap<QString, uint8_t>*> controlMap;
     QMap<uint8_t, QList<uint8_t>*> disabledValueSet;

@@ -42,7 +42,7 @@ GUI_CHART_ELEMENT::supportedChartsList({
                                            "3D Surface"
                                        });
 
-GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QStringList data_series, QWidget *parent) :
+GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::GUI_CHART_ELEMENT)
 {
@@ -53,7 +53,6 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QStringList data_series, QWidget 
     update_time = ((double) QDateTime::currentMSecsSinceEpoch() / GUI_HELPER::S2MS);
     chart_type = type;
     chart_element = nullptr;
-    ui->SeriesSelection_ComboBox->addItems(data_series);
     ui->Legend_CheckBox->setChecked(false);
 
     // Create the chart element
@@ -61,11 +60,11 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QStringList data_series, QWidget 
 
     // Registar types
     qRegisterMetaType< QList<QString> >( "QList<QString>" );
-    qRegisterMetaType< QList<void*> >( "QList<void*>" );
+    qRegisterMetaType< QList<double*> >( "QList<double*>" );
 
     // Connect update receiver
-    connect(this, SIGNAL(update_receive(QList<void*>)),
-            this, SLOT(process_update(QList<void*>)),
+    connect(this, SIGNAL(update_receive(QList<double*>)),
+            this, SLOT(process_update(QList<double*>)),
             Qt::QueuedConnection);
 
     // Setup, connect, and start the update rate
@@ -86,9 +85,32 @@ GUI_CHART_ELEMENT::~GUI_CHART_ELEMENT()
     delete ui;
 }
 
-QStringList GUI_CHART_ELEMENT::get_chart_types()
+int GUI_CHART_ELEMENT::get_chart_type()
+{
+    return chart_type;
+}
+
+QStringList GUI_CHART_ELEMENT::get_supported_chart_types()
 {
     return supportedChartsList;
+}
+
+void GUI_CHART_ELEMENT::update_series_combo(QStringList new_data_series_list)
+{
+    // Remove added elements that don't exist anymore
+    foreach (QString key, addded_data_series_map.keys())
+    {
+        // Remove series that don't exist anymore
+        if (!new_data_series_list.contains(key))
+        {
+            ui->SeriesSelection_ComboBox->setCurrentText(key);
+            on_Remove_Button_clicked();
+        }
+    }
+
+    // Clear combo and re-add items
+    ui->SeriesSelection_ComboBox->clear();
+    ui->SeriesSelection_ComboBox->addItems(new_data_series_list);
 }
 
 void GUI_CHART_ELEMENT::on_UpdateRate_LineEdit_editingFinished()
@@ -148,7 +170,11 @@ void GUI_CHART_ELEMENT::on_Add_Button_clicked()
     QString series_uid = ui->SeriesSelection_ComboBox->currentText();
 
     // Verify not already in map
-    if (addded_data_series_map.contains(series_uid)) return;
+    if (series_uid.isEmpty() ||
+            addded_data_series_map.contains(series_uid))
+    {
+        return;
+    }
 
     // Add to chart element & data series map
     switch (chart_type)
@@ -186,7 +212,7 @@ void GUI_CHART_ELEMENT::on_Remove_Button_clicked()
     // Verify chart element
     if (!chart_element) return;
 
-    // Get the series id
+    // Get the series id from combo (if not provided)
     QString series_uid = ui->SeriesSelection_ComboBox->currentText();
 
     // Verify map contains series
@@ -225,7 +251,7 @@ void GUI_CHART_ELEMENT::update_data_series()
     emit update_request(addded_data_series_map.keys());
 }
 
-void GUI_CHART_ELEMENT::process_update(QList<void*> data_values)
+void GUI_CHART_ELEMENT::process_update(QList<double*> data_values)
 {
     // Verify chart element
     if (!chart_element) return;
@@ -249,11 +275,11 @@ void GUI_CHART_ELEMENT::process_update(QList<void*> data_values)
         {
             // Add values to series
             QLineSeries *data_series;
-            qreal *data_point;
+            double *data_point;
             for (int i = 0; i < added_len; i++)
             {
                 // Parse values from info
-                data_point = (qreal*) data_values.at(i);
+                data_point = data_values.at(i);
                 data_series = (QLineSeries*) addded_data_series_map.value(added_keys.at(i));
                 if (!data_point)
                 {
@@ -265,7 +291,7 @@ void GUI_CHART_ELEMENT::process_update(QList<void*> data_values)
                 }
 
                 // Append to series
-                data_series->append((qreal) update_time, *data_point);
+                data_series->append(update_time, *data_point);
 
                 // Delete point
                 delete data_point;

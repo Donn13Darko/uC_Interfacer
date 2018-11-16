@@ -31,7 +31,7 @@ GUI_CHART_VIEW::GUI_CHART_VIEW(QWidget *parent) :
     qRegisterMetaType< QList<QString> >( "QList<QString>" );
 
     // Load graph types
-    ui->ChartType_Combo->addItems(GUI_CHART_ELEMENT::get_chart_types());
+    ui->ChartType_Combo->addItems(GUI_CHART_ELEMENT::get_supported_chart_types());
 
     // Reset GUI
     reset_gui();
@@ -85,6 +85,12 @@ void GUI_CHART_VIEW::set_data_list(QStringList new_data_series_list)
 
     // Copy new list
     data_series_list.append(new_data_series_list);
+
+    // Update each chart with new valid list
+    foreach (GUI_CHART_ELEMENT *chart_elem, charts)
+    {
+        chart_elem->update_series_combo(data_series_list);
+    }
 }
 
 void GUI_CHART_VIEW::element_data_request(QList<QString> data_points)
@@ -100,11 +106,11 @@ void GUI_CHART_VIEW::element_data_request(QList<QString> data_points)
 void GUI_CHART_VIEW::on_AddChart_Button_clicked()
 {
     // Create new chart element
-    GUI_CHART_ELEMENT *new_elem = new GUI_CHART_ELEMENT(ui->ChartType_Combo->currentIndex() + 1,
-                                                        data_series_list, this);
+    GUI_CHART_ELEMENT *new_elem = new GUI_CHART_ELEMENT(ui->ChartType_Combo->currentIndex() + 1, this);
     if (!new_elem) return;
 
-    // Set size info
+    // Set element info
+    new_elem->update_series_combo(data_series_list);
     new_elem->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Connect to disconnect & remove slot

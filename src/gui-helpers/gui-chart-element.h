@@ -53,15 +53,19 @@ class GUI_CHART_ELEMENT : public QWidget
     Q_OBJECT
 
 public:
-    explicit GUI_CHART_ELEMENT(int type = CHART_TYPE_ERROR, QStringList data_series = {}, QWidget *parent = 0);
+    explicit GUI_CHART_ELEMENT(int type = CHART_TYPE_ERROR, QWidget *parent = 0);
     ~GUI_CHART_ELEMENT();
 
-    static QStringList get_chart_types();
+    int get_chart_type();
+    static QStringList get_supported_chart_types();
 
 signals:
     void exit_clicked();
     void update_request(QList<QString> data_points);
-    void update_receive(QList<void*> data_values);
+    void update_receive(QList<double*> data_values);
+
+public slots:
+    void update_series_combo(QStringList new_data_series_list);
 
 private slots:
     void on_UpdateRate_LineEdit_editingFinished();
@@ -72,7 +76,7 @@ private slots:
     void on_Remove_Button_clicked();
 
     void update_data_series();
-    void process_update(QList<void*> data_values);
+    void process_update(QList<double*> data_values);
 
 private:
     Ui::GUI_CHART_ELEMENT *ui;

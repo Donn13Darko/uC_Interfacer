@@ -79,6 +79,10 @@ void GUI_IO_CONTROL::parseConfigMap(QMap<QString, QVariant> *configMap)
     addComboSettings(&pInfo, configMap->value("dio_combo_settings").toStringList());
     setPinCombos(&pInfo, configMap->value("dio_pin_settings").toStringList());
     update_pin_grid(&pInfo);
+    foreach (QHBoxLayout* pin_layout, *pinMap.value(pInfo.pinType))
+    {
+        pinList.append(((QLabel*) pin_layout->itemAt(io_label_pos)->widget())->text().prepend("DIO_"));
+    }
 
     // Add AIO controls
     if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo)) return;
@@ -86,6 +90,10 @@ void GUI_IO_CONTROL::parseConfigMap(QMap<QString, QVariant> *configMap)
     addComboSettings(&pInfo, configMap->value("aio_combo_settings").toStringList());
     setPinCombos(&pInfo, configMap->value("aio_pin_settings").toStringList());
     update_pin_grid(&pInfo);
+    foreach (QHBoxLayout* pin_layout, *pinMap.value(pInfo.pinType))
+    {
+        pinList.append(((QLabel*) pin_layout->itemAt(io_label_pos)->widget())->text().prepend("AIO_"));
+    }
 
     // Add Remote controls
     if (!getPinTypeInfo(MINOR_KEY_IO_REMOTE_CONN, &pInfo)) return;
@@ -169,14 +177,46 @@ void GUI_IO_CONTROL::reset_gui()
 void GUI_IO_CONTROL::chart_update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element)
 {
     // Update and emit back
-    QList<void*> data;
+    QList<qreal*> data;
+
+    // Setup variables
+    uint8_t pinType = 0, pinNum = 0;
+    QStringList pinNum_split;
+    QLayout *item;
+    bool pin_error;
+    double *val;
 
     // Get each element
-    int i = 0;
-    foreach (QString point, data_points)
+    foreach (QString pin, data_points)
     {
-        // Read
-        data.append(new qreal(i++));
+        // Set to no pin error
+        pin_error = false;
+
+        // Get pin type to read
+        if (pin.startsWith("AIO_")) pinType = MINOR_KEY_IO_AIO;
+        else if (pin.startsWith("DIO_")) pinType = MINOR_KEY_IO_DIO;
+        else pin_error = true;
+
+        // If no error, get pinNum
+        if (!pin_error)
+        {
+            // Get pin number
+            pinNum_split = pin.split('_');
+            if (pinNum_split.length() != 2) pin_error = true;
+            else pinNum = pinNum_split.at(1).toInt();
+        }
+
+        // Get pin value
+        if (!pin_error && getPinLayout(pinType, pinNum, &item))
+        {
+            val = new double(((QLineEdit*) item->itemAt(io_line_edit_pos)->widget())->text().toDouble());
+        } else
+        {
+            val = new double(-1);
+        }
+
+        // Add to data list
+        data.append(val);
     }
 
     // Emit back to target graph
@@ -516,7 +556,7 @@ void GUI_IO_CONTROL::on_CreatePlots_Button_clicked()
 {
     // Setup graph
     GUI_CHART_VIEW *chart_view = new GUI_CHART_VIEW();
-    chart_view->set_data_list({"D00", "D01"});
+    chart_view->set_data_list(pinList);
     chart_view->setAttribute(Qt::WA_DeleteOnClose);
     chart_view->setModal(false);
 
@@ -1404,6 +1444,9 @@ void GUI_IO_CONTROL::update_pin_grid(PinTypeInfo *pInfo)
 
 void GUI_IO_CONTROL::clear_all_maps()
 {
+    // Clear pin list
+    pinList.clear();
+
     // Clear pin map
     foreach (uint8_t pinType, pinMap.keys())
     {
