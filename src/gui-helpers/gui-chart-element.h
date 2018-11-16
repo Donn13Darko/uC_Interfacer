@@ -22,19 +22,13 @@
 // Inheritance
 #include <QWidget>
 
-// Graphical views
-#include <QGraphicsWidget>
-
-// Charts
-#include <QChart>
-#include <QChartView>
-
 // Data members
 #include <QStringList>
-#include <QLineSeries>
 
 // Helpers
 #include <QTimer>
+#include <QMap>
+#include "gui-generic-helper.h"
 
 // Needs to be in same order as supportedChartsList
 typedef enum {
@@ -59,23 +53,37 @@ class GUI_CHART_ELEMENT : public QWidget
     Q_OBJECT
 
 public:
-    explicit GUI_CHART_ELEMENT(int type = CHART_TYPE_ERROR, QWidget *parent = 0);
+    explicit GUI_CHART_ELEMENT(int type = CHART_TYPE_ERROR, QStringList data_series = {}, QWidget *parent = 0);
     ~GUI_CHART_ELEMENT();
 
     static QStringList get_chart_types();
 
 signals:
     void exit_clicked();
+    void update_request(QList<QString> data_points);
+
+public slots:
+    void update_receive(QList<void*> data_values);
 
 private slots:
+    void on_UpdateRate_LineEdit_editingFinished();
+    void on_Legend_CheckBox_stateChanged(int);
+
     void on_Exit_Button_clicked();
+    void on_Add_Button_clicked();
+    void on_Remove_Button_clicked();
+
+    void update_data_series();
 
 private:
     Ui::GUI_CHART_ELEMENT *ui;
 
     int chart_type;
     QWidget *chart_element;
+    QMap<QString, void*> addded_data_series_map;
 
+    double update_time;
+    double update_interval;
     QTimer update_timer;
 
     static QStringList supportedChartsList;
@@ -83,10 +91,7 @@ private:
     // Create or destroy the chart
     void create_chart_element();
     void destroy_chart_element();
-
-    // Add & update data series
-    void add_data_series(int series_uid, void *data);
-    void update_data_series(int series_uid, void *data);
+    void destroy_data_map();
 };
 
 #endif // GUI_CHART_ELEMENT_H

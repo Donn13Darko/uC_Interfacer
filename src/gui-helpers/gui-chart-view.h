@@ -35,9 +35,14 @@ public:
     explicit GUI_CHART_VIEW(QWidget *parent = 0);
     ~GUI_CHART_VIEW();
 
+signals:
+    void update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element);
+
 public slots:
     void reset_gui();
     void destroy_chart_element();
+    void set_data_list(QStringList new_data_series_list);
+    void element_data_request(QList<QString> data_points);
 
 private slots:
     void on_AddChart_Button_clicked();
@@ -48,6 +53,8 @@ private:
 
     int num_chart_cols;
     QList<GUI_CHART_ELEMENT*> charts;
+
+    QStringList data_series_list;
 
     void update_chart_grid();
     void destroy_chart_elements();

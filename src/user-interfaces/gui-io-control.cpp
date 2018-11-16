@@ -50,6 +50,9 @@ GUI_IO_CONTROL::~GUI_IO_CONTROL()
     on_StopLog_Button_clicked();
     on_StopUpdater_Button_clicked();
 
+    // Destroy and created charts
+    emit destroy_charts();
+
     // Delete all the maps
     clear_all_maps();
 
@@ -496,11 +499,12 @@ void GUI_IO_CONTROL::on_CreatePlots_Button_clicked()
 {
     // Setup graph
     GUI_CHART_VIEW *chart_view = new GUI_CHART_VIEW();
+    chart_view->set_data_list({});
     chart_view->setAttribute(Qt::WA_DeleteOnClose);
     chart_view->setModal(false);
 
     // Connect destroy signal to close signal
-    connect(this, SIGNAL(destroyed()),
+    connect(this, SIGNAL(destroy_charts()),
             chart_view, SLOT(close()),
             Qt::QueuedConnection);
 
