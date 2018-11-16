@@ -61,8 +61,6 @@ public:
 signals:
     void exit_clicked();
     void update_request(QList<QString> data_points);
-
-public slots:
     void update_receive(QList<void*> data_values);
 
 private slots:
@@ -74,6 +72,7 @@ private slots:
     void on_Remove_Button_clicked();
 
     void update_data_series();
+    void process_update(QList<void*> data_values);
 
 private:
     Ui::GUI_CHART_ELEMENT *ui;

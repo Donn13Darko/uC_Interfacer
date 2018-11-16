@@ -27,6 +27,9 @@ GUI_CHART_VIEW::GUI_CHART_VIEW(QWidget *parent) :
     ui->setupUi(this);
     setWindowFlag(Qt::WindowMinMaxButtonsHint, true);
 
+    // Register types
+    qRegisterMetaType< QList<QString> >( "QList<QString>" );
+
     // Load graph types
     ui->ChartType_Combo->addItems(GUI_CHART_ELEMENT::get_chart_types());
 
@@ -200,9 +203,6 @@ void GUI_CHART_VIEW::update_chart_grid()
     {
         ui->ChartGridLayout->setRowStretch(curr_row++, 0);
     }
-
-    // Get last used column
-    curr_col = num_chart_cols;
 
     // Set unused column strech to zero
     int grid_cols = ui->ChartGridLayout->columnCount();

@@ -82,6 +82,7 @@ signals:
 
 public slots:
     virtual void reset_gui();
+    void chart_update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element);
 
 protected slots:
     void recordPinValues(PinTypeInfo *pInfo);

@@ -166,6 +166,23 @@ void GUI_IO_CONTROL::reset_gui()
     }
 }
 
+void GUI_IO_CONTROL::chart_update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element)
+{
+    // Update and emit back
+    QList<void*> data;
+
+    // Get each element
+    int i = 0;
+    foreach (QString point, data_points)
+    {
+        // Read
+        data.append(new qreal(i++));
+    }
+
+    // Emit back to target graph
+    emit target_element->update_receive(data);
+}
+
 void GUI_IO_CONTROL::recordPinValues(PinTypeInfo *pInfo)
 {
     if (logStream == nullptr) return;
@@ -499,13 +516,18 @@ void GUI_IO_CONTROL::on_CreatePlots_Button_clicked()
 {
     // Setup graph
     GUI_CHART_VIEW *chart_view = new GUI_CHART_VIEW();
-    chart_view->set_data_list({});
+    chart_view->set_data_list({"D00", "D01"});
     chart_view->setAttribute(Qt::WA_DeleteOnClose);
     chart_view->setModal(false);
 
     // Connect destroy signal to close signal
     connect(this, SIGNAL(destroy_charts()),
             chart_view, SLOT(close()),
+            Qt::QueuedConnection);
+
+    // Connect chart view update request
+    connect(chart_view, SIGNAL(update_request(QList<QString>,GUI_CHART_ELEMENT*)),
+            this, SLOT(chart_update_request(QList<QString>,GUI_CHART_ELEMENT*)),
             Qt::QueuedConnection);
 
     // Show the chart view
