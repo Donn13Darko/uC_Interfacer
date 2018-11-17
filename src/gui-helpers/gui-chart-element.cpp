@@ -50,13 +50,18 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
     ui->setupUi(this);
 
     // Set intial values
-    update_time = ((double) QDateTime::currentMSecsSinceEpoch() / GUI_HELPER::S2MS);
+    curr_time = ((double) QDateTime::currentMSecsSinceEpoch() / GUI_HELPER::S2MS);
     chart_type = type;
     chart_element = nullptr;
     ui->Legend_CheckBox->setChecked(false);
 
-    // Create the chart element
-    create_chart_element();
+    // Set & update chart ranges
+    ui->yMin_LineEdit->setText("0.0");
+    ui->yMax_LineEdit->setText("1.0");
+    ui->xDuration_LineEdit->setText("60");
+    on_yMin_LineEdit_editingFinished();
+    on_yMax_LineEdit_editingFinished();
+    on_xDuration_LineEdit_editingFinished();
 
     // Registar types
     qRegisterMetaType< QList<QString> >( "QList<QString>" );
@@ -73,6 +78,9 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
             this, SLOT(update_data_series()),
             Qt::DirectConnection);
     on_UpdateRate_LineEdit_editingFinished();
+
+    // Create the chart element
+    create_chart_element();
 }
 
 GUI_CHART_ELEMENT::~GUI_CHART_ELEMENT()
@@ -116,7 +124,7 @@ void GUI_CHART_ELEMENT::update_series_combo(QStringList new_data_series_list)
 void GUI_CHART_ELEMENT::on_UpdateRate_LineEdit_editingFinished()
 {
     // Get new value
-    update_interval = ui->UpdateRate_LineEdit->text().toDouble();
+    double update_interval = ui->UpdateRate_LineEdit->text().toDouble();
 
     // If timeout zero, stop the timer
     // Else, start timer with timeout
@@ -148,8 +156,10 @@ void GUI_CHART_ELEMENT::on_Legend_CheckBox_stateChanged(int)
         case CHART_TYPE_3D_SCATTER:
         case CHART_TYPE_3D_BAR:
         case CHART_TYPE_3D_SURFACE:
+        {
             ((QChartView*) chart_element)->chart()->legend()->setVisible(showLegend);
             break;
+        }
         default:
             return;
     }
@@ -200,6 +210,9 @@ void GUI_CHART_ELEMENT::on_Add_Button_clicked()
             // Link chart axis to series
             n_series->attachAxis(chart->axisX());
             n_series->attachAxis(chart->axisY());
+
+            // Set series name
+            n_series->setName(series_uid);
             break;
         }
         default:
@@ -239,10 +252,102 @@ void GUI_CHART_ELEMENT::on_Remove_Button_clicked()
     }
 }
 
+void GUI_CHART_ELEMENT::on_yMin_LineEdit_editingFinished()
+{
+    qDebug() << "A";
+    // Set new ymin
+    y_min = ui->yMin_LineEdit->text().toDouble();
+
+    // Verify if chart exists
+    if (!chart_element) return;
+
+    // Decide how to set y min
+    switch (chart_type)
+    {
+        case CHART_TYPE_2D_LINE:
+        case CHART_TYPE_2D_SCATTER:
+        case CHART_TYPE_2D_BAR:
+        case CHART_TYPE_2D_AREA:
+        case CHART_TYPE_3D_LINE:
+        case CHART_TYPE_3D_SCATTER:
+        case CHART_TYPE_3D_BAR:
+        case CHART_TYPE_3D_SURFACE:
+        {
+            // Set y min of chart
+            ((QChartView*) chart_element)->chart()->axisY()->setMin(y_min);
+            break;
+        }
+        default:
+            return;
+    }
+}
+
+void GUI_CHART_ELEMENT::on_yMax_LineEdit_editingFinished()
+{
+    qDebug() << "B";
+    // Set new ymin
+    y_max = ui->yMax_LineEdit->text().toDouble();
+
+    // Verify if chart exists
+    if (!chart_element) return;
+
+    // Decide how to set y min
+    switch (chart_type)
+    {
+        case CHART_TYPE_2D_LINE:
+        case CHART_TYPE_2D_SCATTER:
+        case CHART_TYPE_2D_BAR:
+        case CHART_TYPE_2D_AREA:
+        case CHART_TYPE_3D_LINE:
+        case CHART_TYPE_3D_SCATTER:
+        case CHART_TYPE_3D_BAR:
+        case CHART_TYPE_3D_SURFACE:
+        {
+            // Set y min of chart
+            ((QChartView*) chart_element)->chart()->axisY()->setMax(y_max);
+            break;
+        }
+        default:
+            return;
+    }
+}
+
+void GUI_CHART_ELEMENT::on_xDuration_LineEdit_editingFinished()
+{
+    // Set new ymin
+    x_duration = ui->xDuration_LineEdit->text().toDouble();
+
+    // Verify if chart exists
+    if (!chart_element) return;
+
+    // Decide how to set y min
+    switch (chart_type)
+    {
+        case CHART_TYPE_2D_LINE:
+        case CHART_TYPE_2D_SCATTER:
+        case CHART_TYPE_2D_BAR:
+        case CHART_TYPE_2D_AREA:
+        case CHART_TYPE_3D_LINE:
+        case CHART_TYPE_3D_SCATTER:
+        case CHART_TYPE_3D_BAR:
+        case CHART_TYPE_3D_SURFACE:
+        {
+            // Set x duration for chart
+            ((QChartView*) chart_element)->chart()->axisX()->setRange(curr_time - x_duration, curr_time);
+            break;
+        }
+        default:
+            return;
+    }
+}
+
 void GUI_CHART_ELEMENT::update_data_series()
 {
-    // Add time
-    update_time += update_interval;
+    // Get time
+    curr_time = ((double) QDateTime::currentMSecsSinceEpoch() / GUI_HELPER::S2MS);
+
+    // Update chart range
+    on_xDuration_LineEdit_editingFinished();
 
     // Check if anything to update
     if (addded_data_series_map.isEmpty()) return;
@@ -291,16 +396,11 @@ void GUI_CHART_ELEMENT::process_update(QList<double*> data_values)
                 }
 
                 // Append to series
-                data_series->append(update_time, *data_point);
+                data_series->append(curr_time, *data_point);
 
                 // Delete point
                 delete data_point;
             }
-
-            // Force axis recenter
-            QChart *chart = ((QChartView*) chart_element)->chart();
-            chart->axisX()->setMax(update_time);
-            chart->axisY()->setMax(5);
             break;
         }
         default:
@@ -336,8 +436,8 @@ void GUI_CHART_ELEMENT::create_chart_element()
             // Add basic axis
             n_chart->setAxisX(new QValueAxis());
             n_chart->setAxisY(new QValueAxis());
-            n_chart->axisX()->setRange(update_time, update_time+1);
-            n_chart->axisY()->setRange(0, 1);
+            n_chart->axisX()->setRange(curr_time - x_duration, curr_time);
+            n_chart->axisY()->setRange(y_min, y_max);
             break;
         }
         default:
@@ -398,7 +498,7 @@ void GUI_CHART_ELEMENT::destroy_data_map()
             // Delete all the elements
             foreach (QString key, addded_data_series_map.keys())
             {
-                delete (QLineSeries*) addded_data_series_map.value(key);
+                delete (QLineSeries*) addded_data_series_map.take(key);
             }
             break;
         }

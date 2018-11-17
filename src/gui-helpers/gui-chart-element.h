@@ -75,6 +75,10 @@ private slots:
     void on_Add_Button_clicked();
     void on_Remove_Button_clicked();
 
+    void on_yMin_LineEdit_editingFinished();
+    void on_yMax_LineEdit_editingFinished();
+    void on_xDuration_LineEdit_editingFinished();
+
     void update_data_series();
     void process_update(QList<double*> data_values);
 
@@ -85,8 +89,11 @@ private:
     QWidget *chart_element;
     QMap<QString, void*> addded_data_series_map;
 
-    double update_time;
-    double update_interval;
+    double y_min;
+    double y_max;
+    double x_duration;
+
+    double curr_time;
     QTimer update_timer;
 
     static QStringList supportedChartsList;

@@ -77,9 +77,6 @@ public:
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
     virtual bool waitForDevice(uint8_t minorKey);
 
-signals:
-    void destroy_charts();
-
 public slots:
     virtual void reset_gui();
     void chart_update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element);
