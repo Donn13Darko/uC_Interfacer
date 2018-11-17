@@ -64,8 +64,8 @@ void GUI_IO_CONTROL::parseConfigMap(QMap<QString, QVariant> *configMap)
     // Pass to parent for parsing
     GUI_BASE::parseConfigMap(configMap);
 
-    // Clear all maps
-    clear_all_maps();
+    // Clear pin list
+    pinList.clear();
 
     // Setup pintypes variable
     PinTypeInfo pInfo;
@@ -75,22 +75,16 @@ void GUI_IO_CONTROL::parseConfigMap(QMap<QString, QVariant> *configMap)
     addPinType(pInfo.pinType);
     addComboSettings(&pInfo, configMap->value("dio_combo_settings").toStringList());
     setPinCombos(&pInfo, configMap->value("dio_pin_settings").toStringList());
+    destroy_unused_pins(&pInfo);
     update_pin_grid(&pInfo);
-    foreach (QHBoxLayout* pin_layout, *pinMap.value(pInfo.pinType))
-    {
-        pinList.append(((QLabel*) pin_layout->itemAt(io_label_pos)->widget())->text().prepend("DIO_"));
-    }
 
     // Add AIO controls
     if (!getPinTypeInfo(MINOR_KEY_IO_AIO, &pInfo)) return;
     addPinType(pInfo.pinType);
     addComboSettings(&pInfo, configMap->value("aio_combo_settings").toStringList());
     setPinCombos(&pInfo, configMap->value("aio_pin_settings").toStringList());
+    destroy_unused_pins(&pInfo);
     update_pin_grid(&pInfo);
-    foreach (QHBoxLayout* pin_layout, *pinMap.value(pInfo.pinType))
-    {
-        pinList.append(((QLabel*) pin_layout->itemAt(io_label_pos)->widget())->text().prepend("AIO_"));
-    }
 
     // Add Remote controls
     if (!getPinTypeInfo(MINOR_KEY_IO_REMOTE_CONN, &pInfo)) return;
@@ -102,6 +96,9 @@ void GUI_IO_CONTROL::parseConfigMap(QMap<QString, QVariant> *configMap)
     ui->ConnType_Combo->clear();
     ui->ConnType_Combo->addItems(controlMap.value(pInfo.pinType)->keys());
     ui->ConnType_Combo->blockSignals(prev_block_status);
+
+    // Emit pinList update
+    emit pin_update(pinList);
 
     // Reset after parse (forces updates)
     reset_gui();
@@ -567,6 +564,11 @@ void GUI_IO_CONTROL::on_CreatePlots_Button_clicked()
             this, SLOT(chart_update_request(QList<QString>,GUI_CHART_ELEMENT*)),
             Qt::QueuedConnection);
 
+    // Connect pin update signals to plot update
+    connect(this, SIGNAL(pin_update(QStringList)),
+            chart_view, SLOT(set_data_list(QStringList)),
+            Qt::QueuedConnection);
+
     // Show the chart view
     chart_view->show();
 }
@@ -825,9 +827,17 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
     QStringList comboStr_split;
     bool prev_block_status;
 
+    // Set prepend string for pinList
+    QString pinType_str, newPin_str;
+    if (pInfo->pinType == MINOR_KEY_IO_AIO) pinType_str = "AIO_";
+    else if (pInfo->pinType == MINOR_KEY_IO_DIO) pinType_str = "DIO_";
+    else pinType_str = "_";
+
     // Setup widget holders
+    QLabel *itemLabel;
     QComboBox *itemCombo;
-    QWidget *sliderWidget, *textWidget;
+    QSlider *itemSlider;
+    QLineEdit *itemLineEdit;
     QLayout *pin_layout;
     QHBoxLayout *new_pin;
 
@@ -879,7 +889,7 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
         {
             // Find row & column of desired pin
             // If not found, create a new pin and insert it into
-            // the map & list at the correct location (by number)
+            // the map & list at the correct location (ordered by number)
             if (!getPinLayout(pInfo->pinType, pin, &pin_layout))
             {
                 // Create the new pin
@@ -899,10 +909,11 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
                 pin_layout = new_pin;
             }
 
-            // Get all the combo
+            // Get all the pin items
+            itemLabel = (QLabel*) pin_layout->itemAt(io_label_pos)->widget();
             itemCombo = (QComboBox*) pin_layout->itemAt(io_combo_pos)->widget();
-            sliderWidget = pin_layout->itemAt(io_slider_pos)->widget();
-            textWidget = pin_layout->itemAt(io_line_edit_pos)->widget();
+            itemSlider = (QSlider*) pin_layout->itemAt(io_slider_pos)->widget();
+            itemLineEdit = (QLineEdit*) pin_layout->itemAt(io_line_edit_pos)->widget();
 
             // Block signals to combo
             prev_block_status = itemCombo->blockSignals(true);
@@ -915,20 +926,24 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
             // Enable or disable pin group
             if (pinDisabledSet->contains(IO))
             {
-                sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-                textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+                itemSlider->setAttribute(Qt::WA_TransparentForMouseEvents, true);
+                itemLineEdit->setAttribute(Qt::WA_TransparentForMouseEvents, true);
             } else
             {
-                sliderWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-                textWidget->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+                itemSlider->setAttribute(Qt::WA_TransparentForMouseEvents, false);
+                itemLineEdit->setAttribute(Qt::WA_TransparentForMouseEvents, false);
             }
 
             // Update slider range
             RangeList *rList = pinRangeMap->value(IO);
-            updateSliderRange((QSlider*) sliderWidget, rList);
+            updateSliderRange(itemSlider, rList);
 
             // Enble signals to combo
             itemCombo->blockSignals(prev_block_status);
+
+            // Add pin to pinList
+            newPin_str = itemLabel->text().prepend(pinType_str);
+            if (!pinList.contains(newPin_str)) pinList.append(newPin_str);
         }
     }
 }
@@ -944,16 +959,12 @@ void GUI_IO_CONTROL::addPinType(uint8_t pinType)
 
 void GUI_IO_CONTROL::addPinLayout(QHBoxLayout *pin, QList<QHBoxLayout *> *pins)
 {
-    // Check edge case
-    int num_pins = pins->length();
-    if (num_pins == 0) pins->append(pin);
-
     // Get insert pin number
     int insert_pin_num = ((QLabel*) pin->itemAt(io_label_pos)->widget())->text().toInt();
 
     // Find insertion position (assume pins inserted in order until now)
     int curr_pin_num;
-    for (int i = (num_pins-1); 0 <= i; i--)
+    for (int i = (pins->length()-1); 0 <= i; i--)
     {
         // Get current pin number
         curr_pin_num = ((QLabel*) pins->at(i)->itemAt(io_label_pos)->widget())->text().toInt();
@@ -966,6 +977,9 @@ void GUI_IO_CONTROL::addPinLayout(QHBoxLayout *pin, QList<QHBoxLayout *> *pins)
             return;
         }
     }
+
+    // If reached here, pin goes at front of list
+    pins->prepend(pin);
 }
 
 void GUI_IO_CONTROL::addComboSettings(PinTypeInfo *pInfo, QList<QString> newSettings)
@@ -1355,6 +1369,37 @@ void GUI_IO_CONTROL::destroy_pin(QHBoxLayout *pin)
     delete pin;
 }
 
+void GUI_IO_CONTROL::destroy_unused_pins(PinTypeInfo *pInfo)
+{
+    // Verify valid input
+    if (!pInfo) return;
+
+    // Get current pins list
+    QList<QHBoxLayout*> *pin_layouts = pinMap.value(pInfo->pinType);
+    if (!pin_layouts) return;
+
+    // Set pinType_str prepend
+    QString pinType_str;
+    if (pInfo->pinType == MINOR_KEY_IO_AIO) pinType_str = "AIO_";
+    else if (pInfo->pinType == MINOR_KEY_IO_DIO) pinType_str = "DIO_";
+    else pinType_str = "_";
+
+    // Check all pins
+    QLabel *pinLabel;
+    foreach (QHBoxLayout *pin_layout, *pin_layouts)
+    {
+        // Get label text
+        pinLabel = (QLabel*) pin_layout->itemAt(io_label_pos)->widget();
+
+        // If not member of pinList, destroy pin and remove from map
+        if (!pinList.contains(pinLabel->text().prepend(pinType_str)))
+        {
+            pin_layouts->removeAll(pin_layout);
+            destroy_pin(pin_layout);
+        }
+    }
+}
+
 void GUI_IO_CONTROL::connect_pin(uint8_t pinType, QHBoxLayout *pin)
 {
     // Verify valid input
@@ -1425,6 +1470,7 @@ void GUI_IO_CONTROL::update_pin_grid(PinTypeInfo *pInfo)
         old_item = pInfo->grid->itemAtPosition(curr_row, curr_col);
         if (!old_item || (new_item != old_item->layout()))
         {
+            pInfo->grid->removeItem(new_item);
             pInfo->grid->addLayout(new_item, curr_row, curr_col);
         }
 

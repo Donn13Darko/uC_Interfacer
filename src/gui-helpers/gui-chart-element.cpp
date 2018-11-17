@@ -254,7 +254,6 @@ void GUI_CHART_ELEMENT::on_Remove_Button_clicked()
 
 void GUI_CHART_ELEMENT::on_yMin_LineEdit_editingFinished()
 {
-    qDebug() << "A";
     // Set new ymin
     y_min = ui->yMin_LineEdit->text().toDouble();
 
@@ -284,7 +283,6 @@ void GUI_CHART_ELEMENT::on_yMin_LineEdit_editingFinished()
 
 void GUI_CHART_ELEMENT::on_yMax_LineEdit_editingFinished()
 {
-    qDebug() << "B";
     // Set new ymin
     y_max = ui->yMax_LineEdit->text().toDouble();
 

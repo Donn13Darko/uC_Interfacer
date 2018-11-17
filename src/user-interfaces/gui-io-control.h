@@ -77,6 +77,9 @@ public:
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
     virtual bool waitForDevice(uint8_t minorKey);
 
+signals:
+    void pin_update(QStringList pin_list);
+
 public slots:
     virtual void reset_gui();
     void chart_update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element);
@@ -210,6 +213,7 @@ private:
     // Pin creation & deletion
     QHBoxLayout *create_pin();
     void destroy_pin(QHBoxLayout *pin);
+    void destroy_unused_pins(PinTypeInfo *pInfo);
     void connect_pin(uint8_t pinType, QHBoxLayout *pin);
     void disconnect_pin(QHBoxLayout *pin);
     void update_pin_grid(PinTypeInfo *pInfo);
