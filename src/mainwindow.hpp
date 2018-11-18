@@ -26,17 +26,17 @@
 #include <QCloseEvent>
 #include <QSettings>
 
-#include "gui-helpers/gui-create-new-tabs.h"
-#include "gui-helpers/gui-more-options.h"
-#include "gui-helpers/gui-comm-bridge.h"
+#include "gui-helpers/gui-create-new-tabs.hpp"
+#include "gui-helpers/gui-more-options.hpp"
+#include "gui-helpers/gui-comm-bridge.hpp"
 
-#include "communication/serial-com-port.h"
-#include "communication/tcp-client.h"
-#include "communication/tcp-server.h"
-#include "communication/udp-socket.h"
+#include "communication/serial-com-port.hpp"
+#include "communication/tcp-client.hpp"
+#include "communication/tcp-server.hpp"
+#include "communication/udp-socket.hpp"
 
 #include "user-interfaces/gui-base-major-keys.h"
-#include "user-interfaces/gui-welcome.h"
+#include "user-interfaces/gui-welcome.hpp"
 
 // Must be in same order as supportedDevicesList
 typedef enum {

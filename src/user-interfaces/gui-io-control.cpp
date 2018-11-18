@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-io-control.h"
+#include "gui-io-control.hpp"
 #include "ui_gui-io-control.h"
 
 #include <QDateTime>
@@ -64,11 +64,9 @@ void GUI_IO_CONTROL::parseConfigMap(QMap<QString, QVariant> *configMap)
     // Pass to parent for parsing
     GUI_BASE::parseConfigMap(configMap);
 
-    // Clear pin list
-    pinList.clear();
-
     // Setup pintypes variable
     PinTypeInfo pInfo;
+    pinList.clear();
 
     // Add DIO controls
     if (!getPinTypeInfo(MINOR_KEY_IO_DIO, &pInfo)) return;
@@ -97,7 +95,8 @@ void GUI_IO_CONTROL::parseConfigMap(QMap<QString, QVariant> *configMap)
     ui->ConnType_Combo->addItems(controlMap.value(pInfo.pinType)->keys());
     ui->ConnType_Combo->blockSignals(prev_block_status);
 
-    // Emit pinList updated
+    // Sort and emit pinList update
+    pinList.sort();
     emit pin_update(pinList);
 
     // Reset after parse (forces updates)
@@ -852,18 +851,18 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
     QList<uint8_t> *pinDisabledSet = disabledValueSet.value(pInfo->pinType);
     if (!(pins && pinControlMap && pinRangeMap && pinDisabledSet)) return;
 
+    // Set pinType_str prepend
+    QString pinType_str, pin_str;
+    if (pInfo->pinType == MINOR_KEY_IO_AIO) pinType_str = "AIO_";
+    else if (pInfo->pinType == MINOR_KEY_IO_DIO) pinType_str = "DIO_";
+    else pinType_str = "_";
+
     // Setup arrays & constructs for use in the loop
     uint8_t IO;
     QList<uint8_t> pinNums;
     QList<QString> listValues;
     QStringList comboStr_split;
     bool prev_block_status, disableClicks;
-
-    // Set prepend string for pinList
-    QString pinType_str, newPin_str;
-    if (pInfo->pinType == MINOR_KEY_IO_AIO) pinType_str = "AIO_";
-    else if (pInfo->pinType == MINOR_KEY_IO_DIO) pinType_str = "DIO_";
-    else pinType_str = "_";
 
     // Setup widget holders
     QLabel *itemLabel;
@@ -968,8 +967,8 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
             itemCombo->blockSignals(prev_block_status);
 
             // Add pin to pinList
-            newPin_str = itemLabel->text().prepend(pinType_str);
-            if (!pinList.contains(newPin_str)) pinList.append(newPin_str);
+            pin_str = pinType_str + itemLabel->text();
+            if (!pinList.contains(pin_str)) pinList.append(pin_str);
         }
     }
 }
@@ -1416,7 +1415,7 @@ void GUI_IO_CONTROL::destroy_unused_pins(PinTypeInfo *pInfo)
         pinLabel = (QLabel*) pin_layout->itemAt(io_label_pos)->widget();
 
         // If not member of pinList, destroy pin and remove from map
-        if (!pinList.contains(pinLabel->text().prepend(pinType_str)))
+        if (!pinList.contains(pinType_str + pinLabel->text()))
         {
             pin_layouts->removeAll(pin_layout);
             destroy_pin(pin_layout);

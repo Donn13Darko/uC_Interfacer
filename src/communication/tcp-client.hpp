@@ -16,48 +16,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_CHART_VIEW_H
-#define GUI_CHART_VIEW_H
+#ifndef TCP_CLIENT_H
+#define TCP_CLIENT_H
 
-#include <QDialog>
+#include "comms-base.hpp"
+#include <QTcpSocket>
 
-#include "gui-chart-element.h"
-
-namespace Ui {
-class GUI_CHART_VIEW;
-}
-
-class GUI_CHART_VIEW : public QDialog
+class TCP_CLIENT : public COMMS_BASE
 {
     Q_OBJECT
 
 public:
-    explicit GUI_CHART_VIEW(QWidget *parent = 0);
-    ~GUI_CHART_VIEW();
+    TCP_CLIENT(QString ip, int port, QObject *parent = NULL);
+    ~TCP_CLIENT();
 
-signals:
-    void update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element);
+    virtual void open();
+    virtual bool isConnected();
 
 public slots:
-    void reset_gui();
-    void destroy_chart_element();
-    void set_data_list(QStringList new_data_series_list);
-    void element_data_request(QList<QString> data_points);
+    virtual void close();
+    void connectClient();
+    void disconnectClient();
+    virtual void write(QByteArray writeData);
 
 private slots:
-    void on_AddChart_Button_clicked();
-    void on_NumColumns_LineEdit_editingFinished();
+    virtual void read();
 
 private:
-    Ui::GUI_CHART_VIEW *ui;
+    QTcpSocket *client;
 
-    int num_chart_cols;
-    QList<GUI_CHART_ELEMENT*> charts;
-
-    QStringList data_series_list;
-
-    void update_chart_grid();
-    void destroy_chart_elements();
+    QString server_ip;
+    int server_port;
 };
 
-#endif // GUI_CHART_VIEW_H
+#endif // TCP_CLIENT_H

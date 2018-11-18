@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "serial-com-port.h"
+#include "serial-com-port.hpp"
 
 QStringList
 SERIAL_COM_PORT::Baudrate_Defaults({

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "comms-base.h"
+#include "comms-base.hpp"
 
 COMMS_BASE::COMMS_BASE(QObject *parent) :
     QObject(parent)

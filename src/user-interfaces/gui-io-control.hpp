@@ -20,7 +20,7 @@
 #define GUI_IO_CONTROL_H
 
 // Inheritance & keys
-#include "gui-base.h"
+#include "gui-base.hpp"
 #include "gui-io-control-minor-keys.h"
 
 // Mapping
@@ -42,7 +42,7 @@
 #include <QTimer>
 
 // Graphs
-#include "../gui-helpers/gui-chart-view.h"
+#include "../gui-helpers/gui-chart-view.hpp"
 
 namespace Ui {
 class GUI_IO_CONTROL;

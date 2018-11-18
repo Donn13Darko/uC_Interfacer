@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-custom-cmd.h"
+#include "gui-custom-cmd.hpp"
 #include "ui_gui-custom-cmd.h"
 
 GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :

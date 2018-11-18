@@ -214,7 +214,7 @@ void fsm_poll()
         {
             case num_s2_bits_1:
                 // 1 byte
-                num_s2_bytes = (uint8_t) *((uint8_t*) fsm_buffer_ptr);
+                num_s2_bytes = (uint8_t) *fsm_buffer_ptr;
                 break;
             case num_s2_bits_2:
                 // 2 bytes
@@ -338,7 +338,7 @@ bool fsm_isr()
         {
             case num_s2_bits_1:
                 // 1 byte
-                num_s2_bytes = (uint8_t) *((uint8_t*) fsm_buffer_ptr);
+                num_s2_bytes = (uint8_t) *fsm_buffer_ptr;
                 break;
             case num_s2_bits_2:
                 // 2 bytes

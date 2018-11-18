@@ -16,42 +16,48 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TCP_SERVER_H
-#define TCP_SERVER_H
+#ifndef GUI_CHART_VIEW_H
+#define GUI_CHART_VIEW_H
 
-#include "comms-base.h"
-#include <QTcpServer>
-#include <QTcpSocket>
-#include <QMessageBox>
+#include <QDialog>
 
-class TCP_SERVER : public COMMS_BASE
+#include "gui-chart-element.hpp"
+
+namespace Ui {
+class GUI_CHART_VIEW;
+}
+
+class GUI_CHART_VIEW : public QDialog
 {
     Q_OBJECT
 
 public:
-    TCP_SERVER(QHostAddress addr = QHostAddress::Any, int port = 0, QObject *parent = NULL);
-    ~TCP_SERVER();
+    explicit GUI_CHART_VIEW(QWidget *parent = 0);
+    ~GUI_CHART_VIEW();
 
-    virtual void open();
-    virtual bool isConnected();
+signals:
+    void update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element);
 
 public slots:
-    virtual void close();
-    virtual void write(QByteArray writeData);
+    void reset_gui();
+    void destroy_chart_element();
+    void set_data_list(QStringList new_data_series_list);
+    void element_data_request(QList<QString> data_points);
 
 private slots:
-    virtual void read();
-    void connectClient();
-    void disconnectClient();
-    void connecting_finished(int res);
+    void on_AddChart_Button_clicked();
+    void on_NumColumns_LineEdit_editingFinished();
 
 private:
-    QTcpServer *server;
-    QTcpSocket *server_client;
-    QMessageBox *connecting_msg;
+    Ui::GUI_CHART_VIEW *ui;
 
-    int listen_port;
-    QHostAddress listen_addr;
+    int num_chart_cols;
+    QList<GUI_CHART_ELEMENT*> charts;
+
+    QStringList data_series_list;
+
+    void update_chart_grid();
+    void destroy_chart_elements();
 };
 
-#endif // TCP_SERVER_H
+#endif // GUI_CHART_VIEW_H

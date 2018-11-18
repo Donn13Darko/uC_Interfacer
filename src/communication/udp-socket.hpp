@@ -19,7 +19,7 @@
 #ifndef UDP_SOCKET_H
 #define UDP_SOCKET_H
 
-#include "comms-base.h"
+#include "comms-base.hpp"
 #include <QUdpSocket>
 #include <QHostAddress>
 

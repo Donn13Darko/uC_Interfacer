@@ -36,6 +36,10 @@ typedef enum {
     MINOR_KEY_DATA_TRANSMIT_DATA
 } MINOR_KEYS_DATA_TRANSMIT;
 
+typedef enum {
+    s2_data_transmit_settings_trans_end = 4
+} S2_Data_Transmit_Settings;
+
 #ifdef __cplusplus
 }
 #endif

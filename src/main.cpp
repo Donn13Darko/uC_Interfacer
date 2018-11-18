@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 #include <QApplication>
 
 int main(int argc, char *argv[])

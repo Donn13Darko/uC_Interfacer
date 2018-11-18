@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "tcp-client.h"
+#include "tcp-client.hpp"
 
 TCP_CLIENT::TCP_CLIENT(QString ip, int port, QObject *parent) :
     COMMS_BASE(parent)

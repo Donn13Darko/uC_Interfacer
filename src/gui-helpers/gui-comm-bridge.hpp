@@ -33,9 +33,9 @@
 
 // Local object includes
 #include "../user-interfaces/gui-base-major-keys.h"
-#include "../user-interfaces/gui-base.h"
+#include "../user-interfaces/gui-base.hpp"
 #include "../checksums/checksums.h"
-#include "gui-generic-helper.h"
+#include "gui-generic-helper.hpp"
 
 class GUI_COMM_BRIDGE : public QObject
 {

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-create-new-tabs.h"
+#include "gui-create-new-tabs.hpp"
 #include "ui_gui-create-new-tabs.h"
 
 #include <QTemporaryFile>

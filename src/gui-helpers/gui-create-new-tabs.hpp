@@ -16,61 +16,52 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_MORE_OPTIONS_H
-#define GUI_MORE_OPTIONS_H
+#ifndef GUI_CREATE_NEW_TABS_H
+#define GUI_CREATE_NEW_TABS_H
 
 #include <QDialog>
 #include <QMap>
 #include <QString>
+#include <QVariant>
 
-#include "gui-generic-helper.h"
-
-typedef struct MoreOptions_struct {
-    bool reset_on_tab_switch;
-    bool send_little_endian;
-    uint32_t chunk_size;
-    // (1) checksum_name, (2) checksum_start, (3) checksum_start_base, (4) checksum_exe
-    QMap<QString, QStringList> checksum_map;
-    QStringList custom;
-} MoreOptions_struct;
-
-#define DEFAULT_CHECKSUM QStringList({"CRC_8_LUT", "", "", ""})
+#include "gui-generic-helper.hpp"
 
 namespace Ui {
-class GUI_MORE_OPTIONS;
+class GUI_CREATE_NEW_TABS;
 }
 
-class GUI_MORE_OPTIONS : public QDialog
+class GUI_CREATE_NEW_TABS : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit GUI_MORE_OPTIONS(MoreOptions_struct *main_options, MoreOptions_struct **local_options_ptr, QStringList GUIs, QStringList checksums, QWidget *parent = 0);
-    ~GUI_MORE_OPTIONS();
+    explicit GUI_CREATE_NEW_TABS(QMap<QString, QMap<QString, QVariant>*> **configMap, QWidget *parent = 0);
+    ~GUI_CREATE_NEW_TABS();
+
+    void set_title(QString title);
+    void set_config_tab(int index, QString new_config_str);
+    QString get_tab_config_str();
+    int get_tab_index();
 
 public slots:
     void reset_gui();
 
 private slots:
-    void on_GUI_Combo_activated(int);
-    void on_Checksum_Combo_activated(int);
-    void on_ChecksumSet_Button_clicked();
-    void on_BrowseEXE_Button_clicked();
-
     void on_Undo_Button_clicked();
-    void on_Apply_Button_clicked();
+    void on_Clear_Button_clicked();
     void on_Cancel_Button_clicked();
     void on_OK_Button_clicked();
 
 private:
-    Ui::GUI_MORE_OPTIONS *ui;
-    bool updated;
+    Ui::GUI_CREATE_NEW_TABS *ui;
 
-    MoreOptions_struct *main_options_ptr;
-    MoreOptions_struct local_options;
+    QMap<QString, QMap<QString, QVariant>*> **local_configMap;
+
+    QString local_config_str;
+    int local_index;
 
     void save_updates();
     void reset_updates();
 };
 
-#endif // GUI_MORE_OPTIONS_H
+#endif // GUI_CREATE_NEW_TABS_H

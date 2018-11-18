@@ -22,7 +22,7 @@
 #include <QRegularExpression>
 #include <QRegularExpressionMatch>
 
-#include "gui-base.h"
+#include "gui-base.hpp"
 #include "gui-programmer-minor-keys.h"
 
 namespace Ui {

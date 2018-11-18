@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-programmer.h"
+#include "gui-programmer.hpp"
 #include "ui_gui-programmer.h"
 
 GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
@@ -133,7 +133,7 @@ bool GUI_PROGRAMMER::waitForDevice(uint8_t minorKey)
     switch (minorKey)
     {
         case MINOR_KEY_PROGRAMMER_SET_ADDR:
-        case MINOR_KEY_PROGRAMMER_DATA: // Stall while device is written to (slow)
+        case MINOR_KEY_PROGRAMMER_DATA: // Stall while device is written to/read from (slow)
             return true;
         default:
             return GUI_BASE::waitForDevice(minorKey);
@@ -274,7 +274,15 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
         return;
     }
 
-    // Set size
+    // Create programming info bytearray
+    QByteArray info;
+    info.append((char) ui->FileFormat_Combo->currentIndex());
+    info.append((char) ui->BurnMethod_Combo->currentIndex());
+
+    // Set programming attributes
+    emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_INFO, info);
+
+    // Set file size
     emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
                         GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
 

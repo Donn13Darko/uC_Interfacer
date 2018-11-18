@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-chart-view.h"
+#include "gui-chart-view.hpp"
 #include "ui_gui-chart-view.h"
 
 GUI_CHART_VIEW::GUI_CHART_VIEW(QWidget *parent) :

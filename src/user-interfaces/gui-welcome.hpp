@@ -19,7 +19,7 @@
 #ifndef GUI_WELCOME_H
 #define GUI_WELCOME_H
 
-#include "gui-base.h"
+#include "gui-base.hpp"
 
 namespace Ui {
 class GUI_WELCOME;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-more-options.h"
+#include "gui-more-options.hpp"
 #include "ui_gui-more-options.h"
 
 GUI_MORE_OPTIONS::GUI_MORE_OPTIONS(MoreOptions_struct *main_options, MoreOptions_struct **local_options_ptr, QStringList GUIs, QStringList checksums, QWidget *parent) :

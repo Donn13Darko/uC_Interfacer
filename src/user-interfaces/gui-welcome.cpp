@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-welcome.h"
+#include "gui-welcome.hpp"
 #include "ui_gui-welcome.h"
 
 GUI_WELCOME::GUI_WELCOME(QWidget *parent) :

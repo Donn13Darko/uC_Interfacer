@@ -125,9 +125,9 @@ extern uint16_t uc_dio_read(uint8_t pin_num);
 extern void uc_delay_us(uint32_t us);
 
 /* Setting key (second arg) for uc_dio_set that sets pin to digital input */
-extern const uint8_t uc_dio_input;  
+extern const uint8_t UC_DIO_SET_INPUT;  
 /* Setting key (second arg) for uc_dio_set that sets pin to digital output */
-extern const uint8_t uc_dio_output;
+extern const uint8_t UC_DIO_SET_OUTPUT;
 
 #ifdef __cplusplus
 }

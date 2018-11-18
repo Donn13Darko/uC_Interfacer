@@ -28,7 +28,7 @@
 // Helpers
 #include <QTimer>
 #include <QMap>
-#include "gui-generic-helper.h"
+#include "gui-generic-helper.hpp"
 
 // Needs to be in same order as supportedChartsList
 typedef enum {

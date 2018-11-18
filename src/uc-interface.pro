@@ -50,14 +50,6 @@ SOURCES += \
     gui-helpers/gui-chart-view.cpp
 
 HEADERS += \
-    mainwindow.h \
-    user-interfaces/gui-base.h \
-    user-interfaces/gui-data-transmit.h \
-    user-interfaces/gui-programmer.h \
-    user-interfaces/gui-welcome.h \
-    communication/tcp-client.h \
-    communication/tcp-server.h \
-    communication/udp-socket.h \
     checksums/checksums.h \
     checksums/crc-8-lut.h \
     checksums/crc-8-poly.h \
@@ -66,22 +58,30 @@ HEADERS += \
     checksums/crc-32-lut.h \
     checksums/crc-32-poly.h \
     user-interfaces/gui-programmer-minor-keys.h \
-    user-interfaces/gui-custom-cmd.h \
     user-interfaces/gui-data-transmit-minor-keys.h \
     user-interfaces/gui-custom-cmd-minor-keys.h \
     user-interfaces/gui-welcome-minor-keys.h \
-    communication/comms-base.h \
     user-interfaces/gui-base-major-keys.h \
     checksums/checksum-exe.h \
-    gui-helpers/gui-more-options.h \
-    communication/serial-com-port.h \
-    gui-helpers/gui-comm-bridge.h \
-    gui-helpers/gui-create-new-tabs.h \
-    user-interfaces/gui-io-control.h \
     user-interfaces/gui-io-control-minor-keys.h \
-    gui-helpers/gui-generic-helper.h \
-    gui-helpers/gui-chart-element.h \
-    gui-helpers/gui-chart-view.h
+    communication/comms-base.hpp \
+    communication/serial-com-port.hpp \
+    communication/tcp-client.hpp \
+    communication/tcp-server.hpp \
+    communication/udp-socket.hpp \
+    gui-helpers/gui-chart-element.hpp \
+    gui-helpers/gui-chart-view.hpp \
+    gui-helpers/gui-comm-bridge.hpp \
+    gui-helpers/gui-create-new-tabs.hpp \
+    gui-helpers/gui-generic-helper.hpp \
+    gui-helpers/gui-more-options.hpp \
+    user-interfaces/gui-base.hpp \
+    user-interfaces/gui-custom-cmd.hpp \
+    user-interfaces/gui-data-transmit.hpp \
+    user-interfaces/gui-io-control.hpp \
+    user-interfaces/gui-programmer.hpp \
+    user-interfaces/gui-welcome.hpp \
+    mainwindow.hpp
 
 FORMS += \
     mainwindow.ui \

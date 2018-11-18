@@ -16,37 +16,51 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef TCP_CLIENT_H
-#define TCP_CLIENT_H
+#ifndef SERIAL_COM_PORT_H
+#define SERIAL_COM_PORT_H
 
-#include "comms-base.h"
-#include <QTcpSocket>
+#include "comms-base.hpp"
+#include <QSerialPort>
+#include <QSerialPortInfo>
 
-class TCP_CLIENT : public COMMS_BASE
+typedef struct {
+    QString port;
+    int32_t baudrate;
+    uint8_t dataBits;
+    uint8_t flowControl;
+    uint8_t parity;
+    uint8_t stopBits;
+} Serial_COM_Port_Settings;
+#define Serial_COM_Port_Settings_DEFAULT Serial_COM_Port_Settings{\
+    .port="", .baudrate=9600, .dataBits=8,\
+    .flowControl=0, .parity=0, .stopBits=1}
+
+class SERIAL_COM_PORT : public COMMS_BASE
 {
     Q_OBJECT
 
 public:
-    TCP_CLIENT(QString ip, int port, QObject *parent = NULL);
-    ~TCP_CLIENT();
+    SERIAL_COM_PORT(Serial_COM_Port_Settings *serial_settings, QObject *parent = NULL);
+    ~SERIAL_COM_PORT();
 
     virtual void open();
+    virtual void close();
     virtual bool isConnected();
 
+    static QStringList *getDevices();
+    static QStringList Baudrate_Defaults;
+
 public slots:
-    virtual void close();
-    void connectClient();
-    void disconnectClient();
     virtual void write(QByteArray writeData);
 
 private slots:
     virtual void read();
+    void checkError(QSerialPort::SerialPortError);
 
 private:
-    QTcpSocket *client;
+    QSerialPort *serial_com_port;
 
-    QString server_ip;
-    int server_port;
+    void parseSettings(Serial_COM_Port_Settings *serial_settings);
 };
 
-#endif // TCP_CLIENT_H
+#endif // SERIAL_COM_PORT_H

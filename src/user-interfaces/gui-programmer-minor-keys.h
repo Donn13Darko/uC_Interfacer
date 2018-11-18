@@ -33,6 +33,7 @@ typedef enum {
     MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
 
     // Programer Set
+    MINOR_KEY_PROGRAMMER_SET_INFO,
     MINOR_KEY_PROGRAMMER_SET_ADDR,
 
     // Programmer Data
@@ -43,6 +44,13 @@ typedef enum {
     // If no address sent along, read all
     MINOR_KEY_PROGRAMMER_READ
 } MINOR_KEYS_PROGRAMMER;
+
+typedef enum {
+    s2_programmer_format_loc = 0,
+    s2_programmer_burn_method_loc,
+    s2_programmer_settings_info_end,
+    s2_programmer_settings_trans_end = 4
+} S2_Programmer_Settings;
 
 #ifdef __cplusplus
 }

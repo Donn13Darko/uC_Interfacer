@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-chart-element.h"
+#include "gui-chart-element.hpp"
 #include "ui_gui-chart-element.h"
 
 #include <QDateTime>

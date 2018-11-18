@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 #include "ui_mainwindow.h"
 
-#include "user-interfaces/gui-io-control.h"
-#include "user-interfaces/gui-data-transmit.h"
-#include "user-interfaces/gui-programmer.h"
-#include "user-interfaces/gui-custom-cmd.h"
-#include "gui-helpers/gui-generic-helper.h"
+#include "user-interfaces/gui-io-control.hpp"
+#include "user-interfaces/gui-data-transmit.hpp"
+#include "user-interfaces/gui-programmer.hpp"
+#include "user-interfaces/gui-custom-cmd.hpp"
+#include "gui-helpers/gui-generic-helper.hpp"
 
 #include <QMessageBox>
 #include <QFileDialog>

@@ -19,6 +19,11 @@
 #ifndef CHECKSUMS_H
 #define CHECKSUMS_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /*
  * Provides a single file to include in the QT GUI project
  * To include a new checksum in project:
@@ -36,5 +41,10 @@
 
 // Calls an executabe to produce the checksum
 #include "checksum-exe.h"
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif // CHECKSUMS_H

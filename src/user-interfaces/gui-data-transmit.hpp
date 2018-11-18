@@ -16,25 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_CUSTOM_CMD_H
-#define GUI_CUSTOM_CMD_H
+#ifndef GUI_DATA_TRANSMIT_H
+#define GUI_DATA_TRANSMIT_H
 
-#include "gui-base.h"
-#include "gui-custom-cmd-minor-keys.h"
+#include "gui-base.hpp"
+#include "gui-data-transmit-minor-keys.h"
 
 namespace Ui {
-class GUI_CUSTOM_CMD;
+class GUI_DATA_TRANSMIT;
 }
 
-class GUI_CUSTOM_CMD : public GUI_BASE
+class GUI_DATA_TRANSMIT : public GUI_BASE
 {
     Q_OBJECT
 
 public:
-    explicit GUI_CUSTOM_CMD(QWidget *parent = 0);
-    ~GUI_CUSTOM_CMD();
-
-    virtual bool acceptAllCMDs();
+    explicit GUI_DATA_TRANSMIT(QWidget *parent = 0);
+    ~GUI_DATA_TRANSMIT();
 
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
@@ -48,31 +46,18 @@ protected slots:
     virtual void set_progress_update_send(int progress, QString label);
 
 private slots:
-    void on_FeedbackSave_Button_clicked();
-    void on_FeedbackClear_Button_clicked();
+    void on_Send_RadioGroup_buttonClicked(int);
+    void on_Send_Button_clicked();
 
-    void on_CustomCMDKeysInInput_CheckBox_stateChanged(int);
-    void on_CustomCMDBrowseFile_Button_clicked();
-    void on_CustomCMDSend_Button_clicked();
+    void on_SendBrowseFile_Button_clicked();
+    void on_RecvSave_Button_clicked();
 
-    void on_CustomCMD_RadioGroup_buttonClicked(int);
+    void on_RecvClear_Button_clicked();
 
 private:
-    Ui::GUI_CUSTOM_CMD *ui;
+    Ui::GUI_DATA_TRANSMIT *ui;
 
-    // Send key base storage
-    uint8_t send_key_base;
-    uint8_t send_cmd_base;
-
-    // Rcv key base storage
-    uint8_t recv_key_base;
-    uint8_t recv_cmd_base;
-
-    // Recv helper
-    bool ends_with_newline;
-
-    void input_select(bool fileIN, bool manualIN);
-    void send_custom_cmd(QString majorKey_char, QString minorKey_char, QString customCMD_bytes);
+    void input_select(bool fileIN, bool plainIN);
 };
 
-#endif // GUI_CUSTOM_CMD_H
+#endif // GUI_DATA_TRANSMIT_H

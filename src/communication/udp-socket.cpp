@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "udp-socket.h"
+#include "udp-socket.hpp"
 #include <QNetworkDatagram>
 
 UDP_SOCKET::UDP_SOCKET(QString client_ip, int client_port, int server_port, QObject *parent) :

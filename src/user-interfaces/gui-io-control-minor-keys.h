@@ -56,7 +56,9 @@ typedef enum {
     s2_io_value_high_loc,
     s2_io_value_low_loc,
     s2_io_combo_loc,
-    s2_io_set_end_loc
+    s2_io_set_end,
+    s2_io_read_end = s2_io_value_high_loc,
+    s2_io_write_end = s2_io_combo_loc
 } S2_IO_Settings;
 
 #ifdef __cplusplus

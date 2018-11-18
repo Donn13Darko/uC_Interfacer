@@ -78,22 +78,22 @@ extern uint8_t uc_send(uint8_t* data, uint32_t data_len);
 */
 #ifdef UC_IO
 /* Parses IO minor key and acts */
-extern void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+extern void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len);
 #endif
 
 #ifdef UC_DATA_TRANSMIT
 /* Parses Data Transmit minor key and acts */
-extern void uc_data_transmit(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+extern void uc_data_transmit(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len);
 #endif
 
 #ifdef UC_PROGRAMMER
 /* Parses Programmer minor key and acts */
-extern void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+extern void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len);
 #endif
 
 #ifdef UC_CUSTOM_CMD
 /* Parses Custom CMD minor key and acts */
-extern void uc_custom_cmd(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+extern void uc_custom_cmd(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len);
 #endif
 
 #ifdef __cplusplus

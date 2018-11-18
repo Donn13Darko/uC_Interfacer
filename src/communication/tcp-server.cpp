@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "tcp-server.h"
+#include "tcp-server.hpp"
 
 TCP_SERVER::TCP_SERVER(QHostAddress addr, int port, QObject *parent) :
     COMMS_BASE(parent)

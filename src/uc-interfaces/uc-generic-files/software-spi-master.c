@@ -32,13 +32,13 @@ void software_spi_master_setup(SPI_MASTER_INFO *spi_master)
     if (spi_master->SPI_FLAGS & SPI_MASTER_SETUP) return;
 
     // Setup SCLK to output
-    uc_dio_set(spi_master->SCLK_PIN, uc_dio_output);
+    uc_dio_set(spi_master->SCLK_PIN, UC_DIO_SET_OUTPUT);
 
     // Set MOSI to output
-    uc_dio_set(spi_master->MOSI_PIN, uc_dio_output);
+    uc_dio_set(spi_master->MOSI_PIN, UC_DIO_SET_OUTPUT);
 
     // Set MISO to input
-    uc_dio_set(spi_master->MISO_PIN, uc_dio_input);
+    uc_dio_set(spi_master->MISO_PIN, UC_DIO_SET_INPUT);
 
     // Set master setup flag
     spi_master->SPI_FLAGS |= SPI_MASTER_SETUP;
@@ -53,7 +53,7 @@ void software_spi_master_setup_slave(SPI_SLAVE_INFO *spi_slave)
     // Setup slave as unselected
     if (spi_slave->SLAVE_PIN_ADDR != 0xFF)
     {
-        uc_dio_set(spi_slave->SLAVE_PIN_ADDR, uc_dio_output);
+        uc_dio_set(spi_slave->SLAVE_PIN_ADDR, UC_DIO_SET_OUTPUT);
         uc_dio_write(spi_slave->SLAVE_PIN_ADDR, !(spi_slave->SLAVE_FLAGS & SPI_SLAVE_SELECTED_POL));
     }
 
@@ -65,9 +65,9 @@ void software_spi_master_setup_slave(SPI_SLAVE_INFO *spi_slave)
 void software_spi_master_exit(SPI_MASTER_INFO *spi_master)
 {
     // Set all pins to inputs
-    uc_dio_set(spi_master->SCLK_PIN, uc_dio_input);
-    uc_dio_set(spi_master->MOSI_PIN, uc_dio_input);
-    uc_dio_set(spi_master->MISO_PIN, uc_dio_input);
+    uc_dio_set(spi_master->SCLK_PIN, UC_DIO_SET_INPUT);
+    uc_dio_set(spi_master->MOSI_PIN, UC_DIO_SET_INPUT);
+    uc_dio_set(spi_master->MISO_PIN, UC_DIO_SET_INPUT);
 
     // Clear master setup flag
     spi_master->SPI_FLAGS &= ~SPI_MASTER_SETUP;
@@ -79,7 +79,7 @@ void software_spi_master_exit_slave(SPI_SLAVE_INFO *spi_slave)
     // Setup slave as unselected
     if (spi_slave->SLAVE_PIN_ADDR != 0xFF)
     {
-        uc_dio_set(spi_slave->SLAVE_PIN_ADDR, uc_dio_input);
+        uc_dio_set(spi_slave->SLAVE_PIN_ADDR, UC_DIO_SET_INPUT);
     }
 
     // Clear slave setup flag

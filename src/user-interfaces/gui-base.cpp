@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include "gui-base.h"
+#include "gui-base.hpp"
 
 GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
