@@ -211,6 +211,7 @@ void GUI_CHART_VIEW::update_chart_grid()
     }
 
     // Set unused column strech to zero
+    curr_col = num_chart_cols;
     int grid_cols = ui->ChartGridLayout->columnCount();
     while (curr_col < grid_cols)
     {

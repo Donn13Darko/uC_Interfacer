@@ -61,10 +61,8 @@ typedef struct {
     uint8_t pinType;
     uint8_t minorKey;
     uint8_t cols;
-    uint8_t rows;
 } PinTypeInfo;
-#define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=nullptr, .pinType=0, \
-    .minorKey=0, .cols=0, .rows=0}
+#define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=nullptr, .pinType=0, .minorKey=0, .cols=0}
 
 class GUI_IO_CONTROL : public GUI_BASE
 {
@@ -138,8 +136,10 @@ private:
     // Read variables
     QTimer DIO_READ;
     bool dio_read_requested;
+    bool dio_read_requested_double;
     QTimer AIO_READ;
     bool aio_read_requested;
+    bool aio_read_requested_double;
 
     // Log variables
     QFile *logFile;
@@ -152,15 +152,11 @@ private:
 
     // AIO pin information
     QGridLayout *AIO_Grid;
-    uint8_t num_AIOrows;
     uint8_t num_AIOcols;
-    uint8_t num_AIObuttons;
 
     // DIO pin information
     QGridLayout *DIO_Grid;
-    uint8_t num_DIOrows;
     uint8_t num_DIOcols;
-    uint8_t num_DIObuttons;
 
     // IO grid positions
     typedef enum {
@@ -182,9 +178,6 @@ private:
     // Handle changes on the GUI
     void inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_pos, QByteArray *data = nullptr);
     void updateSliderRange(QSlider *slider, RangeList *rList);
-
-    // Set pin group attributes
-    void setPinAttribute(PinTypeInfo *pInfo, uint8_t pinNum, Qt::WidgetAttribute attribute, bool on);
 
     // Get pin layout
     bool getPinLayout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout);

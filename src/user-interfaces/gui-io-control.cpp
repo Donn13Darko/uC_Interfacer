@@ -97,7 +97,7 @@ void GUI_IO_CONTROL::parseConfigMap(QMap<QString, QVariant> *configMap)
     ui->ConnType_Combo->addItems(controlMap.value(pInfo.pinType)->keys());
     ui->ConnType_Combo->blockSignals(prev_block_status);
 
-    // Emit pinList update
+    // Emit pinList updated
     emit pin_update(pinList);
 
     // Reset after parse (forces updates)
@@ -129,6 +129,8 @@ void GUI_IO_CONTROL::reset_gui()
     // Reset request variables
     dio_read_requested = false;
     aio_read_requested = false;
+    dio_read_requested_double = false;
+    aio_read_requested_double = false;
 
     // Stop logging and updating if running
     on_StopLog_Button_clicked();
@@ -295,10 +297,40 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
                 break;
             }
 
-            // Otherwise, packet is a response so clear data request
+            // Otherwise, packet is a response so clear data request,
+            // check if need to request again right away,
             // and fall through to set values
-            if (minor_key == MINOR_KEY_IO_AIO_READ_ALL) aio_read_requested = false;
-            else if (minor_key == MINOR_KEY_IO_DIO_READ_ALL) dio_read_requested = false;
+            if (minor_key == MINOR_KEY_IO_AIO_READ_ALL)
+            {
+                // Check if double request
+                if (aio_read_requested_double)
+                {
+                    // Clear double
+                    aio_read_requested_double = false;
+
+                    // Emit another request for data
+                    emit transmit_chunk(gui_key, minor_key);
+                } else
+                {
+                    // Clear single request
+                    aio_read_requested = false;
+                }
+            } else if (minor_key == MINOR_KEY_IO_DIO_READ_ALL)
+            {
+                // Check if double request
+                if (dio_read_requested_double)
+                {
+                    // Clear double
+                    dio_read_requested_double = false;
+
+                    // Emit another request for data
+                    emit transmit_chunk(gui_key, minor_key);
+                } else
+                {
+                    // Clear single request
+                    dio_read_requested = false;
+                }
+            }
         }
         case MINOR_KEY_IO_AIO_SET:
         case MINOR_KEY_IO_DIO_SET:
@@ -393,10 +425,26 @@ void GUI_IO_CONTROL::updateValues()
     uint8_t requestType;
     if (caller == &DIO_READ)
     {
+        // Check if already waiting for a response
+        if (dio_read_requested)
+        {
+            dio_read_requested_double = true;
+            return;
+        }
+
+        // Set requested and key
         dio_read_requested = true;
         requestType = MINOR_KEY_IO_DIO_READ_ALL;
     } else if (caller == &AIO_READ)
     {
+        // Check if already waiting for a response
+        if (aio_read_requested)
+        {
+            aio_read_requested_double = true;
+            return;
+        }
+
+        // Set requested and key
         aio_read_requested = true;
         requestType = MINOR_KEY_IO_AIO_READ_ALL;
     } else
@@ -582,13 +630,11 @@ void GUI_IO_CONTROL::initialize()
     AIO_Grid = new QGridLayout();
     ui->AIOVLayout->insertLayout(1, AIO_Grid);
     num_AIOcols = 1;
-    num_AIOrows = 0 / num_AIOcols;
 
     // Setup DIO info
     DIO_Grid = new QGridLayout();
     ui->DIOVLayout->insertLayout(1, DIO_Grid);
     num_DIOcols = 2;
-    num_DIOrows = 0 / num_DIOcols;
 
     // Set log file parameters
     logFile = NULL;
@@ -723,20 +769,6 @@ void GUI_IO_CONTROL::updateSliderRange(QSlider *slider, RangeList *rList)
     slider->blockSignals(prev_block_status);
 }
 
-void GUI_IO_CONTROL::setPinAttribute(PinTypeInfo *pInfo, uint8_t pinNum, Qt::WidgetAttribute attribute, bool on)
-{
-    // Go through each element and set attributes
-    QLayout *itemLayout;
-    if (getPinLayout(pInfo->pinType, pinNum, &itemLayout))
-    {
-        int num_members = itemLayout->count();
-        for (int i = 0; i < num_members; i++)
-        {
-            itemLayout->itemAt(i)->widget()->setAttribute(attribute, on);
-        }
-    }
-}
-
 bool GUI_IO_CONTROL::getPinLayout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout)
 {
     // Set itemLayout to nullptr
@@ -825,7 +857,7 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
     QList<uint8_t> pinNums;
     QList<QString> listValues;
     QStringList comboStr_split;
-    bool prev_block_status;
+    bool prev_block_status, disableClicks;
 
     // Set prepend string for pinList
     QString pinType_str, newPin_str;
@@ -924,15 +956,9 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
             IO = pinControlMap->value(itemCombo->currentText());
 
             // Enable or disable pin group
-            if (pinDisabledSet->contains(IO))
-            {
-                itemSlider->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-                itemLineEdit->setAttribute(Qt::WA_TransparentForMouseEvents, true);
-            } else
-            {
-                itemSlider->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-                itemLineEdit->setAttribute(Qt::WA_TransparentForMouseEvents, false);
-            }
+            disableClicks = pinDisabledSet->contains(IO);
+            itemSlider->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
+            itemLineEdit->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
 
             // Update slider range
             RangeList *rList = pinRangeMap->value(IO);
@@ -1262,7 +1288,6 @@ bool GUI_IO_CONTROL::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
         case MINOR_KEY_IO_AIO_READ:
         case MINOR_KEY_IO_AIO_READ_ALL:
             infoPtr->cols = num_AIOcols;
-            infoPtr->rows = num_AIOrows;
             infoPtr->grid = AIO_Grid;
             infoPtr->pinType = MINOR_KEY_IO_AIO;
             return true;
@@ -1272,7 +1297,6 @@ bool GUI_IO_CONTROL::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
         case MINOR_KEY_IO_DIO_READ:
         case MINOR_KEY_IO_DIO_READ_ALL:
             infoPtr->cols = num_DIOcols;
-            infoPtr->rows = num_DIOrows;
             infoPtr->grid = DIO_Grid;
             infoPtr->pinType = MINOR_KEY_IO_DIO;
             return true;
