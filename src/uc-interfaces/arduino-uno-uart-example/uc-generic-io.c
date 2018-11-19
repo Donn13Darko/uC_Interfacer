@@ -18,18 +18,30 @@
 
 #include "uc-generic-io.h"
 
-void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len)
+void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len)
 {
-    // If not enough bytes for command return
-    if (((minor_key == MINOR_KEY_IO_DIO_WRITE) || (minor_key == MINOR_KEY_IO_AIO_WRITE))
-            && (buffer_len != 3))
-        return;
-    else if (((minor_key == MINOR_KEY_IO_DIO_SET) || (minor_key == MINOR_KEY_IO_AIO_SET))
-            && (buffer_len != 4))
-        return;
-    else if (((minor_key == MINOR_KEY_IO_DIO_READ) || (minor_key == MINOR_KEY_IO_AIO_READ))
-            && (buffer_len != 1))
-        return;
+    // Verify bytes for command or return
+    switch (minor_key)
+    {
+        case MINOR_KEY_IO_DIO_WRITE:
+        case MINOR_KEY_IO_AIO_WRITE:
+        {
+            if (buffer_len != s2_io_write_end) return;
+            else break;
+        }
+        case MINOR_KEY_IO_DIO_SET:
+        case MINOR_KEY_IO_AIO_SET:
+        {
+            if (buffer_len != s2_io_set_end) return;
+            else break;
+        }
+        case MINOR_KEY_IO_DIO_READ:
+        case MINOR_KEY_IO_AIO_READ:
+        {
+            if (buffer_len != s2_io_read_end) return;
+            else break;
+        }
+    }
 
     // Parse and act on minor key
     switch (minor_key)
@@ -89,10 +101,5 @@ void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t 
             uc_remote_conn();
             break;
         }
-        default:
-        {
-            break;
-        }
-
     }
 }

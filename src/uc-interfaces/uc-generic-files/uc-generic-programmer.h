@@ -35,7 +35,7 @@ extern "C"
 #include <stdint.h>
 
 #include "uc-generic-def.h"
-#include "../user-interfaces/gui-programmer-minor-keys.h"
+#include "../../user-interfaces/gui-programmer-minor-keys.h"
 
 /* Programmer Functions */
 /* Parses minor key and calls uc specific code */

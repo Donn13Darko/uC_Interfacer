@@ -16,48 +16,44 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_PIN_BASE_MINOR_KEYS_H
-#define GUI_PIN_BASE_MINOR_KEYS_H
+#ifndef GUI_PROGRAMMER_MINOR_KEYS_H
+#define GUI_PROGRAMMER_MINOR_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-// IO Minor Keys enum
+// Programmer Minor Keys enum
 typedef enum {
     // Error and reset
-    MINOR_KEY_IO_ERROR = 0,
+    MINOR_KEY_PROGRAMMER_ERROR = 0,
 
-    // AIO Keys
-    MINOR_KEY_IO_AIO,
-    MINOR_KEY_IO_AIO_SET,
-    MINOR_KEY_IO_AIO_WRITE,
-    MINOR_KEY_IO_AIO_READ,
-    MINOR_KEY_IO_AIO_READ_ALL,
+    // Set transmission size
+    MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
 
-    // DIO Keys
-    MINOR_KEY_IO_DIO,
-    MINOR_KEY_IO_DIO_SET,
-    MINOR_KEY_IO_DIO_WRITE,
-    MINOR_KEY_IO_DIO_READ,
-    MINOR_KEY_IO_DIO_READ_ALL,
+    // Programer Set
+    MINOR_KEY_PROGRAMMER_SET_INFO,
+    MINOR_KEY_PROGRAMMER_SET_ADDR,
 
-    // Leave this key at end (used for child GUI keys)
-    MINOR_KEY_IO_MAIN_END
-} MINOR_KEYS_IO;
+    // Programmer Data
+    MINOR_KEY_PROGRAMMER_DATA,
 
-/* Stage #2 (s2) io set key positions enum */
+    // Programmer Read
+    // Send data address start (first 4 bytes) and end (second 4 bytes)
+    // If no address sent along, read all
+    MINOR_KEY_PROGRAMMER_READ
+} MINOR_KEYS_PROGRAMMER;
+
 typedef enum {
-    s2_io_pin_num_loc = 0,
-    s2_io_value_high_loc,
-    s2_io_value_low_loc,
-    s2_io_combo_loc,
-    s2_io_set_end_loc
-} S2_IO_Settings;
+    s2_programmer_format_loc = 0,
+    s2_programmer_burn_method_loc,
+    s2_programmer_settings_info_end,
+    s2_programmer_settings_trans_end = 4
+} S2_Programmer_Settings;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GUI_PIN_BASE_MINOR_KEYS_H
+#endif // GUI_PROGRAMMER_MINOR_KEYS_H

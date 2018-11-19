@@ -35,12 +35,11 @@ extern "C"
 #include <stdint.h>
 
 #include "uc-generic-def.h"
-#include "gui-pin-io-base-minor-keys.h"
-#include "gui-8aio-16dio-comm-minor-keys.h"
+#include "gui-io-control-minor-keys.h"
 
 /* IO Functions */
 /* Parses IO minor key and calls uc specific code */
-void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint8_t buffer_len);
+void uc_io(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len);
 
 /*** Following externs are defined in uc-generic-fsm (or need to be defiend elsewhere if not using) ***/
 extern void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uint32_t data_len);

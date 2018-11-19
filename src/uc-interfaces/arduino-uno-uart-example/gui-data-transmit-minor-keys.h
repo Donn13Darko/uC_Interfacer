@@ -16,31 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_8AIO_16DIO_COMM_MINOR_KEYS_H
-#define GUI_8AIO_16DIO_COMM_MINOR_KEYS_H
+#ifndef GUI_DATA_TRANSMIT_MINOR_KEYS_H
+#define GUI_DATA_TRANSMIT_MINOR_KEYS_H
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include "gui-pin-io-base-minor-keys.h"
-
-// 8AIO 16DIO COMM Minor Keys enum
+// Data Transmit Minor Keys enum
 typedef enum {
     // Error and reset
-    MINOR_KEY_8AIO_16DIO_COMM_ERROR = 0,
+    MINOR_KEY_DATA_TRANSMIT_ERROR = 0,
 
-    // Remote Communications
-    MINOR_KEY_IO_REMOTE_CONN = MINOR_KEY_IO_MAIN_END + 1,
-    MINOR_KEY_IO_REMOTE_CONN_SET,
-    MINOR_KEY_IO_REMOTE_CONN_READ,
-    MINOR_KEY_IO_REMOTE_CONN_SEND
+    // Set trasnmission size
+    MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
 
-} MINOR_KEYS_8AIO_16DIO_COMM;
+    // Data Transmit Transfer
+    MINOR_KEY_DATA_TRANSMIT_DATA
+} MINOR_KEYS_DATA_TRANSMIT;
+
+typedef enum {
+    s2_data_transmit_settings_trans_end = 4
+} S2_Data_Transmit_Settings;
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // GUI_8AIO_16DIO_COMM_MINOR_KEYS_H
+#endif // GUI_DATA_TRANSMIT_MINOR_KEYS_H

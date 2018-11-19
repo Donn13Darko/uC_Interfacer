@@ -87,8 +87,8 @@ void fsm_setup(uint32_t buffer_len)
 
     // Malloc static buffers (will always have default size checksum)
     num_default_packet_bytes = num_s1_bytes+checksum_max_size;
-    fsm_ready_buffer = (uint8_t*) malloc(num_default_packet_bytes*sizeof(uint8_t));
-    fsm_ack_buffer = (uint8_t*) malloc(num_default_packet_bytes*sizeof(uint8_t));
+    fsm_ready_buffer = (uint8_t*) malloc(sizeof(uint8_t) * num_default_packet_bytes);
+    fsm_ack_buffer = (uint8_t*) malloc(sizeof(uint8_t) * num_default_packet_bytes);
 
     // Find max checksum size (for defined interfaces)
 #ifdef UC_IO
@@ -117,10 +117,10 @@ void fsm_setup(uint32_t buffer_len)
     fsm_buffer_len = buffer_len + checksum_max_size;
 
     // Malloc checksum buffer (needs to be maximum size for no reallocs)
-    fsm_checksum_buffer = (uint8_t*) malloc(checksum_max_size*sizeof(uint8_t));
+    fsm_checksum_buffer = (uint8_t*) malloc(sizeof(uint8_t) * checksum_max_size);
 
     // Malloc initial dynamic buffer (attempt to prevent fragmentation by mallocing last)
-    fsm_buffer = (uint8_t*) malloc(fsm_buffer_len*sizeof(uint8_t));
+    fsm_buffer = (uint8_t*) malloc(sizeof(uint8_t) * fsm_buffer_len);
 
     // Reset to start defaults
     uc_reset();
@@ -190,7 +190,7 @@ void fsm_poll()
         {
             // Make the buffer just large enough, prioritize space over speed
             fsm_buffer_len = min_buffer_len;
-            fsm_buffer = (uint8_t*) realloc(fsm_buffer, fsm_buffer_len * sizeof(uint8_t));
+            fsm_buffer = (uint8_t*) realloc(fsm_buffer, sizeof(uint8_t) * fsm_buffer_len);
 
             // Verify realloc
             fsm_error |= !fsm_buffer;
@@ -214,7 +214,7 @@ void fsm_poll()
         {
             case num_s2_bits_1:
                 // 1 byte
-                num_s2_bytes = (uint8_t) *((uint8_t*) fsm_buffer_ptr);
+                num_s2_bytes = (uint8_t) *fsm_buffer_ptr;
                 break;
             case num_s2_bits_2:
                 // 2 bytes
@@ -239,7 +239,7 @@ void fsm_poll()
         {
             // Make the buffer just large enough, prioritize space over speed
             fsm_buffer_len = min_buffer_len;
-            fsm_buffer = (uint8_t*) realloc(fsm_buffer, fsm_buffer_len * sizeof(uint8_t));
+            fsm_buffer = (uint8_t*) realloc(fsm_buffer, sizeof(uint8_t) * fsm_buffer_len);
 
             // Verify realloc
             fsm_error |= !fsm_buffer;
@@ -338,7 +338,7 @@ bool fsm_isr()
         {
             case num_s2_bits_1:
                 // 1 byte
-                num_s2_bytes = (uint8_t) *((uint8_t*) fsm_buffer_ptr);
+                num_s2_bytes = (uint8_t) *fsm_buffer_ptr;
                 break;
             case num_s2_bits_2:
                 // 2 bytes
@@ -489,7 +489,7 @@ void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uin
     {
         // Make the buffer just large enough, prioritize space over speed
         fsm_buffer_len = min_buffer_len;
-        fsm_buffer = (uint8_t*) realloc(fsm_buffer, fsm_buffer_len * sizeof(uint8_t));
+        fsm_buffer = (uint8_t*) realloc(fsm_buffer, sizeof(uint8_t) * fsm_buffer_len);
 
         // Verify realloc
         fsm_error |= !fsm_buffer;

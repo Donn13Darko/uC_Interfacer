@@ -37,7 +37,7 @@ extern "C"
 #include <string.h>
 
 #include "uc-generic-def.h"
-#include "../user-interfaces/gui-base-major-keys.h"
+#include "../../user-interfaces/gui-base-major-keys.h"
 
 /* FSM Public Functions */
 void fsm_setup(uint32_t buffer_len);
@@ -51,7 +51,7 @@ void fsm_send_ready();
 // Acts as a general flag variable for:
 //   1) malloc or realloc failures (gets set to 1)
 //   2) Force an exit of internal loop (gets set to 2)
-uint8_t fsm_error;
+static uint8_t fsm_error;
 
 
 /*** Following extern functions must be defined on a per uC basis ***/

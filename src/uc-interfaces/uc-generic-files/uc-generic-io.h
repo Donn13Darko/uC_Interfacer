@@ -35,7 +35,7 @@ extern "C"
 #include <stdint.h>
 
 #include "uc-generic-def.h"
-#include "../user-interfaces/gui-io-control-minor-keys.h"
+#include "../../user-interfaces/gui-io-control-minor-keys.h"
 
 /* IO Functions */
 /* Parses IO minor key and calls uc specific code */

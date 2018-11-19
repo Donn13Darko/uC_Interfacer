@@ -19,6 +19,8 @@
 #include "arduino-uno-uart-minor-keys.h"
 #include "uc-generic-fsm.h"
 #include "uc-generic-io.h"
+#include "uc-generic-data-transmit.h"
+#include "uc-generic-programmer.h"
 
 #include <Servo.h>
 
@@ -35,7 +37,7 @@ const uint8_t uc_dio_input = IO_INPUT;
 const uint8_t uc_dio_output = IO_OUTPUT;
 
 // Buffer Variables
-const int len = 32;
+int len = 32;
 
 // Setup pin setting info and watch arrays
 uint8_t DIO_SET[uc_dio_num_pins];
@@ -57,11 +59,17 @@ float AIO_SCALE = AIO_RANGE * ((AIO_HIGH - AIO_LOW) / AIO_RES);
 uint16_t read_data[uc_dio_num_pins];
 
 // Ignore uc_aio_set (can't use on arudino)
-void uc_aio_set(uint8_t, uint8_t) {}
-void uc_aio_write(uint8_t, uint16_t) {}
+void uc_aio_set(uint8_t, uint8_t) { /* Do Nothing*/ }
+void uc_aio_write(uint8_t, uint16_t) { /* Do Nothing*/ }
 
 // Ignore uc_remote_conn (not implemented yet)
-void uc_remote_conn() {}
+void uc_remote_conn() { /* Do Nothing*/ }
+
+// Ignore uc_data_handle (needs custom interface)
+void uc_data_handle(const uint8_t* buffer, uint8_t buffer_len) { /* Do Nothing*/ }
+
+// Ignore uc_custom_cmd (needs custom interface)
+void uc_custom_cmd(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len) { /* Do Nothing*/ }
 
 // Function prototypes
 void set_pwm_on(uint8_t pin);

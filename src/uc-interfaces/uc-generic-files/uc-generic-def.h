@@ -23,12 +23,12 @@
 #define UC_IO
 
 // Define UC_DATA_TRANSMIT to enable data transmit parsing
-// #define UC_DATA_TRANSMIT
+#define UC_DATA_TRANSMIT
 
 // Define UC_PROGRAMMER to enable program parsing
-// #define UC_PROGRAMMER
+#define UC_PROGRAMMER
 
 // Define UC_CUSTOM_CMD to enable custom CMD parsing
-// #define UC_CUSTOM_CMD
+#define UC_CUSTOM_CMD
 
 #endif // UC_GENERIC_DEF_H

@@ -35,7 +35,7 @@ extern "C"
 #include <stdint.h>
 
 #include "uc-generic-def.h"
-#include "../../user-interfaces/gui-data-transmit-minor-keys.h"
+#include "gui-data-transmit-minor-keys.h"
 
 /* Data Tranmist Functions */
 /* Parses minor key and calls uc specific code */
