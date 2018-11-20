@@ -669,7 +669,7 @@ void GUI_COMM_BRIDGE::getChecksum(const uint8_t *data, uint32_t data_len, uint8_
     *checksum_size = check->get_checksum_size();
 
     // Malloc checksum array
-    *checksum_array = (uint8_t*) malloc((*checksum_size)*sizeof(uint8_t));
+    *checksum_array = (uint8_t*) malloc(sizeof(uint8_t) * (*checksum_size));
     memset(*checksum_array, 0, *checksum_size);
 
     check->get_checksum(data, data_len, check->checksum_start, *checksum_array);
@@ -707,7 +707,7 @@ void GUI_COMM_BRIDGE::copy_checksum_info(checksum_struct *cpy_to, checksum_struc
         if (cpy_from->checksum_exe == nullptr) return;
 
         //
-        char *new_check_exe = (char*) malloc(strlen(cpy_from->checksum_exe)*sizeof(char));
+        char *new_check_exe = (char*) malloc(sizeof(char) * strlen(cpy_from->checksum_exe));
         strcpy(new_check_exe, cpy_from->checksum_exe);
         set_executable_checksum_exe(new_check_exe);
         cpy_to->checksum_exe = new_check_exe;
@@ -717,7 +717,7 @@ void GUI_COMM_BRIDGE::copy_checksum_info(checksum_struct *cpy_to, checksum_struc
     if (cpy_from->checksum_start != nullptr)
     {
         uint32_t checksum_size = cpy_from->get_checksum_size();
-        uint8_t *new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
+        uint8_t *new_check_start = (uint8_t*) malloc(sizeof(uint8_t) * checksum_size);
         memcpy(new_check_start, cpy_from->checksum_start, checksum_size);
         cpy_to->checksum_start = new_check_start;
     }
@@ -749,7 +749,7 @@ void GUI_COMM_BRIDGE::set_checksum_exe(checksum_struct *check, QString checksum_
     checksum_exe += '\0';
 
     // Create and copy into new array
-    char *new_exe_path = (char*) malloc(checksum_exe.length()*sizeof(char));
+    char *new_exe_path = (char*) malloc(sizeof(char) * checksum_exe.length());
     strcpy((char*) new_exe_path, checksum_exe.toLatin1().constData());
 
     // Delete and replace current value
@@ -765,7 +765,7 @@ void GUI_COMM_BRIDGE::set_checksum_start(checksum_struct *check, QString checksu
     // Create new array
     if (check->checksum_is_exe) set_executable_checksum_exe(check->checksum_exe);
     uint32_t checksum_size = check->get_checksum_size();
-    uint8_t *new_check_start = (uint8_t*) malloc(checksum_size*sizeof(uint8_t));
+    uint8_t *new_check_start = (uint8_t*) malloc(sizeof(uint8_t) * checksum_size);
     memset(new_check_start, 0, checksum_size);
 
     // Build base start from supplied checksum start

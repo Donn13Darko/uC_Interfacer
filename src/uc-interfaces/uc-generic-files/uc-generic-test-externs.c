@@ -62,6 +62,7 @@ uint8_t uc_send(uint8_t* data, uint32_t data_len) { return data_len; }
  * Will define all externs required for each uc-generic file to function.
 */
 #ifdef UC_IO
+uint16_t uc_dio_read(uint8_t pin_num) { return pin_num; }
 uint16_t* uc_dio_read_all() { return 0; }
 void uc_aio_set(uint8_t pin_num, uint8_t setting) { /* Do Nothing*/ }
 void uc_aio_write(uint8_t pin_num, uint16_t value) { /* Do Nothing*/ }
@@ -75,7 +76,6 @@ const uint8_t uc_aio_num_pins = 0;
 #if defined(UC_IO) || defined(UC_PROGRAMMER)
 void uc_dio_set(uint8_t pin_num, uint8_t setting) { /* Do Nothing*/ }
 void uc_dio_write(uint8_t pin_num, uint16_t value) { /* Do Nothing*/ }
-uint16_t uc_dio_read(uint8_t pin_num) { return pin_num; }
 #endif
 
 #ifdef UC_DATA_TRANSMIT
@@ -83,8 +83,13 @@ void uc_data_handle(const uint8_t* buffer, uint8_t buffer_len)  { /* Do Nothing*
 #endif
 
 #ifdef UC_PROGRAMMER
+void uc_programmer_setup(uint8_t program_method, uint8_t burn_method)  { /* Do Nothing*/ }
+void uc_programmer_write(const uint8_t* prog_line, uint32_t line_len) { /* Do Nothing*/ }
+void spi_write_bytes(const uint8_t* write_data, uint32_t write_len) { /* Do Nothing*/ }
+void spi_read_bytes(const uint8_t* read_data, uint32_t read_len) { /* Do Nothing*/ }
 const uint8_t UC_DIO_SET_INPUT = 0;
 const uint8_t UC_DIO_SET_OUTPUT = 1;
+const uint8_t UC_PROGRAMMER_RESET_PIN = 0;
 #endif
 
 #ifdef UC_CUSTOM_CMD

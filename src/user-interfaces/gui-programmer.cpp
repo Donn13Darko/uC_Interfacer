@@ -30,24 +30,6 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     gui_key = MAJOR_KEY_PROGRAMMER;
     gui_name = "Programmer";
 
-    // Read config settings
-    QMap<QString, QMap<QString, QVariant>*> *configMap = \
-            GUI_HELPER::readConfigINI(":/user-interfaces/gui-programmer.ini");
-    if (configMap)
-    {
-        // Add configs to local maps
-        QMap<QString, QVariant> *groupMap;
-        if (configMap->contains("settings"))
-        {
-            groupMap = configMap->value("settings");
-            addFileFormats(groupMap->value("file_formats").toStringList());
-            addBurnMethods(groupMap->value("burn_methods").toStringList());
-        }
-
-        // Delete map after use
-        GUI_HELPER::deleteConfigMap(&configMap);
-    }
-
     // Setup progress bars
     ui->Programmer_ProgressBar->setMinimum(0);
     ui->Programmer_ProgressBar->setMaximum(100);
@@ -68,7 +50,6 @@ void GUI_PROGRAMMER::parseConfigMap(QMap<QString, QVariant> *configMap)
 
     // Parse individual values
     addFileFormats(configMap->value("file_formats").toStringList());
-    removeFileFormats(configMap->value("file_formats_rm").toStringList());
     addBurnMethods(configMap->value("burn_methods").toStringList());
 }
 
@@ -95,21 +76,6 @@ void GUI_PROGRAMMER::addFileFormats(QStringList fileFormatsMap)
     }
 }
 
-void GUI_PROGRAMMER::removeFileFormats(QStringList fileFormatsList)
-{
-    int pos;
-    foreach (QString fileFormat, fileFormatsList)
-    {
-        // Get file format in combo
-        pos = ui->FileFormat_Combo->findText(fileFormat);
-        if (pos == -1) continue;
-
-        // Remove file format from combo and map
-        ui->FileFormat_Combo->removeItem(pos);
-        fileFormats.remove(fileFormat);
-    }
-}
-
 void GUI_PROGRAMMER::addBurnMethods(QStringList burnMethodsMap)
 {
     QStringList burnMethod;
@@ -133,7 +99,8 @@ bool GUI_PROGRAMMER::waitForDevice(uint8_t minorKey)
     switch (minorKey)
     {
         case MINOR_KEY_PROGRAMMER_SET_ADDR:
-        case MINOR_KEY_PROGRAMMER_DATA: // Stall while device is written to/read from (slow)
+        case MINOR_KEY_PROGRAMMER_DATA:
+        case MINOR_KEY_PROGRAMMER_READ: // Stall while device is written to/read from (slow)
             return true;
         default:
             return GUI_BASE::waitForDevice(minorKey);
@@ -270,14 +237,15 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
     QString filePath = ui->File_LineEdit->text();
     if (filePath.isEmpty())
     {
+        // Shoe error if file path empty
         emit progress_update_send(0, "Error: No file provided!");
         return;
     }
 
     // Create programming info bytearray
     QByteArray info;
-    info.append((char) ui->FileFormat_Combo->currentIndex());
-    info.append((char) ui->BurnMethod_Combo->currentIndex());
+    info.append((uint8_t) ui->FileFormat_Combo->currentIndex());
+    info.append((uint8_t) ui->BurnMethod_Combo->currentIndex());
 
     // Set programming attributes
     emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_INFO, info);
@@ -366,7 +334,35 @@ void GUI_PROGRAMMER::on_ReadDataClear_Button_clicked()
 
 void GUI_PROGRAMMER::on_ReadData_Button_clicked()
 {
-    // FixMe - Request read operation here
+    // Setup read info
+    QByteArray info;
+
+    // Check if reading address range
+    bool ok;
+    int base, addr;
+    if (ui->ReadAddr_Radio->isChecked())
+    {
+        // Get base value
+        base = ui->ReadAddrBase_LineEdit->text().toInt(&ok, 10);
+        if (!ok) return;
+
+        // Get lower address and add to info
+        addr = ui->ReadAddrLower_LineEdit->text().toInt(&ok, base);
+        if (!ok) return;
+        if (addr < 0) addr = 0;
+        info.append(GUI_HELPER::uint32_to_byteArray((uint32_t) addr));
+
+        // Get upper address and add to info
+        addr = ui->ReadAddrUpper_LineEdit->text().toInt(&ok, base);
+        if (!ok) return;
+        if (0 <= addr)
+        {
+            info.append(GUI_HELPER::uint32_to_byteArray((uint32_t) addr));
+        }
+    }
+
+    // Send read with info
+    emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_READ, info);
 }
 
 void GUI_PROGRAMMER::on_ReadDataSave_Button_clicked()

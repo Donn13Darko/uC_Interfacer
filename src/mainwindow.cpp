@@ -203,7 +203,7 @@ void MainWindow::on_Device_Combo_activated(int)
             break;
         case DEV_TYPE_OTHER:
             deviceINI = QFileDialog::getOpenFileName(this, tr("Open"), "",
-                                                     tr("INI (*.ini);;All Files (*.*)"));;
+                                                     tr("INI (*.ini);;All Files (*)"));;
             break;
         default:
             deviceINI = "";

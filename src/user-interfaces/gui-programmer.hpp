@@ -40,7 +40,6 @@ public:
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
     void addFileFormats(QStringList fileFormatsMap);
-    void removeFileFormats(QStringList fileFormatsList);
     void addBurnMethods(QStringList burnMethodsMap);
 
     virtual bool waitForDevice(uint8_t minorKey);
