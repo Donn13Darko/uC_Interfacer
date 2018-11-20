@@ -98,6 +98,7 @@ bool GUI_PROGRAMMER::waitForDevice(uint8_t minorKey)
 {
     switch (minorKey)
     {
+        case MINOR_KEY_PROGRAMMER_SET_INFO:
         case MINOR_KEY_PROGRAMMER_SET_ADDR:
         case MINOR_KEY_PROGRAMMER_DATA:
         case MINOR_KEY_PROGRAMMER_READ: // Stall while device is written to/read from (slow)
@@ -165,7 +166,23 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
             {
                 // Update current recv length with each packet
                 update_current_recv_length(data.length());
+
+                // Send data ready if not a signal packet
+                if (!data.isEmpty())
+                {
+                    emit transmit_chunk(MAJOR_KEY_DEV_READY, 0);
+                }
                 break;
+            }
+            case MINOR_KEY_PROGRAMMER_SET_INFO:
+            case MINOR_KEY_PROGRAMMER_SET_ADDR:
+            case MINOR_KEY_PROGRAMMER_READ:
+            {
+                // Emit device ready
+                emit transmit_chunk(MAJOR_KEY_DEV_READY, 0);
+
+                // Exit
+                return;
             }
         }
     } else

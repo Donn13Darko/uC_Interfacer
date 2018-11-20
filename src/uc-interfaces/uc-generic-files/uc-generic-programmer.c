@@ -31,33 +31,32 @@ typedef enum {
 
 void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len)
 {
-    // Verify bytes for command or return
-    switch (minor_key)
-    {
-        case MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE:
-        case MINOR_KEY_PROGRAMMER_SET_ADDR:
-        {
-            if (buffer_len != s2_programmer_settings_trans_end) return;
-            else break;
-        }
-        case MINOR_KEY_PROGRAMMER_SET_INFO:
-        {
-            if (buffer_len != s2_programmer_settings_info_end) return;
-            else break;
-        }
-    }
-
     // Parse and act on minor key
     switch (minor_key)
     {
         case MINOR_KEY_PROGRAMMER_SET_INFO:
         {
+            // Check packet length
+            if (buffer_len != s2_programmer_settings_info_end) break;
+
+            // Clear all flags
+            programmer_status = 0x00;
+
             // Setup transmission
-            uc_programmer_setup(buffer[s2_programmer_format_loc], buffer[s2_programmer_burn_method_loc]);
+            if (uc_programmer_setup(buffer[s2_programmer_format_loc], buffer[s2_programmer_burn_method_loc]))
+            {
+                // Set setup flag
+                programmer_status |= programmer_setup_flag;
+            }
+
+            // Break out
             break;
         }
         case MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE:
         {
+            // Check packet length
+            if (buffer_len != s2_programmer_settings_trans_end) break;
+
             // Set expected size and reset current size
             programmer_expected_trans_size = *((uint32_t*) buffer);
             programmer_curr_trans_size = 0;
@@ -66,94 +65,132 @@ void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, 
         case MINOR_KEY_PROGRAMMER_SET_ADDR:
         {
             // Set the current read/write address
+
+            // Break out
             break;
         }
         case MINOR_KEY_PROGRAMMER_DATA:
         {
-            // Verify no error
-            if (programmer_status & programmer_error_flag) return;
+            // Verify no error and setup
+            if (programmer_status & programmer_error_flag) break;
+            else if (!(programmer_status & programmer_setup_flag)) break;
 
-            // Check if start ot end command
+            // Check if start or end command
             if (buffer_len == 0)
             {
-                // If started, then clear the flag
-                if (programmer_status & programmer_start_flag)
-                {
-                    programmer_status &= ~programmer_start_flag;
-                } else
-                {
-                    programmer_status |= programmer_start_flag;
-                }
-                return;
+                // Toggle the start flag
+                programmer_status ^= programmer_start_flag;
+                break;
             }
 
             // Verify that start transaction has been set
-            if (!(programmer_status & programmer_start_flag)) return;
-
-            // Update current received size
-            programmer_curr_trans_size += buffer_len;
+            if (!(programmer_status & programmer_start_flag)) break;
 
             // Send transmission (if received complete line)
-            uc_programmer_write(buffer, buffer_len);
+            if (uc_programmer_write(buffer, buffer_len))
+            {
+                // Update current received size
+                programmer_curr_trans_size += buffer_len;
+            } else
+            {
+                // If failed, set error flag
+                programmer_status |= programmer_error_flag;
+            }
+
+            // Break out
             break;
         }
         case MINOR_KEY_PROGRAMMER_READ:
         {
             // Read at the current address with the preset method
+
+            // Break out
+            break;
+        }
+    }
+
+    // Check if need to send a ready signal
+    switch (minor_key)
+    {
+        case MINOR_KEY_PROGRAMMER_DATA:
+        {
+            // Only send if not a start or end cmd
+            if (buffer_len == 0) break;
+
+            // Else, fall through to send ready
+        }
+        case MINOR_KEY_PROGRAMMER_SET_INFO:
+        case MINOR_KEY_PROGRAMMER_SET_ADDR:
+        case MINOR_KEY_PROGRAMMER_READ:
+        {
+            // Send device ready
+            fsm_send_ready();
             break;
         }
     }
 }
 
+void FILE_FORMAT_INTEL_HEX_DECODE(const uint8_t* data, uint32_t data_len,
+                                  uint8_t **address, uint8_t *address_len,
+                                  uint8_t **data_line, uint8_t *data_line_len,
+                                  uint8_t *record_type)
+{
+    // Verify minimum data_len
+    if (data_len < 5) return;
+
+    // Set record type (4th byte)
+    *record_type = data[3];
+
+    // Set address info
+    // Address array start at 2nd byte
+    // Address is always 2 bytes
+    *address = (uint8_t*) data + 1;
+    *address_len = 2;
+
+    // Set data info
+    // Data starts after record type (5th byte)
+    // Data length is first byte
+    *data_line = (uint8_t*) data + 4;
+    *data_line_len = data[0];
+}
+
 void BURN_METHOD_AVR_ICSP_SETUP()
 {
-    // Clear setup flags
-    programmer_status = 0x00;
-
     // Set reset pin to output and set it high
     uc_dio_set(UC_PROGRAMMER_RESET_PIN, UC_DIO_SET_OUTPUT);
     uc_dio_write(UC_PROGRAMMER_RESET_PIN, 1);
 
     // Send byte holder
     uint8_t spi_setup_bytes[4];
-    spi_setup_bytes[2] = 0;
-    spi_setup_bytes[3] = 0;
+    spi_setup_bytes[0] = 0xAC;  // CMD Start Byte
+    spi_setup_bytes[2] = 0;     // Device echo back
+    spi_setup_bytes[3] = 0;     // Device echo back
     
-    // Configure setup to enable programming
-    // Assumes slave select is set in spi_send_byte (if needed)
-    spi_setup_bytes[0] = 0xAC; // Binary: 10101100
-    spi_setup_bytes[1] = 0x53; // Binray: 01010011
-    spi_write_bytes(spi_setup_bytes, 4);
+    // Enable memory access (set second byte to 0x53)
+    // Must be first CMD after reset pulled high (everything else will be ignored)
+    spi_setup_bytes[1] = 0x53;
+    spi_exchange_bytes(spi_setup_bytes, 0, 4);
 
-    // Configure setup to erase the chip
-    spi_setup_bytes[0] = 0xAC; // Binary: 10101100
-    spi_setup_bytes[1] = 0x80; // Binary: 10000000
-    spi_write_bytes(spi_setup_bytes, 4);
-
-    // Set setup flag
-    programmer_status |= programmer_setup_flag;
+    // Erase the chip (set second byte to 0x80)
+    spi_setup_bytes[1] = 0x80;
+    spi_exchange_bytes(spi_setup_bytes, 0, 4);
 }
 
-void BURN_METHOD_AVR_ICSP_PROG(const uint8_t* prog_line, uint32_t line_len)
+void BURN_METHOD_AVR_ICSP_PROG(const uint8_t* address, uint8_t address_len, const uint8_t* data, uint32_t data_len)
 {
-    // Check if error active
-    if (programmer_status & programmer_error_flag) return;
-
     // Send the line start address
 
-    // Send the line data
-    spi_write_bytes(prog_line, line_len);
-
-    // Send the line start address
+    // Send a SPI transaction
+    uint8_t read_data[data_len];
+    spi_exchange_bytes(data, read_data, data_len);
 
     // Read back the written line
-    uint8_t read_line[line_len];
-    spi_read_bytes(read_line, line_len);
+    spi_exchange_bytes(0, read_data, data_len);
 
     // Check each byte of the line
-    for (uint32_t i = 0; i < line_len; i++)
+    for (uint32_t i = 0; i < data_len; i++)
     {
-        if (prog_line[i] != read_line[i])
+        if (data[i] != read_data[i])
         {
             programmer_status |= programmer_error_flag;
             break;

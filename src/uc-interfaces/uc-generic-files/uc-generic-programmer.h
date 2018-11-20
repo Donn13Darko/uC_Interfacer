@@ -33,6 +33,7 @@ extern "C"
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "uc-generic-def.h"
 #include "../../user-interfaces/gui-programmer-minor-keys.h"
@@ -41,21 +42,45 @@ extern "C"
 /* Parses minor key and calls uc specific code */
 void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len);
 
-/* Defines functions for AVR_ICSP setup and programming */
+/* Functons for file formats */
+void FILE_FORMAT_INTEL_HEX_DECODE(const uint8_t* data, uint32_t data_len,
+                                  uint8_t **address, uint8_t *address_len,
+                                  uint8_t **data_line, uint8_t *data_line_len,
+                                  uint8_t *record_type);
+void FILE_FORMAT_BINARY_DECODE(const uint8_t* data, uint32_t data_len,
+                                uint8_t **address, uint8_t *address_len,
+                                uint8_t **data_line, uint8_t *data_line_len,
+                                uint8_t *record_type);
+void FILE_FORMAT_SREC_DECODE(const uint8_t* data, uint32_t data_len,
+                              uint8_t **address, uint8_t *address_len,
+                              uint8_t **data_line, uint8_t *data_line_len,
+                              uint8_t *record_type);
+void FILE_FORMAT_NONE_DECODE(const uint8_t* data, uint32_t data_len,
+                              uint8_t **address, uint8_t *address_len,
+                              uint8_t **data_line, uint8_t *data_line_len,
+                              uint8_t *record_type);
+
+/* Defines functions for AVR_ICSP setup and programming
+ * CMDs are all 4 byte packets:
+ *   1st byte is CMD code, selecting operation, and target memory
+ *   2nd/3rd bytes contain the address of the selected memory area
+ *   4th byte contains the data (going in either direction)
+ * CMD Codes:
+ */
 void BURN_METHOD_AVR_ICSP_SETUP();
-void BURN_METHOD_AVR_ICSP_PROG(const uint8_t* prog_line, uint32_t line_len);
+void BURN_METHOD_AVR_ICSP_PROG(const uint8_t* address, uint8_t address_len, const uint8_t* data, uint32_t data_len);
 
 /* Defines functions for PIC18_ICSP setup and programming */
 void BURN_METHOD_PIC18_ICSP_SETUP();
-void BURN_METHOD_PIC18_ICSP_PROG(const uint8_t* prog_line, uint32_t line_len);
+void BURN_METHOD_PIC18_ICSP_PROG(const uint8_t* address, uint8_t address_len, const uint8_t* data, uint32_t data_len);
 
 /* Defines functions for PIC32_ICSP setup and programming */
 void BURN_METHOD_PIC32_ICSP_SETUP();
-void BURN_METHOD_PIC32_ICSP_PROG(const uint8_t* prog_line, uint32_t line_len);
+void BURN_METHOD_PIC32_ICSP_PROG(const uint8_t* address, uint8_t address_len, const uint8_t* data, uint32_t data_len);
 
 /* Defines functions for PIC32_ICSP_4WIRE setup and programming */
 void BURN_METHOD_PIC32_ICSP_4WIRE_SETUP();
-void BURN_METHOD_PIC32_ICSP_4WIRE_PROG(const uint8_t* prog_line, uint32_t line_len);
+void BURN_METHOD_PIC32_ICSP_4WIRE_PROG(const uint8_t* address, uint8_t address_len, const uint8_t* data, uint32_t data_len);
 
 /*** Following externs are defined in uc-generic-fsm (or need to be defiend elsewhere if not using) ***/
 extern void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uint32_t data_len);
@@ -63,14 +88,16 @@ extern void fsm_send_ready();
 
 /*** Following extern functions must be defined on a per uC basis ***/
 
-/* Select and call the proper programming setup function (some defined here and can be used here) */
-extern void uc_programmer_setup(uint8_t prog_file_format, uint8_t prog_burn_method);
-/* Select and call the proper programming write function (some defined here and can be used here) */
-extern void uc_programmer_write(const uint8_t* prog_line, uint32_t line_len);
+/* Select and call the proper programming setup function (some defined above) */
+extern bool uc_programmer_setup(uint8_t prog_file_format, uint8_t prog_burn_method);
+/* Select and call the proper programming write function (some defined above) */
+extern bool uc_programmer_write(const uint8_t* data, uint32_t data_len);
 
-/* Perform SPI transactions */
-extern void spi_write_bytes(const uint8_t* write_data, uint32_t write_len);
-extern void spi_read_bytes(const uint8_t* read_data, uint32_t read_len);
+/* Perform SPI transaction */
+extern void spi_exchange_bytes(const uint8_t* write_data, const uint8_t* read_data, uint32_t data_len);
+
+/* Wait for ms */
+extern void uc_delay_ms(uint32_t ms);
 
 /* Set DIO value(s) */
 extern void uc_dio_set(uint8_t pin_num, uint8_t setting);

@@ -36,6 +36,8 @@ public:
 
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
+    virtual bool waitForDevice(uint8_t minorKey);
+
 public slots:
     virtual void reset_gui();
 

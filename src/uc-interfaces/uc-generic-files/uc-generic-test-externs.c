@@ -83,10 +83,9 @@ void uc_data_handle(const uint8_t* buffer, uint8_t buffer_len)  { /* Do Nothing*
 #endif
 
 #ifdef UC_PROGRAMMER
-void uc_programmer_setup(uint8_t program_method, uint8_t burn_method)  { /* Do Nothing*/ }
-void uc_programmer_write(const uint8_t* prog_line, uint32_t line_len) { /* Do Nothing*/ }
-void spi_write_bytes(const uint8_t* write_data, uint32_t write_len) { /* Do Nothing*/ }
-void spi_read_bytes(const uint8_t* read_data, uint32_t read_len) { /* Do Nothing*/ }
+bool uc_programmer_setup(uint8_t program_method, uint8_t burn_method)  { return true; }
+bool uc_programmer_write(const uint8_t* data, uint32_t data_len) { return true; }
+void spi_exchange_bytes(const uint8_t* write_data, const uint8_t* read_data, uint32_t data_len) { /* Do Nothing*/ }
 const uint8_t UC_DIO_SET_INPUT = 0;
 const uint8_t UC_DIO_SET_OUTPUT = 1;
 const uint8_t UC_PROGRAMMER_RESET_PIN = 0;

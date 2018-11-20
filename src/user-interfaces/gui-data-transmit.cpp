@@ -54,6 +54,17 @@ void GUI_DATA_TRANSMIT::parseConfigMap(QMap<QString, QVariant> *configMap)
     GUI_BASE::parseConfigMap(configMap);
 }
 
+bool GUI_DATA_TRANSMIT::waitForDevice(uint8_t minorKey)
+{
+    switch (minorKey)
+    {
+        case MINOR_KEY_DATA_TRANSMIT_DATA:
+            return true;
+        default:
+            return GUI_BASE::waitForDevice(minorKey);
+    }
+}
+
 void GUI_DATA_TRANSMIT::reset_gui()
 {
     // Reset base (resets progress bars)
@@ -100,6 +111,12 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
             {
                 // Update current recv length with each packet
                 update_current_recv_length(data.length());
+
+                // Send data ready if not a signal packet
+                if (!data.isEmpty())
+                {
+                    emit transmit_chunk(MAJOR_KEY_DEV_READY, 0);
+                }
                 break;
             }
         }
