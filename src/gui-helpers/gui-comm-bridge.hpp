@@ -178,6 +178,7 @@ private:
     // Rcv helper variables
     QMutex rcvLock;
     QByteArray rcvd_raw;
+    uint32_t num_s2_bytes;
 
     // Ack helper variables
     bool ack_status;

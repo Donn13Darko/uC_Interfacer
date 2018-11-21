@@ -38,6 +38,7 @@ typedef enum {
     IO_ON
 } IO_PINS;
 
+// Default File Format types
 typedef enum {
     FILE_FORMAT_INTEL_HEX = 0,
     FILE_FORMAT_BINARY,
@@ -46,10 +47,11 @@ typedef enum {
     FILE_FORMAT_OTHER
 } PROGRAMMER_FILE_FORMATS;
 
+// Default Burn Method types
 typedef enum {
     BURN_METHOD_AVR_ICSP = 0,
     BURN_METHOD_PIC18_ICSP,
-    BURN_METHOD_PIC32_ICSP,
+    BURN_METHOD_PIC32_ICSP_2WIRE,
     BURN_METHOD_PIC32_ICSP_4WIRE
 } PROGRAMMER_BURN_METHODS;
 

@@ -32,8 +32,6 @@ GUI_COMM_BRIDGE::supportedChecksums({
             {"CHECKSUM_EXE", {get_checksum_exe_size, get_checksum_exe, check_checksum_exe, 0, 0, 1}}
         });
 
-uint32_t num_s2_bytes;
-
 GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     QObject(parent)
 {

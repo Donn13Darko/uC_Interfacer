@@ -18,8 +18,8 @@
 
 #include "uc-generic-data-transmit.h"
 
-uint32_t data_transmit_expected_trans_size = 0;
-uint32_t data_transmit_curr_trans_size = 0;
+static uint32_t data_transmit_expected_trans_size = 0;
+static uint32_t data_transmit_curr_trans_size = 0;
 
 void uc_data_transmit(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len)
 {

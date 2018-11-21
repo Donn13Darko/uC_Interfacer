@@ -52,6 +52,13 @@ typedef enum {
     s2_programmer_settings_trans_end = 4
 } S2_Programmer_Settings;
 
+typedef enum {
+    programmer_start_flag = 0x01,
+    programmer_setup_flag = 0x02,
+    programmer_error_flag = 0x04,
+    programmer_page_mode_flag = 0x08
+} PROGRAMMER_STATUS_FLAGS;
+
 #ifdef __cplusplus
 }
 #endif

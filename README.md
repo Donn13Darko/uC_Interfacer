@@ -23,6 +23,7 @@ The programmer in this application was greatly aided and loosely based off of th
 5. [Arduino](https://www.arduino.cc/) and their [github](https://github.com/arduino)
 6. [quaxio](https://www.quaxio.com/programming_an_at89s4051_with_an_arduino/)
 7. Code and Life articles [AVR ATiny USB Parts 1-4](http://codeandlife.com/2012/01/22/avr-attiny-usb-tutorial-part-1/) and [Arduino Uno as ISP](http://codeandlife.com/2012/03/21/using-arduino-uno-as-isp/).
+8. Microchip articles: [AN_0943 AVR910](https://www.microchip.com/wwwAppNotes/AppNotes.aspx?appnote=en591739), [AN_2568 AVR911](https://www.microchip.com/wwwAppNotes/AppNotes.aspx?appnote=en591218)
 
 ## Custom CMD
 Allows sending of custom major key, minor key, and data as well as choosing an input base for the keys and data. Additionally, supports sending a file chunked by each newline. This is ideal for sending multiple verified commands and provides a base for scripting procedures as any major key, minor key, and data can be sent and encoded with this GUI. *NOTE:* The checksum will default to the Custom CMD gui checksum even if sending a differet major key (GUI has no knowledge of the other tabs/GUIs).

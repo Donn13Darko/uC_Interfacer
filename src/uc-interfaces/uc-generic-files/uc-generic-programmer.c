@@ -19,15 +19,34 @@
 #include "uc-generic-programmer.h"
 
 // Variable definitions
-uint32_t programmer_expected_trans_size = 0;
-uint32_t programmer_curr_trans_size = 0;
-uint8_t programmer_status = 0;
+static uint32_t programmer_expected_trans_size = 0;
+static uint32_t programmer_curr_trans_size = 0;
+static uint8_t programmer_status = 0;
+static uint8_t prog_file_format = 0;
+static uint8_t prog_burn_method = 0;
+
+// Record file format definitions
+typedef enum {
+    INTEL_HEX_DATA = 0,
+    INTEL_HEX_END_OF_FILE,
+    INTEL_HEX_EXTENDED_SEGMENT_ADDR,
+    INTEL_HEX_START_SEGMENT_ADDR,
+    INTEL_HEX_EXTENDED_LINEAR_ADDR,
+    INTEL_HEX_START_LINEAR_ADDR
+} INTEL_HEX_RECORD_TYPES;
 
 typedef enum {
-    programmer_start_flag = 0x01,
-    programmer_setup_flag = 0x02,
-    programmer_error_flag = 0x04
-} PROGRAMMER_STATUS_FLAGS;
+    SREC_HEADER = 0,
+    SREC_DATA_16BAddr,
+    SREC_DATA_24BAddr,
+    SREC_DATA_32BAddr,
+    SREC_RESERVED,
+    SREC_COUNT_16B,
+    SREC_COUNT_24B,
+    SREC_START_ADDR_32B,
+    SREC_START_ADDR_24B,
+    SREC_START_ADDR_16B
+} SREC_RECORD_TYPES;
 
 void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len)
 {
@@ -42,8 +61,12 @@ void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, 
             // Clear all flags
             programmer_status = 0x00;
 
-            // Setup transmission
-            if (uc_programmer_setup(buffer[s2_programmer_format_loc], buffer[s2_programmer_burn_method_loc]))
+            // Set local variables
+            prog_file_format = buffer[s2_programmer_format_loc];
+            prog_burn_method = buffer[s2_programmer_burn_method_loc];
+
+            // Setup burn method
+            if (!uc_programmer_setup(prog_burn_method))
             {
                 // Set setup flag
                 programmer_status |= programmer_setup_flag;
@@ -87,7 +110,7 @@ void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, 
             if (!(programmer_status & programmer_start_flag)) break;
 
             // Send transmission (if received complete line)
-            if (uc_programmer_write(buffer, buffer_len))
+            if (uc_programmer_write(prog_file_format, prog_burn_method, buffer, buffer_len))
             {
                 // Update current received size
                 programmer_curr_trans_size += buffer_len;
@@ -130,37 +153,66 @@ void uc_programmer(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, 
     }
 }
 
-void FILE_FORMAT_INTEL_HEX_DECODE(const uint8_t* data, uint32_t data_len,
-                                  uint8_t **address, uint8_t *address_len,
-                                  uint8_t **data_line, uint8_t *data_line_len,
-                                  uint8_t *record_type)
+bool FILE_FORMAT_INTEL_HEX_DECODE(const uint8_t* data, uint32_t data_len,
+                                  uint32_t *address,
+                                  uint8_t **data_line, uint8_t *data_line_len)
 {
     // Verify minimum data_len
-    if (data_len < 5) return;
+    if (data_len < 5) return false;
 
-    // Set record type (4th byte)
-    *record_type = data[3];
+    // Choose action based on record type (4th byte)
+    switch (data[3])
+    {
+        case INTEL_HEX_DATA:
+        {
+            // Set address info
+            // Address array start at 2nd byte
+            // Address is always 2 bytes
+            *address = *((uint16_t*) (data + 1));
 
-    // Set address info
-    // Address array start at 2nd byte
-    // Address is always 2 bytes
-    *address = (uint8_t*) data + 1;
-    *address_len = 2;
+            // Set data info
+            // Data starts after record type (5th byte)
+            // Data length is first byte
+            *data_line = (uint8_t*) data + 4;
+            *data_line_len = data[0];
 
-    // Set data info
-    // Data starts after record type (5th byte)
-    // Data length is first byte
-    *data_line = (uint8_t*) data + 4;
-    *data_line_len = data[0];
+            // Done setting info
+            return true;
+        }
+        case INTEL_HEX_EXTENDED_SEGMENT_ADDR:
+        {
+            // Multiply by 16 and add to each subsequent data record address
+            programmer_segment_addr = ((uint32_t) *((uint16_t*) data + 4)) << 4;
+        }
+        case INTEL_HEX_EXTENDED_LINEAR_ADDR:
+        {
+            // Set upper 16 bits of extended linear address
+            programmer_extended_linear_addr = ((uint32_t) *((uint16_t*) data + 4)) << 16;
+        }
+        case INTEL_HEX_END_OF_FILE:         // Nothing to do so ignore
+        case INTEL_HEX_START_SEGMENT_ADDR:  // No influence on execution start so ignore
+        case INTEL_HEX_START_LINEAR_ADDR:   // No influence on execution start so ignore
+        {
+            // Set len fields to 0 (nothing to do)
+            *data_line_len = 0;
+            return true;
+        }
+        default:
+        {
+            return false;
+        }
+    }
 }
 
-void BURN_METHOD_AVR_ICSP_SETUP()
+/*** AVR ICSP Functions & Helpers ***/
+
+bool BURN_METHOD_AVR_ICSP_SETUP()
 {
     // Set reset pin to output and set it high
     uc_dio_set(UC_PROGRAMMER_RESET_PIN, UC_DIO_SET_OUTPUT);
     uc_dio_write(UC_PROGRAMMER_RESET_PIN, 1);
 
-    // Send byte holder
+    // Setup byte holder
     uint8_t spi_setup_bytes[4];
     spi_setup_bytes[0] = 0xAC;  // CMD Start Byte
     spi_setup_bytes[2] = 0;     // Device echo back
@@ -174,26 +226,42 @@ void BURN_METHOD_AVR_ICSP_SETUP()
     // Erase the chip (set second byte to 0x80)
     spi_setup_bytes[1] = 0x80;
     spi_exchange_bytes(spi_setup_bytes, 0, 4);
+
+    return true;
 }
 
-void BURN_METHOD_AVR_ICSP_PROG(const uint8_t* address, uint8_t address_len, const uint8_t* data, uint32_t data_len)
+/* Page vs byte programming mode. */
+bool BURN_METHOD_AVR_ICSP_WRITE(uint32_t address, const uint8_t* data, uint32_t data_len)
 {
-    // Send the line start address
+    // Build write page address cmd
+    uint8_t cmd_packet[4];
+    cmd_packet[0] = 0x4C;
+    cmd_packet[1] = (address >> 8) & 0xFF;
+    cmd_packet[2] = address & 0xFF;
+    cmd_packet[3] = 0;
 
-    // Send a SPI transaction
+    // Send page write cmd
+    spi_exchange_bytes(cmd_packet, 0, 4);
+
+    // Send page data
+    spi_exchange_bytes(data, 0, data_len);
+
+    // Read back each byte of the written line
     uint8_t read_data[data_len];
-    spi_exchange_bytes(data, read_data, data_len);
-
-    // Read back the written line
-    spi_exchange_bytes(0, read_data, data_len);
+    for (uint32_t i = 0; i < data_len; i++)
+    {
+        spi_exchange_bytes(0, read_data, data_len);
+        spi_exchange_bytes(0, read_data, data_len);
+    }
 
     // Check each byte of the line
     for (uint32_t i = 0; i < data_len; i++)
     {
         if (data[i] != read_data[i])
         {
-            programmer_status |= programmer_error_flag;
-            break;
+            return false;
         }
     }
+
+    return true;
 }

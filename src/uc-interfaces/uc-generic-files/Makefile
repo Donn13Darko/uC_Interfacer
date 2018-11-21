@@ -19,7 +19,7 @@ compiler=gcc
 run_test: fsm_test
 		./fsm_test
 
-fsm_test:
+fsm_test: ../../checksums/*.c ../../checksums/*.h uc-generic-*.c uc-generic-*.h
 		$(compiler) ../../checksums/*.c uc-generic-*.c -o fsm_test
 
 clean:
