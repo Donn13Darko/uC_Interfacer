@@ -208,20 +208,36 @@ bool FILE_FORMAT_INTEL_HEX_DECODE(const uint8_t* data, uint32_t data_len,
 
 bool BURN_METHOD_AVR_ICSP_SETUP()
 {
-    // Set reset pin to output and set it high
+    // Set reset pin to output and pull pin low
     uc_dio_set(UC_PROGRAMMER_RESET_PIN, UC_DIO_SET_OUTPUT);
-    uc_dio_write(UC_PROGRAMMER_RESET_PIN, 1);
+    uc_dio_write(UC_PROGRAMMER_RESET_PIN, 0);
 
     // Setup byte holder
     uint8_t spi_setup_bytes[4];
     spi_setup_bytes[0] = 0xAC;  // CMD Start Byte
     spi_setup_bytes[2] = 0;     // Device echo back
     spi_setup_bytes[3] = 0;     // Device echo back
+
+    // Setup read & echo byte holders
+    uint8_t spi_read_bytes[4];
+    uint8_t *spi_echo_byte = spi_read_bytes + 2;
     
     // Enable memory access (set second byte to 0x53)
     // Must be first CMD after reset pulled high (everything else will be ignored)
     spi_setup_bytes[1] = 0x53;
-    spi_exchange_bytes(spi_setup_bytes, 0, 4);
+
+    // Verify that echo back byte is 0x53
+    // Control echos back 0x53 during transmission
+    // this notifies that device has been synced
+    do
+    {
+        // Positive pulse the reset pin
+        uc_dio_write(UC_PROGRAMMER_RESET_PIN, 1);
+        uc_dio_write(UC_PROGRAMMER_RESET_PIN, 0);
+
+        // Try sending memory access cmd
+        spi_exchange_bytes(spi_setup_bytes, spi_read_bytes, 4);
+    } while (spi_read_bytes[3] != 0x53);
 
     // Erase the chip (set second byte to 0x80)
     spi_setup_bytes[1] = 0x80;
@@ -233,34 +249,88 @@ bool BURN_METHOD_AVR_ICSP_SETUP()
 /* Page vs byte programming mode. */
 bool BURN_METHOD_AVR_ICSP_WRITE(uint32_t address, const uint8_t* data, uint32_t data_len)
 {
-    // Build write page address cmd
+    // Allocate variables
     uint8_t cmd_packet[4];
-    cmd_packet[0] = 0x4C;
-    cmd_packet[1] = (address >> 8) & 0xFF;
-    cmd_packet[2] = address & 0xFF;
-    cmd_packet[3] = 0;
+    uint8_t read_data[4];
+    uint32_t i;
 
-    // Send page write cmd
-    spi_exchange_bytes(cmd_packet, 0, 4);
+    // Set cmd_packet to Load page low byte cmd
+    // Must load low byte before high byte
+    cmd_packet[0] = 0x40;
+    cmd_packet[1] = 0x00;
+    cmd_packet[2] = address & 0x3F; // 6 LSB of address
 
-    // Send page data
-    spi_exchange_bytes(data, 0, data_len);
-
-    // Read back each byte of the written line
-    uint8_t read_data[data_len];
-    for (uint32_t i = 0; i < data_len; i++)
+    // Load all bytes into page
+    // Must be sent low byte frst then high bytes
+    i = 0;
+    while (i < data_len)
     {
-        spi_exchange_bytes(0, read_data, data_len);
-        spi_exchange_bytes(0, read_data, data_len);
+        // Increment i
+        // Helps send low byte then high byte
+        i += 1;
+
+        // Set data byte
+        // i & 0x01 gets low byte first (since i incremented above)
+        cmd_packet[3] = data[i + (i & 0x01)];
+
+        // Send byte
+        spi_exchange_bytes(cmd_packet, 0, 4);
+
+        // Toggle CMD byte
+        cmd_packet[0] ^= 0x08;
+
+        // Increment address if writing low byte next (i even)
+        cmd_packet[2] += (i % 2);
     }
 
-    // Check each byte of the line
-    for (uint32_t i = 0; i < data_len; i++)
+    // Load page write cmd info
+    cmd_packet[0] = 0x4C;           // Page write cmd byte
+    cmd_packet[1] = 0x7F;           // 7 MSB of address
+    cmd_packet[2] = address & 0x3F; // 6 LSB of address
+    cmd_packet[3] = 0x00;
+
+    // Send page write cmd after data loaded
+    spi_exchange_bytes(cmd_packet, 0, 4);
+
+    // Load ready/busy poll cmd
+    cmd_packet[0] = 0xF0;
+    cmd_packet[1] = 0x00;
+    cmd_packet[2] = 0x00;
+
+    // Wait for ready from device
+    do
     {
-        if (data[i] != read_data[i])
+        // Send ready/busy poll cmd
+        spi_exchange_bytes(cmd_packet, read_data, 4);
+    } while (read_data[3] != 0x00);
+
+    // Set cmd packet for reading high byte
+    cmd_packet[0] = 0x28;           // Read high byte cmd
+    cmd_packet[1] = 0x7F;           // 7 MSB of address
+    cmd_packet[2] = address & 0x3F; // 6 LSB of address
+    cmd_packet[3] = 0x00;
+
+    // Read back each byte and verify
+    i = 0;
+    while (i < data_len)
+    {
+        // Read byte
+        spi_exchange_bytes(cmd_packet, read_data, 4);
+
+        // Verify read byte (4th byte in read data)
+        if (data[i] != read_data[3])
         {
             return false;
         }
+
+        // Toggle CMD byte
+        cmd_packet[0] ^= 0x08;
+
+        // Increment i
+        i += 1;
+
+        // Increment address if reading high byte (i even)
+        cmd_packet[2] += (i % 2);
     }
 
     return true;
