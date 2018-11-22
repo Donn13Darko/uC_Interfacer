@@ -284,9 +284,9 @@ bool BURN_METHOD_AVR_ICSP_WRITE(uint32_t address, const uint8_t* data, uint32_t 
     }
 
     // Load page write cmd info
-    cmd_packet[0] = 0x4C;           // Page write cmd byte
-    cmd_packet[1] = 0x7F;           // 7 MSB of address
-    cmd_packet[2] = address & 0x3F; // 6 LSB of address
+    cmd_packet[0] = 0x4C;                   // Page write cmd byte
+    cmd_packet[1] = (address >> 8) & 0xFF;  // 7 MSB of address
+    cmd_packet[2] = address & 0xFF;         // 6 LSB of address
     cmd_packet[3] = 0x00;
 
     // Send page write cmd after data loaded
@@ -305,9 +305,9 @@ bool BURN_METHOD_AVR_ICSP_WRITE(uint32_t address, const uint8_t* data, uint32_t 
     } while (read_data[3] != 0x00);
 
     // Set cmd packet for reading high byte
-    cmd_packet[0] = 0x28;           // Read high byte cmd
-    cmd_packet[1] = 0x7F;           // 7 MSB of address
-    cmd_packet[2] = address & 0x3F; // 6 LSB of address
+    cmd_packet[0] = 0x28;                   // Read high byte cmd
+    cmd_packet[1] = (address >> 8) & 0xFF;  // 7 MSB of address
+    cmd_packet[2] = address & 0xFF;         // 6 LSB of address
     cmd_packet[3] = 0x00;
 
     // Read back each byte and verify

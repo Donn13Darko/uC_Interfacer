@@ -23,6 +23,7 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
 {
     // Init base variables
     closable = true;
+    gui_key = MAJOR_KEY_ERROR;
 
     // Open temporary file and set autoremove
     rcvd_formatted.open();
