@@ -24,7 +24,7 @@
 
 GUI_BASE_TESTS::GUI_BASE_TESTS()
 {
-    /* Do Nothing */
+    /* DO NOTHING */
 }
 
 GUI_BASE_TESTS::~GUI_BASE_TESTS()

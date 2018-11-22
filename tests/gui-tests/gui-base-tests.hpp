@@ -22,7 +22,7 @@
 #include <QObject>
 
 // Testing class
-#include "../../user-interfaces/gui-base.hpp"
+#include "../../src/user-interfaces/gui-base.hpp"
 
 class GUI_BASE_TESTS : public QObject
 {
@@ -42,7 +42,7 @@ private slots:
     void test_gui_key();
 
 private:
-    GUI_BASE* base;
+    GUI_BASE *base;
 };
 
 #endif // GUI_BASE_TESTS_H

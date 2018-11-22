@@ -25,6 +25,9 @@
 
 int main(int argc, char *argv[])
 {
+    // Create application (for use in widgets)
+    QApplication a(argc, argv);
+
     // Setup status variable
     int status = 0;
 
