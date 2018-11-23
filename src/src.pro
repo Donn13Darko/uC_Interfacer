@@ -23,8 +23,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     $$PWD/main.cpp
 
+# Include main project src files
 include(mainwindow.pri)
 include(checksums/checksums.pri)
 include(communication/communication.pri)
 include(gui-helpers/gui-helpers.pri)
+include(uc-interfaces/uc-interfaces.pri)
 include(user-interfaces/user-interfaces.pri)

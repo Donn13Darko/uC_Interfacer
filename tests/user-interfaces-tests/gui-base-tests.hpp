@@ -16,24 +16,40 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// Testing infrastructure includes
-#include <QtTest>
-#include <QCoreApplication>
+#ifndef GUI_BASE_TESTS_H
+#define GUI_BASE_TESTS_H
 
-// Testing classes
-#include "user-interfaces-tests/gui-base-tests.hpp"
+#include <QObject>
 
-int main(int argc, char *argv[])
+// Testing class
+#include "gui-base-test-class.hpp"
+
+class GUI_BASE_TESTS : public QObject
 {
-    // Create application (for use in widgets)
-    QApplication a(argc, argv);
+    Q_OBJECT
 
-    // Setup status variable
-    int status = 0;
+public:
+    GUI_BASE_TESTS();
+    ~GUI_BASE_TESTS();
 
-    /* GUI Base Tests */
-    GUI_BASE_TESTS gui_base_test_class;
-    status |= QTest::qExec(&gui_base_test_class, argc, argv);
+private slots:
+    // Setup and cleanup functions
+    void initTestCase();
+    void cleanupTestCase();
 
-    return status;
-}
+    // Basic public member tests
+    void test_closable();
+    void test_gui_key();
+    void test_set_GUI_tab_name();
+    void test_GUI_config();
+    void test_acceptAllCMDs();
+    void test_waitForDevice();
+    void test_reset_gui();
+
+    // Basic protected member tests
+
+private:
+    GUI_BASE_TEST_CLASS *base_tester;
+};
+
+#endif // GUI_BASE_TESTS_H

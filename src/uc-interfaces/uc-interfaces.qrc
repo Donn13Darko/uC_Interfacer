@@ -1,6 +1,6 @@
 <RCC>
-    <qresource prefix="/">
-        <file>uc-interfaces/arduino-uno-uart-example.ini</file>
-        <file>uc-interfaces/pc-example.ini</file>
+    <qresource prefix="/uc-interfaces">
+        <file>arduino-uno-uart-example.ini</file>
+        <file>pc-example.ini</file>
     </qresource>
 </RCC>

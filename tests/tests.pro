@@ -11,14 +11,15 @@ TARGET = uc-interface-tests
 TEMPLATE = app
 
 SOURCES += \
-    main.cpp
+    $$PWD/main.cpp
 
 # Include main project src files
 include(../src/mainwindow.pri)
 include(../src/checksums/checksums.pri)
 include(../src/communication/communication.pri)
 include(../src/gui-helpers/gui-helpers.pri)
+include(../src/uc-interfaces/uc-interfaces.pri)
 include(../src/user-interfaces/user-interfaces.pri)
 
 # Include local test files
-include(gui-tests/gui-base-tests.pri)
+include(user-interfaces-tests/user-interfaces-tests.pri)

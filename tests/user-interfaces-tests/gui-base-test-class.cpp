@@ -16,24 +16,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// Testing infrastructure includes
-#include <QtTest>
-#include <QCoreApplication>
+#include "gui-base-test-class.hpp"
 
-// Testing classes
-#include "user-interfaces-tests/gui-base-tests.hpp"
+// Object includes
+#include <QString>
 
-int main(int argc, char *argv[])
+GUI_BASE_TEST_CLASS::GUI_BASE_TEST_CLASS(QWidget *parent) :
+    GUI_BASE(parent)
 {
-    // Create application (for use in widgets)
-    QApplication a(argc, argv);
+    /* DO NOTHING */
+}
 
-    // Setup status variable
-    int status = 0;
+GUI_BASE_TEST_CLASS::~GUI_BASE_TEST_CLASS()
+{
+    /* DO NOTHING */
+}
 
-    /* GUI Base Tests */
-    GUI_BASE_TESTS gui_base_test_class;
-    status |= QTest::qExec(&gui_base_test_class, argc, argv);
-
-    return status;
+void GUI_BASE_TEST_CLASS::set_gui_key(uint8_t new_key)
+{
+    // Set new gui key
+    gui_key = new_key;
 }

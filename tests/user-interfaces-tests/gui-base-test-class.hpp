@@ -16,33 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_BASE_TESTS_H
-#define GUI_BASE_TESTS_H
-
-#include <QObject>
+#ifndef GUI_BASE_TEST_CLASS_H
+#define GUI_BASE_TEST_CLASS_H
 
 // Testing class
 #include "../../src/user-interfaces/gui-base.hpp"
 
-class GUI_BASE_TESTS : public QObject
+class GUI_BASE_TEST_CLASS : public GUI_BASE
 {
     Q_OBJECT
 
 public:
-    GUI_BASE_TESTS();
-    ~GUI_BASE_TESTS();
+    GUI_BASE_TEST_CLASS(QWidget *parent = 0);
+    ~GUI_BASE_TEST_CLASS();
 
-private slots:
-    // Setup and cleanup functions
-    void initTestCase();
-    void cleanupTestCase();
-
-    // Test cases
-    void test_closable();
-    void test_gui_key();
-
-private:
-    GUI_BASE *base;
+    /*** Defines setters & accessors for testing ***/
+    void set_gui_key(uint8_t new_key);
 };
 
-#endif // GUI_BASE_TESTS_H
+#endif // GUI_BASE_TEST_CLASS_H
