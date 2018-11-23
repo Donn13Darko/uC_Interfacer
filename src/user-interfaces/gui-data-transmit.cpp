@@ -130,7 +130,7 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
     if (data.isEmpty()) return;
 
     // Insert into global array (for saving in original format)
-    rcvd_formatted.write(data);
+    rcvd_formatted_append(data);
 
     // Check if loading into plaintext
     if (ui->RecvShowRecv_CheckBox->isChecked())
@@ -171,9 +171,13 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
         // Get filePath
         QString filePath = ui->SendFilePath_LineEdit->text();
 
+        // Get file size
+        qint64 fileSize = GUI_GENERIC_HELPER::getFileSize(filePath);
+        if (fileSize < 0) return;
+
         // Set size
         emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                            GUI_GENERIC_HELPER::uint32_to_byteArray(GUI_GENERIC_HELPER::getFileSize(filePath)));
+                            GUI_GENERIC_HELPER::uint32_to_byteArray((uint32_t) fileSize));
 
         // Send file
         emit transmit_file_pack(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
@@ -201,13 +205,13 @@ void GUI_DATA_TRANSMIT::on_SendBrowseFile_Button_clicked()
 
 void GUI_DATA_TRANSMIT::on_RecvSave_Button_clicked()
 {
-    save_rcvd_formatted();
+    rcvd_formatted_save();
 }
 
 void GUI_DATA_TRANSMIT::on_RecvClear_Button_clicked()
 {
     ui->Recv_PlainText->clear();
-    rcvd_formatted.resize(0);
+    rcvd_formatted_clear();
     set_expected_recv_length(0);
 }
 

@@ -47,24 +47,29 @@ void GUI_BASE_TEST_CLASS::set_gui_name_test(QString new_name)
     gui_name = new_name;
 }
 
-QByteArray GUI_BASE_TEST_CLASS::get_rcvd_formatted_data_test()
+void GUI_BASE_TEST_CLASS::rcvd_formatted_append_test(QByteArray data)
 {
-    // Seek to start
-    rcvd_formatted.seek(0);
-
-    // Read all
-    QByteArray data = rcvd_formatted.readAll();
-
-    // Seek to end
-    rcvd_formatted.seek(rcvd_formatted.size());
-
-    // Return read
-    return data;
+    rcvd_formatted_append(data);
 }
 
-qint64 GUI_BASE_TEST_CLASS::get_rcvd_formatted_size_test()
+QByteArray GUI_BASE_TEST_CLASS::rcvd_formatted_readAll_test()
 {
-    return rcvd_formatted.size();
+    return rcvd_formatted_readAll();
+}
+
+qint64 GUI_BASE_TEST_CLASS::rcvd_formatted_size_test()
+{
+    return rcvd_formatted_size();
+}
+
+void GUI_BASE_TEST_CLASS::rcvd_formatted_clear_test()
+{
+    rcvd_formatted_clear();
+}
+
+void GUI_BASE_TEST_CLASS::rcvd_formatted_save_test(QString fileName)
+{
+    rcvd_formatted_save(fileName);
 }
 
 void GUI_BASE_TEST_CLASS::update_current_recv_length_test(uint32_t recv_len)

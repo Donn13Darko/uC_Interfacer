@@ -69,7 +69,7 @@ GUI_BASE::~GUI_BASE()
 void GUI_BASE::reset_gui()
 {
     // Clear formatted
-    rcvd_formatted.resize(0);
+    rcvd_formatted_clear();
 
     // Reset progress bars info
     current_recv_length = 0;
@@ -131,16 +131,21 @@ void GUI_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
     // Delete current map
     if (gui_config)
     {
+        // Will set gui_config to nullptr
         GUI_GENERIC_HELPER::delete_configMap(&gui_config);
+
+        // Manually set gui_mapp to nullptr (deleted as part of gui_config)
         gui_map = nullptr;
     }
 
-    // Create temporary ful; config
+    // Create temporary full config
     CONFIG_MAP tmp_map;
     tmp_map.insert(gui_name, configMap);
 
-    // Copy full config and get gui_map for easy access
+    // Copy full config
     gui_config = GUI_GENERIC_HELPER::copy_configMap(&tmp_map);
+
+    // Setup and verify maps
     init_maps();
 }
 
@@ -183,11 +188,15 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer
                         GUI_GENERIC_HELPER::initList_to_byteArray(chunk));
 }
 
-void GUI_BASE::save_rcvd_formatted()
+void GUI_BASE::rcvd_formatted_append(QByteArray data)
 {
-    // Select file save location
-    QString fileName;
-    if (!GUI_GENERIC_HELPER::getSaveFilePath(&fileName))
+    rcvd_formatted.write(data);
+}
+
+void GUI_BASE::rcvd_formatted_save(QString fileName)
+{
+    // Select file save location if not provided
+    if (fileName.isEmpty() && !GUI_GENERIC_HELPER::getSaveFilePath(&fileName))
         return;
 
     // Close temporary file (for copying)
@@ -200,6 +209,31 @@ void GUI_BASE::save_rcvd_formatted()
     // Reopen temporary (and go to end)
     rcvd_formatted.open();
     rcvd_formatted.seek(rcvd_formatted.size());
+}
+
+QByteArray GUI_BASE::rcvd_formatted_readAll()
+{
+    // Seek to start
+    rcvd_formatted.seek(0);
+
+    // Read all
+    QByteArray data = rcvd_formatted.readAll();
+
+    // Seek to end
+    rcvd_formatted.seek(rcvd_formatted.size());
+
+    // Return read
+    return data;
+}
+
+uint32_t GUI_BASE::rcvd_formatted_size()
+{
+    return rcvd_formatted.size();
+}
+
+void GUI_BASE::rcvd_formatted_clear()
+{
+    rcvd_formatted.resize(0);
 }
 
 void GUI_BASE::set_expected_recv_length(uint32_t expected_length)
@@ -249,24 +283,43 @@ void GUI_BASE::update_current_recv_length(uint32_t recv_len)
 
 bool GUI_BASE::init_maps()
 {
-    // Create gui_config if needed
-    if (!gui_config) gui_config = new CONFIG_MAP();
-
-    // Verify gui_config present
-    if (gui_config)
+    // Try creating gui_config if not present
+    if (!gui_config)
     {
-        // See if config already has map
-        gui_map = gui_config->value(gui_name, nullptr);
+        // Create new config
+        gui_config = new CONFIG_MAP();
 
-        // Create new gui_map if needed
-        if (!gui_map)
+        // Delete old gui_map if present
+        // No config before this so shouldn't have
+        // a gui_map object (if there is its old)
+        if (gui_map)
         {
-            // Create new gui_map
-            gui_map = new QMap<QString, QVariant>();
-
-            // Insert into gui_config
-            gui_config->insert(gui_name, gui_map);
+            delete gui_map;
+            gui_map = nullptr;
         }
+
+        // Verify success or return failure
+        if (!gui_config) return false;
+    }
+
+    // See if gui_config already has gui_map
+    QMap<QString, QVariant> *gui_map_config = gui_config->value(gui_name, nullptr);
+
+    // Handle gui map selection/creation
+    if (gui_map_config)
+    {
+        // If gui_map != gui_map_config, delete gui_map
+        if (gui_map && (gui_map != gui_map_config)) delete gui_map;
+
+        // Set gui_map to map from gui_config
+        gui_map = gui_map_config;
+    } else
+    {
+        // Create new, blank map if none
+        if (!gui_map) gui_map = new QMap<QString, QVariant>();
+
+        // Insert into gui_config
+        gui_config->insert(gui_name, gui_map);
     }
 
     // Return true if both gui_config and gui_map created

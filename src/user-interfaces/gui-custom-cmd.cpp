@@ -63,7 +63,6 @@ void GUI_CUSTOM_CMD::reset_gui()
 
     // Clear received data
     on_FeedbackClear_Button_clicked();
-    ends_with_newline = false;
 
     // Reset recv bases
     recv_key_base = 16;
@@ -120,23 +119,8 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
                 // Update current recv length with each packet
                 update_current_recv_length(recvData.mid(s1_end_loc).length());
 
-                if (recvData.length() == 2)
-                {
-                    // If file is empty, exit
-                    if (ends_with_newline || !rcvd_formatted.size()) return;
-
-                    // Insert newline into file store
-                    recvData.clear();
-                    recvData.append('\n');
-                    rcvd_formatted.write(recvData);
-
-                    // Insert newline at end of plaintext
-                    QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
-                    ui->Feedback_PlainText->moveCursor(QTextCursor::End);
-                    ui->Feedback_PlainText->insertPlainText(QString('\n'));
-                    ui->Feedback_PlainText->setTextCursor(prev_cursor);
-                    return;
-                }
+                // End or start packet (no value)
+                if (recvData.length() == 2) return;
                 break;
             }
         }
@@ -154,11 +138,8 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
     if (ui->FeedbackAppendNewline_CheckBox->isChecked() && !recvPlain.endsWith('\n'))
         recvPlain.append('\n');
 
-    // Update ending
-    ends_with_newline = recvPlain.endsWith('\n');
-
     // Insert into class array (for saving in sent format)
-    rcvd_formatted.write(recvPlain.toLatin1());
+    rcvd_formatted_append(recvPlain.toLatin1());
 
     // Insert at end of plaintext
     QTextCursor prev_cursor = ui->Feedback_PlainText->textCursor();
@@ -188,13 +169,13 @@ void GUI_CUSTOM_CMD::set_progress_update_send(int progress, QString label)
 
 void GUI_CUSTOM_CMD::on_FeedbackSave_Button_clicked()
 {
-    save_rcvd_formatted();
+    rcvd_formatted_save();
 }
 
 void GUI_CUSTOM_CMD::on_FeedbackClear_Button_clicked()
 {
     ui->Feedback_PlainText->clear();
-    rcvd_formatted.resize(0);
+    rcvd_formatted_clear();
     set_expected_recv_length(0);
 }
 

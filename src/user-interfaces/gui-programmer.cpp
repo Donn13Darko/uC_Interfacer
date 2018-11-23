@@ -192,7 +192,7 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
     }
 
     // Insert into global array (for saving in original format)
-    rcvd_formatted.write(data);
+    rcvd_formatted_append(data);
 
     // Insert at end of plaintext
     QTextCursor prev_cursor = ui->ReadData_PlainText->textCursor();
@@ -267,9 +267,13 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
     // Set programming attributes
     emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_INFO, info);
 
+    // Get file size
+    qint64 fileSize = GUI_GENERIC_HELPER::getFileSize(filePath);
+    if (fileSize < 0) return;
+
     // Set file size
     emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
-                        GUI_GENERIC_HELPER::uint32_to_byteArray(GUI_GENERIC_HELPER::getFileSize(filePath)));
+                        GUI_GENERIC_HELPER::uint32_to_byteArray((uint32_t) fileSize));
 
     // Send file
     emit transmit_file_pack(gui_key, MINOR_KEY_PROGRAMMER_DATA,
@@ -345,7 +349,7 @@ void GUI_PROGRAMMER::on_ReadData_RadioGroup_buttonClicked(int)
 void GUI_PROGRAMMER::on_ReadDataClear_Button_clicked()
 {
     ui->ReadData_PlainText->clear();
-    rcvd_formatted.resize(0);
+    rcvd_formatted_clear();
     set_expected_recv_length(0);
 }
 
@@ -384,7 +388,7 @@ void GUI_PROGRAMMER::on_ReadData_Button_clicked()
 
 void GUI_PROGRAMMER::on_ReadDataSave_Button_clicked()
 {
-    save_rcvd_formatted();
+    rcvd_formatted_save();
 }
 
 QByteArray GUI_PROGRAMMER::format_file(QByteArray rawFile)

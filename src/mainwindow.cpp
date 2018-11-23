@@ -599,7 +599,7 @@ void MainWindow::createNewTabs_accepted()
                     }
                 } else
                 {
-                    GUI_GENERIC_HELPER::showMessage("Error: Incorrect GUI key detected!");
+                    GUI_GENERIC_HELPER::showMessage("Error: Unsupported operation detected! Dynamically changing tab type not allowed.");
                 }
             } else
             {

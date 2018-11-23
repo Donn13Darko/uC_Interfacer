@@ -37,8 +37,11 @@ public:
     void set_gui_key_test(uint8_t new_key);
     void set_gui_name_test(QString new_name);
 
-    QByteArray get_rcvd_formatted_data_test();
-    qint64 get_rcvd_formatted_size_test();
+    void rcvd_formatted_append_test(QByteArray data);
+    QByteArray rcvd_formatted_readAll_test();
+    qint64 rcvd_formatted_size_test();
+    void rcvd_formatted_clear_test();
+    void rcvd_formatted_save_test(QString fileName);
 
     void update_current_recv_length_test(uint32_t recv_len);
     uint32_t get_current_recv_length_test();

@@ -25,6 +25,8 @@
 // Object includes
 #include <QTimer>
 #include <QEventLoop>
+#include <QFile>
+#include <QTemporaryFile>
 
 #include "../../src/gui-helpers/gui-generic-helper.hpp"
 
@@ -292,4 +294,81 @@ void GUI_BASE_TESTS::test_reset_gui_1()
     QCOMPARE(base_tester->get_expected_recv_length_test(), (uint32_t) 0);
     QCOMPARE(base_tester->get_current_recv_length_test(), (uint32_t) 0);
     QCOMPARE(base_tester->get_expected_recv_length_str_test(), QString(""));
+}
+
+void GUI_BASE_TESTS::test_rcvd_formatted()
+{
+    // Fetch data
+    QFETCH(QList<QByteArray>, rcvd_formatted);
+    QFETCH(bool, rcvd_formatted_clear_before);
+    QFETCH(bool, rcvd_formatted_test_save);
+    QFETCH(bool, rcvd_formatted_test_clear);
+
+    // Clear anything existing
+    if (rcvd_formatted_clear_before) base_tester->rcvd_formatted_clear_test();
+
+    // Send all data
+    QByteArray rcvd_data;
+    foreach (QByteArray data, rcvd_formatted)
+    {
+        rcvd_data.append(data);
+        base_tester->rcvd_formatted_append_test(data);
+    }
+
+    // Verify set data
+    QCOMPARE(base_tester->rcvd_formatted_readAll_test(), rcvd_data);
+    QCOMPARE(base_tester->rcvd_formatted_size_test(), rcvd_data.size());
+
+    // Check if testing save
+    if (rcvd_formatted_test_save)
+    {
+        // Create, open, and close save file
+        // (opening forces creation on disk)
+        QTemporaryFile *tmp_file = new QTemporaryFile();
+        tmp_file->setAutoRemove(true);
+        QVERIFY(tmp_file->open());
+        tmp_file->close();
+        QString fileName = tmp_file->fileName();
+        delete tmp_file;
+
+        // Write data to file
+        base_tester->rcvd_formatted_save_test(fileName);
+
+        // Read data from file & remove file
+        QByteArray data = GUI_GENERIC_HELPER::loadFile(fileName);
+        QFile::remove(fileName);
+
+        // Verify read data
+        QCOMPARE(data, rcvd_data);
+        QCOMPARE(data.size(), rcvd_data.size());
+    }
+
+    // Check if testing clear
+    if (rcvd_formatted_test_clear)
+    {
+        // Clear data
+        base_tester->rcvd_formatted_clear_test();
+
+        // Verify cleared
+        QCOMPARE(base_tester->rcvd_formatted_readAll_test(), QByteArray());
+        QCOMPARE(base_tester->rcvd_formatted_size_test(), 0);
+    }
+}
+
+void GUI_BASE_TESTS::test_rcvd_formatted_data()
+{
+    // Setup data columns
+    QTest::addColumn<QList<QByteArray>>("rcvd_formatted");
+    QTest::addColumn<bool>("rcvd_formatted_clear_before");
+    QTest::addColumn<bool>("rcvd_formatted_test_save");
+    QTest::addColumn<bool>("rcvd_formatted_test_clear");
+
+    // Load in data
+    QByteArray data = GUI_GENERIC_HELPER::initList_to_byteArray({'d', 'a', 't', 'a'});
+    QTest::newRow("Basic") << QList<QByteArray>({data}) << false << false << false;
+    QTest::newRow("Clear") << QList<QByteArray>({data}) << true << false << true;
+    QTest::newRow("Save") << QList<QByteArray>({data}) << true << true << true;
+    QTest::newRow("Rcvd Multiple V1") << QList<QByteArray>({data, data, data}) << true << false << false;
+    QTest::newRow("Save Multiple V1") << QList<QByteArray>({data, data, data}) << true << true << false;
+    QTest::newRow("String Basic V1") << QList<QByteArray>({QString("ReadMe").toLatin1()}) << true << false << false;
 }

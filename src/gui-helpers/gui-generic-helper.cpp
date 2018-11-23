@@ -106,7 +106,7 @@ bool GUI_GENERIC_HELPER::copyFile(QString pathFrom, QString pathTo, bool overwri
     // Verify pathFrom exists
     if (!QFile::exists(pathFrom)) return false;
 
-    // Check if exits (delete it before copy as copy doesn't overwrite)
+    // Check if exits (delete it before copy so copy doesn't overwrite)
     if (QFile::exists(pathTo))
     {
         // Check that we want to overwrite
@@ -120,7 +120,7 @@ bool GUI_GENERIC_HELPER::copyFile(QString pathFrom, QString pathTo, bool overwri
     return QFile::copy(pathFrom, pathTo);
 }
 
-uint32_t GUI_GENERIC_HELPER::getFileSize(QString filePath)
+qint64 GUI_GENERIC_HELPER::getFileSize(QString filePath)
 {
     QFileInfo file(filePath);
     return file.size();
@@ -129,7 +129,7 @@ uint32_t GUI_GENERIC_HELPER::getFileSize(QString filePath)
 QByteArray GUI_GENERIC_HELPER::loadFile(QString filePath)
 {
     // Check to make sure path valid
-    if (filePath.isEmpty())
+    if (filePath.isEmpty() || !QFile::exists(filePath))
         return QByteArray();
 
     // Open file

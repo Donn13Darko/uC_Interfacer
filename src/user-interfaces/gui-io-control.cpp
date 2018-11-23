@@ -570,12 +570,12 @@ void GUI_IO_CONTROL::on_ConnSend_Button_clicked()
 void GUI_IO_CONTROL::on_ConnClearRecv_Button_clicked()
 {
     ui->ConnRecv_PlainText->clear();
-    rcvd_formatted.resize(0);
+    rcvd_formatted_clear();
 }
 
 void GUI_IO_CONTROL::on_ConnSaveRecv_Button_clicked()
 {
-    save_rcvd_formatted();
+    rcvd_formatted_save();
 }
 
 void GUI_IO_CONTROL::on_ConnType_Combo_currentIndexChanged(int)

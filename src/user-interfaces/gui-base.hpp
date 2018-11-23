@@ -108,8 +108,12 @@ protected:
     uint32_t expected_recv_length;
     QString expected_recv_length_str;
 
-    // Save to file
-    void save_rcvd_formatted();
+    // Save & clear rcvd file
+    void rcvd_formatted_append(QByteArray data);
+    void rcvd_formatted_save(QString fileName = "");
+    QByteArray rcvd_formatted_readAll();
+    uint32_t rcvd_formatted_size();
+    void rcvd_formatted_clear();
 
     // Other functions
     bool init_maps();

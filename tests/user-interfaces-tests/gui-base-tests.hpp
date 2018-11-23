@@ -61,6 +61,9 @@ private slots:
 
     void test_reset_gui_1();
 
+    void test_rcvd_formatted();
+    void test_rcvd_formatted_data();
+
     // Basic protected member tests
 
 private:
