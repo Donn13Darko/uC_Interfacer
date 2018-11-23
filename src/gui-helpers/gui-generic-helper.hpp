@@ -16,8 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_HELPER_H
-#define GUI_HELPER_H
+#ifndef GUI_GENERIC_HELPER_H
+#define GUI_GENERIC_HELPER_H
 
 #include <QObject>
 #include <QMap>
@@ -31,13 +31,16 @@ typedef enum {
     checksum_exe_pos
 } checksum_locations;
 
-class GUI_HELPER : public QObject
+// Typedef for line length & simplicity
+typedef QMap<QString, QMap<QString, QVariant>*> CONFIG_MAP;
+
+class GUI_GENERIC_HELPER : public QObject
 {
     Q_OBJECT
 
 public:
-    GUI_HELPER(QObject *parent = 0);
-    ~GUI_HELPER();
+    GUI_GENERIC_HELPER(QObject *parent = 0);
+    ~GUI_GENERIC_HELPER();
 
     // Show a message
     static bool showMessage(QString msg);
@@ -54,10 +57,11 @@ public:
     static QByteArray loadFile(QString filePath);
 
     // Read. parse, delete a config INI
-    static QMap<QString, QMap<QString, QVariant>*> *readConfigINI(QString config);
-    static QString encode_configMap(QMap<QString, QMap<QString, QVariant>*> *configMap);
-    static QMap<QString, QMap<QString, QVariant>*> *decode_configMap(QString configMap);
-    static void deleteConfigMap(QMap<QString, QMap<QString, QVariant>*> **configMap);
+    static CONFIG_MAP *read_configMap(QString config);
+    static QString encode_configMap(CONFIG_MAP *configMap);
+    static CONFIG_MAP *decode_configMap(QString configMap);
+    static CONFIG_MAP *copy_configMap(CONFIG_MAP *configMap);
+    static void delete_configMap(CONFIG_MAP **configMap);
 
     // Conversions
     static QByteArray initList_to_byteArray(std::initializer_list<uint8_t> initList);
@@ -70,4 +74,4 @@ public:
     static const float S2MS;
 };
 
-#endif // GUI_HELPER_H
+#endif // GUI_GENERIC_HELPER_H

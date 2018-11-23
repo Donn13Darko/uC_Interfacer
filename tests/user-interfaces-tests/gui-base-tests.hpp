@@ -37,14 +37,29 @@ private slots:
     void initTestCase();
     void cleanupTestCase();
 
+    // Data generators
+
+
     // Basic public member tests
-    void test_closable();
+    void test_init_vals();
+    void test_basic_features();
+
     void test_gui_key();
-    void test_set_GUI_tab_name();
-    void test_GUI_config();
-    void test_acceptAllCMDs();
-    void test_waitForDevice();
-    void test_reset_gui();
+    void test_gui_key_data();
+
+    void test_set_gui_name();
+    void test_set_gui_name_data();
+
+    void test_set_gui_tab_name();
+    void test_set_gui_tab_name_data();
+
+    void test_gui_config_1();
+    void test_gui_config_2();
+
+    void test_recv_length();
+    void test_recv_length_data();
+
+    void test_reset_gui_1();
 
     // Basic protected member tests
 

@@ -73,14 +73,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Setup Welcome widget
     welcome_tab = new GUI_WELCOME(this);
-    welcome_tab->set_GUI_tab_name("Welcome");
+    welcome_tab->set_gui_tab_name("Welcome");
     welcome_tab->setButtonsEnabled(false);
     welcome_tab->setClosable(false);
     welcome_tab->hide();
 
     // Setup add new tab (blank GUI_BASE)
     add_new_tab = new GUI_BASE(this);
-    add_new_tab->set_GUI_tab_name("+");
+    add_new_tab->set_gui_tab_name("+");
     add_new_tab->setClosable(false);
     add_new_tab->hide();
 
@@ -127,7 +127,7 @@ MainWindow::MainWindow(QWidget *parent) :
     on_ConnType_Combo_currentIndexChanged(0);
 
     // Add welcome GUI for setup and to make the next steps possible
-    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_tab_name());
+    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_gui_tab_name());
 
     // 1) Set closable to true to generate private button instance
     // 2) Grab genereated button and remove from widget (set to nullptr)
@@ -158,7 +158,7 @@ MainWindow::~MainWindow()
     }
 
     // Delete config map
-    if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+    if (configMap) GUI_GENERIC_HELPER::delete_configMap(&configMap);
 
     // Stop connection timers
     updateConnInfo->stop();
@@ -245,7 +245,7 @@ void MainWindow::on_Speed_Combo_activated(int)
         case CONN_TYPE_SERIAL_COM_PORT:
         {
             if (ui->Speed_Combo->currentText() == "Other")
-                GUI_HELPER::getUserString(&speed, "Custom Baudrate", "Baudrate");
+                GUI_GENERIC_HELPER::getUserString(&speed, "Custom Baudrate", "Baudrate");
             else
                 speed = ui->Speed_Combo->currentText();
             break;
@@ -261,10 +261,10 @@ void MainWindow::on_DeviceConnect_Button_clicked()
     setConnected(true);
 
     // Delete the config settings if not already done
-    if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+    if (configMap) GUI_GENERIC_HELPER::delete_configMap(&configMap);
 
     // Read config settings
-    configMap = GUI_HELPER::readConfigINI(deviceINI);
+    configMap = GUI_GENERIC_HELPER::read_configMap(deviceINI);
     if (!configMap) return;
 
     // Update selected info
@@ -343,7 +343,7 @@ void MainWindow::on_DeviceConnect_Button_clicked()
         return;
     } else if (!device->initSuccessful())
     {
-        GUI_HELPER::showMessage("Error: Initilization failed!");
+        GUI_GENERIC_HELPER::showMessage("Error: Initilization failed!");
         on_DeviceDisconnect_Button_clicked();
         return;
     }
@@ -415,11 +415,11 @@ void MainWindow::on_DeviceConnected() {
             if (!tab_holder) continue;
 
             // Add new GUI to tabs
-            ui->ucOptions->addTab(tab_holder, tab_holder->get_GUI_tab_name());
+            ui->ucOptions->addTab(tab_holder, tab_holder->get_gui_tab_name());
         }
 
         // Add dynamic addition tab group ('+' tab)
-        ui->ucOptions->addTab(add_new_tab, add_new_tab->get_GUI_tab_name());
+        ui->ucOptions->addTab(add_new_tab, add_new_tab->get_gui_tab_name());
 
         // Force any changes in more options
         update_options(&main_options_settings);
@@ -428,7 +428,7 @@ void MainWindow::on_DeviceConnected() {
         ui->ucOptions->blockSignals(prev_block_status);
 
         // Delete the config settings after use
-        if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+        if (configMap) GUI_GENERIC_HELPER::delete_configMap(&configMap);
 
         // Freshen tabs for first use
         on_ucOptions_currentChanged(ui->ucOptions->currentIndex());
@@ -439,7 +439,7 @@ void MainWindow::on_DeviceConnected() {
             comm_bridge->reset_remote();
     } else
     {
-        GUI_HELPER::showMessage("Error: Unable to connect to target!");
+        GUI_GENERIC_HELPER::showMessage("Error: Unable to connect to target!");
     }
 
     setConnected(deviceConnected());
@@ -451,7 +451,7 @@ void MainWindow::on_DeviceDisconnected()
     on_DeviceDisconnect_Button_clicked();
 
     // Notify user of connection loss
-    GUI_HELPER::showMessage("Error: Connection to target lost!");
+    GUI_GENERIC_HELPER::showMessage("Error: Connection to target lost!");
 }
 
 void MainWindow::on_DeviceDisconnect_Button_clicked()
@@ -490,7 +490,7 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
     comm_bridge->close_bridge();
 
     // Add welcome widget
-    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_GUI_tab_name());
+    ui->ucOptions->addTab(welcome_tab, welcome_tab->get_gui_tab_name());
 
     // Set to disconnected mode
     setConnected(false);
@@ -556,7 +556,7 @@ void MainWindow::createNewTabs_accepted()
             if (!tab_holder) continue;
 
             // Add new GUI to tabs
-            ui->ucOptions->insertTab(tab_pos, tab_holder, tab_holder->get_GUI_tab_name());
+            ui->ucOptions->insertTab(tab_pos, tab_holder, tab_holder->get_gui_tab_name());
             tab_pos += 1;
         }
 
@@ -583,13 +583,13 @@ void MainWindow::createNewTabs_accepted()
 
                 // Verify that its a known GUI & the GUI of interest
                 uint8_t gui_key = getGUIType(childGroup.split('_').last());
-                if (gui_key == tab_holder->get_GUI_key())
+                if (gui_key == tab_holder->get_gui_key())
                 {
                     // Reparse the config map (will overwrite existing one)
                     tab_holder->parseConfigMap(configMap->value(childGroup));
 
                     // Update the tab text (if reset)
-                    ui->ucOptions->setTabText(index, tab_holder->get_GUI_tab_name());
+                    ui->ucOptions->setTabText(index, tab_holder->get_gui_tab_name());
 
                     // Update close button changes (start by removing then adding if needed)
                     tab_bar->setTabButton(prev_tab, QTabBar::RightSide, nullptr);
@@ -599,17 +599,17 @@ void MainWindow::createNewTabs_accepted()
                     }
                 } else
                 {
-                    GUI_HELPER::showMessage("Error: Incorrect GUI key detected!");
+                    GUI_GENERIC_HELPER::showMessage("Error: Incorrect GUI key detected!");
                 }
             } else
             {
-                GUI_HELPER::showMessage("Error: Multiple or no configurations detected!");
+                GUI_GENERIC_HELPER::showMessage("Error: Multiple or no configurations detected!");
             }
         }
     }
 
     // Delete the config settings after use
-    if (configMap) GUI_HELPER::deleteConfigMap(&configMap);
+    if (configMap) GUI_GENERIC_HELPER::delete_configMap(&configMap);
 
     // Force any changes in more options
     update_options(&main_options_settings);
@@ -724,7 +724,7 @@ void MainWindow::on_ucOptions_tabBarDoubleClicked(int index)
     // Load info into new_tab
     new_tab_gui->reset_gui();
     new_tab_gui->set_title("Update Tab Settings");
-    new_tab_gui->set_config_tab(index, tab_holder->get_GUI_config());
+    new_tab_gui->set_config_tab(index, tab_holder->get_gui_config());
     new_tab_gui->show();
 }
 

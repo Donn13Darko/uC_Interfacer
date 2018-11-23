@@ -32,8 +32,62 @@ GUI_BASE_TEST_CLASS::~GUI_BASE_TEST_CLASS()
     /* DO NOTHING */
 }
 
-void GUI_BASE_TEST_CLASS::set_gui_key(uint8_t new_key)
+void GUI_BASE_TEST_CLASS::set_gui_key_test(uint8_t new_key)
 {
     // Set new gui key
     gui_key = new_key;
+}
+
+void GUI_BASE_TEST_CLASS::set_gui_name_test(QString new_name)
+{
+    // Update gui_config
+    if (gui_config) gui_config->insert(new_name, gui_config->take(gui_name));
+
+    // Set new gui name
+    gui_name = new_name;
+}
+
+QByteArray GUI_BASE_TEST_CLASS::get_rcvd_formatted_data_test()
+{
+    // Seek to start
+    rcvd_formatted.seek(0);
+
+    // Read all
+    QByteArray data = rcvd_formatted.readAll();
+
+    // Seek to end
+    rcvd_formatted.seek(rcvd_formatted.size());
+
+    // Return read
+    return data;
+}
+
+qint64 GUI_BASE_TEST_CLASS::get_rcvd_formatted_size_test()
+{
+    return rcvd_formatted.size();
+}
+
+void GUI_BASE_TEST_CLASS::update_current_recv_length_test(uint32_t recv_len)
+{
+    update_current_recv_length(recv_len);
+}
+
+uint32_t GUI_BASE_TEST_CLASS::get_current_recv_length_test()
+{
+    return current_recv_length;
+}
+
+void GUI_BASE_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_length)
+{
+    set_expected_recv_length(expected_length);
+}
+
+uint32_t GUI_BASE_TEST_CLASS::get_expected_recv_length_test()
+{
+    return expected_recv_length;
+}
+
+QString GUI_BASE_TEST_CLASS::get_expected_recv_length_str_test()
+{
+    return expected_recv_length_str;
 }

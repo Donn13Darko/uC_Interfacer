@@ -330,7 +330,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
             case MAJOR_KEY_DATA_TRANSMIT:
             {
                 // Parse num_s2_bytes
-                num_s2_bytes = GUI_HELPER::byteArray_to_uint32(
+                num_s2_bytes = GUI_GENERIC_HELPER::byteArray_to_uint32(
                             rcvd_raw.mid(s1_end_loc, num_s2_bits));
 
                 // Check if second stage in rcvd
@@ -375,7 +375,7 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                 // (Indexing without check encforced by switch statement case)
                 foreach (GUI_BASE *gui, known_guis)
                 {
-                    if ((gui->get_GUI_key() == major_key)
+                    if ((gui->get_gui_key() == major_key)
                             || gui->acceptAllCMDs())
                     {
                         emit gui->readyRead(tmp);
@@ -767,7 +767,7 @@ void GUI_COMM_BRIDGE::set_checksum_start(checksum_struct *check, QString checksu
     memset(new_check_start, 0, checksum_size);
 
     // Build base start from supplied checksum start
-    QByteArray start_convert = GUI_HELPER::decode_byteArray(checksum_start.toLatin1(),
+    QByteArray start_convert = GUI_GENERIC_HELPER::decode_byteArray(checksum_start.toLatin1(),
                                                             checksum_start_base, ' ');
 
     // Pad start until its checksum_size
@@ -1037,7 +1037,7 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
         curr_parse.clear();
         foreach (QString parse_str, curr_parse_match)
         {
-            curr_parse += GUI_HELPER::decode_byteArray(parse_str.toLatin1(), base);
+            curr_parse += GUI_GENERIC_HELPER::decode_byteArray(parse_str.toLatin1(), base);
         }
 
         // Reset position variables
@@ -1120,7 +1120,7 @@ QByteArray GUI_COMM_BRIDGE::prepare_data(quint8 major_key, quint8 minor_key, QBy
     if (num_s2_bits == num_s2_bits_3) num_s2_bits = num_s2_bits_4;
 
     // Load data_len into data
-    ret_data.append(GUI_HELPER::uint32_to_byteArray(data_len).right(num_s2_bits));
+    ret_data.append(GUI_GENERIC_HELPER::uint32_to_byteArray(data_len).right(num_s2_bits));
 
     // Append data
     ret_data.append(data);

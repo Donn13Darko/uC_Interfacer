@@ -124,7 +124,7 @@ private:
     static QStringList supportedGUIsList;
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
-    QMap<QString, QMap<QString, QVariant>*> *configMap;
+    CONFIG_MAP *configMap;
 
     QTimer *updateConnInfo;
     COMMS_BASE *device;

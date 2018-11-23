@@ -159,7 +159,7 @@ void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
                     on_ReadDataClear_Button_clicked();
 
                 // Set expected length
-                set_expected_recv_length(GUI_HELPER::byteArray_to_uint32(data));
+                set_expected_recv_length(GUI_GENERIC_HELPER::byteArray_to_uint32(data));
                 return;
             }
             case MINOR_KEY_PROGRAMMER_DATA:
@@ -225,7 +225,7 @@ void GUI_PROGRAMMER::on_BrowseFile_Button_clicked()
 {
     // Select programmer file
     QString file;
-    if (GUI_HELPER::getOpenFilePath(&file,
+    if (GUI_GENERIC_HELPER::getOpenFilePath(&file,
                                     tr("HEX (*.hex);;"
                                        "BIN (*.bin);;"
                                        "SREC (*.s* *.mot *.mxt);;"
@@ -269,7 +269,7 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
 
     // Set file size
     emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
-                        GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
+                        GUI_GENERIC_HELPER::uint32_to_byteArray(GUI_GENERIC_HELPER::getFileSize(filePath)));
 
     // Send file
     emit transmit_file_pack(gui_key, MINOR_KEY_PROGRAMMER_DATA,
@@ -287,7 +287,7 @@ void GUI_PROGRAMMER::on_FileFormat_Combo_activated(int)
         QString fileRegexStr = otherPair.second;
 
         // Get or update the text
-        if (GUI_HELPER::getUserString(&fileRegexStr, "Other Format", "Enter format as 'base,regex':"))
+        if (GUI_GENERIC_HELPER::getUserString(&fileRegexStr, "Other Format", "Enter format as 'base,regex':"))
         {
             // Parse input string
             QStringList input_str = fileRegexStr.split(',');
@@ -367,14 +367,14 @@ void GUI_PROGRAMMER::on_ReadData_Button_clicked()
         addr = ui->ReadAddrLower_LineEdit->text().toInt(&ok, base);
         if (!ok) return;
         if (addr < 0) addr = 0;
-        info.append(GUI_HELPER::uint32_to_byteArray((uint32_t) addr));
+        info.append(GUI_GENERIC_HELPER::uint32_to_byteArray((uint32_t) addr));
 
         // Get upper address and add to info
         addr = ui->ReadAddrUpper_LineEdit->text().toInt(&ok, base);
         if (!ok) return;
         if (0 <= addr)
         {
-            info.append(GUI_HELPER::uint32_to_byteArray((uint32_t) addr));
+            info.append(GUI_GENERIC_HELPER::uint32_to_byteArray((uint32_t) addr));
         }
     }
 
@@ -431,13 +431,13 @@ void GUI_PROGRAMMER::refresh_file()
 
     // Only update format if selected && file < 10MB (10485760 Bytes)
     if (!ui->FilePreview_CheckBox->isChecked()
-            || (10485760 < GUI_HELPER::getFileSize(filePath)))
+            || (10485760 < GUI_GENERIC_HELPER::getFileSize(filePath)))
     {
         return;
     }
 
     // Update File
-    ui->FilePreview_PlainText->appendPlainText(format_file(GUI_HELPER::loadFile(filePath)));
+    ui->FilePreview_PlainText->appendPlainText(format_file(GUI_GENERIC_HELPER::loadFile(filePath)));
 
     // Set cursor to top
     ui->FilePreview_PlainText->moveCursor(QTextCursor::Start);

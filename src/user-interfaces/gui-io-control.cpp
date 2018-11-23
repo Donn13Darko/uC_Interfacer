@@ -283,7 +283,7 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
                     pinValue = sliderValue->value();
 
                     // Parse value to uint16_t and append to pin values
-                    pinValues.append(GUI_HELPER::uint32_to_byteArray(pinValue).right(2));
+                    pinValues.append(GUI_GENERIC_HELPER::uint32_to_byteArray(pinValue).right(2));
                 }
 
                 // Send values back
@@ -469,8 +469,8 @@ void GUI_IO_CONTROL::on_StartUpdater_Button_clicked()
 {
     ui->StartUpdater_Button->setText("Reset");
 
-    DIO_READ.start((int) (GUI_HELPER::S2MS * ui->DIO_UR_LineEdit->text().toFloat()));
-    AIO_READ.start((int) (GUI_HELPER::S2MS * ui->AIO_UR_LineEdit->text().toFloat()));
+    DIO_READ.start((int) (GUI_GENERIC_HELPER::S2MS * ui->DIO_UR_LineEdit->text().toFloat()));
+    AIO_READ.start((int) (GUI_GENERIC_HELPER::S2MS * ui->AIO_UR_LineEdit->text().toFloat()));
 }
 
 void GUI_IO_CONTROL::on_StopUpdater_Button_clicked()
@@ -485,7 +485,7 @@ void GUI_IO_CONTROL::on_LogSaveLocSelect_Button_clicked()
 {
     // Get file
     QString filePath;
-    if (GUI_HELPER::getSaveFilePath(&filePath))
+    if (GUI_GENERIC_HELPER::getSaveFilePath(&filePath))
         ui->LogSaveLoc_LineEdit->setText(filePath);
 }
 
@@ -493,9 +493,9 @@ void GUI_IO_CONTROL::on_StartLog_Button_clicked()
 {
     bool error = false;
     if (logIsRecording)
-        error = GUI_HELPER::showMessage("Error: Already recording!");
+        error = GUI_GENERIC_HELPER::showMessage("Error: Already recording!");
     else if (ui->LogSaveLoc_LineEdit->text().isEmpty())
-        error = GUI_HELPER::showMessage("Error: Must provide log file!");
+        error = GUI_GENERIC_HELPER::showMessage("Error: Must provide log file!");
     if (error) return;
 
     uint32_t enumFlags = QIODevice::WriteOnly | QIODevice::Text;
@@ -504,7 +504,7 @@ void GUI_IO_CONTROL::on_StartLog_Button_clicked()
 
     logFile = new QFile(ui->LogSaveLoc_LineEdit->text());
     if (!logFile->open((QIODevice::OpenModeFlag) enumFlags))
-        error = GUI_HELPER::showMessage("Error: Couldn't open log file!");
+        error = GUI_GENERIC_HELPER::showMessage("Error: Couldn't open log file!");
     if (error) return;
 
     logStream = new QTextStream(logFile);
@@ -512,7 +512,7 @@ void GUI_IO_CONTROL::on_StartLog_Button_clicked()
     *logStream << "with update rate " << ui->LOG_UR_LineEdit->text() << " seconds\n";
     logStream->flush();
 
-    logTimer.start((int) (GUI_HELPER::S2MS * ui->LOG_UR_LineEdit->text().toFloat()));
+    logTimer.start((int) (GUI_GENERIC_HELPER::S2MS * ui->LOG_UR_LineEdit->text().toFloat()));
     ui->StartLog_Button->setText("Running");
     ui->StartLog_Button->setEnabled(false);
     ui->AppendLog_CheckBox->setEnabled(false);

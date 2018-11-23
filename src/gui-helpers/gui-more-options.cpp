@@ -123,7 +123,7 @@ void GUI_MORE_OPTIONS::on_ChecksumSet_Button_clicked()
     // If EXE, verify path input
     if ((checksum == "CHECKSUM_EXE") && exe.isEmpty())
     {
-        GUI_HELPER::showMessage("Error: Checksum EXE path required!");
+        GUI_GENERIC_HELPER::showMessage("Error: Checksum EXE path required!");
         return;
     }
 
@@ -139,7 +139,7 @@ void GUI_MORE_OPTIONS::on_BrowseEXE_Button_clicked()
 {
     // Select file to send
     QString file;
-    if (GUI_HELPER::getOpenFilePath(&file, tr("Executables (*.exe);; All Files (*)")))
+    if (GUI_GENERIC_HELPER::getOpenFilePath(&file, tr("Executables (*.exe);; All Files (*)")))
         ui->ChecksumEXE_LineEdit->setText(file);
 }
 

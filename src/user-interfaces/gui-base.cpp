@@ -22,8 +22,14 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
 {
     // Init base variables
-    closable = true;
     gui_key = MAJOR_KEY_ERROR;
+    gui_name = "GUI Base";
+    gui_config = nullptr;
+    gui_map = nullptr;
+
+    // Setup empty config
+    QMap<QString, QVariant> empty_cmap;
+    parseConfigMap(&empty_cmap);
 
     // Open temporary file and set autoremove
     rcvd_formatted.open();
@@ -50,8 +56,6 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     connect(this, SIGNAL(progress_update_send(int, QString)),
             this, SLOT(set_progress_update_send(int,QString)),
             Qt::QueuedConnection);
-
-    // Connect wait loop to exit signals
 }
 
 GUI_BASE::~GUI_BASE()
@@ -69,7 +73,8 @@ void GUI_BASE::reset_gui()
 
     // Reset progress bars info
     current_recv_length = 0;
-    expected_recv_length = 1;
+    expected_recv_length = 0;
+    expected_recv_length_str.clear();
 
     emit progress_update_recv(0, "");
     emit progress_update_send(0, "");
@@ -77,32 +82,40 @@ void GUI_BASE::reset_gui()
 
 bool GUI_BASE::isClosable()
 {
-    return closable;
+    if (gui_map || init_maps()) return gui_map->value("closable", "true").toBool();
+    else return true;
 }
 
 void GUI_BASE::setClosable(bool new_close)
 {
-    closable = new_close;
+    if (gui_map || init_maps()) gui_map->insert("closable", new_close);
 }
 
-uint8_t GUI_BASE::get_GUI_key()
+uint8_t GUI_BASE::get_gui_key()
 {
     return gui_key;
 }
 
-QString GUI_BASE::get_GUI_tab_name()
+QString GUI_BASE::get_gui_name()
 {
-    return gui_tab_name;
+    return gui_name;
 }
 
-void GUI_BASE::set_GUI_tab_name(QString new_name)
+QString GUI_BASE::get_gui_tab_name()
 {
-    gui_tab_name = new_name;
+    if (gui_map || init_maps()) return gui_map->value("tab_name", gui_name).toString();
+    else return gui_name;
 }
 
-QString GUI_BASE::get_GUI_config()
+void GUI_BASE::set_gui_tab_name(QString new_name)
 {
-    return gui_config;
+    // Set new name in gui map
+    if (gui_map || init_maps()) gui_map->insert("tab_name", new_name);
+}
+
+QString GUI_BASE::get_gui_config()
+{
+    return GUI_GENERIC_HELPER::encode_configMap(gui_config);
 }
 
 bool GUI_BASE::acceptAllCMDs()
@@ -112,16 +125,23 @@ bool GUI_BASE::acceptAllCMDs()
 
 void GUI_BASE::parseConfigMap(QMap<QString, QVariant> *configMap)
 {
-    // Set tab name
-    gui_tab_name = configMap->value("tab_name", gui_name).toString();
+    // Verify input
+    if (!configMap) return;
 
-    // Set closable
-    closable = configMap->value("closable", "true").toBool();
+    // Delete current map
+    if (gui_config)
+    {
+        GUI_GENERIC_HELPER::delete_configMap(&gui_config);
+        gui_map = nullptr;
+    }
 
-    // Save config as local string
-    QMap<QString, QMap<QString, QVariant>*> tmp_map;
+    // Create temporary ful; config
+    CONFIG_MAP tmp_map;
     tmp_map.insert(gui_name, configMap);
-    gui_config = GUI_HELPER::encode_configMap(&tmp_map);
+
+    // Copy full config and get gui_map for easy access
+    gui_config = GUI_GENERIC_HELPER::copy_configMap(&tmp_map);
+    init_maps();
 }
 
 bool GUI_BASE::waitForDevice(uint8_t)
@@ -160,22 +180,22 @@ void GUI_BASE::set_progress_update_send(int, QString)
 void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk)
 {
     emit transmit_chunk(major_key, minor_key,
-                        GUI_HELPER::initList_to_byteArray(chunk));
+                        GUI_GENERIC_HELPER::initList_to_byteArray(chunk));
 }
 
 void GUI_BASE::save_rcvd_formatted()
 {
     // Select file save location
     QString fileName;
-    if (!GUI_HELPER::getSaveFilePath(&fileName))
+    if (!GUI_GENERIC_HELPER::getSaveFilePath(&fileName))
         return;
 
     // Close temporary file (for copying)
     rcvd_formatted.close();
 
     // Copy file
-    if (!GUI_HELPER::copyFile(rcvd_formatted.fileName(), fileName, true))
-        GUI_HELPER::showMessage("ERROR: Failed to save file!");
+    if (!GUI_GENERIC_HELPER::copyFile(rcvd_formatted.fileName(), fileName, true))
+        GUI_GENERIC_HELPER::showMessage("ERROR: Failed to save file!");
 
     // Reopen temporary (and go to end)
     rcvd_formatted.open();
@@ -184,12 +204,18 @@ void GUI_BASE::save_rcvd_formatted()
 
 void GUI_BASE::set_expected_recv_length(uint32_t expected_length)
 {
-    // Convert and set qbytearray
-    if (expected_length) expected_recv_length = expected_length;
-    else expected_recv_length = 1;
+    // Set expecting length
+    expected_recv_length = expected_length;
 
-    // Reset expected recv length str
-    expected_recv_length_str = "/" + QString::number(expected_recv_length / 1000.0f) + "KB";
+    // Reset current_recv_len
+    current_recv_length = 0;
+
+    // Setup recv_length helpers
+    expected_recv_length_str.clear();
+    if (expected_length)
+    {
+        expected_recv_length_str = "/" + QString::number(expected_recv_length / 1000.0f) + "KB";
+    }
 
     // Reset progress bar
     emit progress_update_recv(0, "");
@@ -197,12 +223,19 @@ void GUI_BASE::set_expected_recv_length(uint32_t expected_length)
 
 void GUI_BASE::update_current_recv_length(uint32_t recv_len)
 {
+    // Exit if expecting not set
+    if (!expected_recv_length) return;
+
     // Start and stop sent by
     if (recv_len == 0)
     {
         // See if starting new file
         if (current_recv_length == expected_recv_length)
         {
+            // Reset expected recv and current recv
+            expected_recv_length = 0;
+
+            // Emit update
             emit progress_update_recv(100, "Done!");
         } else
         {
@@ -223,4 +256,30 @@ void GUI_BASE::update_current_recv_length(uint32_t recv_len)
     if (expected_recv_length != 0)
         emit progress_update_recv(qRound(((float) current_recv_length/expected_recv_length) * 100.0f),
                                   QString::number((float) current_recv_length / 1000.0f) + expected_recv_length_str);
+}
+
+bool GUI_BASE::init_maps()
+{
+    // Create gui_config if needed
+    if (!gui_config) gui_config = new CONFIG_MAP();
+
+    // Verify gui_config present
+    if (gui_config)
+    {
+        // See if config already has map
+        gui_map = gui_config->value(gui_name, nullptr);
+
+        // Create new gui_map if needed
+        if (!gui_map)
+        {
+            // Create new gui_map
+            gui_map = new QMap<QString, QVariant>();
+
+            // Insert into gui_config
+            gui_config->insert(gui_name, gui_map);
+        }
+    }
+
+    // Return true if both gui_config and gui_map created
+    return (gui_config && gui_map);
 }

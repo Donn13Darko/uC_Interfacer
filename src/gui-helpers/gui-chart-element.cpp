@@ -50,7 +50,7 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
     ui->setupUi(this);
 
     // Set intial values
-    curr_time = ((double) QDateTime::currentMSecsSinceEpoch() / GUI_HELPER::S2MS);
+    curr_time = ((double) QDateTime::currentMSecsSinceEpoch() / GUI_GENERIC_HELPER::S2MS);
     chart_type = type;
     chart_element = nullptr;
     ui->Legend_CheckBox->setChecked(false);
@@ -133,7 +133,7 @@ void GUI_CHART_ELEMENT::on_UpdateRate_LineEdit_editingFinished()
         update_timer.stop();
     } else
     {
-        update_timer.start(qRound(GUI_HELPER::S2MS * update_interval));
+        update_timer.start(qRound(GUI_GENERIC_HELPER::S2MS * update_interval));
     }
 }
 
@@ -342,7 +342,7 @@ void GUI_CHART_ELEMENT::on_xDuration_LineEdit_editingFinished()
 void GUI_CHART_ELEMENT::update_data_series()
 {
     // Get time
-    curr_time = ((double) QDateTime::currentMSecsSinceEpoch() / GUI_HELPER::S2MS);
+    curr_time = ((double) QDateTime::currentMSecsSinceEpoch() / GUI_GENERIC_HELPER::S2MS);
 
     // Update chart range
     on_xDuration_LineEdit_editingFinished();

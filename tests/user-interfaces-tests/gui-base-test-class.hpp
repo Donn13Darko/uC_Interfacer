@@ -22,6 +22,9 @@
 // Testing class
 #include "../../src/user-interfaces/gui-base.hpp"
 
+// Class includes
+#include <QByteArray>
+
 class GUI_BASE_TEST_CLASS : public GUI_BASE
 {
     Q_OBJECT
@@ -30,8 +33,19 @@ public:
     GUI_BASE_TEST_CLASS(QWidget *parent = 0);
     ~GUI_BASE_TEST_CLASS();
 
-    /*** Defines setters & accessors for testing ***/
-    void set_gui_key(uint8_t new_key);
+    /*** Defines any needed setters & accessors for testing ***/
+    void set_gui_key_test(uint8_t new_key);
+    void set_gui_name_test(QString new_name);
+
+    QByteArray get_rcvd_formatted_data_test();
+    qint64 get_rcvd_formatted_size_test();
+
+    void update_current_recv_length_test(uint32_t recv_len);
+    uint32_t get_current_recv_length_test();
+
+    void set_expected_recv_length_test(uint32_t expected_length);
+    uint32_t get_expected_recv_length_test();
+    QString get_expected_recv_length_str_test();
 };
 
 #endif // GUI_BASE_TEST_CLASS_H

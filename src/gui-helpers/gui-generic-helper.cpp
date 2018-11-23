@@ -26,18 +26,18 @@
 #include <QSettings>
 #include <QTemporaryFile>
 
-const float GUI_HELPER::S2MS = 1000.0f;
+const float GUI_GENERIC_HELPER::S2MS = 1000.0f;
 
-GUI_HELPER::GUI_HELPER(QObject *parent) :
+GUI_GENERIC_HELPER::GUI_GENERIC_HELPER(QObject *parent) :
     QObject(parent)
 {
 }
 
-GUI_HELPER::~GUI_HELPER()
+GUI_GENERIC_HELPER::~GUI_GENERIC_HELPER()
 {
 }
 
-bool GUI_HELPER::showMessage(QString msg)
+bool GUI_GENERIC_HELPER::showMessage(QString msg)
 {
     // Create a new message box & set text
     QMessageBox *n = new QMessageBox();
@@ -58,7 +58,7 @@ bool GUI_HELPER::showMessage(QString msg)
     return true;
 }
 
-bool GUI_HELPER::getUserString(QString *str, QString title, QString label)
+bool GUI_GENERIC_HELPER::getUserString(QString *str, QString title, QString label)
 {
     bool ok;
     *str = QInputDialog::getText(nullptr, title, label,
@@ -66,7 +66,7 @@ bool GUI_HELPER::getUserString(QString *str, QString title, QString label)
     return (ok && !str->isEmpty());
 }
 
-bool GUI_HELPER::getOpenFilePath(QString *filePath, QString fileTypes)
+bool GUI_GENERIC_HELPER::getOpenFilePath(QString *filePath, QString fileTypes)
 {
     *filePath = QFileDialog::getOpenFileName(nullptr, tr("Open"),
                                              "", fileTypes);
@@ -74,7 +74,7 @@ bool GUI_HELPER::getOpenFilePath(QString *filePath, QString fileTypes)
     return !filePath->isEmpty();
 }
 
-bool GUI_HELPER::getSaveFilePath(QString *filePath, QString fileTypes)
+bool GUI_GENERIC_HELPER::getSaveFilePath(QString *filePath, QString fileTypes)
 {
     *filePath = QFileDialog::getSaveFileName(nullptr, tr("Save Location"),
                                              "", fileTypes);
@@ -82,7 +82,7 @@ bool GUI_HELPER::getSaveFilePath(QString *filePath, QString fileTypes)
     return !filePath->isEmpty();
 }
 
-bool GUI_HELPER::saveFile(QString filePath, QByteArray data)
+bool GUI_GENERIC_HELPER::saveFile(QString filePath, QByteArray data)
 {
     // Check to make sure path valid
     if (filePath.isEmpty())
@@ -101,7 +101,7 @@ bool GUI_HELPER::saveFile(QString filePath, QByteArray data)
     return (0 <= res);
 }
 
-bool GUI_HELPER::copyFile(QString pathFrom, QString pathTo, bool overwrite)
+bool GUI_GENERIC_HELPER::copyFile(QString pathFrom, QString pathTo, bool overwrite)
 {
     // Verify pathFrom exists
     if (!QFile::exists(pathFrom)) return false;
@@ -120,13 +120,13 @@ bool GUI_HELPER::copyFile(QString pathFrom, QString pathTo, bool overwrite)
     return QFile::copy(pathFrom, pathTo);
 }
 
-uint32_t GUI_HELPER::getFileSize(QString filePath)
+uint32_t GUI_GENERIC_HELPER::getFileSize(QString filePath)
 {
     QFileInfo file(filePath);
     return file.size();
 }
 
-QByteArray GUI_HELPER::loadFile(QString filePath)
+QByteArray GUI_GENERIC_HELPER::loadFile(QString filePath)
 {
     // Check to make sure path valid
     if (filePath.isEmpty())
@@ -147,14 +147,14 @@ QByteArray GUI_HELPER::loadFile(QString filePath)
     return data;
 }
 
-QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::readConfigINI(QString config)
+CONFIG_MAP *GUI_GENERIC_HELPER::read_configMap(QString config)
 {
     // Reset & load the GUI settings file
     QSettings config_settings(config, QSettings::IniFormat);
 
     QMap<QString, QVariant> *groupMap;
-    QMap<QString, QMap<QString, QVariant>*> *configMap;
-    configMap = new QMap<QString, QMap<QString, QVariant>*>();
+    CONFIG_MAP *configMap;
+    configMap = new CONFIG_MAP();
     if (!configMap) return nullptr;
 
     // Loop through all child groups
@@ -182,7 +182,7 @@ QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::readConfigINI(QString confi
     if (configMap->isEmpty())
     {
         // Show error message
-        GUI_HELPER::showMessage(QString("Error: Failed to load INI file!\n") + config);
+        GUI_GENERIC_HELPER::showMessage(QString("Error: Failed to load INI file!\n") + config);
 
         // Delete empty map
         delete configMap;
@@ -194,7 +194,7 @@ QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::readConfigINI(QString confi
     return configMap;
 }
 
-QString GUI_HELPER::encode_configMap(QMap<QString, QMap<QString, QVariant>*> *configMap)
+QString GUI_GENERIC_HELPER::encode_configMap(CONFIG_MAP *configMap)
 {
     // Verify configMap
     if (!configMap) return "";
@@ -246,7 +246,7 @@ QString GUI_HELPER::encode_configMap(QMap<QString, QMap<QString, QVariant>*> *co
     return configMap_str;
 }
 
-QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::decode_configMap(QString configMap)
+CONFIG_MAP *GUI_GENERIC_HELPER::decode_configMap(QString configMap)
 {
     // Create temporary file & set autoremove
     QTemporaryFile tmpINI;
@@ -256,7 +256,7 @@ QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::decode_configMap(QString co
     if (!tmpINI.open())
     {
         // Show error message
-        GUI_HELPER::showMessage("Error: Unable to open temp file!");
+        GUI_GENERIC_HELPER::showMessage("Error: Unable to open temp file!");
 
         // Return out of function
         return nullptr;
@@ -268,16 +268,56 @@ QMap<QString, QMap<QString, QVariant>*> *GUI_HELPER::decode_configMap(QString co
     tmpINI.close();
 
     // Read in file, create config, and return pointer
-    return GUI_HELPER::readConfigINI(tmpName);
+    return GUI_GENERIC_HELPER::read_configMap(tmpName);
 }
 
-void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant>*> **configMap)
+CONFIG_MAP *GUI_GENERIC_HELPER::copy_configMap(CONFIG_MAP *configMap)
+{
+    // Verify valid pointer
+    if (!configMap) return nullptr;
+
+    QMap<QString, QVariant> *groupMap, *groupMap_copy;
+    CONFIG_MAP *configMap_copy;
+    configMap_copy = new CONFIG_MAP();
+    if (!configMap_copy) return nullptr;
+
+    // Loop through all child groups
+    foreach (QString childGroup, configMap->keys())
+    {
+        // Get original child group
+        groupMap = configMap->value(childGroup);
+        if (!groupMap)
+        {
+            // Add nullptr to configMap_copy & continue
+            configMap_copy->insert(childGroup, nullptr);
+            continue;
+        }
+
+        // Create new group map
+        groupMap_copy = new QMap<QString, QVariant>();
+        if (!groupMap_copy) continue;
+
+        // Read each group
+        foreach (QString childKey, groupMap->keys())
+        {
+            groupMap_copy->insert(childKey, groupMap->value(childKey));
+        }
+
+        // Add groupMap_copy to configMap_copy
+        configMap_copy->insert(childGroup, groupMap_copy);
+    }
+
+    // Return the copy
+    return configMap_copy;
+}
+
+void GUI_GENERIC_HELPER::delete_configMap(CONFIG_MAP **configMap)
 {
     // Verify valid pointer
     if (!configMap) return;
 
     // Get direct pointer (instead of pointer to a pointer
-    QMap<QString, QMap<QString, QVariant>*> *configMap_ptr = *configMap;
+    CONFIG_MAP *configMap_ptr = *configMap;
     if (!configMap_ptr) return;
 
     // Loop through elements deleting
@@ -296,7 +336,7 @@ void GUI_HELPER::deleteConfigMap(QMap<QString, QMap<QString, QVariant>*> **confi
     *configMap = nullptr;
 }
 
-QByteArray GUI_HELPER::initList_to_byteArray(std::initializer_list<uint8_t> initList)
+QByteArray GUI_GENERIC_HELPER::initList_to_byteArray(std::initializer_list<uint8_t> initList)
 {
     QByteArray init_array;
     foreach (char i, initList)
@@ -307,7 +347,7 @@ QByteArray GUI_HELPER::initList_to_byteArray(std::initializer_list<uint8_t> init
     return init_array;
 }
 
-uint32_t GUI_HELPER::byteArray_to_uint32(QByteArray data)
+uint32_t GUI_GENERIC_HELPER::byteArray_to_uint32(QByteArray data)
 {
     uint32_t ret_data = 0;
     uint8_t data_len = data.length();
@@ -318,7 +358,7 @@ uint32_t GUI_HELPER::byteArray_to_uint32(QByteArray data)
     return ret_data;
 }
 
-QByteArray GUI_HELPER::uint32_to_byteArray(uint32_t data)
+QByteArray GUI_GENERIC_HELPER::uint32_to_byteArray(uint32_t data)
 {
     QByteArray ret_data;
     for (uint8_t i = 0; i < 4; i++)
@@ -329,7 +369,7 @@ QByteArray GUI_HELPER::uint32_to_byteArray(uint32_t data)
     return ret_data;
 }
 
-QByteArray GUI_HELPER::encode_byteArray(QByteArray data, uint8_t base, char sep)
+QByteArray GUI_GENERIC_HELPER::encode_byteArray(QByteArray data, uint8_t base, char sep)
 {
     // If base is 0, return data as is
     if (base == 0) return data;
@@ -344,7 +384,7 @@ QByteArray GUI_HELPER::encode_byteArray(QByteArray data, uint8_t base, char sep)
     return ret_data;
 }
 
-QByteArray GUI_HELPER::decode_byteArray(QByteArray data, uint8_t base, char sep)
+QByteArray GUI_GENERIC_HELPER::decode_byteArray(QByteArray data, uint8_t base, char sep)
 {
     // If base is 0, return data as is
     if (base == 0) return data;

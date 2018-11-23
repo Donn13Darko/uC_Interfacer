@@ -35,7 +35,7 @@ class GUI_CREATE_NEW_TABS : public QDialog
     Q_OBJECT
 
 public:
-    explicit GUI_CREATE_NEW_TABS(QMap<QString, QMap<QString, QVariant>*> **configMap, QWidget *parent = 0);
+    explicit GUI_CREATE_NEW_TABS(CONFIG_MAP **configMap, QWidget *parent = 0);
     ~GUI_CREATE_NEW_TABS();
 
     void set_title(QString title);
@@ -55,7 +55,7 @@ private slots:
 private:
     Ui::GUI_CREATE_NEW_TABS *ui;
 
-    QMap<QString, QMap<QString, QVariant>*> **local_configMap;
+    CONFIG_MAP **local_configMap;
 
     QString local_config_str;
     int local_index;

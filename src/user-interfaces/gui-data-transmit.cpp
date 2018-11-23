@@ -104,7 +104,7 @@ void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
                     on_RecvClear_Button_clicked();
 
                 // Set expected length
-                set_expected_recv_length(GUI_HELPER::byteArray_to_uint32(data));
+                set_expected_recv_length(GUI_GENERIC_HELPER::byteArray_to_uint32(data));
                 return;
             }
             case MINOR_KEY_DATA_TRANSMIT_DATA:
@@ -173,7 +173,7 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
 
         // Set size
         emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                            GUI_HELPER::uint32_to_byteArray(GUI_HELPER::getFileSize(filePath)));
+                            GUI_GENERIC_HELPER::uint32_to_byteArray(GUI_GENERIC_HELPER::getFileSize(filePath)));
 
         // Send file
         emit transmit_file_pack(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
@@ -184,7 +184,7 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
 
         // Set size
         emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                            GUI_HELPER::uint32_to_byteArray(data.length()));
+                            GUI_GENERIC_HELPER::uint32_to_byteArray(data.length()));
 
         // Send plaintext
         emit transmit_chunk_pack(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
@@ -195,7 +195,7 @@ void GUI_DATA_TRANSMIT::on_SendBrowseFile_Button_clicked()
 {
     // Select file to send
     QString file;
-    if (GUI_HELPER::getOpenFilePath(&file))
+    if (GUI_GENERIC_HELPER::getOpenFilePath(&file))
         ui->SendFilePath_LineEdit->setText(file);
 }
 

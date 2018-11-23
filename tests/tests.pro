@@ -3,7 +3,7 @@
 # Project created by QtCreator 2018-11-22T11:22:44
 #
 #-------------------------------------------------
-QT += core gui testlib serialport network charts widgets
+QT += testlib gui serialport network charts widgets
 
 CONFIG += qt console warn_on depend_includepath testcase
 

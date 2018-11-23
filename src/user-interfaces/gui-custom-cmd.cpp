@@ -108,7 +108,7 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
                     on_FeedbackClear_Button_clicked();
 
                 // Set expected length
-                set_expected_recv_length(GUI_HELPER::byteArray_to_uint32(recvData.mid(s1_end_loc)));
+                set_expected_recv_length(GUI_GENERIC_HELPER::byteArray_to_uint32(recvData.mid(s1_end_loc)));
                 return;
             }
             case MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE:
@@ -147,8 +147,8 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
     }
 
     // Parse key pair and data based on bases
-    QString recvPlain = GUI_HELPER::encode_byteArray(recvData.left(s1_end_loc), recv_key_base, ' ');
-    recvPlain += GUI_HELPER::encode_byteArray(recvData.mid(s1_end_loc), recv_cmd_base, ' ');
+    QString recvPlain = GUI_GENERIC_HELPER::encode_byteArray(recvData.left(s1_end_loc), recv_key_base, ' ');
+    recvPlain += GUI_GENERIC_HELPER::encode_byteArray(recvData.mid(s1_end_loc), recv_cmd_base, ' ');
 
     // Append newline if required
     if (ui->FeedbackAppendNewline_CheckBox->isChecked() && !recvPlain.endsWith('\n'))
@@ -216,7 +216,7 @@ void GUI_CUSTOM_CMD::on_CustomCMDBrowseFile_Button_clicked()
 {
     // Select file to send
     QString file;
-    if (GUI_HELPER::getOpenFilePath(&file))
+    if (GUI_GENERIC_HELPER::getOpenFilePath(&file))
         ui->CustomCMDFilePath_LineEdit->setText(file);
 }
 
@@ -259,7 +259,7 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
     if (ui->CustomCMDFile_Radio->isChecked())
     {
         // Read entire file
-        customCMD_bytes = QString(GUI_HELPER::loadFile(ui->CustomCMDFilePath_LineEdit->text()));
+        customCMD_bytes = QString(GUI_GENERIC_HELPER::loadFile(ui->CustomCMDFilePath_LineEdit->text()));
 
         // See if any data
         if (customCMD_bytes.length() == 0) return;
@@ -376,7 +376,7 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
     }
 
     // Replace spaces with null chars and convert to byte array
-    // Null chars are split in GUI_HELPER::decode_byteArray which
+    // Null chars are split in GUI_GENERIC_HELPER::decode_byteArray which
     // is called before sending in comm-bridge
     QByteArray cmd_bytes = customCMD_bytes.replace(QChar(' '), QChar((char) 0)).toLatin1();
 

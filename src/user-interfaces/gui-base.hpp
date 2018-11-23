@@ -39,12 +39,13 @@ public:
     virtual bool isClosable();
     virtual void setClosable(bool new_close);
 
-    virtual uint8_t get_GUI_key();
+    virtual uint8_t get_gui_key();
+    virtual QString get_gui_name();
 
-    virtual QString get_GUI_tab_name();
-    virtual void set_GUI_tab_name(QString new_name);
+    virtual QString get_gui_tab_name();
+    virtual void set_gui_tab_name(QString new_name);
 
-    virtual QString get_GUI_config();
+    virtual QString get_gui_config();
 
     virtual bool acceptAllCMDs();
 
@@ -98,9 +99,8 @@ protected:
     // Local variables
     uint8_t gui_key;
     QString gui_name;
-    QString gui_tab_name;
-    bool closable;
-    QString gui_config;
+    CONFIG_MAP *gui_config;
+    QMap<QString, QVariant> *gui_map;
 
     // Receive arrays & variables
     QTemporaryFile rcvd_formatted;
@@ -112,6 +112,7 @@ protected:
     void save_rcvd_formatted();
 
     // Other functions
+    bool init_maps();
     void set_expected_recv_length(uint32_t expected_length);
     void update_current_recv_length(uint32_t recv_len);
 };

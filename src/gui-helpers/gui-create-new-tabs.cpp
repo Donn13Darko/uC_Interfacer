@@ -22,7 +22,7 @@
 #include <QTemporaryFile>
 #include <QByteArray>
 
-GUI_CREATE_NEW_TABS::GUI_CREATE_NEW_TABS(QMap<QString, QMap<QString, QVariant>*> **configMap, QWidget *parent) :
+GUI_CREATE_NEW_TABS::GUI_CREATE_NEW_TABS(CONFIG_MAP **configMap, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::GUI_CREATE_NEW_TABS)
 {
@@ -40,7 +40,7 @@ GUI_CREATE_NEW_TABS::GUI_CREATE_NEW_TABS(QMap<QString, QMap<QString, QVariant>*>
 GUI_CREATE_NEW_TABS::~GUI_CREATE_NEW_TABS()
 {
     // Delete the config map
-    if (*local_configMap) GUI_HELPER::deleteConfigMap(local_configMap);
+    if (*local_configMap) GUI_GENERIC_HELPER::delete_configMap(local_configMap);
 
     // Delete the ui
     delete ui;
@@ -81,7 +81,7 @@ void GUI_CREATE_NEW_TABS::reset_gui()
     local_index = -1;
 
     // Delete config map if populated
-    if (*local_configMap) GUI_HELPER::deleteConfigMap(local_configMap);
+    if (*local_configMap) GUI_GENERIC_HELPER::delete_configMap(local_configMap);
 }
 
 void GUI_CREATE_NEW_TABS::on_Undo_Button_clicked()
@@ -116,10 +116,10 @@ void GUI_CREATE_NEW_TABS::on_OK_Button_clicked()
     }
 
     // Verify local configs is null
-    if (*local_configMap) GUI_HELPER::deleteConfigMap(local_configMap);
+    if (*local_configMap) GUI_GENERIC_HELPER::delete_configMap(local_configMap);
 
     // Read in new settings with helper
-    *local_configMap = GUI_HELPER::decode_configMap(input_ini);
+    *local_configMap = GUI_GENERIC_HELPER::decode_configMap(input_ini);
 
     // If success, accept changes
     // (tells MainWindow to add new data)

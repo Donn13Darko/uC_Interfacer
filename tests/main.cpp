@@ -31,9 +31,23 @@ int main(int argc, char *argv[])
     // Setup status variable
     int status = 0;
 
+    // Parse input & force modes
+    QStringList argList = QString(*argv).split(" ");
+
+    // Force parameters unless told not too
+    if (!argList.contains("-interfaceForceOff"))
+    {
+        // Force silent mode
+        if (!argList.contains("-silent")) argList.append("-silent");
+    } else
+    {
+        // Remove force off argument if present
+        argList.removeAll("-interfaceForceOff");
+    }
+
     /* GUI Base Tests */
     GUI_BASE_TESTS gui_base_test_class;
-    status |= QTest::qExec(&gui_base_test_class, argc, argv);
+    status |= QTest::qExec(&gui_base_test_class, argList);
 
     return status;
 }
