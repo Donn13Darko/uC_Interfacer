@@ -168,6 +168,11 @@ void GUI_BASE_TESTS::test_gui_config_1()
 
 void GUI_BASE_TESTS::test_gui_config_2()
 {
+    // Set tab name before change
+    QString t_name = "This is a tab";
+    base_tester->set_gui_tab_name(t_name);
+    QCOMPARE(base_tester->get_gui_tab_name(), t_name);
+
     // Build config string
     // String is set to how GUI_GENERIC_HELPER::encode_configMap() would
     // generate it from a map object as get_gui_config() calls this
@@ -185,7 +190,7 @@ void GUI_BASE_TESTS::test_gui_config_2()
     // Delete config map
     GUI_GENERIC_HELPER::delete_configMap(&config_map);
 
-    // Verify changes
+    // Verify changes (tab name cleared)
     QCOMPARE(base_tester->get_gui_config(), config_str);
     QCOMPARE(base_tester->get_gui_tab_name(), QString(""));
 }
@@ -194,31 +199,78 @@ void GUI_BASE_TESTS::test_recv_length()
 {
     // Fetch data
     QFETCH(quint32, expected_recv_len);
-    QFETCH(quint32, recv_len);
-    QFETCH(QString, recv_len_str);
+    QFETCH(QList<quint32>, recv_len_data);
+    QFETCH(QString, expected_recv_len_str);
 
     // Set start info
     base_tester->set_expected_recv_length_test(expected_recv_len);
-    base_tester->update_current_recv_length_test(recv_len);
+
+    // Verify start info
+    QCOMPARE(base_tester->get_expected_recv_length_test(), expected_recv_len);
+    QCOMPARE(base_tester->get_expected_recv_length_str_test(), expected_recv_len_str);
+
+    // Send packets
+    bool recv_len_done = false;
+    quint32 target_recv = 0;
+    foreach (quint32 recv_len, recv_len_data)
+    {
+        // Send update to base class
+        base_tester->update_current_recv_length_test(recv_len);
+
+        // Continue if alread received expected_recv_len
+        if (recv_len_done) continue;
+
+        // Increment target and verify
+        target_recv += recv_len;
+        if (!expected_recv_len || (expected_recv_len <= target_recv))
+        {
+            // Clear expected values
+            target_recv = 0;
+            expected_recv_len = 0;
+            expected_recv_len_str.clear();
+
+            // Set to stop incrementing
+            recv_len_done = true;
+        }
+    }
 
     // Verify the updates
+    QCOMPARE(base_tester->get_current_recv_length_test(), target_recv);
     QCOMPARE(base_tester->get_expected_recv_length_test(), expected_recv_len);
-    QCOMPARE(base_tester->get_current_recv_length_test(), recv_len);
-    QCOMPARE(base_tester->get_expected_recv_length_str_test(), recv_len_str);
+    QCOMPARE(base_tester->get_expected_recv_length_str_test(), expected_recv_len_str);
 }
 
 void GUI_BASE_TESTS::test_recv_length_data()
 {
+    // Setup data columns
     QTest::addColumn<quint32>("expected_recv_len");
-    QTest::addColumn<quint32>("recv_len");
-    QTest::addColumn<QString>("recv_len_str");
+    QTest::addColumn<QList<quint32>>("recv_len_data");
+    QTest::addColumn<QString>("expected_recv_len_str");
 
-    QTest::newRow("Zero") << (quint32) 0 << (quint32) 0 << "";
-    QTest::newRow("One") << (quint32) 1 << (quint32) 1 << "/0.001KB";
-    QTest::newRow("500") << (quint32) 500 << (quint32) 5 << "/0.5KB";
-    QTest::newRow("1000") << (quint32) 1000 << (quint32) 100 << "/1KB";
+    // Load in data
+    QTest::newRow("E0_S0") << (quint32) 0 << QList<quint32>({0}) << "";
+    QTest::newRow("E0_S1") << (quint32) 0 << QList<quint32>({1}) << "";
+    QTest::newRow("E1_S0") << (quint32) 1 << QList<quint32>({0}) << "/0.001KB";
+    QTest::newRow("E1_S1 Start") << (quint32) 1 << QList<quint32>({1, 0, 0}) << "/0.001KB";
+    QTest::newRow("E1_S1 Middle") << (quint32) 1 << QList<quint32>({0, 1, 0}) << "/0.001KB";
+    QTest::newRow("E1_S1 End") << (quint32) 1 << QList<quint32>({0, 0, 1}) << "/0.001KB";
+    QTest::newRow("E1_S3 V1") << (quint32) 1 << QList<quint32>({3}) << "/0.001KB";
+    QTest::newRow("E1_S3 V2") << (quint32) 1 << QList<quint32>({1, 2}) << "/0.001KB";
+    QTest::newRow("E1_S3 V3") << (quint32) 1 << QList<quint32>({1, 0, 2}) << "/0.001KB";
+    QTest::newRow("E5_S6 V1") << (quint32) 5 << QList<quint32>({0, 1, 2, 3}) << "/0.005KB";
+    QTest::newRow("E500_S0") << (quint32) 500 << QList<quint32>({0}) << "/0.5KB";
+    QTest::newRow("E500_S500") << (quint32) 500 << QList<quint32>({500}) << "/0.5KB";
+    QTest::newRow("E500_S5") << (quint32) 500 << QList<quint32>({5}) << "/0.5KB";
+    QTest::newRow("E500_S6 Sum") << (quint32) 500 << QList<quint32>({0, 1, 2, 3}) << "/0.5KB";
+    QTest::newRow("E500_S500 Sum V1") << (quint32) 500 << QList<quint32>({250, 250}) << "/0.5KB";
+    QTest::newRow("E500_S500 Sum V1") << (quint32) 500 << QList<quint32>({100, 100, 100, 100, 100}) << "/0.5KB";
+    QTest::newRow("E1000_S500 Sum") << (quint32) 1000 << QList<quint32>({250, 250}) << "/1KB";
+    QTest::newRow("E1000_S1000 Sum") << (quint32) 1000 << QList<quint32>({250, 250, 500}) << "/1KB";
+    QTest::newRow("E1234_S0") << (quint32) 1234 << QList<quint32>({0}) << "/1.234KB";
+    QTest::newRow("E12345_S0") << (quint32) 12345 << QList<quint32>({0}) << "/12.345KB";
+    QTest::newRow("E123456_S0") << (quint32) 123456 << QList<quint32>({0}) << "/123.456KB";
     QTest::newRow("RESET") << base_tester->get_expected_recv_length_test() \
-                           << base_tester->get_current_recv_length_test() \
+                           << QList<quint32>({0}) \
                            << base_tester->get_expected_recv_length_str_test();
 }
 

@@ -226,36 +226,25 @@ void GUI_BASE::update_current_recv_length(uint32_t recv_len)
     // Exit if expecting not set
     if (!expected_recv_length) return;
 
-    // Start and stop sent by
-    if (recv_len == 0)
-    {
-        // See if starting new file
-        if (current_recv_length == expected_recv_length)
-        {
-            // Reset expected recv and current recv
-            expected_recv_length = 0;
-
-            // Emit update
-            emit progress_update_recv(100, "Done!");
-        } else
-        {
-            emit progress_update_recv(0, "");
-        }
-
-        // Reset recv length
-        current_recv_length = 0;
-
-        // Exit after setting
-        return;
-    }
-
     // Update received length
     current_recv_length += recv_len;
 
-    // Update progress bar if total recv length known
-    if (expected_recv_length != 0)
+    // See if finished receiving
+    if (expected_recv_length <= current_recv_length)
+    {
+        // Reset current & expected recv
+        current_recv_length = 0;
+        expected_recv_length = 0;
+        expected_recv_length_str.clear();
+
+        // Emit update
+        emit progress_update_recv(100, "Done!");
+    } else
+    {
+        // Update progress bar
         emit progress_update_recv(qRound(((float) current_recv_length/expected_recv_length) * 100.0f),
                                   QString::number((float) current_recv_length / 1000.0f) + expected_recv_length_str);
+    }
 }
 
 bool GUI_BASE::init_maps()

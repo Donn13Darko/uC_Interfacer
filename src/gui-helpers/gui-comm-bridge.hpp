@@ -187,6 +187,7 @@ private:
     QEventLoop ackLoop;
 
     // Device helper variables
+    bool dev_status;
     QEventLoop devReadyLoop;
 
     // Chunk variables

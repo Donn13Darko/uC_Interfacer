@@ -34,15 +34,15 @@ int main(int argc, char *argv[])
     // Parse input & force modes
     QStringList argList = QString(*argv).split(" ");
 
-    // Force parameters unless told not too
-    if (!argList.contains("-interfaceForceOff"))
+    // Force parameters unless told not to
+    if (!argList.contains("-interfaceForceParamsOff"))
     {
         // Force silent mode
         if (!argList.contains("-silent")) argList.append("-silent");
     } else
     {
         // Remove force off argument if present
-        argList.removeAll("-interfaceForceOff");
+        argList.removeAll("-interfaceForceParamsOff");
     }
 
     /* GUI Base Tests */

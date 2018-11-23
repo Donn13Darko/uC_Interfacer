@@ -38,6 +38,9 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
     // Setup base flags
     bridge_flags = 0x00;
 
+    // Setup dev variables
+    dev_status = false;
+
     // Setup Ack variables
     ack_status = false;
     ack_key = MAJOR_KEY_ERROR;
@@ -305,6 +308,9 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                         {
                             // Ack success
                             send_ack(major_key);
+
+                            // Set dev status to ready
+                            dev_status = true;
 
                             // Emit device ready for more
                             emit devReady();
@@ -1072,7 +1078,7 @@ QByteArray GUI_COMM_BRIDGE::parse_data(quint8 major_key, quint8 minor_key, QByte
                 }
 
                 // Wait for devReady if command requires it
-                if (sender->waitForDevice(minor_key))
+                if (sender->waitForDevice(minor_key) && !dev_status)
                 {
                     // Enter loop to return control to the
                     // main application event loop for cmd waiting
@@ -1145,6 +1151,7 @@ void GUI_COMM_BRIDGE::transmit_data(QByteArray data)
     if (data.isEmpty() || (bridge_flags & bridge_close_flag)) return;
 
     // Get next data to send
+    dev_status = false;
     ack_status = false;
     ack_key = ((char) data.at(s1_major_key_loc) & s1_major_key_byte_mask);
     bool isReset = (ack_key == MAJOR_KEY_RESET);
