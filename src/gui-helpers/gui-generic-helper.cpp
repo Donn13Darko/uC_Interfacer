@@ -336,10 +336,10 @@ void GUI_GENERIC_HELPER::delete_configMap(CONFIG_MAP **configMap)
     *configMap = nullptr;
 }
 
-QByteArray GUI_GENERIC_HELPER::initList_to_byteArray(std::initializer_list<uint8_t> initList)
+QByteArray GUI_GENERIC_HELPER::qList_to_byteArray(QList<uint8_t> initList)
 {
     QByteArray init_array;
-    foreach (char i, initList)
+    foreach (uint8_t i, initList)
     {
         init_array.append(i);
     }

@@ -93,7 +93,7 @@ protected slots:
     virtual void set_progress_update_send(int progress, QString label);
 
     // Chunk sending from list
-    void send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk);
+    void send_chunk(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk);
 
 protected:
     // Local variables

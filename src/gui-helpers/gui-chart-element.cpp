@@ -64,8 +64,8 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
     on_xDuration_LineEdit_editingFinished();
 
     // Registar types
-    qRegisterMetaType< QList<QString> >( "QList<QString>" );
-    qRegisterMetaType< QList<double*> >( "QList<double*>" );
+    qRegisterMetaType<QList<QString>>("QList<QString>");
+    qRegisterMetaType<QList<double*>>("QList<double*>");
 
     // Connect update receiver
     connect(this, SIGNAL(update_receive(QList<double*>)),

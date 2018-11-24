@@ -182,10 +182,10 @@ void GUI_BASE::set_progress_update_send(int, QString)
     // Default do nothing
 }
 
-void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, std::initializer_list<uint8_t> chunk)
+void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk)
 {
     emit transmit_chunk(major_key, minor_key,
-                        GUI_GENERIC_HELPER::initList_to_byteArray(chunk));
+                        GUI_GENERIC_HELPER::qList_to_byteArray(chunk));
 }
 
 void GUI_BASE::rcvd_formatted_append(QByteArray data)
@@ -257,8 +257,8 @@ void GUI_BASE::set_expected_recv_length(uint32_t expected_length)
 
 void GUI_BASE::update_current_recv_length(uint32_t recv_len)
 {
-    // Exit if expecting not set
-    if (!expected_recv_length) return;
+    // Exit if expecting not set -or- recv_len is zero (no change)
+    if (!expected_recv_length || !recv_len) return;
 
     // Update received length
     current_recv_length += recv_len;
@@ -276,7 +276,7 @@ void GUI_BASE::update_current_recv_length(uint32_t recv_len)
     } else
     {
         // Update progress bar
-        emit progress_update_recv(qRound(((float) current_recv_length/expected_recv_length) * 100.0f),
+        emit progress_update_recv(qRound(((float) current_recv_length / expected_recv_length) * 100.0f),
                                   QString::number((float) current_recv_length / 1000.0f) + expected_recv_length_str);
     }
 }

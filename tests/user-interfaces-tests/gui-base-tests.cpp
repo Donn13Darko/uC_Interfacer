@@ -20,6 +20,7 @@
 
 // Testing infrastructure includes
 #include <QtTest>
+#include <QSignalSpy>
 #include <QCoreApplication>
 
 // Object includes
@@ -204,6 +205,10 @@ void GUI_BASE_TESTS::test_recv_length()
     QFETCH(QList<quint32>, recv_len_data);
     QFETCH(QString, expected_recv_len_str);
 
+    // Setup signal spy
+    QList<QVariant> spy_args;
+    QSignalSpy progress_spy(base_tester, base_tester->progress_update_recv);
+
     // Set start info
     base_tester->set_expected_recv_length_test(expected_recv_len);
 
@@ -211,7 +216,13 @@ void GUI_BASE_TESTS::test_recv_length()
     QCOMPARE(base_tester->get_expected_recv_length_test(), expected_recv_len);
     QCOMPARE(base_tester->get_expected_recv_length_str_test(), expected_recv_len_str);
 
-    // Send packets
+    // Verify signals
+    QCOMPARE(progress_spy.count(), 1);
+    spy_args = progress_spy.takeFirst();
+    QCOMPARE(spy_args.at(0).toInt(), 0);
+    QCOMPARE(spy_args.at(1).toString(), QString(""));
+
+    // Send packets & verify signals
     bool recv_len_done = false;
     quint32 target_recv = 0;
     foreach (quint32 recv_len, recv_len_data)
@@ -226,6 +237,15 @@ void GUI_BASE_TESTS::test_recv_length()
         target_recv += recv_len;
         if (!expected_recv_len || (expected_recv_len <= target_recv))
         {
+            // Verify final signal
+            if (expected_recv_len && (expected_recv_len <= target_recv))
+            {
+                QCOMPARE(progress_spy.count(), 1);
+                spy_args = progress_spy.takeFirst();
+                QCOMPARE(spy_args.at(0).toInt(), 100);
+                QCOMPARE(spy_args.at(1).toString(), QString("Done!"));
+            }
+
             // Clear expected values
             target_recv = 0;
             expected_recv_len = 0;
@@ -233,6 +253,13 @@ void GUI_BASE_TESTS::test_recv_length()
 
             // Set to stop incrementing
             recv_len_done = true;
+        } else if (recv_len)
+        {
+            // Verify progress signal
+            QCOMPARE(progress_spy.count(), 1);
+            spy_args = progress_spy.takeFirst();
+            QCOMPARE(spy_args.at(0).toInt(), qRound(((float) target_recv / expected_recv_len) * 100.0f));
+            QCOMPARE(spy_args.at(1).toString(), QString::number((float) target_recv / 1000.0f) + expected_recv_len_str);
         }
     }
 
@@ -282,18 +309,70 @@ void GUI_BASE_TESTS::test_reset_gui_1()
     base_tester->set_expected_recv_length_test(500);
     base_tester->update_current_recv_length_test(100);
 
+    QByteArray rcvd_data = QByteArray("Test Dataaaaa");
+    base_tester->rcvd_formatted_append_test(rcvd_data);
+
     // Verify the updates
     QCOMPARE(base_tester->get_expected_recv_length_test(), (uint32_t) 500);
     QCOMPARE(base_tester->get_current_recv_length_test(), (uint32_t) 100);
     QCOMPARE(base_tester->get_expected_recv_length_str_test(), QString("/0.5KB"));
+    QCOMPARE(base_tester->rcvd_formatted_readAll_test(), rcvd_data);
+    QCOMPARE(base_tester->rcvd_formatted_size_test(), rcvd_data.size());
+
+    // Get static values
+    uint8_t gui_key = base_tester->get_gui_key();
+    QString gui_name = base_tester->get_gui_name();
+    CONFIG_MAP *gui_config = base_tester->get_gui_config_test();
+    QMap<QString, QVariant> *gui_map = base_tester->get_gui_map_test();
+
+    // Setup signal spy
+    QList<QVariant> spy_args;
+    QSignalSpy rcvd_reset_spy(base_tester, base_tester->progress_update_recv);
+    QSignalSpy send_reset_spy(base_tester, base_tester->progress_update_send);
 
     // Reset the gui
     base_tester->reset_gui();
 
-    // Verify the reset
+    // Verify the reset values
     QCOMPARE(base_tester->get_expected_recv_length_test(), (uint32_t) 0);
     QCOMPARE(base_tester->get_current_recv_length_test(), (uint32_t) 0);
     QCOMPARE(base_tester->get_expected_recv_length_str_test(), QString(""));
+    QCOMPARE(base_tester->rcvd_formatted_readAll_test(), QByteArray());
+    QCOMPARE(base_tester->rcvd_formatted_size_test(), 0);
+
+    // Verify the static values haven't changed
+    QCOMPARE(base_tester->get_gui_key(), gui_key);
+    QCOMPARE(base_tester->get_gui_name(), gui_name);
+    QCOMPARE(base_tester->get_gui_config_test(), gui_config);
+    QCOMPARE(base_tester->get_gui_map_test(), gui_map);
+
+    // Verify signal spy
+    QCOMPARE(rcvd_reset_spy.count(), 1);
+    QCOMPARE(send_reset_spy.count(), 1);
+
+    spy_args = rcvd_reset_spy.takeFirst();
+    QCOMPARE(spy_args.at(0).toInt(), 0);
+    QCOMPARE(spy_args.at(1).toString(), QString(""));
+
+    spy_args = send_reset_spy.takeFirst();
+    QCOMPARE(spy_args.at(0).toInt(), 0);
+    QCOMPARE(spy_args.at(1).toString(), QString(""));
+}
+
+void GUI_BASE_TESTS::test_reset_gui_2()
+{
+    // Setup signal spy
+    QList<QVariant> spy_args;
+    QSignalSpy transmit_chunk_spy(base_tester, base_tester->transmit_chunk);
+
+    // Call slot
+    base_tester->on_ResetGUI_Button_clicked_test();
+
+    // Verify signal spy
+    QCOMPARE(transmit_chunk_spy.count(), 1);
+    spy_args = transmit_chunk_spy.takeFirst();
+    QCOMPARE(spy_args.at(0).toInt(), (int) MAJOR_KEY_RESET);
+    QCOMPARE(spy_args.at(1).toInt(), 0);
 }
 
 void GUI_BASE_TESTS::test_rcvd_formatted()
@@ -364,11 +443,47 @@ void GUI_BASE_TESTS::test_rcvd_formatted_data()
     QTest::addColumn<bool>("rcvd_formatted_test_clear");
 
     // Load in data
-    QByteArray data = GUI_GENERIC_HELPER::initList_to_byteArray({'d', 'a', 't', 'a'});
+    QByteArray data = GUI_GENERIC_HELPER::qList_to_byteArray({'d', 'a', 't', 'a'});
     QTest::newRow("Basic") << QList<QByteArray>({data}) << false << false << false;
     QTest::newRow("Clear") << QList<QByteArray>({data}) << true << false << true;
     QTest::newRow("Save") << QList<QByteArray>({data}) << true << true << true;
     QTest::newRow("Rcvd Multiple V1") << QList<QByteArray>({data, data, data}) << true << false << false;
     QTest::newRow("Save Multiple V1") << QList<QByteArray>({data, data, data}) << true << true << false;
-    QTest::newRow("String Basic V1") << QList<QByteArray>({QString("ReadMe").toLatin1()}) << true << false << false;
+    QTest::newRow("String Basic V1") << QList<QByteArray>({"ReadMe"}) << true << false << false;
+    QTest::newRow("RESET") << QList<QByteArray>({""}) << true << false << true;
+}
+
+void GUI_BASE_TESTS::test_send_chunk_qlist()
+{
+    // Fetch data
+    QFETCH(quint8, major_key);
+    QFETCH(quint8, minor_key);
+    QFETCH(QList<quint8>, send_chunk);
+
+    // Setup signal spy
+    QList<QVariant> spy_args;
+    QSignalSpy transmit_chunk_spy(base_tester, base_tester->transmit_chunk);
+
+    // Send the chunk
+    base_tester->send_chunk_test(major_key, minor_key, send_chunk);
+
+    // Verify signal spy
+    QCOMPARE(transmit_chunk_spy.count(), 1);
+    spy_args = transmit_chunk_spy.takeFirst();
+    QCOMPARE(spy_args.at(0).toInt(), (int) major_key);
+    QCOMPARE(spy_args.at(1).toInt(), (int) minor_key);
+    QCOMPARE(spy_args.at(2).toByteArray(), GUI_GENERIC_HELPER::qList_to_byteArray(send_chunk));
+}
+
+void GUI_BASE_TESTS::test_send_chunk_qlist_data()
+{
+    // Setup data columns
+    QTest::addColumn<quint8>("major_key");
+    QTest::addColumn<quint8>("minor_key");
+    QTest::addColumn<QList<quint8>>("send_chunk");
+
+    // Load in data
+    QTest::newRow("Empty") << (quint8) 0 << (quint8) 0 << QList<quint8>();
+    QTest::newRow("Basic") << (quint8) 4 << (quint8) 3 << QList<quint8>({(quint8) 0, (quint8) 1, (quint8) 2});
+    QTest::newRow("Random") << (quint8) qrand() << (quint8) qrand() << QList<quint8>({(quint8) qrand(), (quint8) qrand(), (quint8) qrand()});
 }

@@ -64,7 +64,7 @@ public:
     static void delete_configMap(CONFIG_MAP **configMap);
 
     // Conversions
-    static QByteArray initList_to_byteArray(std::initializer_list<uint8_t> initList);
+    static QByteArray qList_to_byteArray(QList<uint8_t> initList);
     static uint32_t byteArray_to_uint32(QByteArray data);
     static QByteArray uint32_to_byteArray(uint32_t data);
     static QByteArray encode_byteArray(QByteArray data, uint8_t base = 0, char sep = 0);

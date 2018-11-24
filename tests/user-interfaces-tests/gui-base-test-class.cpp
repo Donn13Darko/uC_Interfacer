@@ -96,3 +96,23 @@ QString GUI_BASE_TEST_CLASS::get_expected_recv_length_str_test()
 {
     return expected_recv_length_str;
 }
+
+CONFIG_MAP *GUI_BASE_TEST_CLASS::get_gui_config_test()
+{
+    return gui_config;
+}
+
+QMap<QString, QVariant> *GUI_BASE_TEST_CLASS::get_gui_map_test()
+{
+    return gui_map;
+}
+
+void GUI_BASE_TEST_CLASS::on_ResetGUI_Button_clicked_test()
+{
+    on_ResetGUI_Button_clicked();
+}
+
+void GUI_BASE_TEST_CLASS::send_chunk_test(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk)
+{
+    send_chunk(major_key, minor_key, chunk);
+}

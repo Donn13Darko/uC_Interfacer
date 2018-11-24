@@ -60,9 +60,13 @@ private slots:
     void test_recv_length_data();
 
     void test_reset_gui_1();
+    void test_reset_gui_2();
 
     void test_rcvd_formatted();
     void test_rcvd_formatted_data();
+
+    void test_send_chunk_qlist();
+    void test_send_chunk_qlist_data();
 
     // Basic protected member tests
 

@@ -49,6 +49,12 @@ public:
     void set_expected_recv_length_test(uint32_t expected_length);
     uint32_t get_expected_recv_length_test();
     QString get_expected_recv_length_str_test();
+
+    CONFIG_MAP *get_gui_config_test();
+    QMap<QString, QVariant> *get_gui_map_test();
+
+    void on_ResetGUI_Button_clicked_test();
+    void send_chunk_test(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk);
 };
 
 #endif // GUI_BASE_TEST_CLASS_H

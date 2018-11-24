@@ -28,7 +28,7 @@ GUI_CHART_VIEW::GUI_CHART_VIEW(QWidget *parent) :
     setWindowFlag(Qt::WindowMinMaxButtonsHint, true);
 
     // Register types
-    qRegisterMetaType< QList<QString> >( "QList<QString>" );
+    qRegisterMetaType<QList<QString>>("QList<QString>");
 
     // Load graph types
     ui->ChartType_Combo->addItems(GUI_CHART_ELEMENT::get_supported_chart_types());
