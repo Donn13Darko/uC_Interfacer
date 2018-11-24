@@ -21,7 +21,6 @@
 // Testing infrastructure includes
 #include <QtTest>
 #include <QSignalSpy>
-#include <QCoreApplication>
 
 // Object includes
 #include <QTimer>
@@ -208,6 +207,7 @@ void GUI_BASE_TESTS::test_recv_length()
     // Setup signal spy
     QList<QVariant> spy_args;
     QSignalSpy progress_spy(base_tester, base_tester->progress_update_recv);
+    QVERIFY(progress_spy.isValid());
 
     // Set start info
     base_tester->set_expected_recv_length_test(expected_recv_len);
@@ -329,6 +329,8 @@ void GUI_BASE_TESTS::test_reset_gui_1()
     QList<QVariant> spy_args;
     QSignalSpy rcvd_reset_spy(base_tester, base_tester->progress_update_recv);
     QSignalSpy send_reset_spy(base_tester, base_tester->progress_update_send);
+    QVERIFY(rcvd_reset_spy.isValid());
+    QVERIFY(send_reset_spy.isValid());
 
     // Reset the gui
     base_tester->reset_gui();
@@ -364,6 +366,7 @@ void GUI_BASE_TESTS::test_reset_gui_2()
     // Setup signal spy
     QList<QVariant> spy_args;
     QSignalSpy transmit_chunk_spy(base_tester, base_tester->transmit_chunk);
+    QVERIFY(transmit_chunk_spy.isValid());
 
     // Call slot
     base_tester->on_ResetGUI_Button_clicked_test();
@@ -463,6 +466,7 @@ void GUI_BASE_TESTS::test_send_chunk_qlist()
     // Setup signal spy
     QList<QVariant> spy_args;
     QSignalSpy transmit_chunk_spy(base_tester, base_tester->transmit_chunk);
+    QVERIFY(transmit_chunk_spy.isValid());
 
     // Send the chunk
     base_tester->send_chunk_test(major_key, minor_key, send_chunk);

@@ -171,10 +171,6 @@ private:
     bool devConnected;
     QMap<QString, QStringList> devSettings;
 
-    // Setup variables
-    void initialize();
-    void setupUpdaters();
-
     // Handle changes on the GUI
     void inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_pos, QByteArray *data = nullptr);
     void updateSliderRange(QSlider *slider, RangeList *rList);

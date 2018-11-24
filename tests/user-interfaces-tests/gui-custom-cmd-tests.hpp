@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_BASE_TESTS_H
-#define GUI_BASE_TESTS_H
+#ifndef GUI_CUSTOM_CMD_TESTS_H
+#define GUI_CUSTOM_CMD_TESTS_H
 
 #include <QObject>
 
 // Testing class
-#include "gui-base-test-class.hpp"
+#include "gui-custom-cmd-test-class.hpp"
 
-class GUI_BASE_TESTS : public QObject
+class GUI_CUSTOM_CMD_TESTS : public QObject
 {
     Q_OBJECT
 
 public:
-    GUI_BASE_TESTS();
-    ~GUI_BASE_TESTS();
+    GUI_CUSTOM_CMD_TESTS();
+    ~GUI_CUSTOM_CMD_TESTS();
 
 private slots:
     // Setup and cleanup functions
@@ -38,35 +38,9 @@ private slots:
     void cleanupTestCase();
 
     // Member tests
-    void test_init_vals();
-    void test_basic_features();
-
-    void test_gui_key();
-    void test_gui_key_data();
-
-    void test_set_gui_name();
-    void test_set_gui_name_data();
-
-    void test_set_gui_tab_name();
-    void test_set_gui_tab_name_data();
-
-    void test_gui_config_1();
-    void test_gui_config_2();
-
-    void test_recv_length();
-    void test_recv_length_data();
-
-    void test_reset_gui_1();
-    void test_reset_gui_2();
-
-    void test_rcvd_formatted();
-    void test_rcvd_formatted_data();
-
-    void test_send_chunk_qlist();
-    void test_send_chunk_qlist_data();
 
 private:
-    GUI_BASE_TEST_CLASS *base_tester;
+    GUI_CUSTOM_CMD_TEST_CLASS *custom_cmd_tester;
 };
 
-#endif // GUI_BASE_TESTS_H
+#endif // GUI_CUSTOM_CMD_TESTS_H

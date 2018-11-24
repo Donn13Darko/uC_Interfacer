@@ -36,9 +36,35 @@ GUI_IO_CONTROL::GUI_IO_CONTROL(QWidget *parent) :
     ui->StartUpdater_Button->setText("Start");
     ui->StartLog_Button->setText("Start Log");
 
-    // Call initializers
-    initialize();
-    setupUpdaters();
+    // Set class pin variables
+    bytesPerPin = 2;
+
+    // Setup AIO info
+    AIO_Grid = new QGridLayout();
+    ui->AIOVLayout->insertLayout(1, AIO_Grid);
+    num_AIOcols = 1;
+
+    // Setup DIO info
+    DIO_Grid = new QGridLayout();
+    ui->DIOVLayout->insertLayout(1, DIO_Grid);
+    num_DIOcols = 2;
+
+    // Set log file parameters
+    logFile = NULL;
+    logStream = NULL;
+    logIsRecording = false;
+
+    // Connect updaters
+    // All internal object connections so direct is okay
+    connect(&DIO_READ, SIGNAL(timeout()),
+            this, SLOT(updateValues()),
+            Qt::DirectConnection);
+    connect(&AIO_READ, SIGNAL(timeout()),
+            this, SLOT(updateValues()),
+            Qt::DirectConnection);
+    connect(&logTimer, SIGNAL(timeout()),
+            this, SLOT(recordLogData()),
+            Qt::DirectConnection);
 
     // Reset GUI
     reset_gui();
@@ -618,42 +644,6 @@ void GUI_IO_CONTROL::on_CreatePlots_Button_clicked()
 
     // Show the chart view
     chart_view->show();
-}
-
-void GUI_IO_CONTROL::initialize()
-{
-    // Set class pin variables
-    bytesPerPin = 2;
-
-    // Setup AIO info
-    AIO_Grid = new QGridLayout();
-    ui->AIOVLayout->insertLayout(1, AIO_Grid);
-    num_AIOcols = 1;
-
-    // Setup DIO info
-    DIO_Grid = new QGridLayout();
-    ui->DIOVLayout->insertLayout(1, DIO_Grid);
-    num_DIOcols = 2;
-
-    // Set log file parameters
-    logFile = NULL;
-    logStream = NULL;
-    logIsRecording = false;
-}
-
-void GUI_IO_CONTROL::setupUpdaters()
-{
-    // Connect updaters
-    // All internal object connections so direct is okay
-    connect(&DIO_READ, SIGNAL(timeout()),
-            this, SLOT(updateValues()),
-            Qt::DirectConnection);
-    connect(&AIO_READ, SIGNAL(timeout()),
-            this, SLOT(updateValues()),
-            Qt::DirectConnection);
-    connect(&logTimer, SIGNAL(timeout()),
-            this, SLOT(recordLogData()),
-            Qt::DirectConnection);
 }
 
 void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_pos, QByteArray *data)

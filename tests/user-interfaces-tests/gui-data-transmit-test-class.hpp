@@ -16,45 +16,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef GUI_BASE_TEST_CLASS_H
-#define GUI_BASE_TEST_CLASS_H
+#ifndef GUI_DATA_TRANSMIT_TEST_CLASS_H
+#define GUI_DATA_TRANSMIT_TEST_CLASS_H
 
 // Testing class
-#include "../../src/user-interfaces/gui-base.hpp"
+#include "../../src/user-interfaces/gui-data-transmit.hpp"
 
-// Class includes
-#include <QByteArray>
-
-class GUI_BASE_TEST_CLASS : public GUI_BASE
+class GUI_DATA_TRANSMIT_TEST_CLASS : public GUI_DATA_TRANSMIT
 {
     Q_OBJECT
 
 public:
-    GUI_BASE_TEST_CLASS(QWidget *parent = 0);
-    ~GUI_BASE_TEST_CLASS();
+    GUI_DATA_TRANSMIT_TEST_CLASS(QWidget *parent = 0);
+    ~GUI_DATA_TRANSMIT_TEST_CLASS();
 
     /*** Defines any needed setters & accessors for testing ***/
-    void set_gui_key_test(uint8_t new_key);
-    void set_gui_name_test(QString new_name);
-
-    void rcvd_formatted_append_test(QByteArray data);
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
     void rcvd_formatted_clear_test();
-    void rcvd_formatted_save_test(QString fileName);
 
     void set_expected_recv_length_test(uint32_t expected_length);
     uint32_t get_expected_recv_length_test();
-    QString get_expected_recv_length_str_test();
 
     void update_current_recv_length_test(uint32_t recv_len);
     uint32_t get_current_recv_length_test();
 
-    CONFIG_MAP *get_gui_config_test();
-    QMap<QString, QVariant> *get_gui_map_test();
-
     void on_ResetGUI_Button_clicked_test();
-    void send_chunk_test(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk);
 };
 
-#endif // GUI_BASE_TEST_CLASS_H
+#endif // GUI_DATA_TRANSMIT_TEST_CLASS_H
