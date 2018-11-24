@@ -47,6 +47,14 @@ protected slots:
     virtual void set_progress_update_recv(int progress, QString label);
     virtual void set_progress_update_send(int progress, QString label);
 
+protected:
+    /** Declare accessors for testing **/
+    Ui::GUI_CUSTOM_CMD *get_ui();
+    uint8_t get_send_key_base();
+    uint8_t get_send_cmd_base();
+    uint8_t get_recv_key_base();
+    uint8_t get_recv_cmd_base();
+
 private slots:
     void on_FeedbackSave_Button_clicked();
     void on_FeedbackClear_Button_clicked();

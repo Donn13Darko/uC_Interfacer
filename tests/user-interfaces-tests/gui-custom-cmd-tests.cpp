@@ -51,3 +51,26 @@ void GUI_CUSTOM_CMD_TESTS::cleanupTestCase()
         custom_cmd_tester = nullptr;
     }
 }
+
+void GUI_CUSTOM_CMD_TESTS::test_init_vals()
+{
+    // Verify all init values
+    QVERIFY(custom_cmd_tester->isClosable());
+    QCOMPARE(custom_cmd_tester->get_gui_key(), (uint8_t) MAJOR_KEY_CUSTOM_CMD);
+    QCOMPARE(custom_cmd_tester->get_gui_name(), QString("Custom CMD"));
+    QCOMPARE(custom_cmd_tester->get_gui_tab_name(), QString("Custom CMD"));
+    QCOMPARE(custom_cmd_tester->get_send_key_base_test(), (uint8_t) 16);
+    QCOMPARE(custom_cmd_tester->get_send_cmd_base_test(), (uint8_t) 16);
+    QCOMPARE(custom_cmd_tester->get_recv_key_base_test(), (uint8_t) 16);
+    QCOMPARE(custom_cmd_tester->get_recv_cmd_base_test(), (uint8_t) 16);
+}
+
+void GUI_CUSTOM_CMD_TESTS::test_basic_features()
+{
+    // Test accept all cmds (returns whether accept all checkbox is checks)
+    QVERIFY(!custom_cmd_tester->acceptAllCMDs());
+
+    // Test waitForDevice (always returns false)
+    QVERIFY(!custom_cmd_tester->waitForDevice(0));
+    QVERIFY(!custom_cmd_tester->waitForDevice((uint8_t) qrand()));
+}

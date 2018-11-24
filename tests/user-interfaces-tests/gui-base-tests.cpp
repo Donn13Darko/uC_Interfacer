@@ -63,7 +63,9 @@ void GUI_BASE_TESTS::test_init_vals()
     // Verify all init values
     QVERIFY(base_tester->isClosable());
     QCOMPARE(base_tester->get_gui_key(), (uint8_t) MAJOR_KEY_ERROR);
+    QCOMPARE(base_tester->get_gui_name(), QString("GUI Base"));
     QCOMPARE(base_tester->get_gui_tab_name(), QString("GUI Base"));
+    QCOMPARE(base_tester->get_gui_config(), QString("[GUI Base]\n\n"));
 }
 
 void GUI_BASE_TESTS::test_basic_features()

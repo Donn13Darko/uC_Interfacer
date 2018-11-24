@@ -167,6 +167,31 @@ void GUI_CUSTOM_CMD::set_progress_update_send(int progress, QString label)
     ui->CustomCMDProgress_Label->setText(label);
 }
 
+Ui::GUI_CUSTOM_CMD *GUI_CUSTOM_CMD::get_ui()
+{
+    return ui;
+}
+
+uint8_t GUI_CUSTOM_CMD::get_send_key_base()
+{
+    return send_key_base;
+}
+
+uint8_t GUI_CUSTOM_CMD::get_send_cmd_base()
+{
+    return send_cmd_base;
+}
+
+uint8_t GUI_CUSTOM_CMD::get_recv_key_base()
+{
+    return recv_key_base;
+}
+
+uint8_t GUI_CUSTOM_CMD::get_recv_cmd_base()
+{
+    return recv_cmd_base;
+}
+
 void GUI_CUSTOM_CMD::on_FeedbackSave_Button_clicked()
 {
     rcvd_formatted_save();

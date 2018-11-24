@@ -22,6 +22,8 @@
 // Testing class
 #include "../../src/user-interfaces/gui-custom-cmd.hpp"
 
+#include <QCheckBox>
+
 class GUI_CUSTOM_CMD_TEST_CLASS : public GUI_CUSTOM_CMD
 {
     Q_OBJECT
@@ -42,6 +44,38 @@ public:
     uint32_t get_current_recv_length_test();
 
     void on_ResetGUI_Button_clicked_test();
+
+    uint8_t get_send_key_base_test();
+    uint8_t get_send_cmd_base_test();
+    uint8_t get_recv_key_base_test();
+    uint8_t get_recv_cmd_base_test();
+
+    void cmd_input_radio_select_test(bool select_file);
+    void cmd_keys_in_input_checked_test(bool b);
+    void cmd_user_input_enter_text_test(QString input);
+    void cmd_file_input_enter_text_test(QString filePath);
+    void cmd_send_click_test();
+
+    void cmd_set_major_key_test(QString key);
+    void cmd_set_minor_key_test(QString key);
+    void cmd_set_key_base_test(QString base);
+    void cmd_set_cmd_base_test(QString base);
+
+    int get_cmd_progress_value_test();
+    QString get_cmd_progress_string_test();
+
+    int get_feedback_progress_value_test();
+    QString get_feedback_progress_string_test();
+
+    void log_all_cmds_checked_test(bool b);
+    void display_rcvd_click_test(bool b);
+
+    QByteArray get_displayed_feedback_test();
+
+private:
+    Ui::GUI_CUSTOM_CMD *ui_ptr;
+
+    void set_checked_click_test(QCheckBox *check, bool b);
 };
 
 #endif // GUI_CUSTOM_CMD_TEST_CLASS_H

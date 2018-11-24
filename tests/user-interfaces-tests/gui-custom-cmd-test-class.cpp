@@ -17,11 +17,15 @@
 */
 
 #include "gui-custom-cmd-test-class.hpp"
+#include "ui_gui-custom-cmd.h"
+
+#include <QTest>
 
 GUI_CUSTOM_CMD_TEST_CLASS::GUI_CUSTOM_CMD_TEST_CLASS(QWidget *parent) :
     GUI_CUSTOM_CMD(parent)
 {
-    /* DO NOTHING */
+    // Retrieve ui object from inheritance
+    ui_ptr = get_ui();
 }
 
 GUI_CUSTOM_CMD_TEST_CLASS::~GUI_CUSTOM_CMD_TEST_CLASS()
@@ -67,4 +71,112 @@ uint32_t GUI_CUSTOM_CMD_TEST_CLASS::get_current_recv_length_test()
 void GUI_CUSTOM_CMD_TEST_CLASS::on_ResetGUI_Button_clicked_test()
 {
     on_ResetGUI_Button_clicked();
+}
+
+uint8_t GUI_CUSTOM_CMD_TEST_CLASS::get_send_key_base_test()
+{
+    return get_send_key_base();
+}
+
+uint8_t GUI_CUSTOM_CMD_TEST_CLASS::get_send_cmd_base_test()
+{
+    return get_send_cmd_base();
+}
+
+uint8_t GUI_CUSTOM_CMD_TEST_CLASS::get_recv_key_base_test()
+{
+    return get_recv_key_base();
+}
+
+uint8_t GUI_CUSTOM_CMD_TEST_CLASS::get_recv_cmd_base_test()
+{
+    return get_recv_cmd_base();
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_input_radio_select_test(bool select_file)
+{
+    if (select_file)
+        QTest::mouseClick(ui_ptr->CustomCMDFile_Radio, Qt::LeftButton);
+    else
+        QTest::mouseClick(ui_ptr->CustomCMDManual_Radio, Qt::LeftButton);
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_keys_in_input_checked_test(bool b)
+{
+    set_checked_click_test(ui_ptr->CustomCMDKeysInInput_CheckBox, b);
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_user_input_enter_text_test(QString input)
+{
+    QVERIFY(ui_ptr->CustomCMDManual_Radio->isChecked());
+    QTest::keyClicks(ui_ptr->CustomCMD_PlainText, input);
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_file_input_enter_text_test(QString filePath)
+{
+    QVERIFY(ui_ptr->CustomCMDFile_Radio->isChecked());
+    QTest::keyClicks(ui_ptr->CustomCMDFilePath_LineEdit, filePath);
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_send_click_test()
+{
+    QTest::mouseClick(ui_ptr->CustomCMDSend_Button, Qt::LeftButton);
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_set_major_key_test(QString key)
+{
+    ui_ptr->CustomCMDMajorKey_LineEdit->setText(key);
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_set_minor_key_test(QString key)
+{
+    ui_ptr->CustomCMDMinorKey_LineEdit->setText(key);
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_set_key_base_test(QString base)
+{
+    ui_ptr->CustomCMDKeyBase_LineEdit->setText(base);
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::cmd_set_cmd_base_test(QString base)
+{
+    ui_ptr->CustomCMDBase_LineEdit->setText(base);
+}
+
+int GUI_CUSTOM_CMD_TEST_CLASS::get_cmd_progress_value_test()
+{
+    return ui_ptr->CustomCMD_ProgressBar->value();
+}
+
+QString GUI_CUSTOM_CMD_TEST_CLASS::get_cmd_progress_string_test()
+{
+    return ui_ptr->CustomCMDProgress_Label->text();
+}
+
+int GUI_CUSTOM_CMD_TEST_CLASS::get_feedback_progress_value_test()
+{
+    return ui_ptr->Feedback_ProgressBar->value();
+}
+
+QString GUI_CUSTOM_CMD_TEST_CLASS::get_feedback_progress_string_test()
+{
+    return ui_ptr->FeedbackProgress_Label->text();
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::log_all_cmds_checked_test(bool b)
+{
+    set_checked_click_test(ui_ptr->FeedbackLogAllCMDs_CheckBox, b);
+}
+
+QByteArray GUI_CUSTOM_CMD_TEST_CLASS::get_displayed_feedback_test()
+{
+    return ui_ptr->Feedback_PlainText->toPlainText().toLatin1();
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::set_checked_click_test(QCheckBox *check, bool b)
+{
+    if (b && !check->isChecked())
+        QTest::mouseClick(check, Qt::LeftButton);
+    else if (!b && check->isChecked())
+        QTest::mouseClick(check, Qt::LeftButton);
 }

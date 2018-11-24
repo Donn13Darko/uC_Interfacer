@@ -38,6 +38,17 @@ private slots:
     void cleanupTestCase();
 
     // Member tests
+    void test_init_vals();
+    void test_basic_features();
+
+//    void test_send_input();
+//    void test_send_input_data();
+
+//    void test_send_file();
+//    void test_send_file_data();
+
+//    void test_feedback();
+//    void test_feedback_data();
 
 private:
     GUI_CUSTOM_CMD_TEST_CLASS *custom_cmd_tester;
