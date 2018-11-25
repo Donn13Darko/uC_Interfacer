@@ -43,34 +43,61 @@ public:
     void update_current_recv_length_test(uint32_t recv_len);
     uint32_t get_current_recv_length_test();
 
-    void on_ResetGUI_Button_clicked_test();
+    void set_cmd_input_radio_test(bool select_file);
+    void set_keys_in_input_test(bool b);
+
+    bool get_cmd_input_radio_test();
+    bool get_keys_in_input_test();
+
+    void click_send_test();
+
+    void set_user_input_text_test(QString input);
+    void set_file_input_text_test(QString filePath);
+
+    QString get_user_input_text_test();
+    QString get_file_input_text_test();
+
+    void set_major_key_test(QString key);
+    void set_minor_key_test(QString key);
+    void set_key_base_test(QString base);
+    void set_cmd_base_test(QString base);
+
+    QString get_major_key_test();
+    QString get_minor_key_test();
+    QString get_key_base_test();
+    QString get_cmd_base_test();
 
     uint8_t get_send_key_base_test();
     uint8_t get_send_cmd_base_test();
     uint8_t get_recv_key_base_test();
     uint8_t get_recv_cmd_base_test();
 
-    void cmd_input_radio_select_test(bool select_file);
-    void cmd_keys_in_input_checked_test(bool b);
-    void cmd_user_input_enter_text_test(QString input);
-    void cmd_file_input_enter_text_test(QString filePath);
-    void cmd_send_click_test();
+    void set_progress_update_recv_test(int progress, QString label);
+    void set_progress_update_send_test(int progress, QString label);
 
-    void cmd_set_major_key_test(QString key);
-    void cmd_set_minor_key_test(QString key);
-    void cmd_set_key_base_test(QString base);
-    void cmd_set_cmd_base_test(QString base);
+    int get_progress_update_recv_value_test();
+    QString get_progress_update_recv_string_test();
 
-    int get_cmd_progress_value_test();
-    QString get_cmd_progress_string_test();
+    int get_progress_update_send_value_test();
+    QString get_progress_update_send_string_test();
 
-    int get_feedback_progress_value_test();
-    QString get_feedback_progress_string_test();
+    void set_feedback_log_all_cmds_test(bool b);
+    void set_feedback_append_newline_test(bool b);
+    void set_feedback_clear_on_set_test(bool b);
 
-    void log_all_cmds_checked_test(bool b);
-    void display_rcvd_click_test(bool b);
+    bool get_feedback_log_all_cmds_test();
+    bool get_feedback_append_newline_test();
+    bool get_feedback_clear_on_set_test();
 
-    QByteArray get_displayed_feedback_test();
+    QString get_displayed_feedback_test();
+    void feedback_clear_clicked_test();
+    void feedback_save_test(QString filePath);
+
+    void set_instructions_text_test(QString inst);
+    QString get_instructions_text_test();
+
+    void reset_clicked_test();
+    void receive_gui_test(QByteArray data);
 
 private:
     Ui::GUI_CUSTOM_CMD *ui_ptr;

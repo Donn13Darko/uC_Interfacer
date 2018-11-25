@@ -372,15 +372,21 @@ QByteArray GUI_GENERIC_HELPER::uint32_to_byteArray(uint32_t data)
 QByteArray GUI_GENERIC_HELPER::encode_byteArray(QByteArray data, uint8_t base, char sep)
 {
     // If base is 0, return data as is
-    if (base == 0) return data;
+    if ((base == 0) || (data.length() == 0)) return data;
 
     // Otherwise, build return string from data
     QByteArray ret_data;
     foreach (uint8_t elem, data)
     {
-        // Append new element + sep
-        ret_data += QString::number(elem, base) + sep;
+        // Append sep + next element
+        ret_data.append(sep);
+        ret_data.append(QString::number(elem, base));
     }
+
+    // Remove first sep char
+    ret_data.remove(0, 1);
+
+    // Return encoding
     return ret_data;
 }
 

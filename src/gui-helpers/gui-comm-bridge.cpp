@@ -804,7 +804,7 @@ void GUI_COMM_BRIDGE::check_packet(uint8_t major_key)
         // Clear any pending messages
         transmitList.clear();
 
-        // Force end of timers
+        // Force timers to exit
         emit reset();
     }
 }

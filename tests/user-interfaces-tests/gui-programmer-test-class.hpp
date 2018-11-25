@@ -40,8 +40,6 @@ public:
 
     void update_current_recv_length_test(uint32_t recv_len);
     uint32_t get_current_recv_length_test();
-
-    void on_ResetGUI_Button_clicked_test();
 };
 
 #endif // GUI_PROGRAMMER_TEST_CLASS_H

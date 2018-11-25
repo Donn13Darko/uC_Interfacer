@@ -63,8 +63,3 @@ uint32_t GUI_PROGRAMMER_TEST_CLASS::get_current_recv_length_test()
 {
     return current_recv_length;
 }
-
-void GUI_PROGRAMMER_TEST_CLASS::on_ResetGUI_Button_clicked_test()
-{
-    on_ResetGUI_Button_clicked();
-}

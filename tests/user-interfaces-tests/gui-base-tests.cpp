@@ -97,8 +97,10 @@ void GUI_BASE_TESTS::test_gui_key()
 
 void GUI_BASE_TESTS::test_gui_key_data()
 {
+    // Setup data columns
     QTest::addColumn<quint8>("set_key");
 
+    // Load in data
     QTest::newRow("Major Error Key") << (quint8) MAJOR_KEY_ERROR;
     QTest::newRow("General Settings Key") << (quint8) MAJOR_KEY_GENERAL_SETTINGS;
     QTest::newRow("IO Key") << (quint8) MAJOR_KEY_IO;
@@ -118,8 +120,10 @@ void GUI_BASE_TESTS::test_set_gui_name()
 
 void GUI_BASE_TESTS::test_set_gui_name_data()
 {
+    // Setup data columns
     QTest::addColumn<QString>("set_name");
 
+    // Load in data
     QTest::newRow("Blank") << "";
     QTest::newRow("Short") << "IO";
     QTest::newRow("Shimple") << "Welcome";
@@ -141,8 +145,10 @@ void GUI_BASE_TESTS::test_set_gui_tab_name()
 
 void GUI_BASE_TESTS::test_set_gui_tab_name_data()
 {
+    // Setup data columns
     QTest::addColumn<QString>("set_name");
 
+    // Load in data
     QTest::newRow("Blank") << "";
     QTest::newRow("Simple") << "New Tab";
     QTest::newRow("Random Caps") << "RandOM GLESN";

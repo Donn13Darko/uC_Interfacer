@@ -87,12 +87,15 @@ void GUI_CUSTOM_CMD::reset_gui()
 
     // Set Feedback checkboxes
     ui->FeedbackLogAllCMDs_CheckBox->setChecked(false);
-    ui->FeedbackClearOnSet_CheckBox->setChecked(true);
     ui->FeedbackAppendNewline_CheckBox->setChecked(true);
+    ui->FeedbackClearOnSet_CheckBox->setChecked(true);
 }
 
 void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
 {
+    // Get data without keys
+    QByteArray data = recvData.mid(s1_end_loc);
+
     // See if this GUI sent CMD
     bool updateCMD_base = false;
     if (recvData.at(s1_major_key_loc) == (char) gui_key)
@@ -107,7 +110,7 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
                     on_FeedbackClear_Button_clicked();
 
                 // Set expected length
-                set_expected_recv_length(GUI_GENERIC_HELPER::byteArray_to_uint32(recvData.mid(s1_end_loc)));
+                set_expected_recv_length(GUI_GENERIC_HELPER::byteArray_to_uint32(data));
                 return;
             }
             case MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE:
@@ -117,7 +120,7 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
             case MINOR_KEY_CUSTOM_CMD_CMD:
             {
                 // Update current recv length with each packet
-                update_current_recv_length(recvData.mid(s1_end_loc).length());
+                update_current_recv_length(data.length());
 
                 // End or start packet (no value)
                 if (recvData.length() == 2) return;
@@ -132,7 +135,7 @@ void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
 
     // Parse key pair and data based on bases
     QString recvPlain = GUI_GENERIC_HELPER::encode_byteArray(recvData.left(s1_end_loc), recv_key_base, ' ');
-    recvPlain += GUI_GENERIC_HELPER::encode_byteArray(recvData.mid(s1_end_loc), recv_cmd_base, ' ');
+    if (data.length() != 0) recvPlain += ' ' + GUI_GENERIC_HELPER::encode_byteArray(data, recv_cmd_base, ' ');
 
     // Append newline if required
     if (ui->FeedbackAppendNewline_CheckBox->isChecked() && !recvPlain.endsWith('\n'))

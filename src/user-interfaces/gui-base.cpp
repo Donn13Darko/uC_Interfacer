@@ -161,15 +161,11 @@ void GUI_BASE::receive_gui(QByteArray)
 
 void GUI_BASE::on_ResetGUI_Button_clicked()
 {
+    // Reset the current gui
+    reset_gui();
+
     // Load reset CMD into sendList
     emit transmit_chunk(MAJOR_KEY_RESET, 0);
-
-    /* Exiting here returngs control to the main event loop
-     * Required in order for the next packet to be sent
-     * if conn_bridge currently in waitForAck or waitForData
-     * conn_bridge will emit reset() once CMD is sent which
-     * then calls reset_gui()
-    */
 }
 
 void GUI_BASE::set_progress_update_recv(int, QString)
