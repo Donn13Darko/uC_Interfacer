@@ -41,17 +41,22 @@ private slots:
     void test_init_vals();
     void test_basic_features();
 
-    void test_complex_cmd();
-    void test_complex_cmd_data();
-
 //    void test_send();
 //    void test_send_data();
 
 //    void test_rcvd();
 //    void test_rcvd_data();
 
+//    void test_feedback_clear();
+//    void test_feedback_save();
+
+    void test_complex_cmd();
+    void test_complex_cmd_data();
+
 private:
     GUI_CUSTOM_CMD_TEST_CLASS *custom_cmd_tester;
+
+    void verify_reset_values();
 };
 
 #endif // GUI_CUSTOM_CMD_TESTS_H

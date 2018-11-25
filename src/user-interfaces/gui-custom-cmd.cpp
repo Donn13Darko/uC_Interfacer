@@ -75,8 +75,8 @@ void GUI_CUSTOM_CMD::reset_gui()
     // Set default entered values
     ui->CustomCMDMajorKey_LineEdit->setText(QString::number(gui_key, send_key_base));
     ui->CustomCMDMinorKey_LineEdit->setText(QString::number(MINOR_KEY_CUSTOM_CMD_CMD, send_key_base));
-    ui->CustomCMDBase_LineEdit->setText(QString::number(send_cmd_base, 10));
     ui->CustomCMDKeyBase_LineEdit->setText(QString::number(send_key_base, 10));
+    ui->CustomCMDBase_LineEdit->setText(QString::number(send_cmd_base, 10));
     ui->CustomCMD_PlainText->clear();
     ui->CustomCMDFilePath_LineEdit->clear();
 

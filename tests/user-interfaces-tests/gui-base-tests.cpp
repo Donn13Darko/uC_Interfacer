@@ -390,12 +390,11 @@ void GUI_BASE_TESTS::test_rcvd_formatted()
 {
     // Fetch data
     QFETCH(QList<QByteArray>, rcvd_formatted);
-    QFETCH(bool, rcvd_formatted_clear_before);
     QFETCH(bool, rcvd_formatted_test_save);
     QFETCH(bool, rcvd_formatted_test_clear);
 
-    // Clear anything existing
-    if (rcvd_formatted_clear_before) base_tester->rcvd_formatted_clear_test();
+    // Clear existing data
+    base_tester->rcvd_formatted_clear_test();
 
     // Send all data
     QByteArray rcvd_data;
@@ -449,19 +448,18 @@ void GUI_BASE_TESTS::test_rcvd_formatted_data()
 {
     // Setup data columns
     QTest::addColumn<QList<QByteArray>>("rcvd_formatted");
-    QTest::addColumn<bool>("rcvd_formatted_clear_before");
     QTest::addColumn<bool>("rcvd_formatted_test_save");
     QTest::addColumn<bool>("rcvd_formatted_test_clear");
 
     // Load in data
     QByteArray data = GUI_GENERIC_HELPER::qList_to_byteArray({'d', 'a', 't', 'a'});
-    QTest::newRow("Basic") << QList<QByteArray>({data}) << false << false << false;
-    QTest::newRow("Clear") << QList<QByteArray>({data}) << true << false << true;
-    QTest::newRow("Save") << QList<QByteArray>({data}) << true << true << true;
-    QTest::newRow("Rcvd Multiple V1") << QList<QByteArray>({data, data, data}) << true << false << false;
-    QTest::newRow("Save Multiple V1") << QList<QByteArray>({data, data, data}) << true << true << false;
-    QTest::newRow("String Basic V1") << QList<QByteArray>({"ReadMe"}) << true << false << false;
-    QTest::newRow("RESET") << QList<QByteArray>({""}) << true << false << true;
+    QTest::newRow("Basic") << QList<QByteArray>({data}) << false << false;
+    QTest::newRow("Clear") << QList<QByteArray>({data}) << false << true;
+    QTest::newRow("Save") << QList<QByteArray>({data}) << true << true;
+    QTest::newRow("Rcvd Multiple V1") << QList<QByteArray>({data, data, data}) << false << false;
+    QTest::newRow("Save Multiple V1") << QList<QByteArray>({data, data, data}) << true << false;
+    QTest::newRow("String Basic V1") << QList<QByteArray>({"ReadMe"}) << false << false;
+    QTest::newRow("RESET") << QList<QByteArray>({""}) << false << true;
 }
 
 void GUI_BASE_TESTS::test_send_chunk_qlist()

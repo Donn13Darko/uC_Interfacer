@@ -54,43 +54,13 @@ void GUI_CUSTOM_CMD_TESTS::cleanupTestCase()
 
 void GUI_CUSTOM_CMD_TESTS::test_init_vals()
 {
-    // Verify base class memebrs
-    QVERIFY(custom_cmd_tester->isClosable());
-    QVERIFY(!custom_cmd_tester->acceptAllCMDs());
-    QCOMPARE(custom_cmd_tester->get_gui_key(), (uint8_t) MAJOR_KEY_CUSTOM_CMD);
-    QCOMPARE(custom_cmd_tester->get_gui_name(), QString("Custom CMD"));
-    QCOMPARE(custom_cmd_tester->rcvd_formatted_size_test(), (qint64) 0);
-    QCOMPARE(custom_cmd_tester->get_expected_recv_length_test(), (uint32_t) 0);
-    QCOMPARE(custom_cmd_tester->get_current_recv_length_test(), (uint32_t) 0);
+    // Verify reset defaults
+    verify_reset_values();
 
-    // Check encoding keys
-    QCOMPARE(custom_cmd_tester->get_major_key_test(), QString::number(MAJOR_KEY_CUSTOM_CMD, 16));
-    QCOMPARE(custom_cmd_tester->get_minor_key_test(), QString::number(MINOR_KEY_CUSTOM_CMD_CMD, 16));
-    QCOMPARE(custom_cmd_tester->get_key_base_test(), QString("16"));
-    QCOMPARE(custom_cmd_tester->get_cmd_base_test(), QString("16"));
-    QCOMPARE(custom_cmd_tester->get_send_key_base_test(), (uint8_t) 16);
-    QCOMPARE(custom_cmd_tester->get_send_cmd_base_test(), (uint8_t) 16);
-    QCOMPARE(custom_cmd_tester->get_recv_key_base_test(), (uint8_t) 16);
-    QCOMPARE(custom_cmd_tester->get_recv_cmd_base_test(), (uint8_t) 16);
-
-    // Check input and recv
-    QCOMPARE(custom_cmd_tester->get_user_input_text_test(), QString(""));
-    QCOMPARE(custom_cmd_tester->get_file_input_text_test(), QString(""));
-    QCOMPARE(custom_cmd_tester->get_displayed_feedback_test(), QString(""));
-
-    // Check progress bars
-    QCOMPARE(custom_cmd_tester->get_progress_update_recv_value_test(), (int) 0);
-    QCOMPARE(custom_cmd_tester->get_progress_update_recv_string_test(), QString(""));
-    QCOMPARE(custom_cmd_tester->get_progress_update_send_value_test(), (int) 0);
-    QCOMPARE(custom_cmd_tester->get_progress_update_send_string_test(), QString(""));
-
-    // Check check boxes
-    QCOMPARE(custom_cmd_tester->get_cmd_input_radio_test(), true);
-    QCOMPARE(custom_cmd_tester->get_keys_in_input_test(), false);
-    QCOMPARE(custom_cmd_tester->get_feedback_log_all_cmds_test(), false);
-    QCOMPARE(custom_cmd_tester->get_feedback_append_newline_test(), true);
-    QCOMPARE(custom_cmd_tester->get_feedback_clear_on_set_test(), true);
+    // Verify non-reset memebers
+    QCOMPARE(custom_cmd_tester->get_instructions_text_test(), QString(""));
 }
+
 
 void GUI_CUSTOM_CMD_TESTS::test_basic_features()
 {
@@ -118,13 +88,16 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
     QFETCH(QByteArray, rcvd_expected_file_data);
     QFETCH(QString, instructions);
     QFETCH(QList<QString>, key_and_base_fills);
-    QFETCH(QList<bool>, boolean_selections);
     QFETCH(QList<uint8_t>, bases_after_send);
-    QFETCH(QList<QString>, send_expected_packets);
+    QFETCH(QList<QByteArray>, send_expected_packets);
+    QFETCH(QList<bool>, boolean_selections);
     QFETCH(quint32, expected_recv_len);
     QFETCH(QString, rcvd_fill_data_split);
     QFETCH(bool, click_send_button);
     QFETCH(bool, click_reset_button);
+
+    // Reset the gui before (direct call slot)
+    custom_cmd_tester->reset_gui();
 
     // Set key fields
     QCOMPARE(key_and_base_fills.length(), (int) 4);
@@ -181,22 +154,30 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
 
         // Verify spy signal after send
         QCOMPARE(transmit_chunk_spy.count(), send_expected_packets.length());
-        foreach (QString packet, send_expected_packets)
+        foreach (QByteArray expected_send, send_expected_packets)
         {
+            // Get signal
             spy_args = transmit_chunk_spy.takeFirst();
-            QCOMPARE(spy_args.at(2).toString(), packet);
+
+            // Verify values
+            QVERIFY(4 <= expected_send.length());
+            QCOMPARE(spy_args.at(0).toInt(), (int) expected_send.at(0));
+            QCOMPARE(spy_args.at(1).toInt(), (int) expected_send.at(1));
+            QCOMPARE(spy_args.at(3).toInt(), (int) expected_send.at(2));
+            QCOMPARE(spy_args.at(2).toByteArray(), expected_send.mid(3));
         }
     }
 
+    // Check if reseting with button
     if (click_reset_button)
     {
         // Send Reset
         custom_cmd_tester->reset_clicked_test();
 
-        // Verify default values
-        test_init_vals();
+        // Verify reset values
+        verify_reset_values();
 
-        // Verify other values
+        // Verify non-reset values
         QCOMPARE(custom_cmd_tester->get_instructions_text_test(), instructions);
     }
 }
@@ -219,16 +200,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     //  3) CMD Base
     QTest::addColumn<QList<QString>>("key_and_base_fills");
 
-    // Boolean selection column
-    // Ordering as follows:
-    //  0) send_radio
-    //  1) keys_in_input
-    //  2) log_all_cmds
-    //  3) append_newline
-    //  4) clear_on_set
-    QTest::addColumn<QList<bool>>("boolean_selections");
-
-    // Base values
+    // Base values column
     // Ordering as follows:
     //  0) Send Key Base
     //  1) Send CMD Base
@@ -236,20 +208,108 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     //  3) Recv CMD Base
     QTest::addColumn<QList<uint8_t>>("bases_after_send");
 
+    // Send Expected column
+    // ByteArray arranged as follows:
+    //  0) Major Key
+    //  1) Minor Key
+    //  2) CMD Base
+    //  3-end) Data Packet
+    QTest::addColumn<QList<QByteArray>>("send_expected_packets");
+
+    // Boolean selection column
+    // Ordering as follows:
+    //  0) send_file_radio
+    //  1) keys_in_input
+    //  2) log_all_cmds
+    //  3) append_newline
+    //  4) clear_on_set
+    QTest::addColumn<QList<bool>>("boolean_selections");
+
     // Misc columns
-    QTest::addColumn<QList<QString>>("send_expected_packets");
     QTest::addColumn<quint32>("expected_recv_len");
     QTest::addColumn<QString>("rcvd_fill_data_split");
     QTest::addColumn<bool>("click_send_button");
     QTest::addColumn<bool>("click_reset_button");
 
-    // Load in data
-    QTest::newRow("Basic") << "T_A1" << "T_A2" \
-                           << "T_A3" << "54 5f 41 33" << QString("54 5f 41 33").toLatin1() \
-                           << "Inst" \
-                           << QList<QString>({"0", "0", "0", "0"}) \
-                           << QList<bool>({true, true, true, false, false}) \
-                           << QList<uint8_t>() \
-                           << QList<QString>() \
-                           << (quint32) 100 << " " << false << true;
+    // Setup helper fields
+    QString gui_major_key_str = QString::number(MAJOR_KEY_CUSTOM_CMD, 16);
+    QString gui_minor_key_str = QString::number(MINOR_KEY_CUSTOM_CMD_CMD, 16);
+    QList<QByteArray> expected_send_list;
+    QString expected_feedback;
+
+    // Enter basic test data
+    expected_feedback.clear();
+    expected_feedback += "46 65 65 64 62 61 63 6b 5f 50 6c 61 69 6e 54 65 78 74";
+    QTest::newRow("Basic") \
+            << "File_Path" << "Input_PlainText" \
+            << "Feedback_PlainText" << expected_feedback << expected_feedback.toLatin1() \
+            << "Instructions" \
+            << QList<QString>({"0", "0", "0", "0"}) \
+            << QList<uint8_t>() \
+            << QList<QByteArray>() \
+            << QList<bool>({true, true, true, false, false}) \
+            << (quint32) 100 << " " << false << true;
+
+    // Setup data for send loading
+    expected_feedback.clear(); // Not displaying all cmds
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 16}));
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 16})
+                .append("Input_PlainText"));
+
+    // Load in
+    QTest::newRow("Send_test") \
+            << "File_Path" << "Input_PlainText" \
+            << "Feedback_PlainText" << expected_feedback << expected_feedback.toLatin1() \
+            << "Instructions" \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "16"}) \
+            << QList<uint8_t>({16, 16, 16, 16}) \
+            << expected_send_list \
+            << QList<bool>({false, false, false, true, true}) \
+            << (quint32) 100 << " " << true << true;
+}
+
+void GUI_CUSTOM_CMD_TESTS::verify_reset_values()
+{
+    // Check class memebrs
+    QVERIFY(custom_cmd_tester->isClosable());
+    QVERIFY(!custom_cmd_tester->acceptAllCMDs());
+    QCOMPARE(custom_cmd_tester->get_gui_key(), (uint8_t) MAJOR_KEY_CUSTOM_CMD);
+    QCOMPARE(custom_cmd_tester->get_gui_name(), QString("Custom CMD"));
+    QCOMPARE(custom_cmd_tester->rcvd_formatted_size_test(), (qint64) 0);
+    QCOMPARE(custom_cmd_tester->get_expected_recv_length_test(), (uint32_t) 0);
+    QCOMPARE(custom_cmd_tester->get_current_recv_length_test(), (uint32_t) 0);
+
+    // Check encoding keys
+    QCOMPARE(custom_cmd_tester->get_major_key_test(), QString::number(MAJOR_KEY_CUSTOM_CMD, 16));
+    QCOMPARE(custom_cmd_tester->get_minor_key_test(), QString::number(MINOR_KEY_CUSTOM_CMD_CMD, 16));
+    QCOMPARE(custom_cmd_tester->get_key_base_test(), QString("16"));
+    QCOMPARE(custom_cmd_tester->get_cmd_base_test(), QString("16"));
+    QCOMPARE(custom_cmd_tester->get_send_key_base_test(), (uint8_t) 16);
+    QCOMPARE(custom_cmd_tester->get_send_cmd_base_test(), (uint8_t) 16);
+    QCOMPARE(custom_cmd_tester->get_recv_key_base_test(), (uint8_t) 16);
+    QCOMPARE(custom_cmd_tester->get_recv_cmd_base_test(), (uint8_t) 16);
+
+    // Check input and recv
+    QCOMPARE(custom_cmd_tester->get_user_input_text_test(), QString(""));
+    QCOMPARE(custom_cmd_tester->get_file_input_text_test(), QString(""));
+    QCOMPARE(custom_cmd_tester->get_displayed_feedback_test(), QString(""));
+
+    // Check progress bars
+    QCOMPARE(custom_cmd_tester->get_progress_update_recv_value_test(), (int) 0);
+    QCOMPARE(custom_cmd_tester->get_progress_update_recv_string_test(), QString(""));
+    QCOMPARE(custom_cmd_tester->get_progress_update_send_value_test(), (int) 0);
+    QCOMPARE(custom_cmd_tester->get_progress_update_send_string_test(), QString(""));
+
+    // Check check boxes
+    QCOMPARE(custom_cmd_tester->get_cmd_input_radio_test(), true);
+    QCOMPARE(custom_cmd_tester->get_keys_in_input_test(), false);
+    QCOMPARE(custom_cmd_tester->get_feedback_log_all_cmds_test(), false);
+    QCOMPARE(custom_cmd_tester->get_feedback_append_newline_test(), true);
+    QCOMPARE(custom_cmd_tester->get_feedback_clear_on_set_test(), true);
 }
