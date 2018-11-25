@@ -83,7 +83,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
     // Fetch data
     QFETCH(QString, send_file_data);
     QFETCH(QString, send_input_data);
-    QFETCH(QString, rcvd_fill_data);
+    QFETCH(QList<QByteArray>, rcvd_fill_data);
     QFETCH(QString, rcvd_expected_display_data);
     QFETCH(QByteArray, rcvd_expected_file_data);
     QFETCH(QString, instructions);
@@ -92,7 +92,6 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
     QFETCH(QList<QByteArray>, send_expected_packets);
     QFETCH(QList<bool>, boolean_selections);
     QFETCH(quint32, expected_recv_len);
-    QFETCH(QString, rcvd_fill_data_split);
     QFETCH(bool, click_send_button);
     QFETCH(bool, click_reset_button);
 
@@ -127,9 +126,9 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
 
     // Set rcvd values
     custom_cmd_tester->set_expected_recv_length_test(expected_recv_len);
-    foreach (QString rcvd, rcvd_fill_data.split(rcvd_fill_data_split))
+    foreach (QByteArray rcvd, rcvd_fill_data)
     {
-        custom_cmd_tester->receive_gui_test(rcvd.toLatin1());
+        custom_cmd_tester->receive_gui_test(rcvd);
     }
     QCOMPARE(custom_cmd_tester->get_displayed_feedback_test(), rcvd_expected_display_data);
     QCOMPARE(custom_cmd_tester->rcvd_formatted_readAll_test(), rcvd_expected_file_data);
@@ -187,7 +186,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     // Input data columns
     QTest::addColumn<QString>("send_file_data");
     QTest::addColumn<QString>("send_input_data");
-    QTest::addColumn<QString>("rcvd_fill_data");
+    QTest::addColumn<QList<QByteArray>>("rcvd_fill_data");
     QTest::addColumn<QString>("rcvd_expected_display_data");
     QTest::addColumn<QByteArray>("rcvd_expected_file_data");
     QTest::addColumn<QString>("instructions");
@@ -227,7 +226,6 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
 
     // Misc columns
     QTest::addColumn<quint32>("expected_recv_len");
-    QTest::addColumn<QString>("rcvd_fill_data_split");
     QTest::addColumn<bool>("click_send_button");
     QTest::addColumn<bool>("click_reset_button");
 
@@ -235,23 +233,47 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     QString gui_major_key_str = QString::number(MAJOR_KEY_CUSTOM_CMD, 16);
     QString gui_minor_key_str = QString::number(MINOR_KEY_CUSTOM_CMD_CMD, 16);
     QList<QByteArray> expected_send_list;
+    QList<QByteArray> rcvd_list;
     QString expected_feedback;
 
-    // Enter basic test data
+    // Setup Basic test data
+    rcvd_list.clear();
+    rcvd_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     16, 0}));
+    rcvd_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD})
+                     .append("Feedback_PlainText"));
+
     expected_feedback.clear();
-    expected_feedback += "46 65 65 64 62 61 63 6b 5f 50 6c 61 69 6e 54 65 78 74";
+    expected_feedback += gui_major_key_str + " ";
+    expected_feedback += QString::number(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE, 16) + " 10 0";
+    expected_feedback += gui_major_key_str + " ";
+    expected_feedback += gui_minor_key_str + " ";
+    expected_feedback += "Feedback_PlainText";
+
+    // Enter basic test:
+    //  Sets text in: Filepath, input, and instructions
+    //  Checks: File_radio, keys in input, and log all cmds
+    //  Calls Receive for: Feedback_PlainText
     QTest::newRow("Basic") \
             << "File_Path" << "Input_PlainText" \
-            << "Feedback_PlainText" << expected_feedback << expected_feedback.toLatin1() \
+            << rcvd_list << expected_feedback << expected_feedback.toLatin1() \
             << "Instructions" \
             << QList<QString>({"0", "0", "0", "0"}) \
             << QList<uint8_t>() \
             << QList<QByteArray>() \
             << QList<bool>({true, true, true, false, false}) \
-            << (quint32) 100 << " " << false << true;
+            << (quint32) 100 << false << true;
 
     // Setup data for send loading
-    expected_feedback.clear(); // Not displaying all cmds
+    rcvd_list.clear();
+    rcvd_list.append("Feedback_PlainText");
+
+    expected_feedback.clear();
+
     expected_send_list.clear();
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
@@ -265,13 +287,13 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     // Load in
     QTest::newRow("Send_test") \
             << "File_Path" << "Input_PlainText" \
-            << "Feedback_PlainText" << expected_feedback << expected_feedback.toLatin1() \
+            << rcvd_list << expected_feedback << expected_feedback.toLatin1() \
             << "Instructions" \
             << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "16"}) \
             << QList<uint8_t>({16, 16, 16, 16}) \
             << expected_send_list \
             << QList<bool>({false, false, false, true, true}) \
-            << (quint32) 100 << " " << true << true;
+            << (quint32) 100 << true << true;
 }
 
 void GUI_CUSTOM_CMD_TESTS::verify_reset_values()
