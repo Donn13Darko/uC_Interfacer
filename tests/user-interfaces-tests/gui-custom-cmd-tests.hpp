@@ -41,11 +41,11 @@ private slots:
     void test_init_vals();
     void test_basic_features();
 
-//    void test_send();
-//    void test_send_data();
+    void test_send();
+    void test_send_data();
 
-//    void test_rcvd();
-//    void test_rcvd_data();
+    void test_rcvd();
+    void test_rcvd_data();
 
 //    void test_feedback_clear();
 //    void test_feedback_save();

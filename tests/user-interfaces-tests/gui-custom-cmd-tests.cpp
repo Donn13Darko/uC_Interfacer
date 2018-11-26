@@ -78,6 +78,218 @@ void GUI_CUSTOM_CMD_TESTS::test_basic_features()
     QVERIFY(!custom_cmd_tester->waitForDevice((uint8_t) qrand()));
 }
 
+void GUI_CUSTOM_CMD_TESTS::test_send()
+{
+    // Fetch data
+    QFETCH(QString, send_file_data);
+    QFETCH(QString, send_input_data);
+    QFETCH(QList<QString>, key_and_base_fills);
+    QFETCH(QList<uint8_t>, bases_after_send);
+    QFETCH(QList<QByteArray>, send_expected_signals);
+    QFETCH(QList<bool>, boolean_selections);
+
+    // Reset the gui before (direct call slot)
+    custom_cmd_tester->reset_gui();
+
+    // Set key fields
+    QCOMPARE(key_and_base_fills.length(), (int) 4);
+    custom_cmd_tester->set_major_key_test(key_and_base_fills.at(0));
+    custom_cmd_tester->set_minor_key_test(key_and_base_fills.at(1));
+    custom_cmd_tester->set_key_base_test(key_and_base_fills.at(2));
+    custom_cmd_tester->set_cmd_base_test(key_and_base_fills.at(3));
+
+    // Set send file info
+    custom_cmd_tester->set_cmd_input_radio_test(true);
+    custom_cmd_tester->set_file_input_text_test(send_file_data);
+
+    // Set send input info
+    custom_cmd_tester->set_cmd_input_radio_test(false);
+    custom_cmd_tester->set_user_input_text_test(send_input_data);
+
+    // Set boolen selections
+    QCOMPARE(boolean_selections.length(), (int) 2);
+    custom_cmd_tester->set_cmd_input_radio_test(boolean_selections.at(0));
+    custom_cmd_tester->set_keys_in_input_test(boolean_selections.at(1));
+
+    // Setup spy to catch tranmit signal
+    QList<QVariant> spy_args;
+    QSignalSpy transmit_chunk_spy(custom_cmd_tester, custom_cmd_tester->transmit_chunk);
+    QVERIFY(transmit_chunk_spy.isValid());
+
+    // Click send
+    custom_cmd_tester->click_send_test();
+
+    // Verify key base after send
+    QVERIFY(bases_after_send.length() == 2);
+    QCOMPARE(custom_cmd_tester->get_send_key_base_test(), bases_after_send.at(0));
+    QCOMPARE(custom_cmd_tester->get_send_cmd_base_test(), bases_after_send.at(1));
+
+    QCOMPARE(transmit_chunk_spy.count(), send_expected_signals.length());
+    foreach (QByteArray expected_send, send_expected_signals)
+    {
+        // Get signal
+        spy_args = transmit_chunk_spy.takeFirst();
+
+        // Verify values
+        QVERIFY(4 <= expected_send.length());
+        QCOMPARE(spy_args.at(0).toInt(), (int) expected_send.at(0));
+        QCOMPARE(spy_args.at(1).toInt(), (int) expected_send.at(1));
+        QCOMPARE(spy_args.at(3).toInt(), (int) expected_send.at(2));
+        QCOMPARE(spy_args.at(2).toByteArray(), expected_send.mid(3));
+    }
+}
+
+void GUI_CUSTOM_CMD_TESTS::test_send_data()
+{
+    // Input data columns
+    QTest::addColumn<QString>("send_file_data");
+    QTest::addColumn<QString>("send_input_data");
+
+    // Send expected signals column (emit transmit_chunk())
+    // Each QByteArray must be arranged as follows:
+    //  0) Major Key
+    //  1) Minor Key
+    //  2) CMD Base
+    //  3-end) Data Packet
+    QTest::addColumn<QList<QByteArray>>("send_expected_signals");
+
+    // Send base values column
+    // Ordering as follows:
+    //  0) Send Key Base
+    //  1) Send CMD Base
+    QTest::addColumn<QList<uint8_t>>("bases_after_send");
+
+    // Key & Base fill column
+    // Ordering as follows:
+    //  0) Major Key
+    //  1) Minor Key
+    //  2) Key Base
+    //  3) CMD Base
+    QTest::addColumn<QList<QString>>("key_and_base_fills");
+
+    // Boolean selection column
+    // Ordering as follows:
+    //  0) send_file_radio
+    //  1) keys_in_input
+    QTest::addColumn<QList<bool>>("boolean_selections");
+
+    // Setup helper variables
+    QString gui_major_key_str = QString::number(MAJOR_KEY_CUSTOM_CMD, 16);
+    QString gui_minor_key_str = QString::number(MINOR_KEY_CUSTOM_CMD_CMD, 16);
+    QList<QByteArray> expected_send_list;
+
+    // Setup Basic test data (no data)
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 0}));
+
+    // Enter basic test:
+    //  send_file_data = "File_Path"
+    //  send_input_data = "Input_PlainText"
+    //  send_expected_signals = {}
+    //  bases_after_send = {send_key, send_cmd}
+    //                   = {}
+    //  key_and_base_fills = {major_key, minor_key,
+    //                          key_base, cmd_base}
+    //                     = {"0", "0", "0", "0"}
+    //  boolean_selections = {send_file_radio, keys_in_input}
+    //                     = {false, false}
+    QTest::newRow("Simple Send") \
+            << "File_Path" << "Input_PlainText" \
+            << expected_send_list \
+            << QList<uint8_t>({16, 0}) \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "0"}) \
+            << QList<bool>({true, true});
+}
+
+void GUI_CUSTOM_CMD_TESTS::test_rcvd()
+{
+    // Fetch data
+    QFETCH(QList<QByteArray>, rcvd_fill_data);
+    QFETCH(QString, rcvd_expected_display_data);
+    QFETCH(QByteArray, rcvd_expected_file_data);
+    QFETCH(QList<uint8_t>, bases_after_recv);
+    QFETCH(QList<bool>, boolean_selections);
+    QFETCH(quint32, expected_recv_len);
+
+    // Reset the gui before (direct call slot)
+    custom_cmd_tester->reset_gui();
+
+    // Set boolen selections
+    QCOMPARE(boolean_selections.length(), (int) 3);
+    custom_cmd_tester->set_feedback_log_all_cmds_test(boolean_selections.at(0));
+    custom_cmd_tester->set_feedback_append_newline_test(boolean_selections.at(1));
+    custom_cmd_tester->set_feedback_clear_on_set_test(boolean_selections.at(2));
+
+    // Load in rcvd values (emit readyRead() signal for tester)
+    custom_cmd_tester->set_expected_recv_length_test(expected_recv_len);
+    foreach (QByteArray rcvd, rcvd_fill_data)
+    {
+        emit custom_cmd_tester->readyRead(rcvd);
+        qApp->processEvents();
+    }
+
+    // Verify that rcvd data matches the expected
+    QVERIFY(bases_after_recv.length() == 2);
+    QCOMPARE(custom_cmd_tester->get_recv_key_base_test(), bases_after_recv.at(0));
+    QCOMPARE(custom_cmd_tester->get_recv_cmd_base_test(), bases_after_recv.at(1));
+    QCOMPARE(custom_cmd_tester->get_displayed_feedback_test(), rcvd_expected_display_data);
+    QCOMPARE(custom_cmd_tester->rcvd_formatted_readAll_test(), rcvd_expected_file_data);
+}
+
+void GUI_CUSTOM_CMD_TESTS::test_rcvd_data()
+{
+    // Input data columns
+    QTest::addColumn<QList<QByteArray>>("rcvd_fill_data");
+    QTest::addColumn<QString>("rcvd_expected_display_data");
+    QTest::addColumn<QByteArray>("rcvd_expected_file_data");
+
+    // Recv base values column
+    // Ordering as follows:
+    //  0) Recv Key Base
+    //  1) Recv CMD Base
+    QTest::addColumn<QList<uint8_t>>("bases_after_recv");
+
+    // Boolean selection column
+    // Ordering as follows:
+    //  0) log_all_cmds
+    //  1) append_newline
+    //  2) clear_on_set
+    QTest::addColumn<QList<bool>>("boolean_selections");
+
+    // Misc columns
+    QTest::addColumn<quint32>("expected_recv_len");
+
+    // Setup helper variables
+    QList<QByteArray> rcvd_list;
+    QString expected_feedback;
+
+    // Setup basic test data (everything empty)
+    rcvd_list.clear();
+    expected_feedback.clear();
+
+    // Load basic test data
+    //  rcvd_fill_data = {}
+    //  rcvd_expected_display_data = {}
+    //  rcvd_expected_file_data = {}
+    //  bases_after_recv = {recv_key, recv_cmd}
+    //                   = {16, 16}
+    //  key_and_base_fills = {major_key, minor_key,
+    //                          key_base, cmd_base}
+    //                     = {"0", "0", "0", "0"}
+    //  boolean_selections = {log_all_cmds, append_newline,
+    //                          clear_on_set}
+    //                     = {true, false, false}
+    //  expected_recv_len = 100
+    QTest::newRow("Basic Recv Verify") \
+            << rcvd_list << expected_feedback << expected_feedback.toLatin1() \
+            << QList<uint8_t>({16, 16}) \
+            << QList<bool>({true, false, false}) \
+            << (quint32) 100;
+}
+
 void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
 {
     // Fetch data
@@ -255,12 +467,12 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     QList<QByteArray> rcvd_list;
     QString expected_feedback;
 
-    // Setup Basic test data (no data)
+    // Setup basic test data (everything empty)
     rcvd_list.clear();
     expected_feedback.clear();
     expected_send_list.clear();
 
-    // Enter basic test:
+    // Load basic test data
     //  instructions = "Instructions"
     //  send_file_data = "File_Path"
     //  send_input_data = "Input_PlainText"
@@ -282,7 +494,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     //  expected_recv_len = 100
     //  click_send_button = false, click_reset_button = true
     //  check_send = false, check_rcvd = false
-    QTest::newRow("Basic") \
+    QTest::newRow("Basic Complex Verify") \
             << "Instructions" << "File_Path" << "Input_PlainText" \
             << rcvd_list << expected_feedback << expected_feedback.toLatin1() \
             << expected_send_list \
@@ -294,7 +506,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
             << false << true \
             << false << false;
 
-    // Setup data for send loading
+    // Setup send test data
     rcvd_list.clear();
     expected_feedback.clear();
 
@@ -308,7 +520,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
                 .append("Input_PlainText"));
 
-    // Load in send test
+    // Load send test data:
     //  instructions = ""
     //  send_file_data = ""
     //  send_input_data = "Input_PlainText"
@@ -330,7 +542,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     //  expected_recv_len = 100
     //  click_send_button = true, click_reset_button = true
     //  check_send = true, check_rcvd = false
-    QTest::newRow("Send_test") \
+    QTest::newRow("Test Complex Send") \
             << "" << "" << "Input_PlainText" \
             << rcvd_list << expected_feedback << expected_feedback.toLatin1() \
             << expected_send_list \
@@ -342,7 +554,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
             << true << true \
             << true << false;
 
-    // Setup rcvd test data
+    // Setup recv test data
     expected_send_list.clear();
     rcvd_list.clear();
     rcvd_list.append(
@@ -360,7 +572,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
             + " 10 0" + gui_major_key_str + " " + gui_minor_key_str \
             + " Feedback_PlainText";
 
-    // Input rcvd test data:
+    // Load recv test data:
     //  instructions = ""
     //  send_file_data = ""
     //  send_input_data = ""
@@ -382,7 +594,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     //  expected_recv_len = 100
     //  click_send_button = false, click_reset_button = true
     //  check_send = false, check_rcvd = true
-    QTest::newRow("RCVD_Test") \
+    QTest::newRow("Test Complex recv") \
             << "" << "" << "" \
             << rcvd_list << expected_feedback << expected_feedback.toLatin1() \
             << expected_send_list \
@@ -394,7 +606,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
             << false << true \
             << false << true;
 
-    // Setup Complete V1 test data
+    // Setup send/recv test data
     expected_send_list.clear();
     expected_send_list.clear();
     expected_send_list.append(
@@ -422,7 +634,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
             + " 10 0\n" + gui_major_key_str + " " + gui_minor_key_str \
             + " Feedback_PlainText\n";
 
-    // Input Complete V1 test data:
+    // Load send/recv test data:
     //  instructions = ""
     //  send_file_data = ""
     //  send_input_data = "Input_PlainText"
@@ -444,7 +656,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     //  expected_recv_len = 100
     //  click_send_button = true, click_reset_button = true
     //  check_send = true, check_rcvd = true
-    QTest::newRow("Complete V1") \
+    QTest::newRow("Test Complex send/recv") \
             << "" << "" << "Input_PlainText" \
             << rcvd_list << expected_feedback << expected_feedback.toLatin1() \
             << expected_send_list \

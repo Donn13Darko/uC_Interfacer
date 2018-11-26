@@ -10,6 +10,9 @@ CONFIG += qt console warn_on depend_includepath testcase
 TARGET = uc-interface-tests
 TEMPLATE = app
 
+QMAKE_CXXFLAGS += --coverage
+QMAKE_LFLAGS += --coverage
+
 SOURCES += \
     $$PWD/main.cpp
 

@@ -70,6 +70,8 @@ Suround these with brakets number them to preserve their order when connected.
 The following were utilized across the project:
 1. [Qt](https://www.qt.io/): Qt Creator & its accompanying software/documentation
 2. [UPX](https://upx.github.io/): Used to compress the static release executables (will be done starting with V1.0)
+3. [GCOV](https://gcc.gnu.org/onlinedocs/gcc/Gcov.html): Generating code coverage reports
+3. [GCOVR](https://gcovr.com/index.html): Visualizing code coverage reports ([github repo](https://github.com/gcovr/gcovr))
 
 
 # License
