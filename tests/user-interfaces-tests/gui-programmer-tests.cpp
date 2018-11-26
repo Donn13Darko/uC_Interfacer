@@ -31,7 +31,7 @@ GUI_PROGRAMMER_TESTS::GUI_PROGRAMMER_TESTS()
 
 GUI_PROGRAMMER_TESTS::~GUI_PROGRAMMER_TESTS()
 {
-    // Delete base test if allocated
+    // Delete tester if allocated
     if (programmer_tester) delete programmer_tester;
 }
 

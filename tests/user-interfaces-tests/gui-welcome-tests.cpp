@@ -31,7 +31,7 @@ GUI_WELCOME_TESTS::GUI_WELCOME_TESTS()
 
 GUI_WELCOME_TESTS::~GUI_WELCOME_TESTS()
 {
-    // Delete base test if allocated
+    // Delete tester if allocated
     if (welcome_tester) delete welcome_tester;
 }
 

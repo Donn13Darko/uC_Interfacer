@@ -31,7 +31,7 @@ GUI_DATA_TRANSMIT_TESTS::GUI_DATA_TRANSMIT_TESTS()
 
 GUI_DATA_TRANSMIT_TESTS::~GUI_DATA_TRANSMIT_TESTS()
 {
-    // Delete base test if allocated
+    // Delete tester if allocated
     if (data_transmit_tester) delete data_transmit_tester;
 }
 

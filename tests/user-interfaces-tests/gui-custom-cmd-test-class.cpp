@@ -75,6 +75,8 @@ void GUI_CUSTOM_CMD_TEST_CLASS::set_cmd_input_radio_test(bool select_file)
         QTest::mouseClick(ui_ptr->CustomCMDFile_Radio, Qt::LeftButton);
     else
         QTest::mouseClick(ui_ptr->CustomCMDManual_Radio, Qt::LeftButton);
+
+    qApp->processEvents();
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_keys_in_input_test(bool b)
@@ -95,18 +97,21 @@ bool GUI_CUSTOM_CMD_TEST_CLASS::get_keys_in_input_test()
 void GUI_CUSTOM_CMD_TEST_CLASS::click_send_test()
 {
     QTest::mouseClick(ui_ptr->CustomCMDSend_Button, Qt::LeftButton);
+    qApp->processEvents();
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_user_input_text_test(QString input)
 {
     QVERIFY(ui_ptr->CustomCMDManual_Radio->isChecked());
     QTest::keyClicks(ui_ptr->CustomCMD_PlainText, input);
+    qApp->processEvents();
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_file_input_text_test(QString filePath)
 {
     QVERIFY(ui_ptr->CustomCMDFile_Radio->isChecked());
     QTest::keyClicks(ui_ptr->CustomCMDFilePath_LineEdit, filePath);
+    qApp->processEvents();
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_user_input_text_test()
@@ -247,6 +252,7 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_displayed_feedback_test()
 void GUI_CUSTOM_CMD_TEST_CLASS::feedback_clear_clicked_test()
 {
     QTest::mouseClick(ui_ptr->FeedbackClear_Button, Qt::LeftButton);
+    qApp->processEvents();
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::feedback_save_test(QString filePath)
@@ -278,6 +284,7 @@ void GUI_CUSTOM_CMD_TEST_CLASS::reset_clicked_test()
 
     // Click the reset button
     QTest::mouseClick(ui_ptr->ResetGUI_Button, Qt::LeftButton);
+    qApp->processEvents();
 
     // Verify that reset signal emitted
     QCOMPARE(transmit_chunk_spy.count(), 1);
@@ -292,4 +299,6 @@ void GUI_CUSTOM_CMD_TEST_CLASS::set_checked_click_test(QCheckBox *check, bool b)
         QTest::mouseClick(check, Qt::LeftButton);
     else if (!b && check->isChecked())
         QTest::mouseClick(check, Qt::LeftButton);
+
+    qApp->processEvents();
 }

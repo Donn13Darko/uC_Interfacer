@@ -37,7 +37,7 @@ GUI_BASE_TESTS::GUI_BASE_TESTS()
 
 GUI_BASE_TESTS::~GUI_BASE_TESTS()
 {
-    // Delete base test if allocated
+    // Delete tester if allocated
     if (base_tester) delete base_tester;
 }
 

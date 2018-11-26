@@ -31,7 +31,7 @@ GUI_IO_CONTROL_TESTS::GUI_IO_CONTROL_TESTS()
 
 GUI_IO_CONTROL_TESTS::~GUI_IO_CONTROL_TESTS()
 {
-    // Delete base test if allocated
+    // Delete tester if allocated
     if (io_control_tester) delete io_control_tester;
 }
 
