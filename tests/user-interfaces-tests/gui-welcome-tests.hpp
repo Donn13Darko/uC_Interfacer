@@ -38,6 +38,13 @@ private slots:
     void cleanupTestCase();
 
     // Member tests
+    void test_init_vals();
+
+    void test_basic_features();
+    void test_basic_features_data();
+
+    void test_gui_config();
+    void test_gui_config_data();
 
 private:
     GUI_WELCOME_TEST_CLASS *welcome_tester;

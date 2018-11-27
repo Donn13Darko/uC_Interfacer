@@ -33,13 +33,14 @@ public:
     explicit GUI_WELCOME(QWidget *parent = 0);
     ~GUI_WELCOME();
 
-    void setHeader(QString text);
-    QString getHeader();
+    void set_header(QString text);
+    QString get_header();
 
-    void setMsg(QString text);
-    QString getMsg();
+    void set_msg(QString text);
+    QString get_msg();
 
-    void setButtonsEnabled(bool enabled);
+    void set_buttons_enabled(bool enabled);
+    bool get_buttons_enabled();
 
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 

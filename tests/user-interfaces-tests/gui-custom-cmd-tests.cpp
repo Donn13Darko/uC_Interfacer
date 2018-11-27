@@ -57,8 +57,12 @@ void GUI_CUSTOM_CMD_TESTS::test_init_vals()
     // Verify reset defaults
     verify_reset_values();
 
-    // Verify non-reset memebers
+    // Verify non-reset & defualt members
     QCOMPARE(custom_cmd_tester->get_instructions_text_test(), QString(""));
+    QCOMPARE(custom_cmd_tester->get_gui_name(), QString("Custom CMD"));
+    QCOMPARE(custom_cmd_tester->get_gui_tab_name(), custom_cmd_tester->get_gui_name());
+    QCOMPARE(custom_cmd_tester->get_gui_config(),
+             custom_cmd_tester->get_gui_name().prepend("[").append("]\n\n"));
 }
 
 
@@ -739,6 +743,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
 
         // Verify non-reset values
         QCOMPARE(custom_cmd_tester->get_instructions_text_test(), instructions);
+
     }
 }
 

@@ -73,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Setup Welcome widget
     welcome_tab = new GUI_WELCOME(this);
     welcome_tab->set_gui_tab_name("Welcome");
-    welcome_tab->setButtonsEnabled(false);
+    welcome_tab->set_buttons_enabled(false);
     welcome_tab->setClosable(false);
     welcome_tab->hide();
 
@@ -212,10 +212,10 @@ void MainWindow::on_Device_Combo_activated(int)
     if (deviceINI.isEmpty())
     {
         // Update welcome tab msg with failure
-        welcome_tab->setMsg("Failed to locate config for "
-                            + ui->Device_Combo->currentText()
-                            + "!\nReverted to previous config: "
-                            + prev_deviceINI);
+        welcome_tab->set_msg("Failed to locate config for "
+                             + ui->Device_Combo->currentText()
+                             + "!\nReverted to previous config: "
+                             + prev_deviceINI);
 
         // Revert to previous dev type
         ui->Device_Combo->setCurrentIndex(deviceType-1);
@@ -225,7 +225,7 @@ void MainWindow::on_Device_Combo_activated(int)
     {
         // Get new device and set welcome tab string
         deviceType = getDevType();
-        welcome_tab->setMsg("Current Config: " + deviceINI);
+        welcome_tab->set_msg("Current Config: " + deviceINI);
     }
 }
 
