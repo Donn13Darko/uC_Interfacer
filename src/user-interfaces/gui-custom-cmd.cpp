@@ -292,6 +292,11 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
             // Grab keys from files
             major_key_str = customCMD.takeFirst();
             minor_key_str = customCMD.takeFirst();
+            if (major_key_str.isEmpty()
+                    || minor_key_str.isEmpty())
+            {
+                continue;
+            }
 
             // Reassemble cmd without keys
             customCMD_line = customCMD.join(' ');
@@ -349,7 +354,12 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
     {
         // Split bases and verify length
         QStringList bases = customCMD_bytes.split(' ');
-        if (2 < bases.length()) return;
+        if (2 != bases.length()
+                || bases.at(0).isEmpty()
+                || bases.at(1).isEmpty())
+        {
+            return;
+        }
 
         // Parse new bases (uses old cmd_base)
         uint8_t send_key_base_new = bases.at(0).toInt(nullptr, send_cmd_base);
@@ -367,10 +377,15 @@ void GUI_CUSTOM_CMD::send_custom_cmd(QString majorKey_char, QString minorKey_cha
         }
     }
 
-    // Replace spaces with null chars and convert to byte array
+    // If cmd_base is 0, encode directly
+    // Otherwise, replace spaces with null chars and convert to byte array
     // Null chars are split in GUI_GENERIC_HELPER::decode_byteArray which
     // is called before sending in comm-bridge
-    QByteArray cmd_bytes = customCMD_bytes.replace(QChar(' '), QChar((char) 0)).toLatin1();
+    QByteArray cmd_bytes;
+    if (send_cmd_base_old == 0)
+        cmd_bytes = customCMD_bytes.toLatin1();
+    else
+        cmd_bytes = customCMD_bytes.replace(QChar(' '), QChar((char) 0)).toLatin1();
 
     // Send CMD
     emit transmit_chunk(major_key, minor_key,

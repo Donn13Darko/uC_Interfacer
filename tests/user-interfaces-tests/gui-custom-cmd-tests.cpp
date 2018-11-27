@@ -193,7 +193,7 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     QString gui_minor_key_str = QString::number(MINOR_KEY_CUSTOM_CMD_CMD, 16);
     QList<QByteArray> expected_send_list;
 
-    // Setup Basic test data (no data)
+    // Setup Simple Send test data (no data)
     input_data.clear();
     expected_send_list.clear();
     expected_send_list.append(
@@ -201,14 +201,14 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
                      0, 16, 0}));
 
-    // Enter basic test:
+    // Enter Simple Send test:
     //  send_fill_data = ""
     //  send_expected_signals = {"6 2 10 0"}
     //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
     //                     = {"6", "3", "16", "0"}
     //  click_buttons = {send_file_radio, keys_in_input}
     //                     = {false, false}
-    QTest::newRow("Simple Send") \
+    QTest::newRow("Simple Send Input") \
             << input_data \
             << expected_send_list \
             << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "0"}) \
@@ -240,6 +240,240 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
             << expected_send_list \
             << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "0"}) \
             << QList<bool>({false, true});
+
+    // Setup set base v1 test data
+    input_data.clear();
+    input_data += "6 2 2 0\n110 11 read\n";
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 16}));
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     16, 50, 0, 48}));
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                .append("read"));
+
+    // Enter set base v1 test:
+    //  send_fill_data = "6 2 2 0\n6 3 read\n"
+    //  send_expected_signals = {"6 2 10 10", "6 2 2 0", "110 11 read"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "16", "16"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, true}
+    QTest::newRow("Set Bases V1") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "16"}) \
+            << QList<bool>({false, true});
+
+    // Setup double set base test data
+    input_data.clear();
+    input_data += "6 2 10 10\n6 3 52 45 41 44\n";
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 16}));
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 16,
+                     53, 50, 0, 52, 53, 0, 52, 49, 0, 52, 52}));
+
+    // Enter double set base test:
+    //  send_fill_data = "6 2 10 0\n6 3 52 45 41 44\n"
+    //  send_expected_signals = {"6 2 10 10", "6 3 52 45 41 44"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "16", "16"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, true}
+    QTest::newRow("Double set Bases") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "16"}) \
+            << QList<bool>({false, true});
+
+    // Setup Space in CMD test data
+    input_data.clear();
+    input_data += "6 3 Re ad\n";
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 0}));
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                .append("Re ad"));
+
+    // Enter Space in CMD test:
+    //  send_fill_data = "6 3 Re ad\n"
+    //  send_expected_signals = {"6 2 10 0", "6 3 Re ad"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "16", "0"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, true}
+    QTest::newRow("Space in CMD") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "0"}) \
+            << QList<bool>({false, true});
+
+    // Setup Malformed Input V1 test data
+    input_data.clear();
+    input_data += "6 \n";
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 16}));
+
+    // Enter Malformed Input V1 test:
+    //  send_fill_data = "6 \n"
+    //  send_expected_signals = {"6 2 10 10"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "16", "16"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, true}
+    QTest::newRow("Malformed Input V1") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "16"}) \
+            << QList<bool>({false, true});
+
+    // Setup Malformed Input V2 test data
+    input_data.clear();
+    input_data += "6 2 1 \n";
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 16}));
+
+    // Enter Malformed Input V2 test:
+    //  send_fill_data = "6 2 1 \n"
+    //  send_expected_signals = {"6 2 10 10"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "16", "16"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, true}
+    QTest::newRow("Malformed Input V2") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "16"}) \
+            << QList<bool>({false, true});
+
+    // Setup KB_0_CB_0 test data
+    input_data.clear();
+    input_data += "6 3 Read\n";
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 0, 0}));
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {54, 51, 0})
+                .append("Read"));
+
+    // Enter KB_0_CB_0 test:
+    //  send_fill_data = "54 51 Read\n"
+    //  send_expected_signals = {"6 2 0 0", "6 3 Read"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "0", "0"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, true}
+    QTest::newRow("KB_0_CB_0") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "0", "0"}) \
+            << QList<bool>({false, true});
+
+    // Setup KB_16_CB_16 test data
+    input_data.clear();
+    input_data += "6 3 52 45 41 44\n";
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 16}));
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 16,
+                    53, 50, 0, 52, 53, 0, 52, 49, 0, 52, 52}));
+
+    // Enter KB_16_CB_16 test:
+    //  send_fill_data = "54 51 52 45 41 44\n"
+    //  send_expected_signals = {"6 2 10 10", "6 3 52 45 41 44"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "16", "16"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, true}
+    QTest::newRow("KB_16_CB_16") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "16"}) \
+            << QList<bool>({false, true});
+
+    // Setup Simple Send File test data (no data)
+    input_data.clear();
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 0}));
+
+    // Enter Simple Send File test:
+    //  send_fill_data = ""
+    //  send_expected_signals = {"6 2 10 0"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "16", "0"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, false}
+    QTest::newRow("Simple Send File") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "0"}) \
+            << QList<bool>({true, false});
+
+    // Setup Send File V1 test data (no data)
+    input_data.clear();
+    input_data += "6 3 Read\n";
+
+    expected_send_list.clear();
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                     0, 16, 0}));
+    expected_send_list.append(
+                GUI_GENERIC_HELPER::qList_to_byteArray(
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                .append("Read"));
+
+    // Enter Send File V1 test:
+    //  send_fill_data = ""
+    //  send_expected_signals = {"6 2 10 0", "6 3 Read"}
+    //  key_and_base_fills = {major_key, minor_key, key_base, cmd_base}
+    //                     = {"6", "3", "16", "0"}
+    //  click_buttons = {send_file_radio, keys_in_input}
+    //                     = {false, false}
+    QTest::newRow("Send File V1") \
+            << input_data \
+            << expected_send_list \
+            << QList<QString>({gui_major_key_str, gui_minor_key_str, "16", "0"}) \
+            << QList<bool>({true, false});
 }
 
 void GUI_CUSTOM_CMD_TESTS::test_rcvd()
@@ -910,11 +1144,21 @@ void GUI_CUSTOM_CMD_TESTS::perform_cmd_send(QString send_fill_data, QList<QStrin
     custom_cmd_tester->set_key_base_test(key_and_base_fills.at(2));
     custom_cmd_tester->set_cmd_base_test(key_and_base_fills.at(3));
 
+    // Create temp file to store data in
+    QTemporaryFile temp_file;
+    temp_file.setAutoRemove(true);
+
     // Set input info
     custom_cmd_tester->set_cmd_input_radio_test(send_file_radio);
     if (send_file_radio)
     {
-        custom_cmd_tester->set_file_input_text_test(send_fill_data);
+        // Load in data
+        QVERIFY(temp_file.open());
+        temp_file.write(send_fill_data.toLatin1());
+        temp_file.close();
+
+        // Set input text
+        custom_cmd_tester->set_file_input_text_test(temp_file.fileName());
     } else
     {
         custom_cmd_tester->set_user_input_text_test(send_fill_data);
