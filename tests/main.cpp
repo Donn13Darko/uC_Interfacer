@@ -74,5 +74,6 @@ int main(int argc, char *argv[])
     GUI_CUSTOM_CMD_TESTS gui_custom_cmd_tester;
     status |= QTest::qExec(&gui_custom_cmd_tester, argList);
 
+    // Return if error
     return status;
 }

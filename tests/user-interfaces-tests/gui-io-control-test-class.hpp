@@ -36,10 +36,7 @@ public:
     void rcvd_formatted_clear_test();
 
     void set_expected_recv_length_test(uint32_t expected_length);
-    uint32_t get_expected_recv_length_test();
-
     void update_current_recv_length_test(uint32_t recv_len);
-    uint32_t get_current_recv_length_test();
 };
 
 #endif // GUI_IO_CONTROL_TEST_CLASS_H

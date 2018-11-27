@@ -29,8 +29,8 @@ GUI_IO_CONTROL::GUI_IO_CONTROL(QWidget *parent) :
     ui->setupUi(this);
 
     // Set GUI Type & Default Name
-    gui_key = MAJOR_KEY_IO;
-    gui_name = "IO";
+    set_gui_key(MAJOR_KEY_IO);
+    set_gui_name("IO");
 
     // Set buttons
     ui->StartUpdater_Button->setText("Start");
@@ -274,8 +274,11 @@ void GUI_IO_CONTROL::recordPinValues(PinTypeInfo *pInfo)
 
 void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
 {
+    // Get gui key
+    uint8_t local_gui_key = get_gui_key();
+
     // Ignore commands not meant for this GUI
-    if (recvData.at(s1_major_key_loc) != (char) gui_key)
+    if (recvData.at(s1_major_key_loc) != (char) local_gui_key)
         return;
 
     uint8_t minor_key = recvData.at(s1_minor_key_loc);
@@ -313,7 +316,7 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
                 }
 
                 // Send values back
-                emit transmit_chunk(gui_key, minor_key, pinValues);
+                emit transmit_chunk(local_gui_key, minor_key, pinValues);
 
                 // Send device ready
                 emit transmit_chunk(MAJOR_KEY_DEV_READY, 0);
@@ -334,7 +337,7 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
                     aio_read_requested_double = false;
 
                     // Emit another request for data
-                    emit transmit_chunk(gui_key, minor_key);
+                    emit transmit_chunk(local_gui_key, minor_key);
                 } else
                 {
                     // Clear single request
@@ -349,7 +352,7 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
                     dio_read_requested_double = false;
 
                     // Emit another request for data
-                    emit transmit_chunk(gui_key, minor_key);
+                    emit transmit_chunk(local_gui_key, minor_key);
                 } else
                 {
                     // Clear single request
@@ -376,7 +379,7 @@ void GUI_IO_CONTROL::DIO_ComboValueChanged()
     inputsChanged(MINOR_KEY_IO_DIO, sender(), io_combo_pos, &data);
 
     // Send update
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_DIO_SET, data);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_DIO_SET, data);
 }
 
 void GUI_IO_CONTROL::DIO_SliderValueChanged()
@@ -389,7 +392,7 @@ void GUI_IO_CONTROL::DIO_SliderValueChanged()
     data.remove(s2_io_combo_loc, 1);
 
     // Send update
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_DIO_WRITE, data);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_DIO_WRITE, data);
 }
 
 void GUI_IO_CONTROL::DIO_LineEditValueChanged()
@@ -402,7 +405,7 @@ void GUI_IO_CONTROL::DIO_LineEditValueChanged()
     data.remove(s2_io_combo_loc, 1);
 
     // Send update
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_DIO_WRITE, data);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_DIO_WRITE, data);
 }
 
 void GUI_IO_CONTROL::AIO_ComboValueChanged()
@@ -412,7 +415,7 @@ void GUI_IO_CONTROL::AIO_ComboValueChanged()
     inputsChanged(MINOR_KEY_IO_AIO, sender(), io_combo_pos, &data);
 
     // Send update
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_AIO_SET, data);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_AIO_SET, data);
 }
 
 void GUI_IO_CONTROL::AIO_SliderValueChanged()
@@ -425,7 +428,7 @@ void GUI_IO_CONTROL::AIO_SliderValueChanged()
     data.remove(s2_io_combo_loc, 1);
 
     // Send update
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_AIO_WRITE, data);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_AIO_WRITE, data);
 }
 
 void GUI_IO_CONTROL::AIO_LineEditValueChanged()
@@ -438,7 +441,7 @@ void GUI_IO_CONTROL::AIO_LineEditValueChanged()
     data.remove(s2_io_combo_loc, 1);
 
     // Send update
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_AIO_WRITE, data);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_AIO_WRITE, data);
 }
 
 void GUI_IO_CONTROL::updateValues()
@@ -478,7 +481,7 @@ void GUI_IO_CONTROL::updateValues()
     }
 
     // Emit request for data
-    emit transmit_chunk(gui_key, requestType);
+    emit transmit_chunk(get_gui_key(), requestType);
 }
 
 void GUI_IO_CONTROL::recordLogData()
@@ -582,7 +585,7 @@ void GUI_IO_CONTROL::on_ConnConnect_Button_clicked()
     msg.append(ui->ConnSpeed_Combo->currentText());
     msg.append(ui->ConnAddr_Combo->currentText());
 
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN, msg);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_REMOTE_CONN, msg);
 }
 
 void GUI_IO_CONTROL::on_ConnSend_Button_clicked()
@@ -590,7 +593,7 @@ void GUI_IO_CONTROL::on_ConnSend_Button_clicked()
     QByteArray msg;
     msg.append(ui->ConnMsg_PlainText->toPlainText());
 
-    emit transmit_chunk(gui_key, MINOR_KEY_IO_REMOTE_CONN_SEND, msg);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_REMOTE_CONN_SEND, msg);
 }
 
 void GUI_IO_CONTROL::on_ConnClearRecv_Button_clicked()

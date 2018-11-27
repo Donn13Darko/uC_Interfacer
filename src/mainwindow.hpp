@@ -120,13 +120,13 @@ private:
     // Device helpers
     uint8_t deviceType;
     QString deviceINI;
+    QTimer updateConnInfo;
 
     static QStringList supportedGUIsList;
     static QStringList supportedDevicesList;
     static QStringList supportedProtocolsList;
     CONFIG_MAP *configMap;
 
-    QTimer *updateConnInfo;
     COMMS_BASE *device;
     QString speed;
 

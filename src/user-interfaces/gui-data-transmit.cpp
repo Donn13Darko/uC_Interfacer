@@ -30,8 +30,8 @@ GUI_DATA_TRANSMIT::GUI_DATA_TRANSMIT(QWidget *parent) :
     ui->setupUi(this);
 
     // Set GUI Type & Default Name
-    gui_key = MAJOR_KEY_DATA_TRANSMIT;
-    gui_name = "Data Transmit";
+    set_gui_key(MAJOR_KEY_DATA_TRANSMIT);
+    set_gui_name("Data Transmit");
 
     // Setup progress bars
     ui->Send_ProgressBar->setMinimum(0);
@@ -88,11 +88,14 @@ void GUI_DATA_TRANSMIT::reset_gui()
 
 void GUI_DATA_TRANSMIT::receive_gui(QByteArray recvData)
 {
+    // Get gui key
+    uint8_t local_gui_key = get_gui_key();
+
     // Get data without keys
     QByteArray data = recvData.mid(s1_end_loc);
 
     // See if this GUI sent CMD
-    if (recvData.at(s1_major_key_loc) == (char) gui_key)
+    if (recvData.at(s1_major_key_loc) == (char) local_gui_key)
     {
         // See if known CMD
         switch (recvData.at(s1_minor_key_loc))
@@ -165,6 +168,9 @@ void GUI_DATA_TRANSMIT::on_Send_RadioGroup_buttonClicked(int)
 
 void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
 {
+    // Get gui key
+    uint8_t local_gui_key = get_gui_key();
+
     // Find which radio button is selected
     if (ui->SendFile_Radio->isChecked())
     {
@@ -176,22 +182,22 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
         if (fileSize < 0) return;
 
         // Set size
-        emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+        emit transmit_chunk(local_gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
                             GUI_GENERIC_HELPER::uint32_to_byteArray((uint32_t) fileSize));
 
         // Send file
-        emit transmit_file_pack(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
+        emit transmit_file_pack(local_gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, filePath);
     } else if (ui->SendInput_Radio->isChecked())
     {
         // Get data
         QByteArray data = ui->Send_PlainText->toPlainText().toLatin1();
 
         // Set size
-        emit transmit_chunk(gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
+        emit transmit_chunk(local_gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
                             GUI_GENERIC_HELPER::uint32_to_byteArray(data.length()));
 
         // Send plaintext
-        emit transmit_chunk_pack(gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
+        emit transmit_chunk_pack(local_gui_key, MINOR_KEY_DATA_TRANSMIT_DATA, data);
     }
 }
 

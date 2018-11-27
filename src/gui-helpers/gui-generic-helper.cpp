@@ -25,6 +25,7 @@
 #include <QFileDialog>
 #include <QSettings>
 #include <QTemporaryFile>
+#include <QTextStream>
 
 const float GUI_GENERIC_HELPER::S2MS = 1000.0f;
 
@@ -54,8 +55,8 @@ bool GUI_GENERIC_HELPER::showMessage(QString msg)
         n->show();
     }
 
-    // Return true (for error cases)
-    return true;
+    // Return if successful
+    return n;
 }
 
 bool GUI_GENERIC_HELPER::getUserString(QString *str, QString title, QString label)
@@ -152,7 +153,7 @@ CONFIG_MAP *GUI_GENERIC_HELPER::read_configMap(QString config)
     // Reset & load the GUI settings file
     QSettings config_settings(config, QSettings::IniFormat);
 
-    QMap<QString, QVariant> *groupMap;
+    QMap<QString, QVariant> *groupMap = nullptr;
     CONFIG_MAP *configMap;
     configMap = new CONFIG_MAP();
     if (!configMap) return nullptr;
@@ -178,19 +179,47 @@ CONFIG_MAP *GUI_GENERIC_HELPER::read_configMap(QString config)
         configMap->insert(childGroup, groupMap);
     }
 
-    // Handle no settings in ini (return nullptr)
-    if (configMap->isEmpty())
+    // Setup and open file (for parsing empty keys)
+    QFile in_file(config);
+    if (!in_file.open(QIODevice::ReadWrite))
     {
-        // Show error message
-        GUI_GENERIC_HELPER::showMessage(QString("Error: Failed to load INI file!\n") + config);
-
-        // Delete empty map
-        delete configMap;
-
-        // return a null pointer
-        return nullptr;
+        return configMap;
     }
 
+    // Setup variables
+    QString line, group_str;
+    QTextStream in(&in_file);
+
+    // Search for empty groups (auto filtered by QSettings)
+    do
+    {
+        // Get next line
+        line = in.readLine().trimmed();
+
+        // Check if matches group line
+        if (line.startsWith('[')
+                && line.endsWith(']'))
+        {
+            // Get group name
+            group_str = line.mid(1, line.length()-2);
+
+            // Check if in map
+            if (!configMap->contains(group_str))
+            {
+                // Create new group map
+                groupMap = new QMap<QString, QVariant>();
+                if (!groupMap) continue;
+
+                // Add groupMap to configMap
+                configMap->insert(group_str, groupMap);
+            }
+        }
+    } while (!line.isNull());
+
+    // Close file
+    in_file.close();
+
+    // Return parsed data
     return configMap;
 }
 
@@ -254,13 +283,7 @@ CONFIG_MAP *GUI_GENERIC_HELPER::decode_configMap(QString configMap)
 
     // Open temporary file for writing data
     if (!tmpINI.open())
-    {
-        // Show error message
-        GUI_GENERIC_HELPER::showMessage("Error: Unable to open temp file!");
-
-        // Return out of function
         return nullptr;
-    }
 
     // Write data to temporary file & close
     tmpINI.write(configMap.toLatin1());

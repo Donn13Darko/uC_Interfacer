@@ -35,16 +35,13 @@ GUI_BASE_TEST_CLASS::~GUI_BASE_TEST_CLASS()
 void GUI_BASE_TEST_CLASS::set_gui_key_test(uint8_t new_key)
 {
     // Set new gui key
-    gui_key = new_key;
+    set_gui_key(new_key);
 }
 
 void GUI_BASE_TEST_CLASS::set_gui_name_test(QString new_name)
 {
-    // Update gui_config
-    if (gui_config) gui_config->insert(new_name, gui_config->take(gui_name));
-
-    // Set new gui name
-    gui_name = new_name;
+    // Set new name
+    set_gui_name(new_name);
 }
 
 void GUI_BASE_TEST_CLASS::rcvd_formatted_append_test(QByteArray data)
@@ -77,34 +74,9 @@ void GUI_BASE_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_length
     set_expected_recv_length(expected_length);
 }
 
-uint32_t GUI_BASE_TEST_CLASS::get_expected_recv_length_test()
-{
-    return expected_recv_length;
-}
-
-QString GUI_BASE_TEST_CLASS::get_expected_recv_length_str_test()
-{
-    return expected_recv_length_str;
-}
-
 void GUI_BASE_TEST_CLASS::update_current_recv_length_test(uint32_t recv_len)
 {
     update_current_recv_length(recv_len);
-}
-
-uint32_t GUI_BASE_TEST_CLASS::get_current_recv_length_test()
-{
-    return current_recv_length;
-}
-
-CONFIG_MAP *GUI_BASE_TEST_CLASS::get_gui_config_test()
-{
-    return gui_config;
-}
-
-QMap<QString, QVariant> *GUI_BASE_TEST_CLASS::get_gui_map_test()
-{
-    return gui_map;
 }
 
 void GUI_BASE_TEST_CLASS::on_ResetGUI_Button_clicked_test()
@@ -115,4 +87,14 @@ void GUI_BASE_TEST_CLASS::on_ResetGUI_Button_clicked_test()
 void GUI_BASE_TEST_CLASS::send_chunk_test(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk)
 {
     send_chunk(major_key, minor_key, chunk);
+}
+
+QVariant GUI_BASE_TEST_CLASS::get_gui_map_value_test(QString key)
+{
+    return get_gui_map_value(key);
+}
+
+void GUI_BASE_TEST_CLASS::set_gui_map_value_test(QString key, QVariant value)
+{
+    set_gui_map_value(key, value);
 }

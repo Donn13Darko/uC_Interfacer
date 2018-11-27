@@ -22,17 +22,15 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     QWidget(parent)
 {
     // Init base variables
-    gui_key = MAJOR_KEY_ERROR;
-    gui_name = "GUI Base";
     gui_config = nullptr;
     gui_map = nullptr;
 
-    // Setup empty config
-    QMap<QString, QVariant> empty_cmap;
-    parseConfigMap(&empty_cmap);
+    // Set key and name (name will init required maps)
+    set_gui_key(MAJOR_KEY_ERROR);
+    set_gui_name("GUI Base");
 
     // Open temporary file and set autoremove
-    rcvd_formatted.open();
+//    rcvd_formatted.open();
     rcvd_formatted.setAutoRemove(true);
 
     // Init progress bars
@@ -64,6 +62,10 @@ GUI_BASE::~GUI_BASE()
     // Gets deleted on close
     if (rcvd_formatted.isOpen())
         rcvd_formatted.close();
+
+    // Delete config map
+    if (gui_config) GUI_GENERIC_HELPER::delete_configMap(&gui_config);
+    gui_map = nullptr;
 }
 
 void GUI_BASE::reset_gui()
@@ -88,7 +90,7 @@ bool GUI_BASE::isClosable()
 
 void GUI_BASE::setClosable(bool new_close)
 {
-    if (gui_map || init_maps()) gui_map->insert("closable", new_close);
+    set_gui_map_value("closable", new_close);
 }
 
 uint8_t GUI_BASE::get_gui_key()
@@ -101,6 +103,12 @@ QString GUI_BASE::get_gui_name()
     return gui_name;
 }
 
+QVariant GUI_BASE::get_gui_map_value(QString key)
+{
+    if (gui_map) return gui_map->value(key);
+    else return QVariant();
+}
+
 QString GUI_BASE::get_gui_tab_name()
 {
     if (gui_map || init_maps()) return gui_map->value("tab_name", gui_name).toString();
@@ -110,7 +118,7 @@ QString GUI_BASE::get_gui_tab_name()
 void GUI_BASE::set_gui_tab_name(QString new_name)
 {
     // Set new name in gui map
-    if (gui_map || init_maps()) gui_map->insert("tab_name", new_name);
+    set_gui_map_value("tab_name", new_name);
 }
 
 QString GUI_BASE::get_gui_config()
@@ -184,9 +192,46 @@ void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QList<uint8_t> c
                         GUI_GENERIC_HELPER::qList_to_byteArray(chunk));
 }
 
+void GUI_BASE::set_gui_key(uint8_t new_key)
+{
+    gui_key = new_key;
+}
+
+void GUI_BASE::set_gui_name(QString new_name)
+{
+    // Verify input
+    if (new_name.isEmpty()
+            || (gui_name == new_name))
+    {
+        return;
+    }
+
+    // Get current info
+    QString curr_name = get_gui_name();
+
+    // Set new name
+    gui_name = new_name;
+
+    // Handle replacing
+    if (!gui_config || !(gui_config->contains(curr_name)))
+    {
+        // Init maps with new name
+        init_maps();
+    } else
+    {
+        // Remove and replace entry
+        gui_config->insert(new_name, gui_config->take(curr_name));
+    }
+}
+
+void GUI_BASE::set_gui_map_value(QString key, QVariant value)
+{
+    if (gui_map || init_maps()) gui_map->insert(key, value);
+}
+
 void GUI_BASE::rcvd_formatted_append(QByteArray data)
 {
-    rcvd_formatted.write(data);
+    if (rcvd_formatted_isOpen()) rcvd_formatted.write(data);
 }
 
 void GUI_BASE::rcvd_formatted_save(QString fileName)
@@ -196,19 +241,24 @@ void GUI_BASE::rcvd_formatted_save(QString fileName)
         return;
 
     // Close temporary file (for copying)
-    rcvd_formatted.close();
+    if (rcvd_formatted.isOpen()) rcvd_formatted.close();
 
     // Copy file
     if (!GUI_GENERIC_HELPER::copyFile(rcvd_formatted.fileName(), fileName, true))
-        GUI_GENERIC_HELPER::showMessage("ERROR: Failed to save file!");
+        GUI_GENERIC_HELPER::showMessage("Error: Failed to save file!");
 
     // Reopen temporary (and go to end)
-    rcvd_formatted.open();
-    rcvd_formatted.seek(rcvd_formatted.size());
+    if (rcvd_formatted.open())
+    {
+        rcvd_formatted.seek(rcvd_formatted.size());
+    }
 }
 
 QByteArray GUI_BASE::rcvd_formatted_readAll()
 {
+    // Verify formatted is open or try opening
+    if (!rcvd_formatted_isOpen()) return QByteArray();
+
     // Seek to start
     rcvd_formatted.seek(0);
 
@@ -284,17 +334,6 @@ bool GUI_BASE::init_maps()
     {
         // Create new config
         gui_config = new CONFIG_MAP();
-
-        // Delete old gui_map if present
-        // No config before this so shouldn't have
-        // a gui_map object (if there is its old)
-        if (gui_map)
-        {
-            delete gui_map;
-            gui_map = nullptr;
-        }
-
-        // Verify success or return failure
         if (!gui_config) return false;
     }
 
@@ -320,4 +359,9 @@ bool GUI_BASE::init_maps()
 
     // Return true if both gui_config and gui_map created
     return (gui_config && gui_map);
+}
+
+bool GUI_BASE::rcvd_formatted_isOpen()
+{
+    return (rcvd_formatted.isOpen() || rcvd_formatted.open());
 }

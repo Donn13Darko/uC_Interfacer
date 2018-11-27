@@ -49,17 +49,7 @@ void GUI_PROGRAMMER_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_
     set_expected_recv_length(expected_length);
 }
 
-uint32_t GUI_PROGRAMMER_TEST_CLASS::get_expected_recv_length_test()
-{
-    return expected_recv_length;
-}
-
 void GUI_PROGRAMMER_TEST_CLASS::update_current_recv_length_test(uint32_t recv_len)
 {
     update_current_recv_length(recv_len);
-}
-
-uint32_t GUI_PROGRAMMER_TEST_CLASS::get_current_recv_length_test()
-{
-    return current_recv_length;
 }

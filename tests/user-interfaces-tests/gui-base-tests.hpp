@@ -53,6 +53,9 @@ private slots:
     void test_gui_config_1();
     void test_gui_config_2();
 
+    void test_gui_config();
+    void test_gui_config_data();
+
     void test_recv_length();
     void test_recv_length_data();
 
@@ -61,6 +64,8 @@ private slots:
 
     void test_rcvd_formatted();
     void test_rcvd_formatted_data();
+
+    void test_rcvd_formatted_save_fail();
 
     void test_send_chunk_qlist();
     void test_send_chunk_qlist_data();

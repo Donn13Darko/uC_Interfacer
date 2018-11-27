@@ -54,19 +54,9 @@ void GUI_CUSTOM_CMD_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_
     set_expected_recv_length(expected_length);
 }
 
-uint32_t GUI_CUSTOM_CMD_TEST_CLASS::get_expected_recv_length_test()
-{
-    return expected_recv_length;
-}
-
 void GUI_CUSTOM_CMD_TEST_CLASS::update_current_recv_length_test(uint32_t recv_len)
 {
     update_current_recv_length(recv_len);
-}
-
-uint32_t GUI_CUSTOM_CMD_TEST_CLASS::get_current_recv_length_test()
-{
-    return current_recv_length;
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_cmd_input_radio_test(bool select_file)
@@ -162,26 +152,6 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_key_base_test()
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_cmd_base_test()
 {
     return ui_ptr->CustomCMDBase_LineEdit->text();
-}
-
-uint8_t GUI_CUSTOM_CMD_TEST_CLASS::get_send_key_base_test()
-{
-    return get_send_key_base();
-}
-
-uint8_t GUI_CUSTOM_CMD_TEST_CLASS::get_send_cmd_base_test()
-{
-    return get_send_cmd_base();
-}
-
-uint8_t GUI_CUSTOM_CMD_TEST_CLASS::get_recv_key_base_test()
-{
-    return get_recv_key_base();
-}
-
-uint8_t GUI_CUSTOM_CMD_TEST_CLASS::get_recv_cmd_base_test()
-{
-    return get_recv_cmd_base();
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_progress_update_recv_test(int progress, QString label)

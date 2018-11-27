@@ -27,8 +27,8 @@ GUI_PROGRAMMER::GUI_PROGRAMMER(QWidget *parent) :
     ui->setupUi(this);
 
     // Set GUI Type & Default Name
-    gui_key = MAJOR_KEY_PROGRAMMER;
-    gui_name = "Programmer";
+    set_gui_key(MAJOR_KEY_PROGRAMMER);
+    set_gui_name("Programmer");
 
     // Setup progress bars
     ui->Programmer_ProgressBar->setMinimum(0);
@@ -143,11 +143,14 @@ void GUI_PROGRAMMER::reset_gui()
 
 void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
 {
+    // Get gui key
+    uint8_t local_gui_key = get_gui_key();
+
     // Get data without keys
     QByteArray data = recvData.mid(s1_end_loc);
 
     // See if this GUI sent CMD
-    if (recvData.at(s1_major_key_loc) == (char) gui_key)
+    if (recvData.at(s1_major_key_loc) == (char) local_gui_key)
     {
         // See if known CMD
         switch (recvData.at(s1_minor_key_loc))
@@ -264,19 +267,22 @@ void GUI_PROGRAMMER::on_BurnData_Button_clicked()
     info.append((uint8_t) ui->FileFormat_Combo->currentIndex());
     info.append((uint8_t) ui->BurnMethod_Combo->currentIndex());
 
+    // Get gui key
+    uint8_t local_gui_key = get_gui_key();
+
     // Set programming attributes
-    emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_INFO, info);
+    emit transmit_chunk(local_gui_key, MINOR_KEY_PROGRAMMER_SET_INFO, info);
 
     // Get file size
     qint64 fileSize = GUI_GENERIC_HELPER::getFileSize(filePath);
     if (fileSize < 0) return;
 
     // Set file size
-    emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
+    emit transmit_chunk(local_gui_key, MINOR_KEY_PROGRAMMER_SET_TRANS_SIZE,
                         GUI_GENERIC_HELPER::uint32_to_byteArray((uint32_t) fileSize));
 
     // Send file
-    emit transmit_file_pack(gui_key, MINOR_KEY_PROGRAMMER_DATA,
+    emit transmit_file_pack(local_gui_key, MINOR_KEY_PROGRAMMER_DATA,
                             filePath, fileFormat.first,
                             fileFormat.second);
 }
@@ -383,7 +389,7 @@ void GUI_PROGRAMMER::on_ReadData_Button_clicked()
     }
 
     // Send read with info
-    emit transmit_chunk(gui_key, MINOR_KEY_PROGRAMMER_READ, info);
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_PROGRAMMER_READ, info);
 }
 
 void GUI_PROGRAMMER::on_ReadDataSave_Button_clicked()

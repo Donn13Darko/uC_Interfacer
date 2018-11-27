@@ -69,7 +69,6 @@ MainWindow::MainWindow(QWidget *parent) :
     device = nullptr;
     configMap = nullptr;
     speed = "";
-    updateConnInfo = new QTimer();
 
     // Setup Welcome widget
     welcome_tab = new GUI_WELCOME(this);
@@ -144,7 +143,7 @@ MainWindow::MainWindow(QWidget *parent) :
             Qt::DirectConnection);
 
     // Add update selections connections
-    connect(updateConnInfo, SIGNAL(timeout()),
+    connect(&updateConnInfo, SIGNAL(timeout()),
             this, SLOT(updateConnInfoCombo()),
             Qt::DirectConnection);
 }
@@ -161,13 +160,12 @@ MainWindow::~MainWindow()
     if (configMap) GUI_GENERIC_HELPER::delete_configMap(&configMap);
 
     // Stop connection timers
-    updateConnInfo->stop();
+    updateConnInfo.stop();
 
     // Tell bridge to exit (once locks freed)
     comm_bridge->destroy_bridge();
 
     // Delete objects
-    delete updateConnInfo;
     delete welcome_tab;
     delete add_new_tab;
     delete new_tab_gui;
@@ -182,7 +180,7 @@ void MainWindow::closeEvent(QCloseEvent *e)
     {
         on_DeviceDisconnect_Button_clicked();
     }
-    updateConnInfo->stop();
+    updateConnInfo.stop();
 
     e->accept();
 }
@@ -473,11 +471,8 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
                    comm_bridge, SLOT(receive(QByteArray)));
         disconnect(comm_bridge, SIGNAL(write_data(QByteArray)),
                    device, SLOT(write(QByteArray)));
-    }
 
-    // Remove device
-    if (device)
-    {
+        // Remove device
         device->close();
         device->deleteLater();
         device = nullptr;
@@ -780,7 +775,7 @@ void MainWindow::updateConnInfoCombo()
     // Stop timers and disable connect if device connected
     if (deviceConnected())
     {
-        updateConnInfo->stop();
+        updateConnInfo.stop();
         ui->DeviceConnect_Button->setEnabled(false);
         return;
     }
@@ -790,8 +785,8 @@ void MainWindow::updateConnInfoCombo()
     {
         case CONN_TYPE_SERIAL_COM_PORT:
         {
-            if (!updateConnInfo->isActive()) {
-                updateConnInfo->start(1000);
+            if (!updateConnInfo.isActive()) {
+                updateConnInfo.start(1000);
                 ui->ConnInfo_Combo->setEditable(false);
             }
 
@@ -814,7 +809,7 @@ void MainWindow::updateConnInfoCombo()
         default:
         {
             // Stop timer and set connect enabled
-            updateConnInfo->stop();
+            updateConnInfo.stop();
             ui->DeviceConnect_Button->setEnabled(true);
 
             // If changing from autofill, clear and make editable
@@ -906,9 +901,8 @@ void MainWindow::ucOptionsClear()
 
 bool MainWindow::deviceConnected()
 {
-    // Verify connection object exists
-    if (!device) return false;
-    else return device->isConnected();
+    // Verify connection
+    return (device && device->isConnected());
 }
 
 uint8_t MainWindow::getConnType()

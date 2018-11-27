@@ -38,10 +38,7 @@ public:
     void rcvd_formatted_clear_test();
 
     void set_expected_recv_length_test(uint32_t expected_length);
-    uint32_t get_expected_recv_length_test();
-
     void update_current_recv_length_test(uint32_t recv_len);
-    uint32_t get_current_recv_length_test();
 
     void set_cmd_input_radio_test(bool select_file);
     void set_keys_in_input_test(bool b);
@@ -66,11 +63,6 @@ public:
     QString get_minor_key_test();
     QString get_key_base_test();
     QString get_cmd_base_test();
-
-    uint8_t get_send_key_base_test();
-    uint8_t get_send_cmd_base_test();
-    uint8_t get_recv_key_base_test();
-    uint8_t get_recv_cmd_base_test();
 
     void set_progress_update_recv_test(int progress, QString label);
     void set_progress_update_send_test(int progress, QString label);

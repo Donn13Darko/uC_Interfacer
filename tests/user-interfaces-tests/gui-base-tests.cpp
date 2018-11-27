@@ -23,10 +23,9 @@
 #include <QSignalSpy>
 
 // Object includes
-#include <QTimer>
-#include <QEventLoop>
 #include <QFile>
 #include <QTemporaryFile>
+#include <QMessageBox>
 
 #include "../../src/gui-helpers/gui-generic-helper.hpp"
 
@@ -83,6 +82,22 @@ void GUI_BASE_TESTS::test_basic_features()
     // Test waitForDevice (should always return false)
     QVERIFY(!base_tester->waitForDevice(0));
     QVERIFY(!base_tester->waitForDevice((uint8_t) qrand()));
+
+    // Test getting and setting gui_map values
+    base_tester->set_gui_map_value_test("tab_name", QVariant("Red"));
+    QCOMPARE(base_tester->get_gui_tab_name(), QString("Red"));
+    QCOMPARE(base_tester->get_gui_map_value("tab_name").toString(), QString("Red"));
+    base_tester->set_gui_map_value_test("closable", QVariant("false"));
+    QCOMPARE(base_tester->isClosable(), false);
+    QCOMPARE(base_tester->get_gui_map_value("closable").toBool(), false);
+
+    // Verify readyRead & receive connection (does nothing in base)
+    emit base_tester->readyRead(GUI_GENERIC_HELPER::qList_to_byteArray({0, 1, 2, 3}));
+    qApp->processEvents();
+
+    // Clear map
+    QMap<QString, QVariant> reset_map;
+    base_tester->parseConfigMap(&reset_map);
 }
 
 void GUI_BASE_TESTS::test_gui_key()
@@ -112,48 +127,64 @@ void GUI_BASE_TESTS::test_set_gui_name()
 {
     // Fetch name
     QFETCH(QString, set_name);
+    QFETCH(QString, expected_name);
 
-    // Set and check result
+    // Set name
     base_tester->set_gui_name_test(set_name);
-    QCOMPARE(base_tester->get_gui_name(), set_name);
+
+    // Verify name
+    QCOMPARE(base_tester->get_gui_name(), expected_name);
 }
 
 void GUI_BASE_TESTS::test_set_gui_name_data()
 {
     // Setup data columns
     QTest::addColumn<QString>("set_name");
+    QTest::addColumn<QString>("expected_name");
+
+    // Helper variable
+    QString curr_name = base_tester->get_gui_name();
 
     // Load in data
-    QTest::newRow("Blank") << "";
-    QTest::newRow("Short") << "IO";
-    QTest::newRow("Shimple") << "Welcome";
-    QTest::newRow("Space") << "Data Transmit";
-    QTest::newRow("Random Caps") << "RandOM GLESN";
-    QTest::newRow("Random Chars") << "'-1923'/,.l][qw2487923-1!(*@!*$@!_";
-    QTest::newRow("RESET") << base_tester->get_gui_name();
+    QTest::newRow("Same") << curr_name << curr_name;
+    QTest::newRow("Blank") << "" << curr_name;
+    QTest::newRow("Short") << "IO" << "IO";
+    QTest::newRow("Simple") << "Welcome" << "Welcome";
+    QTest::newRow("Space") << "Data Transmit" << "Data Transmit";
+    QTest::newRow("Random Caps") << "RandOM GLESN" << "RandOM GLESN";
+    QTest::newRow("Random Chars") << "'-1923'/,.l][qw2487923-1!(*@!*$@!_" \
+                                  << "'-1923'/,.l][qw2487923-1!(*@!*$@!_";
+    QTest::newRow("RESET") << curr_name << curr_name;
 }
 
 void GUI_BASE_TESTS::test_set_gui_tab_name()
 {
     // Fetch name
     QFETCH(QString, set_name);
+    QFETCH(QString, expected_name);
 
     // Set and check result
     base_tester->set_gui_tab_name(set_name);
-    QCOMPARE(base_tester->get_gui_tab_name(), set_name);
+    QCOMPARE(base_tester->get_gui_tab_name(), expected_name);
 }
 
 void GUI_BASE_TESTS::test_set_gui_tab_name_data()
 {
     // Setup data columns
     QTest::addColumn<QString>("set_name");
+    QTest::addColumn<QString>("expected_name");
+
+    // Helper variable
+    QString curr_name = base_tester->get_gui_tab_name();
 
     // Load in data
-    QTest::newRow("Blank") << "";
-    QTest::newRow("Simple") << "New Tab";
-    QTest::newRow("Random Caps") << "RandOM GLESN";
-    QTest::newRow("Random Chars") << "'-1923'/,.l][qw2487923-1!(*@!*$@!_";
-    QTest::newRow("RESET") << base_tester->get_gui_tab_name();
+    QTest::newRow("Same") << curr_name << curr_name;
+    QTest::newRow("Blank") << "" << "";
+    QTest::newRow("Simple") << "New Tab" << "New Tab";
+    QTest::newRow("Random Caps") << "RandOM GLESN" << "RandOM GLESN";
+    QTest::newRow("Random Chars") << "'-1923'/,.l][qw2487923-1!(*@!*$@!_" \
+                                  << "'-1923'/,.l][qw2487923-1!(*@!*$@!_";
+    QTest::newRow("RESET") << curr_name << curr_name;
 }
 
 void GUI_BASE_TESTS::test_gui_config_1()
@@ -205,12 +236,114 @@ void GUI_BASE_TESTS::test_gui_config_2()
     QCOMPARE(base_tester->get_gui_tab_name(), QString(""));
 }
 
+void GUI_BASE_TESTS::test_gui_config()
+{
+    // Fetch data
+    QFETCH(QString, config_str);
+    QFETCH(QString, gui_tab_name);
+    QFETCH(bool, isClosable);
+
+    // Clear current config
+    QMap<QString, QVariant> reset_map;
+    base_tester->parseConfigMap(&reset_map);
+
+    // Get unchanging values
+    uint8_t curr_gui_key = base_tester->get_gui_key();
+    QString curr_gui_name = base_tester->get_gui_name();
+
+    // Generate new config
+    CONFIG_MAP *gui_config = \
+            GUI_GENERIC_HELPER::decode_configMap(config_str);
+
+    // Parse new config
+    base_tester->parseConfigMap(gui_config->value(curr_gui_name, nullptr));
+
+    // Check values
+    QCOMPARE(base_tester->get_gui_key(), curr_gui_key);
+    QCOMPARE(base_tester->get_gui_name(), curr_gui_name);
+    QCOMPARE(base_tester->get_gui_tab_name(), gui_tab_name);
+    QCOMPARE(base_tester->isClosable(), isClosable);
+}
+
+void GUI_BASE_TESTS::test_gui_config_data()
+{
+    // Setup data columns
+    QTest::addColumn<QString>("config_str");
+    QTest::addColumn<QString>("gui_tab_name");
+    QTest::addColumn<bool>("isClosable");
+
+    // Helper variables
+    QString config_str;
+    QString curr_gui_name = base_tester->get_gui_name();
+
+    // Setup defaults config str
+    config_str.clear();
+    config_str += "[" + curr_gui_name + "]\n\n";
+
+    // Load in defaults
+    QTest::newRow("Empty") << config_str \
+                           << curr_gui_name \
+                           << true;
+
+    // Setup only tab name config str
+    config_str.clear();
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += "tab_name=\"Only Tab\"\n\n";
+
+    // Load in only tab name
+    QTest::newRow("Only Tab Name") << config_str \
+                                    << "Only Tab" \
+                                    << true;
+
+    // Setup only closable config str
+    config_str.clear();
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += "closable=\"false\"\n\n";
+
+    // Load in only tab name
+    QTest::newRow("Only Closable") << config_str \
+                                    << curr_gui_name \
+                                    << false;
+
+    // Setup basic config str
+    config_str.clear();
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += "tab_name=\"Tab A\"\n\n";
+    config_str += "closable=\"false\"\n\n";
+
+    // Load in basic
+    QTest::newRow("Basic") << config_str \
+                           << "Tab A" \
+                           << false;
+
+    // Setup empty tab name config str
+    config_str.clear();
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += "tab_name=\"\"\n\n";
+    config_str += "closable=\"true\"\n\n";
+
+    // Load in empty tab name
+    QTest::newRow("Empty Tab Name") << config_str \
+                                    << "" \
+                                    << true;
+
+    // Setup incorrect group name config str
+    config_str.clear();
+    config_str += "[Bad_Name]\n";
+    config_str += "tab_name=\"\"\n\n";
+    config_str += "closable=\"false\"\n\n";
+
+    // Load in incorrect group name
+    QTest::newRow("Incorrect Group Name") << config_str \
+                                          << curr_gui_name \
+                                          << true;
+}
+
 void GUI_BASE_TESTS::test_recv_length()
 {
     // Fetch data
     QFETCH(quint32, expected_recv_len);
     QFETCH(QList<quint32>, recv_len_data);
-    QFETCH(QString, expected_recv_len_str);
 
     // Setup signal spy
     QList<QVariant> spy_args;
@@ -219,12 +352,9 @@ void GUI_BASE_TESTS::test_recv_length()
 
     // Set start info
     base_tester->set_expected_recv_length_test(expected_recv_len);
+    qApp->processEvents();
 
-    // Verify start info
-    QCOMPARE(base_tester->get_expected_recv_length_test(), expected_recv_len);
-    QCOMPARE(base_tester->get_expected_recv_length_str_test(), expected_recv_len_str);
-
-    // Verify signals
+    // Verify set signal
     QCOMPARE(progress_spy.count(), 1);
     spy_args = progress_spy.takeFirst();
     QCOMPARE(spy_args.at(0).toInt(), 0);
@@ -233,25 +363,36 @@ void GUI_BASE_TESTS::test_recv_length()
     // Send packets & verify signals
     bool recv_len_done = false;
     quint32 target_recv = 0;
+    QString expected_recv_len_str = "/" + QString::number(expected_recv_len / 1000.0f) + "KB";;
     foreach (quint32 recv_len, recv_len_data)
     {
         // Send update to base class
         base_tester->update_current_recv_length_test(recv_len);
 
-        // Continue if alread received expected_recv_len
-        if (recv_len_done) continue;
+        // Continue if already received expected_recv_len
+        if (recv_len_done)
+        {
+            QCOMPARE(progress_spy.count(), 0);
+            continue;
+        }
 
-        // Increment target and verify
+        // Increment target
         target_recv += recv_len;
+
+        // Verify signal
         if (!expected_recv_len || (expected_recv_len <= target_recv))
         {
-            // Verify final signal
+            // Verify update signal
             if (expected_recv_len && (expected_recv_len <= target_recv))
             {
+                // Verify progress signal
                 QCOMPARE(progress_spy.count(), 1);
                 spy_args = progress_spy.takeFirst();
                 QCOMPARE(spy_args.at(0).toInt(), 100);
                 QCOMPARE(spy_args.at(1).toString(), QString("Done!"));
+            } else
+            {
+                QCOMPARE(progress_spy.count(), 0);
             }
 
             // Clear expected values
@@ -270,11 +411,6 @@ void GUI_BASE_TESTS::test_recv_length()
             QCOMPARE(spy_args.at(1).toString(), QString::number((float) target_recv / 1000.0f) + expected_recv_len_str);
         }
     }
-
-    // Verify the updates
-    QCOMPARE(base_tester->get_current_recv_length_test(), target_recv);
-    QCOMPARE(base_tester->get_expected_recv_length_test(), expected_recv_len);
-    QCOMPARE(base_tester->get_expected_recv_length_str_test(), expected_recv_len_str);
 }
 
 void GUI_BASE_TESTS::test_recv_length_data()
@@ -282,33 +418,30 @@ void GUI_BASE_TESTS::test_recv_length_data()
     // Setup data columns
     QTest::addColumn<quint32>("expected_recv_len");
     QTest::addColumn<QList<quint32>>("recv_len_data");
-    QTest::addColumn<QString>("expected_recv_len_str");
 
     // Load in data
-    QTest::newRow("E0_S0") << (quint32) 0 << QList<quint32>({0}) << "";
-    QTest::newRow("E0_S1") << (quint32) 0 << QList<quint32>({1}) << "";
-    QTest::newRow("E1_S0") << (quint32) 1 << QList<quint32>({0}) << "/0.001KB";
-    QTest::newRow("E1_S1 Start") << (quint32) 1 << QList<quint32>({1, 0, 0}) << "/0.001KB";
-    QTest::newRow("E1_S1 Middle") << (quint32) 1 << QList<quint32>({0, 1, 0}) << "/0.001KB";
-    QTest::newRow("E1_S1 End") << (quint32) 1 << QList<quint32>({0, 0, 1}) << "/0.001KB";
-    QTest::newRow("E1_S3 V1") << (quint32) 1 << QList<quint32>({3}) << "/0.001KB";
-    QTest::newRow("E1_S3 V2") << (quint32) 1 << QList<quint32>({1, 2}) << "/0.001KB";
-    QTest::newRow("E1_S3 V3") << (quint32) 1 << QList<quint32>({1, 0, 2}) << "/0.001KB";
-    QTest::newRow("E5_S6 V1") << (quint32) 5 << QList<quint32>({0, 1, 2, 3}) << "/0.005KB";
-    QTest::newRow("E500_S0") << (quint32) 500 << QList<quint32>({0}) << "/0.5KB";
-    QTest::newRow("E500_S500") << (quint32) 500 << QList<quint32>({500}) << "/0.5KB";
-    QTest::newRow("E500_S5") << (quint32) 500 << QList<quint32>({5}) << "/0.5KB";
-    QTest::newRow("E500_S6 Sum") << (quint32) 500 << QList<quint32>({0, 1, 2, 3}) << "/0.5KB";
-    QTest::newRow("E500_S500 Sum V1") << (quint32) 500 << QList<quint32>({250, 250}) << "/0.5KB";
-    QTest::newRow("E500_S500 Sum V1") << (quint32) 500 << QList<quint32>({100, 100, 100, 100, 100}) << "/0.5KB";
-    QTest::newRow("E1000_S500 Sum") << (quint32) 1000 << QList<quint32>({250, 250}) << "/1KB";
-    QTest::newRow("E1000_S1000 Sum") << (quint32) 1000 << QList<quint32>({250, 250, 500}) << "/1KB";
-    QTest::newRow("E1234_S0") << (quint32) 1234 << QList<quint32>({0}) << "/1.234KB";
-    QTest::newRow("E12345_S0") << (quint32) 12345 << QList<quint32>({0}) << "/12.345KB";
-    QTest::newRow("E123456_S0") << (quint32) 123456 << QList<quint32>({0}) << "/123.456KB";
-    QTest::newRow("RESET") << base_tester->get_expected_recv_length_test() \
-                           << QList<quint32>({0}) \
-                           << base_tester->get_expected_recv_length_str_test();
+    QTest::newRow("E0_S0") << (quint32) 0 << QList<quint32>({0});
+    QTest::newRow("E0_S1") << (quint32) 0 << QList<quint32>({1});
+    QTest::newRow("E1_S0") << (quint32) 1 << QList<quint32>({0});
+    QTest::newRow("E1_S1 Start") << (quint32) 1 << QList<quint32>({1, 0, 0});
+    QTest::newRow("E1_S1 Middle") << (quint32) 1 << QList<quint32>({0, 1, 0});
+    QTest::newRow("E1_S1 End") << (quint32) 1 << QList<quint32>({0, 0, 1});
+    QTest::newRow("E1_S3 V1") << (quint32) 1 << QList<quint32>({3});
+    QTest::newRow("E1_S3 V2") << (quint32) 1 << QList<quint32>({1, 2});
+    QTest::newRow("E1_S3 V3") << (quint32) 1 << QList<quint32>({1, 0, 2});
+    QTest::newRow("E5_S6 V1") << (quint32) 5 << QList<quint32>({0, 1, 2, 3});
+    QTest::newRow("E500_S0") << (quint32) 500 << QList<quint32>({0});
+    QTest::newRow("E500_S500") << (quint32) 500 << QList<quint32>({500});
+    QTest::newRow("E500_S5") << (quint32) 500 << QList<quint32>({5});
+    QTest::newRow("E500_S6 Sum") << (quint32) 500 << QList<quint32>({0, 1, 2, 3});
+    QTest::newRow("E500_S500 Sum V1") << (quint32) 500 << QList<quint32>({250, 250});
+    QTest::newRow("E500_S500 Sum V1") << (quint32) 500 << QList<quint32>({100, 100, 100, 100, 100});
+    QTest::newRow("E1000_S500 Sum") << (quint32) 1000 << QList<quint32>({250, 250});
+    QTest::newRow("E1000_S1000 Sum") << (quint32) 1000 << QList<quint32>({250, 250, 500});
+    QTest::newRow("E1234_S0") << (quint32) 1234 << QList<quint32>({0});
+    QTest::newRow("E12345_S0") << (quint32) 12345 << QList<quint32>({0});
+    QTest::newRow("E123456_S0") << (quint32) 123456 << QList<quint32>({0});
+    QTest::newRow("RESET") << (quint32) 0 << QList<quint32>({0});
 }
 
 void GUI_BASE_TESTS::test_reset_gui_1()
@@ -321,17 +454,13 @@ void GUI_BASE_TESTS::test_reset_gui_1()
     base_tester->rcvd_formatted_append_test(rcvd_data);
 
     // Verify the updates
-    QCOMPARE(base_tester->get_expected_recv_length_test(), (uint32_t) 500);
-    QCOMPARE(base_tester->get_current_recv_length_test(), (uint32_t) 100);
-    QCOMPARE(base_tester->get_expected_recv_length_str_test(), QString("/0.5KB"));
     QCOMPARE(base_tester->rcvd_formatted_readAll_test(), rcvd_data);
     QCOMPARE(base_tester->rcvd_formatted_size_test(), rcvd_data.size());
 
     // Get static values
     uint8_t gui_key = base_tester->get_gui_key();
     QString gui_name = base_tester->get_gui_name();
-    CONFIG_MAP *gui_config = base_tester->get_gui_config_test();
-    QMap<QString, QVariant> *gui_map = base_tester->get_gui_map_test();
+    QString gui_config = base_tester->get_gui_config();
 
     // Setup signal spy
     QList<QVariant> spy_args;
@@ -342,28 +471,24 @@ void GUI_BASE_TESTS::test_reset_gui_1()
 
     // Reset the gui
     base_tester->reset_gui();
+    qApp->processEvents();
 
     // Verify the reset values
-    QCOMPARE(base_tester->get_expected_recv_length_test(), (uint32_t) 0);
-    QCOMPARE(base_tester->get_current_recv_length_test(), (uint32_t) 0);
-    QCOMPARE(base_tester->get_expected_recv_length_str_test(), QString(""));
     QCOMPARE(base_tester->rcvd_formatted_readAll_test(), QByteArray());
     QCOMPARE(base_tester->rcvd_formatted_size_test(), 0);
 
     // Verify the static values haven't changed
     QCOMPARE(base_tester->get_gui_key(), gui_key);
     QCOMPARE(base_tester->get_gui_name(), gui_name);
-    QCOMPARE(base_tester->get_gui_config_test(), gui_config);
-    QCOMPARE(base_tester->get_gui_map_test(), gui_map);
+    QCOMPARE(base_tester->get_gui_config(), gui_config);
 
     // Verify signal spy
     QCOMPARE(rcvd_reset_spy.count(), 1);
-    QCOMPARE(send_reset_spy.count(), 1);
-
     spy_args = rcvd_reset_spy.takeFirst();
     QCOMPARE(spy_args.at(0).toInt(), 0);
     QCOMPARE(spy_args.at(1).toString(), QString(""));
 
+    QCOMPARE(send_reset_spy.count(), 1);
     spy_args = send_reset_spy.takeFirst();
     QCOMPARE(spy_args.at(0).toInt(), 0);
     QCOMPARE(spy_args.at(1).toString(), QString(""));
@@ -462,6 +587,32 @@ void GUI_BASE_TESTS::test_rcvd_formatted_data()
     QTest::newRow("RESET") << QList<QByteArray>({""}) << false << true;
 }
 
+void GUI_BASE_TESTS::test_rcvd_formatted_save_fail()
+{
+    // Create temporary file
+    QTemporaryFile tmp;
+    tmp.setAutoRemove(true);
+
+    // Open (to prevent writing)
+    tmp.open();
+
+    // Try calling copy (will fail and call showMessage)
+    base_tester->rcvd_formatted_save_test(tmp.fileName());
+    qApp->processEvents();
+
+    // Verify active window is error message
+    QMessageBox *error_msg = \
+            qobject_cast<QMessageBox*>(QApplication::activeWindow());
+    QVERIFY(error_msg);
+    QCOMPARE(error_msg->text(), QString("Error: Failed to save file!"));
+
+    // Close error_msg
+    error_msg->close();
+
+    // Close file
+    tmp.close();
+}
+
 void GUI_BASE_TESTS::test_send_chunk_qlist()
 {
     // Fetch data
@@ -495,5 +646,6 @@ void GUI_BASE_TESTS::test_send_chunk_qlist_data()
     // Load in data
     QTest::newRow("Empty") << (quint8) 0 << (quint8) 0 << QList<quint8>();
     QTest::newRow("Basic") << (quint8) 4 << (quint8) 3 << QList<quint8>({(quint8) 0, (quint8) 1, (quint8) 2});
-    QTest::newRow("Random") << (quint8) qrand() << (quint8) qrand() << QList<quint8>({(quint8) qrand(), (quint8) qrand(), (quint8) qrand()});
+    QTest::newRow("Random") << (quint8) qrand() << (quint8) qrand() \
+                            << QList<quint8>({(quint8) qrand(), (quint8) qrand(), (quint8) qrand()});
 }

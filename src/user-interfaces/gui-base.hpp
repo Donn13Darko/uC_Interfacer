@@ -41,6 +41,7 @@ public:
 
     virtual uint8_t get_gui_key();
     virtual QString get_gui_name();
+    virtual QVariant get_gui_map_value(QString key);
 
     virtual QString get_gui_tab_name();
     virtual void set_gui_tab_name(QString new_name);
@@ -96,9 +97,28 @@ protected slots:
     void send_chunk(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk);
 
 protected:
-    // Local variables
+    // Set gui values
+    virtual void set_gui_key(uint8_t new_key);
+    virtual void set_gui_name(QString new_name);
+    virtual void set_gui_map_value(QString key, QVariant value);
+
+    // Save & clear rcvd file
+    void rcvd_formatted_append(QByteArray data);
+    void rcvd_formatted_save(QString fileName = "");
+    QByteArray rcvd_formatted_readAll();
+    uint32_t rcvd_formatted_size();
+    void rcvd_formatted_clear();
+
+    // Set recv lengths
+    void set_expected_recv_length(uint32_t expected_length);
+    void update_current_recv_length(uint32_t recv_len);
+
+private:
+    // GUI Variables
     uint8_t gui_key;
     QString gui_name;
+
+    // Holder for complete config map
     CONFIG_MAP *gui_config;
     QMap<QString, QVariant> *gui_map;
 
@@ -108,17 +128,9 @@ protected:
     uint32_t expected_recv_length;
     QString expected_recv_length_str;
 
-    // Save & clear rcvd file
-    void rcvd_formatted_append(QByteArray data);
-    void rcvd_formatted_save(QString fileName = "");
-    QByteArray rcvd_formatted_readAll();
-    uint32_t rcvd_formatted_size();
-    void rcvd_formatted_clear();
-
     // Other functions
     bool init_maps();
-    void set_expected_recv_length(uint32_t expected_length);
-    void update_current_recv_length(uint32_t recv_len);
+    bool rcvd_formatted_isOpen();
 };
 
 #endif // GUI_BASE_H

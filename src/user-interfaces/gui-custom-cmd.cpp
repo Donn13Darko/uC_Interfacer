@@ -27,8 +27,8 @@ GUI_CUSTOM_CMD::GUI_CUSTOM_CMD(QWidget *parent) :
     ui->setupUi(this);
 
     // Set GUI Type & Default Name
-    gui_key = MAJOR_KEY_CUSTOM_CMD;
-    gui_name = "Custom CMD";
+    set_gui_key(MAJOR_KEY_CUSTOM_CMD);
+    set_gui_name("Custom CMD");
 
     // Setup Progress bars
     ui->CustomCMD_ProgressBar->setMinimum(0);
@@ -73,7 +73,7 @@ void GUI_CUSTOM_CMD::reset_gui()
     send_cmd_base = 16;
 
     // Set default entered values
-    ui->CustomCMDMajorKey_LineEdit->setText(QString::number(gui_key, send_key_base));
+    ui->CustomCMDMajorKey_LineEdit->setText(QString::number(get_gui_key(), send_key_base));
     ui->CustomCMDMinorKey_LineEdit->setText(QString::number(MINOR_KEY_CUSTOM_CMD_CMD, send_key_base));
     ui->CustomCMDKeyBase_LineEdit->setText(QString::number(send_key_base, 10));
     ui->CustomCMDBase_LineEdit->setText(QString::number(send_cmd_base, 10));
@@ -93,12 +93,15 @@ void GUI_CUSTOM_CMD::reset_gui()
 
 void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
 {
+    // Get gui key
+    uint8_t local_gui_key = get_gui_key();
+
     // Get data without keys
     QByteArray data = recvData.mid(s1_end_loc);
 
     // See if this GUI sent CMD
     bool updateCMD_base = false;
-    if (recvData.at(s1_major_key_loc) == (char) gui_key)
+    if (recvData.at(s1_major_key_loc) == (char) local_gui_key)
     {
         // See if known CMD
         switch (recvData.at(s1_minor_key_loc))
@@ -175,26 +178,6 @@ Ui::GUI_CUSTOM_CMD *GUI_CUSTOM_CMD::get_ui()
     return ui;
 }
 
-uint8_t GUI_CUSTOM_CMD::get_send_key_base()
-{
-    return send_key_base;
-}
-
-uint8_t GUI_CUSTOM_CMD::get_send_cmd_base()
-{
-    return send_cmd_base;
-}
-
-uint8_t GUI_CUSTOM_CMD::get_recv_key_base()
-{
-    return recv_key_base;
-}
-
-uint8_t GUI_CUSTOM_CMD::get_recv_cmd_base()
-{
-    return recv_cmd_base;
-}
-
 void GUI_CUSTOM_CMD::on_FeedbackSave_Button_clicked()
 {
     rcvd_formatted_save();
@@ -256,7 +239,7 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
 
     // Transmit cmd base at start
     // (Have other guis ignore CMDs that don't have the relevant gui_key as major_key)
-    send_chunk(gui_key, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+    send_chunk(get_gui_key(), MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
                 {send_key_base, send_cmd_base});
 
     // Setup variables
