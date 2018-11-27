@@ -99,7 +99,6 @@ void SERIAL_COM_PORT::write(QByteArray writeData)
     writeLock->lock();
 
     // Write data (try to force start)
-    qDebug() << "S: " << writeData;
     serial_com_port->write((const QByteArray) writeData);
     serial_com_port->flush();
 
@@ -114,7 +113,6 @@ void SERIAL_COM_PORT::read()
 
     // Read data
     QByteArray recvData = serial_com_port->readAll();
-    qDebug() << "R: " << recvData;
 
     // Emit signal
     emit readyRead(recvData);

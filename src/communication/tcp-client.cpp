@@ -89,7 +89,6 @@ void TCP_CLIENT::write(QByteArray writeData)
     writeLock->lock();
 
     // Write data (try to force start)
-    qDebug() << "S: " << writeData;
     client->write((const QByteArray) writeData);
     client->flush();
 
@@ -104,7 +103,6 @@ void TCP_CLIENT::read()
 
     // Read data
     QByteArray recvData = client->readAll();
-    qDebug() << "R: " << recvData;
 
     // Emit signal
     emit readyRead(recvData);

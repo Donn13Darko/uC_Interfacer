@@ -30,7 +30,7 @@ GUI_BASE::GUI_BASE(QWidget *parent) :
     set_gui_name("GUI Base");
 
     // Open temporary file and set autoremove
-//    rcvd_formatted.open();
+    rcvd_formatted.open();
     rcvd_formatted.setAutoRemove(true);
 
     // Init progress bars

@@ -41,14 +41,17 @@ private slots:
     void test_init_vals();
     void test_basic_features();
 
+    void test_gui_config();
+    void test_gui_config_data();
+
     void test_send();
     void test_send_data();
 
     void test_rcvd();
     void test_rcvd_data();
 
-//    void test_feedback_clear();
-//    void test_feedback_save();
+    void test_looped_send_rcvd_cmd();
+    void test_looped_send_rcvd_cmd_data();
 
     void test_complex_cmd();
     void test_complex_cmd_data();
@@ -57,6 +60,18 @@ private:
     GUI_CUSTOM_CMD_TEST_CLASS *custom_cmd_tester;
 
     void verify_reset_values();
+
+    void perform_cmd_rcvd(QList<QByteArray> rcvd_fill_data,
+                          bool log_all_cmds = true, bool append_newline = true,
+                          bool clear_on_set = true, bool click_clear_button = true,
+                          bool click_save_button = false, bool check_rcvd = false,
+                          QString rcvd_expected_display_data = "",
+                          QByteArray rcvd_expected_file_data = QByteArray());
+
+    void perform_cmd_send(QString send_fill_data, QList<QString> key_and_base_fills,
+                          bool send_file_radio, bool keys_in_input = false,
+                          bool click_send = false, bool check_send = false,
+                          QList<QByteArray> send_expected_signals = QList<QByteArray>());
 };
 
 #endif // GUI_CUSTOM_CMD_TESTS_H

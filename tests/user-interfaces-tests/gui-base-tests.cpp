@@ -363,7 +363,7 @@ void GUI_BASE_TESTS::test_recv_length()
     // Send packets & verify signals
     bool recv_len_done = false;
     quint32 target_recv = 0;
-    QString expected_recv_len_str = "/" + QString::number(expected_recv_len / 1000.0f) + "KB";;
+    QString expected_recv_len_str = "/" + QString::number(expected_recv_len / 1000.0f) + "KB";
     foreach (quint32 recv_len, recv_len_data)
     {
         // Send update to base class

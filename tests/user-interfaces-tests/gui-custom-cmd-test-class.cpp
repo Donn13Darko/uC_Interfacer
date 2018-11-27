@@ -44,11 +44,6 @@ qint64 GUI_CUSTOM_CMD_TEST_CLASS::rcvd_formatted_size_test()
     return rcvd_formatted_size();
 }
 
-void GUI_CUSTOM_CMD_TEST_CLASS::rcvd_formatted_clear_test()
-{
-    rcvd_formatted_clear();
-}
-
 void GUI_CUSTOM_CMD_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_length)
 {
     set_expected_recv_length(expected_length);
@@ -84,7 +79,7 @@ bool GUI_CUSTOM_CMD_TEST_CLASS::get_keys_in_input_test()
     return ui_ptr->CustomCMDKeysInInput_CheckBox->isChecked();
 }
 
-void GUI_CUSTOM_CMD_TEST_CLASS::click_send_test()
+void GUI_CUSTOM_CMD_TEST_CLASS::send_clicked_test()
 {
     QTest::mouseClick(ui_ptr->CustomCMDSend_Button, Qt::LeftButton);
     qApp->processEvents();
@@ -93,7 +88,11 @@ void GUI_CUSTOM_CMD_TEST_CLASS::click_send_test()
 void GUI_CUSTOM_CMD_TEST_CLASS::set_user_input_text_test(QString input)
 {
     QVERIFY(ui_ptr->CustomCMDManual_Radio->isChecked());
-    QTest::keyClicks(ui_ptr->CustomCMD_PlainText, input);
+    foreach (QString line, input.split('\n'))
+    {
+        QTest::keyClicks(ui_ptr->CustomCMD_PlainText, line);
+        QTest::keyClick(ui_ptr->CustomCMD_PlainText, Qt::Key_Enter);
+    }
     qApp->processEvents();
 }
 
@@ -166,22 +165,22 @@ void GUI_CUSTOM_CMD_TEST_CLASS::set_progress_update_send_test(int progress, QStr
 
 int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_recv_value_test()
 {
-    return ui_ptr->CustomCMD_ProgressBar->value();
+    return ui_ptr->Feedback_ProgressBar->value();
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_recv_string_test()
 {
-    return ui_ptr->CustomCMDProgress_Label->text();
+    return ui_ptr->FeedbackProgress_Label->text();
 }
 
 int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_value_test()
 {
-    return ui_ptr->Feedback_ProgressBar->value();
+    return ui_ptr->CustomCMD_ProgressBar->value();
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_string_test()
 {
-    return ui_ptr->FeedbackProgress_Label->text();
+    return ui_ptr->CustomCMDProgress_Label->text();
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_feedback_log_all_cmds_test(bool b)

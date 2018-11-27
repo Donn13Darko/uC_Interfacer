@@ -21,7 +21,6 @@
 
 #include <QObject>
 #include <QMutex>
-#include <QDebug>
 
 class COMMS_BASE : public QObject
 {

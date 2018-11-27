@@ -89,11 +89,6 @@ void GUI_BASE_TEST_CLASS::send_chunk_test(uint8_t major_key, uint8_t minor_key, 
     send_chunk(major_key, minor_key, chunk);
 }
 
-QVariant GUI_BASE_TEST_CLASS::get_gui_map_value_test(QString key)
-{
-    return get_gui_map_value(key);
-}
-
 void GUI_BASE_TEST_CLASS::set_gui_map_value_test(QString key, QVariant value)
 {
     set_gui_map_value(key, value);

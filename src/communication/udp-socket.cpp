@@ -85,7 +85,6 @@ void UDP_SOCKET::write(QByteArray writeData)
     writeLock->lock();
 
     // Write data (try to force start)
-    qDebug() << "S: " << writeData;
     client->writeDatagram((const QByteArray) writeData,
                           udp_client_ip, udp_client_port);
     client->flush();
@@ -105,8 +104,6 @@ void UDP_SOCKET::read()
     {
         recvData += server->receiveDatagram().data();
     }
-    qDebug() << "R: " << recvData;
-
     // Emit signal
     emit readyRead(recvData);
 

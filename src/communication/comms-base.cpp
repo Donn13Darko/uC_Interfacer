@@ -60,12 +60,9 @@ void COMMS_BASE::close()
     connected = false;
 }
 
-void COMMS_BASE::write(QByteArray writeData)
+void COMMS_BASE::write(QByteArray)
 {
     writeLock->lock();
-
-    qDebug() << "BS: " << writeData;
-
     writeLock->unlock();
 }
 
@@ -75,7 +72,6 @@ void COMMS_BASE::read()
 
     QByteArray recvData;
     emit readyRead(recvData);
-    qDebug() << "BR: " << recvData;
 
     readLock->unlock();
 }

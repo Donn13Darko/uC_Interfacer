@@ -35,7 +35,6 @@ public:
     /*** Defines any needed setters & accessors for testing ***/
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
-    void rcvd_formatted_clear_test();
 
     void set_expected_recv_length_test(uint32_t expected_length);
     void update_current_recv_length_test(uint32_t recv_len);
@@ -46,7 +45,7 @@ public:
     bool get_cmd_input_radio_test();
     bool get_keys_in_input_test();
 
-    void click_send_test();
+    void send_clicked_test();
 
     void set_user_input_text_test(QString input);
     void set_file_input_text_test(QString filePath);

@@ -474,7 +474,7 @@ void MainWindow::on_DeviceDisconnect_Button_clicked()
 
         // Remove device
         device->close();
-        device->deleteLater();
+        delete device;
         device = nullptr;
     }
 

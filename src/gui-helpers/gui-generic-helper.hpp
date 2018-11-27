@@ -22,7 +22,6 @@
 #include <QObject>
 #include <QMap>
 #include <QVariant>
-#include <QDebug>
 
 typedef enum {
     checksum_name_pos = 0,
