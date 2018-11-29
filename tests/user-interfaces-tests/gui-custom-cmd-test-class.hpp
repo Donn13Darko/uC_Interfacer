@@ -87,8 +87,8 @@ public:
     void set_instructions_text_test(QString inst);
     QString get_instructions_text_test();
 
-    void reset_clicked_test();
     void receive_gui_test(QByteArray data);
+    void reset_clicked_test();
 
 private:
     Ui::GUI_CUSTOM_CMD *ui_ptr;

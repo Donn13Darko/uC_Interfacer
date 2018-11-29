@@ -47,6 +47,10 @@ protected slots:
     virtual void set_progress_update_recv(int progress, QString label);
     virtual void set_progress_update_send(int progress, QString label);
 
+protected:
+    /** Declare ui accessor for testing **/
+    Ui::GUI_DATA_TRANSMIT *get_ui();
+
 private slots:
     void on_Send_RadioGroup_buttonClicked(int);
     void on_Send_Button_clicked();

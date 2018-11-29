@@ -25,7 +25,7 @@
 GUI_CUSTOM_CMD_TEST_CLASS::GUI_CUSTOM_CMD_TEST_CLASS(QWidget *parent) :
     GUI_CUSTOM_CMD(parent)
 {
-    // Retrieve ui object from inheritance
+    // Retrieve ui object
     ui_ptr = get_ui();
 }
 

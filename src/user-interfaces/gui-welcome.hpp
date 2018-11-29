@@ -44,6 +44,10 @@ public:
 
     virtual void parseConfigMap(QMap<QString, QVariant> *configMap);
 
+protected:
+    /** Declare ui accessor for testing **/
+    Ui::GUI_WELCOME *get_ui();
+
 private:
     Ui::GUI_WELCOME *ui;
 };

@@ -17,11 +17,16 @@
 */
 
 #include "gui-welcome-test-class.hpp"
+#include "ui_gui-welcome.h"
+
+#include <QTest>
+#include <QSignalSpy>
 
 GUI_WELCOME_TEST_CLASS::GUI_WELCOME_TEST_CLASS(QWidget *parent) :
     GUI_WELCOME(parent)
 {
-    /* DO NOTHING */
+    // Retrieve ui object
+    ui_ptr = get_ui();
 }
 
 GUI_WELCOME_TEST_CLASS::~GUI_WELCOME_TEST_CLASS()

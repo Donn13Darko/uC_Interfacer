@@ -22,6 +22,8 @@
 // Testing class
 #include "../../src/user-interfaces/gui-welcome.hpp"
 
+#include <QCheckBox>
+
 class GUI_WELCOME_TEST_CLASS : public GUI_WELCOME
 {
     Q_OBJECT
@@ -31,6 +33,11 @@ public:
     ~GUI_WELCOME_TEST_CLASS();
 
     /*** Defines any needed setters & accessors for testing ***/
+
+private:
+    Ui::GUI_WELCOME *ui_ptr;
+
+    void set_checked_click_test(QCheckBox *check, bool b);
 };
 
 #endif // GUI_WELCOME_TEST_CLASS_H

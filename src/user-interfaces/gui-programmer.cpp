@@ -224,6 +224,11 @@ void GUI_PROGRAMMER::set_progress_update_send(int progress, QString label)
         ui->ProgrammerProgress_Label->setText(label);
 }
 
+Ui::GUI_PROGRAMMER *GUI_PROGRAMMER::get_ui()
+{
+    return ui;
+}
+
 void GUI_PROGRAMMER::on_BrowseFile_Button_clicked()
 {
     // Select programmer file

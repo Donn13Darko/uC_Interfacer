@@ -22,6 +22,8 @@
 // Testing class
 #include "../../src/user-interfaces/gui-io-control.hpp"
 
+#include <QCheckBox>
+
 class GUI_IO_CONTROL_TEST_CLASS : public GUI_IO_CONTROL
 {
     Q_OBJECT
@@ -33,10 +35,17 @@ public:
     /*** Defines any needed setters & accessors for testing ***/
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
-    void rcvd_formatted_clear_test();
 
     void set_expected_recv_length_test(uint32_t expected_length);
     void update_current_recv_length_test(uint32_t recv_len);
+
+    void receive_gui_test(QByteArray data);
+    void reset_clicked_test();
+
+private:
+    Ui::GUI_IO_CONTROL *ui_ptr;
+
+    void set_checked_click_test(QCheckBox *check, bool b);
 };
 
 #endif // GUI_IO_CONTROL_TEST_CLASS_H

@@ -53,6 +53,10 @@ protected slots:
     virtual void set_progress_update_recv(int progress, QString label);
     virtual void set_progress_update_send(int progress, QString label);
 
+protected:
+    /** Declare ui accessor for testing **/
+    Ui::GUI_PROGRAMMER *get_ui();
+
 private slots:
     void on_BrowseFile_Button_clicked();
     void on_RefreshPreview_Button_clicked();

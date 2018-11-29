@@ -158,6 +158,11 @@ void GUI_DATA_TRANSMIT::set_progress_update_send(int progress, QString label)
     ui->SendProgress_Label->setText(label);
 }
 
+Ui::GUI_DATA_TRANSMIT *GUI_DATA_TRANSMIT::get_ui()
+{
+    return ui;
+}
+
 void GUI_DATA_TRANSMIT::on_Send_RadioGroup_buttonClicked(int)
 {
     if (ui->SendFile_Radio->isChecked())

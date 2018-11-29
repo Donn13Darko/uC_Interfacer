@@ -372,6 +372,11 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
     }
 }
 
+Ui::GUI_IO_CONTROL *GUI_IO_CONTROL::get_ui()
+{
+    return ui;
+}
+
 void GUI_IO_CONTROL::DIO_ComboValueChanged()
 {
     // Propogate updates

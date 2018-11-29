@@ -17,11 +17,16 @@
 */
 
 #include "gui-programmer-test-class.hpp"
+#include "ui_gui-programmer.h"
+
+#include <QTest>
+#include <QSignalSpy>
 
 GUI_PROGRAMMER_TEST_CLASS::GUI_PROGRAMMER_TEST_CLASS(QWidget *parent) :
     GUI_PROGRAMMER(parent)
 {
-    /* DO NOTHING */
+    // Retrieve ui object
+    ui_ptr = get_ui();
 }
 
 GUI_PROGRAMMER_TEST_CLASS::~GUI_PROGRAMMER_TEST_CLASS()
@@ -39,11 +44,6 @@ qint64 GUI_PROGRAMMER_TEST_CLASS::rcvd_formatted_size_test()
     return rcvd_formatted_size();
 }
 
-void GUI_PROGRAMMER_TEST_CLASS::rcvd_formatted_clear_test()
-{
-    rcvd_formatted_clear();
-}
-
 void GUI_PROGRAMMER_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_length)
 {
     set_expected_recv_length(expected_length);
@@ -52,4 +52,37 @@ void GUI_PROGRAMMER_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_
 void GUI_PROGRAMMER_TEST_CLASS::update_current_recv_length_test(uint32_t recv_len)
 {
     update_current_recv_length(recv_len);
+}
+
+void GUI_PROGRAMMER_TEST_CLASS::receive_gui_test(QByteArray data)
+{
+    receive_gui(data);
+}
+
+void GUI_PROGRAMMER_TEST_CLASS::reset_clicked_test()
+{
+    // Setup spy to catch tranmit signal
+    QList<QVariant> spy_args;
+    QSignalSpy transmit_chunk_spy(this, transmit_chunk);
+    QVERIFY(transmit_chunk_spy.isValid());
+
+    // Click the reset button
+    QTest::mouseClick(ui_ptr->ResetGUI_Button, Qt::LeftButton);
+    qApp->processEvents();
+
+    // Verify that reset signal emitted
+    QCOMPARE(transmit_chunk_spy.count(), 1);
+    spy_args = transmit_chunk_spy.takeFirst();
+    QCOMPARE(spy_args.at(0).toInt(), (int) MAJOR_KEY_RESET);
+    QCOMPARE(spy_args.at(1).toInt(), (int) 0);
+}
+
+void GUI_PROGRAMMER_TEST_CLASS::set_checked_click_test(QCheckBox *check, bool b)
+{
+    if (b && !check->isChecked())
+        QTest::mouseClick(check, Qt::LeftButton);
+    else if (!b && check->isChecked())
+        QTest::mouseClick(check, Qt::LeftButton);
+
+    qApp->processEvents();
 }

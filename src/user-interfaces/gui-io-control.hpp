@@ -86,6 +86,10 @@ protected slots:
     void recordPinValues(PinTypeInfo *pInfo);
     virtual void receive_gui(QByteArray recvData);
 
+protected:
+    /** Declare ui accessor for testing **/
+    Ui::GUI_IO_CONTROL *get_ui();
+
 private slots:
     // DIO slots
     void DIO_ComboValueChanged();

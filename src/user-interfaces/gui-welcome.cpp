@@ -84,3 +84,8 @@ void GUI_WELCOME::parseConfigMap(QMap<QString, QVariant> *configMap)
     set_msg(configMap->value("msg").toString());
     set_buttons_enabled(configMap->value("enable_buttons", "false").toBool());
 }
+
+Ui::GUI_WELCOME *GUI_WELCOME::get_ui()
+{
+    return ui;
+}
