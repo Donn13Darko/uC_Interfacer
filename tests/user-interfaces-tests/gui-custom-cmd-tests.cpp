@@ -58,13 +58,12 @@ void GUI_CUSTOM_CMD_TESTS::test_init_vals()
     verify_reset_values();
 
     // Verify non-reset & defualt members
+    QVERIFY(custom_cmd_tester->isClosable());
     QCOMPARE(custom_cmd_tester->get_instructions_text_test(), QString(""));
-    QCOMPARE(custom_cmd_tester->get_gui_name(), QString("Custom CMD"));
     QCOMPARE(custom_cmd_tester->get_gui_tab_name(), custom_cmd_tester->get_gui_name());
     QCOMPARE(custom_cmd_tester->get_gui_config(),
              custom_cmd_tester->get_gui_name().prepend("[").append("]\n\n"));
 }
-
 
 void GUI_CUSTOM_CMD_TESTS::test_basic_features()
 {
@@ -968,7 +967,6 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
 void GUI_CUSTOM_CMD_TESTS::verify_reset_values()
 {
     // Check class memebrs
-    QVERIFY(custom_cmd_tester->isClosable());
     QVERIFY(!custom_cmd_tester->acceptAllCMDs());
     QCOMPARE(custom_cmd_tester->get_gui_key(), (uint8_t) MAJOR_KEY_CUSTOM_CMD);
     QCOMPARE(custom_cmd_tester->get_gui_name(), QString("Custom CMD"));

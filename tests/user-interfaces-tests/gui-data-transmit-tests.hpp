@@ -38,9 +38,13 @@ private slots:
     void cleanupTestCase();
 
     // Member tests
+    void test_init_vals();
+    void test_basic_features();
 
 private:
     GUI_DATA_TRANSMIT_TEST_CLASS *data_transmit_tester;
+
+    void verify_reset_values();
 };
 
 #endif // GUI_DATA_TRANSMIT_TESTS_H

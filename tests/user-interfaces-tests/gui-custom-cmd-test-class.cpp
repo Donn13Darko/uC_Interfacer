@@ -54,6 +54,36 @@ void GUI_CUSTOM_CMD_TEST_CLASS::update_current_recv_length_test(uint32_t recv_le
     update_current_recv_length(recv_len);
 }
 
+void GUI_CUSTOM_CMD_TEST_CLASS::set_progress_update_send_test(int progress, QString label)
+{
+    set_progress_update_send(progress, label);
+}
+
+int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_value_test()
+{
+    return ui_ptr->CustomCMD_ProgressBar->value();
+}
+
+QString GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_string_test()
+{
+    return ui_ptr->CustomCMDProgress_Label->text();
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::set_progress_update_recv_test(int progress, QString label)
+{
+    set_progress_update_recv(progress, label);
+}
+
+int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_recv_value_test()
+{
+    return ui_ptr->Feedback_ProgressBar->value();
+}
+
+QString GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_recv_string_test()
+{
+    return ui_ptr->FeedbackProgress_Label->text();
+}
+
 void GUI_CUSTOM_CMD_TEST_CLASS::set_cmd_input_radio_test(bool select_file)
 {
     if (select_file)
@@ -64,14 +94,14 @@ void GUI_CUSTOM_CMD_TEST_CLASS::set_cmd_input_radio_test(bool select_file)
     qApp->processEvents();
 }
 
-void GUI_CUSTOM_CMD_TEST_CLASS::set_keys_in_input_test(bool b)
-{
-    set_checked_click_test(ui_ptr->CustomCMDKeysInInput_CheckBox, b);
-}
-
 bool GUI_CUSTOM_CMD_TEST_CLASS::get_cmd_input_radio_test()
 {
     return ui_ptr->CustomCMDFile_Radio->isChecked();
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::set_keys_in_input_test(bool b)
+{
+    set_checked_click_test(ui_ptr->CustomCMDKeysInInput_CheckBox, b);
 }
 
 bool GUI_CUSTOM_CMD_TEST_CLASS::get_keys_in_input_test()
@@ -96,16 +126,16 @@ void GUI_CUSTOM_CMD_TEST_CLASS::set_user_input_text_test(QString input)
     qApp->processEvents();
 }
 
+QString GUI_CUSTOM_CMD_TEST_CLASS::get_user_input_text_test()
+{
+    return ui_ptr->CustomCMD_PlainText->toPlainText();
+}
+
 void GUI_CUSTOM_CMD_TEST_CLASS::set_file_input_text_test(QString filePath)
 {
     QVERIFY(ui_ptr->CustomCMDFile_Radio->isChecked());
     QTest::keyClicks(ui_ptr->CustomCMDFilePath_LineEdit, filePath);
     qApp->processEvents();
-}
-
-QString GUI_CUSTOM_CMD_TEST_CLASS::get_user_input_text_test()
-{
-    return ui_ptr->CustomCMD_PlainText->toPlainText();
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_file_input_text_test()
@@ -118,24 +148,14 @@ void GUI_CUSTOM_CMD_TEST_CLASS::set_major_key_test(QString key)
     ui_ptr->CustomCMDMajorKey_LineEdit->setText(key);
 }
 
-void GUI_CUSTOM_CMD_TEST_CLASS::set_minor_key_test(QString key)
-{
-    ui_ptr->CustomCMDMinorKey_LineEdit->setText(key);
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::set_key_base_test(QString base)
-{
-    ui_ptr->CustomCMDKeyBase_LineEdit->setText(base);
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::set_cmd_base_test(QString base)
-{
-    ui_ptr->CustomCMDBase_LineEdit->setText(base);
-}
-
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_major_key_test()
 {
     return ui_ptr->CustomCMDMajorKey_LineEdit->text();
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::set_minor_key_test(QString key)
+{
+    ui_ptr->CustomCMDMinorKey_LineEdit->setText(key);
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_minor_key_test()
@@ -143,9 +163,19 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_minor_key_test()
     return ui_ptr->CustomCMDMinorKey_LineEdit->text();
 }
 
+void GUI_CUSTOM_CMD_TEST_CLASS::set_key_base_test(QString base)
+{
+    ui_ptr->CustomCMDKeyBase_LineEdit->setText(base);
+}
+
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_key_base_test()
 {
     return ui_ptr->CustomCMDKeyBase_LineEdit->text();
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::set_cmd_base_test(QString base)
+{
+    ui_ptr->CustomCMDBase_LineEdit->setText(base);
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_cmd_base_test()
@@ -153,49 +183,9 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_cmd_base_test()
     return ui_ptr->CustomCMDBase_LineEdit->text();
 }
 
-void GUI_CUSTOM_CMD_TEST_CLASS::set_progress_update_recv_test(int progress, QString label)
-{
-    set_progress_update_recv(progress, label);
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::set_progress_update_send_test(int progress, QString label)
-{
-    set_progress_update_send(progress, label);
-}
-
-int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_recv_value_test()
-{
-    return ui_ptr->Feedback_ProgressBar->value();
-}
-
-QString GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_recv_string_test()
-{
-    return ui_ptr->FeedbackProgress_Label->text();
-}
-
-int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_value_test()
-{
-    return ui_ptr->CustomCMD_ProgressBar->value();
-}
-
-QString GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_string_test()
-{
-    return ui_ptr->CustomCMDProgress_Label->text();
-}
-
 void GUI_CUSTOM_CMD_TEST_CLASS::set_feedback_log_all_cmds_test(bool b)
 {
     set_checked_click_test(ui_ptr->FeedbackLogAllCMDs_CheckBox, b);
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::set_feedback_append_newline_test(bool b)
-{
-    set_checked_click_test(ui_ptr->FeedbackAppendNewline_CheckBox, b);
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::set_feedback_clear_on_set_test(bool b)
-{
-    set_checked_click_test(ui_ptr->FeedbackClearOnSet_CheckBox, b);
 }
 
 bool GUI_CUSTOM_CMD_TEST_CLASS::get_feedback_log_all_cmds_test()
@@ -203,9 +193,19 @@ bool GUI_CUSTOM_CMD_TEST_CLASS::get_feedback_log_all_cmds_test()
     return ui_ptr->FeedbackLogAllCMDs_CheckBox->isChecked();
 }
 
+void GUI_CUSTOM_CMD_TEST_CLASS::set_feedback_append_newline_test(bool b)
+{
+    set_checked_click_test(ui_ptr->FeedbackAppendNewline_CheckBox, b);
+}
+
 bool GUI_CUSTOM_CMD_TEST_CLASS::get_feedback_append_newline_test()
 {
     return ui_ptr->FeedbackAppendNewline_CheckBox->isChecked();
+}
+
+void GUI_CUSTOM_CMD_TEST_CLASS::set_feedback_clear_on_set_test(bool b)
+{
+    set_checked_click_test(ui_ptr->FeedbackClearOnSet_CheckBox, b);
 }
 
 bool GUI_CUSTOM_CMD_TEST_CLASS::get_feedback_clear_on_set_test()

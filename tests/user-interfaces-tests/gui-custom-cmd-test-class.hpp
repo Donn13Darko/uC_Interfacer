@@ -39,45 +39,47 @@ public:
     void set_expected_recv_length_test(uint32_t expected_length);
     void update_current_recv_length_test(uint32_t recv_len);
 
-    void set_cmd_input_radio_test(bool select_file);
-    void set_keys_in_input_test(bool b);
+    void set_progress_update_send_test(int progress, QString label);
+    int get_progress_update_send_value_test();
+    QString get_progress_update_send_string_test();
 
+    void set_progress_update_recv_test(int progress, QString label);
+    int get_progress_update_recv_value_test();
+    QString get_progress_update_recv_string_test();
+
+    void set_cmd_input_radio_test(bool select_file);
     bool get_cmd_input_radio_test();
+
+    void set_keys_in_input_test(bool b);
     bool get_keys_in_input_test();
 
     void send_clicked_test();
 
     void set_user_input_text_test(QString input);
-    void set_file_input_text_test(QString filePath);
-
     QString get_user_input_text_test();
+
+    void set_file_input_text_test(QString filePath);
     QString get_file_input_text_test();
 
     void set_major_key_test(QString key);
-    void set_minor_key_test(QString key);
-    void set_key_base_test(QString base);
-    void set_cmd_base_test(QString base);
-
     QString get_major_key_test();
+
+    void set_minor_key_test(QString key);
     QString get_minor_key_test();
+
+    void set_key_base_test(QString base);
     QString get_key_base_test();
+
+    void set_cmd_base_test(QString base);
     QString get_cmd_base_test();
 
-    void set_progress_update_recv_test(int progress, QString label);
-    void set_progress_update_send_test(int progress, QString label);
-
-    int get_progress_update_recv_value_test();
-    QString get_progress_update_recv_string_test();
-
-    int get_progress_update_send_value_test();
-    QString get_progress_update_send_string_test();
-
     void set_feedback_log_all_cmds_test(bool b);
-    void set_feedback_append_newline_test(bool b);
-    void set_feedback_clear_on_set_test(bool b);
-
     bool get_feedback_log_all_cmds_test();
+
+    void set_feedback_append_newline_test(bool b);
     bool get_feedback_append_newline_test();
+
+    void set_feedback_clear_on_set_test(bool b);
     bool get_feedback_clear_on_set_test();
 
     QString get_displayed_feedback_test();

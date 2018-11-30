@@ -54,6 +54,121 @@ void GUI_DATA_TRANSMIT_TEST_CLASS::update_current_recv_length_test(uint32_t recv
     update_current_recv_length(recv_len);
 }
 
+void GUI_DATA_TRANSMIT_TEST_CLASS::set_progress_update_send_test(int progress, QString label)
+{
+    set_progress_update_send(progress, label);
+}
+
+int GUI_DATA_TRANSMIT_TEST_CLASS::get_progress_update_send_value_test()
+{
+    return ui_ptr->Send_ProgressBar->value();
+}
+
+QString GUI_DATA_TRANSMIT_TEST_CLASS::get_progress_update_send_string_test()
+{
+    return ui_ptr->SendProgress_Label->text();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::set_progress_update_recv_test(int progress, QString label)
+{
+    set_progress_update_recv(progress, label);
+}
+
+int GUI_DATA_TRANSMIT_TEST_CLASS::get_progress_update_recv_value_test()
+{
+    return ui_ptr->Recv_ProgressBar->value();
+}
+
+QString GUI_DATA_TRANSMIT_TEST_CLASS::get_progress_update_recv_string_test()
+{
+    return ui_ptr->RecvProgress_Label->text();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::set_user_input_text_test(QString input)
+{
+    QVERIFY(ui_ptr->SendInput_Radio->isChecked());
+    foreach (QString line, input.split('\n'))
+    {
+        QTest::keyClicks(ui_ptr->Send_PlainText, line);
+        QTest::keyClick(ui_ptr->Send_PlainText, Qt::Key_Enter);
+    }
+    qApp->processEvents();
+}
+
+QString GUI_DATA_TRANSMIT_TEST_CLASS::get_user_input_text_test()
+{
+    return ui_ptr->Send_PlainText->toPlainText();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::set_file_input_text_test(QString filePath)
+{
+    QVERIFY(ui_ptr->SendFile_Radio->isChecked());
+    QTest::keyClicks(ui_ptr->SendFilePath_LineEdit, filePath);
+    qApp->processEvents();
+}
+
+QString GUI_DATA_TRANSMIT_TEST_CLASS::get_file_input_text_test()
+{
+    return ui_ptr->SendFilePath_LineEdit->text();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::set_data_input_radio_test(bool select_file)
+{
+    if (select_file)
+        QTest::mouseClick(ui_ptr->SendFile_Radio, Qt::LeftButton);
+    else
+        QTest::mouseClick(ui_ptr->SendInput_Radio, Qt::LeftButton);
+
+    qApp->processEvents();
+}
+
+bool GUI_DATA_TRANSMIT_TEST_CLASS::get_data_input_radio_test()
+{
+    return ui_ptr->SendFile_Radio->isChecked();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::send_clicked_test()
+{
+    QTest::mouseClick(ui_ptr->Send_Button, Qt::LeftButton);
+    qApp->processEvents();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::set_show_recv_data_test(bool b)
+{
+    set_checked_click_test(ui_ptr->RecvShowRecv_CheckBox, b);
+}
+
+bool GUI_DATA_TRANSMIT_TEST_CLASS::get_show_recv_data_test()
+{
+    return ui_ptr->RecvShowRecv_CheckBox->isChecked();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::set_recv_clear_on_set_test(bool b)
+{
+    set_checked_click_test(ui_ptr->RecvClearOnSet_CheckBox, b);
+}
+
+bool GUI_DATA_TRANSMIT_TEST_CLASS::get_recv_clear_on_set_test()
+{
+    return ui_ptr->RecvClearOnSet_CheckBox->isChecked();
+}
+
+QString GUI_DATA_TRANSMIT_TEST_CLASS::get_displayed_recv_test()
+{
+    return ui_ptr->Recv_PlainText->toPlainText();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::recv_clear_clicked_test()
+{
+    QTest::mouseClick(ui_ptr->RecvClear_Button, Qt::LeftButton);
+    qApp->processEvents();
+}
+
+void GUI_DATA_TRANSMIT_TEST_CLASS::recv_save_test(QString filePath)
+{
+    rcvd_formatted_save(filePath);
+}
+
 void GUI_DATA_TRANSMIT_TEST_CLASS::receive_gui_test(QByteArray data)
 {
     receive_gui(data);

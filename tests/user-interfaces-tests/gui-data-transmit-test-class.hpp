@@ -39,6 +39,35 @@ public:
     void set_expected_recv_length_test(uint32_t expected_length);
     void update_current_recv_length_test(uint32_t recv_len);
 
+    void set_progress_update_send_test(int progress, QString label);
+    int get_progress_update_send_value_test();
+    QString get_progress_update_send_string_test();
+
+    void set_progress_update_recv_test(int progress, QString label);
+    int get_progress_update_recv_value_test();
+    QString get_progress_update_recv_string_test();
+
+    void set_data_input_radio_test(bool select_file);
+    bool get_data_input_radio_test();
+
+    void send_clicked_test();
+
+    void set_user_input_text_test(QString input);
+    QString get_user_input_text_test();
+
+    void set_file_input_text_test(QString filePath);
+    QString get_file_input_text_test();
+
+    void set_show_recv_data_test(bool b);
+    bool get_show_recv_data_test();
+
+    void set_recv_clear_on_set_test(bool b);
+    bool get_recv_clear_on_set_test();
+
+    QString get_displayed_recv_test();
+    void recv_clear_clicked_test();
+    void recv_save_test(QString filePath);
+
     void receive_gui_test(QByteArray data);
     void reset_clicked_test();
 
