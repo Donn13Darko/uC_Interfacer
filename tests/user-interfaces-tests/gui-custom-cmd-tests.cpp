@@ -683,16 +683,6 @@ void GUI_CUSTOM_CMD_TESTS::test_rcvd_data()
                             false, false});
 }
 
-void GUI_CUSTOM_CMD_TESTS::test_looped_send_rcvd_cmd()
-{
-    // Set load data
-}
-
-void GUI_CUSTOM_CMD_TESTS::test_looped_send_rcvd_cmd_data()
-{
-    // Set load data
-}
-
 void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
 {
     // Fetch data
@@ -723,7 +713,6 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
                      click_buttons.at(7), check_rcvd,
                      rcvd_expected_display_data,
                      rcvd_expected_file_data);
-
 
     // Setup & perform send
     perform_cmd_send(send_fill_data, key_and_base_fills,
@@ -1160,10 +1149,11 @@ void GUI_CUSTOM_CMD_TESTS::perform_cmd_send(QString send_fill_data, QList<QStrin
         temp_file.write(send_fill_data.toLatin1());
         temp_file.close();
 
-        // Set input text
+        // Set file text
         custom_cmd_tester->set_file_input_text_test(temp_file.fileName());
     } else
     {
+        // Set input text
         custom_cmd_tester->set_user_input_text_test(send_fill_data);
     }
 
@@ -1196,7 +1186,7 @@ void GUI_CUSTOM_CMD_TESTS::perform_cmd_send(QString send_fill_data, QList<QStrin
             spy_args = transmit_chunk_spy.takeFirst();
 
             // Verify values
-            QVERIFY(4 <= expected_send.length());
+            QVERIFY(3 <= expected_send.length());
             QCOMPARE(spy_args.at(0).toInt(), (int) expected_send.at(0));
             QCOMPARE(spy_args.at(1).toInt(), (int) expected_send.at(1));
             QCOMPARE(spy_args.at(3).toInt(), (int) expected_send.at(2));

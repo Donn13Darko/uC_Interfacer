@@ -27,6 +27,9 @@ GUI_CUSTOM_CMD_TEST_CLASS::GUI_CUSTOM_CMD_TEST_CLASS(QWidget *parent) :
 {
     // Retrieve ui object
     ui_ptr = get_ui();
+
+    // Show UI (needs to be visible for UI events)
+    show();
 }
 
 GUI_CUSTOM_CMD_TEST_CLASS::~GUI_CUSTOM_CMD_TEST_CLASS()
@@ -44,21 +47,6 @@ qint64 GUI_CUSTOM_CMD_TEST_CLASS::rcvd_formatted_size_test()
     return rcvd_formatted_size();
 }
 
-void GUI_CUSTOM_CMD_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_length)
-{
-    set_expected_recv_length(expected_length);
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::update_current_recv_length_test(uint32_t recv_len)
-{
-    update_current_recv_length(recv_len);
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::set_progress_update_send_test(int progress, QString label)
-{
-    set_progress_update_send(progress, label);
-}
-
 int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_value_test()
 {
     return ui_ptr->CustomCMD_ProgressBar->value();
@@ -67,11 +55,6 @@ int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_value_test()
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_send_string_test()
 {
     return ui_ptr->CustomCMDProgress_Label->text();
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::set_progress_update_recv_test(int progress, QString label)
-{
-    set_progress_update_recv(progress, label);
 }
 
 int GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_recv_value_test()
@@ -86,10 +69,8 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_progress_update_recv_string_test()
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_cmd_input_radio_test(bool select_file)
 {
-    if (select_file)
-        QTest::mouseClick(ui_ptr->CustomCMDFile_Radio, Qt::LeftButton);
-    else
-        QTest::mouseClick(ui_ptr->CustomCMDManual_Radio, Qt::LeftButton);
+    if (select_file) QTest::mouseClick(ui_ptr->CustomCMDFile_Radio, Qt::LeftButton);
+    else QTest::mouseClick(ui_ptr->CustomCMDManual_Radio, Qt::LeftButton);
 
     qApp->processEvents();
 }
@@ -117,12 +98,21 @@ void GUI_CUSTOM_CMD_TEST_CLASS::send_clicked_test()
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_user_input_text_test(QString input)
 {
+    // Verify set correctly
     QVERIFY(ui_ptr->CustomCMDManual_Radio->isChecked());
+
+    // Verify input
+    ui_ptr->CustomCMD_PlainText->clear();
+    if (input.isEmpty()) return;
+
+    // Set input
     foreach (QString line, input.split('\n'))
     {
         QTest::keyClicks(ui_ptr->CustomCMD_PlainText, line);
         QTest::keyClick(ui_ptr->CustomCMD_PlainText, Qt::Key_Enter);
     }
+
+    // Process events
     qApp->processEvents();
 }
 
@@ -224,11 +214,6 @@ void GUI_CUSTOM_CMD_TEST_CLASS::feedback_clear_clicked_test()
     qApp->processEvents();
 }
 
-void GUI_CUSTOM_CMD_TEST_CLASS::feedback_save_test(QString filePath)
-{
-    rcvd_formatted_save(filePath);
-}
-
 void GUI_CUSTOM_CMD_TEST_CLASS::set_instructions_text_test(QString inst)
 {
     ui_ptr->Instructions_PlainText->setPlainText(inst);
@@ -237,11 +222,6 @@ void GUI_CUSTOM_CMD_TEST_CLASS::set_instructions_text_test(QString inst)
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_instructions_text_test()
 {
     return ui_ptr->Instructions_PlainText->toPlainText();
-}
-
-void GUI_CUSTOM_CMD_TEST_CLASS::receive_gui_test(QByteArray data)
-{
-    receive_gui(data);
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::reset_clicked_test()

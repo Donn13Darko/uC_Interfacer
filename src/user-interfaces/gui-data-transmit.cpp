@@ -184,7 +184,7 @@ void GUI_DATA_TRANSMIT::on_Send_Button_clicked()
 
         // Get file size
         qint64 fileSize = GUI_GENERIC_HELPER::getFileSize(filePath);
-        if (fileSize < 0) return;
+        if (fileSize < 0) fileSize = 0;
 
         // Set size
         emit transmit_chunk(local_gui_key, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,

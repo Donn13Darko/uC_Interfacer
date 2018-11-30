@@ -41,10 +41,33 @@ private slots:
     void test_init_vals();
     void test_basic_features();
 
+    void test_gui_config();
+    void test_gui_config_data();
+
+    void test_send();
+    void test_send_data();
+
+    void test_rcvd();
+    void test_rcvd_data();
+
+    void test_complex_transmit();
+    void test_complex_transmit_data();
+
 private:
     GUI_DATA_TRANSMIT_TEST_CLASS *data_transmit_tester;
 
     void verify_reset_values();
+
+    void perform_data_rcvd(QList<QByteArray> rcvd_fill_data,
+                           bool display_recv = true, bool clear_on_set = true,
+                           bool click_clear_button = true,
+                           bool click_save_button = false, bool check_rcvd = false,
+                           QString rcvd_expected_display_data = "",
+                           QByteArray rcvd_expected_file_data = QByteArray());
+
+    void perform_data_send(QString send_fill_data, bool send_file_radio,
+                           bool click_send = false, bool check_send = false,
+                           QList<QByteArray> send_expected_signals = QList<QByteArray>());
 };
 
 #endif // GUI_DATA_TRANSMIT_TESTS_H

@@ -50,9 +50,6 @@ private slots:
     void test_rcvd();
     void test_rcvd_data();
 
-    void test_looped_send_rcvd_cmd();
-    void test_looped_send_rcvd_cmd_data();
-
     void test_complex_cmd();
     void test_complex_cmd_data();
 

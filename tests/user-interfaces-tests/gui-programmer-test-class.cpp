@@ -44,16 +44,6 @@ qint64 GUI_PROGRAMMER_TEST_CLASS::rcvd_formatted_size_test()
     return rcvd_formatted_size();
 }
 
-void GUI_PROGRAMMER_TEST_CLASS::set_expected_recv_length_test(uint32_t expected_length)
-{
-    set_expected_recv_length(expected_length);
-}
-
-void GUI_PROGRAMMER_TEST_CLASS::update_current_recv_length_test(uint32_t recv_len)
-{
-    update_current_recv_length(recv_len);
-}
-
 void GUI_PROGRAMMER_TEST_CLASS::receive_gui_test(QByteArray data)
 {
     receive_gui(data);

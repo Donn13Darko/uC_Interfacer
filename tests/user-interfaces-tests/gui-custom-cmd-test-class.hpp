@@ -36,14 +36,9 @@ public:
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
 
-    void set_expected_recv_length_test(uint32_t expected_length);
-    void update_current_recv_length_test(uint32_t recv_len);
-
-    void set_progress_update_send_test(int progress, QString label);
     int get_progress_update_send_value_test();
     QString get_progress_update_send_string_test();
 
-    void set_progress_update_recv_test(int progress, QString label);
     int get_progress_update_recv_value_test();
     QString get_progress_update_recv_string_test();
 
@@ -84,12 +79,10 @@ public:
 
     QString get_displayed_feedback_test();
     void feedback_clear_clicked_test();
-    void feedback_save_test(QString filePath);
 
     void set_instructions_text_test(QString inst);
     QString get_instructions_text_test();
 
-    void receive_gui_test(QByteArray data);
     void reset_clicked_test();
 
 private:
