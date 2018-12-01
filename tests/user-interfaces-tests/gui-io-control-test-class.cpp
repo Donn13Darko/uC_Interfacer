@@ -27,6 +27,9 @@ GUI_IO_CONTROL_TEST_CLASS::GUI_IO_CONTROL_TEST_CLASS(QWidget *parent) :
 {
     // Retrieve ui object
     ui_ptr = get_ui();
+
+    // Show UI (needs to be visible for UI events)
+    show();
 }
 
 GUI_IO_CONTROL_TEST_CLASS::~GUI_IO_CONTROL_TEST_CLASS()
@@ -44,9 +47,10 @@ qint64 GUI_IO_CONTROL_TEST_CLASS::rcvd_formatted_size_test()
     return rcvd_formatted_size();
 }
 
-void GUI_IO_CONTROL_TEST_CLASS::receive_gui_test(QByteArray data)
+QHBoxLayout *GUI_IO_CONTROL_TEST_CLASS::get_pin(uint8_t, uint8_t)
 {
-    receive_gui(data);
+    /* Get the pin combo list */
+    return nullptr;
 }
 
 void GUI_IO_CONTROL_TEST_CLASS::reset_clicked_test()

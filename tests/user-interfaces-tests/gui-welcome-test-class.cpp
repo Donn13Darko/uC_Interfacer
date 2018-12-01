@@ -27,6 +27,9 @@ GUI_WELCOME_TEST_CLASS::GUI_WELCOME_TEST_CLASS(QWidget *parent) :
 {
     // Retrieve ui object
     ui_ptr = get_ui();
+
+    // Show UI (needs to be visible for UI events)
+    show();
 }
 
 GUI_WELCOME_TEST_CLASS::~GUI_WELCOME_TEST_CLASS()

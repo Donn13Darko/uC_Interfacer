@@ -36,7 +36,6 @@ public:
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
 
-    void receive_gui_test(QByteArray data);
     void reset_clicked_test();
 
 private:
