@@ -146,8 +146,8 @@ void GUI_CUSTOM_CMD_TESTS::test_send()
 {
     // Fetch data
     QFETCH(QString, send_fill_data);
-    QFETCH(QList<QString>, key_and_base_fills);
     QFETCH(QList<QByteArray>, send_expected_signals);
+    QFETCH(QList<QString>, key_and_base_fills);
     QFETCH(QList<bool>, click_buttons);
 
     // Reset the gui before (direct call slot)
@@ -1129,13 +1129,6 @@ void GUI_CUSTOM_CMD_TESTS::perform_cmd_send(QString send_fill_data, QList<QStrin
                                             bool click_send, bool check_send,
                                             QList<QByteArray> send_expected_signals)
 {
-    // Set key fields
-    QCOMPARE(key_and_base_fills.length(), (int) 4);
-    custom_cmd_tester->set_major_key_test(key_and_base_fills.at(0));
-    custom_cmd_tester->set_minor_key_test(key_and_base_fills.at(1));
-    custom_cmd_tester->set_key_base_test(key_and_base_fills.at(2));
-    custom_cmd_tester->set_cmd_base_test(key_and_base_fills.at(3));
-
     // Create temp file to store data in
     QTemporaryFile temp_file;
     temp_file.setAutoRemove(true);
@@ -1156,6 +1149,13 @@ void GUI_CUSTOM_CMD_TESTS::perform_cmd_send(QString send_fill_data, QList<QStrin
         // Set input text
         custom_cmd_tester->set_user_input_text_test(send_fill_data);
     }
+
+    // Set key fields
+    QCOMPARE(key_and_base_fills.length(), (int) 4);
+    custom_cmd_tester->set_major_key_test(key_and_base_fills.at(0));
+    custom_cmd_tester->set_minor_key_test(key_and_base_fills.at(1));
+    custom_cmd_tester->set_key_base_test(key_and_base_fills.at(2));
+    custom_cmd_tester->set_cmd_base_test(key_and_base_fills.at(3));
 
     // Set boolen selections
     custom_cmd_tester->set_keys_in_input_test(keys_in_input);

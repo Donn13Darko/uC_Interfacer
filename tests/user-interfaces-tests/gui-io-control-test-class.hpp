@@ -36,7 +36,24 @@ public:
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
 
-    QHBoxLayout *get_pin(uint8_t pinType, uint8_t pinNum);
+    QHBoxLayout *get_pin_test(uint8_t pinType, uint8_t pinNum);
+
+    void set_aio_update_rate_test(float rate);
+    void set_dio_update_rate_test(float rate);
+
+    QString get_update_rate_start_text_test();
+
+    void update_rate_start_clicked_test();
+    void update_rate_stop_clicked_test();
+
+    void set_log_file_save_path_test(QString filePath);
+    void set_log_file_update_rate_test(float rate);
+    void set_log_append_checked_test(bool b);
+
+    QString get_log_start_text_test();
+
+    void log_start_clicked_test();
+    void log_stop_clicked_test();
 
     void reset_clicked_test();
 

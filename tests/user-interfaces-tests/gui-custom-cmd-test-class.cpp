@@ -124,6 +124,7 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_user_input_text_test()
 void GUI_CUSTOM_CMD_TEST_CLASS::set_file_input_text_test(QString filePath)
 {
     QVERIFY(ui_ptr->CustomCMDFile_Radio->isChecked());
+    ui_ptr->CustomCMDFilePath_LineEdit->clear();
     QTest::keyClicks(ui_ptr->CustomCMDFilePath_LineEdit, filePath);
     qApp->processEvents();
 }
@@ -135,7 +136,9 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_file_input_text_test()
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_major_key_test(QString key)
 {
-    ui_ptr->CustomCMDMajorKey_LineEdit->setText(key);
+    ui_ptr->CustomCMDMajorKey_LineEdit->clear();
+    QTest::keyClicks(ui_ptr->CustomCMDMajorKey_LineEdit, key);
+    qApp->processEvents();
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_major_key_test()
@@ -145,7 +148,9 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_major_key_test()
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_minor_key_test(QString key)
 {
-    ui_ptr->CustomCMDMinorKey_LineEdit->setText(key);
+    ui_ptr->CustomCMDMinorKey_LineEdit->clear();
+    QTest::keyClicks(ui_ptr->CustomCMDMinorKey_LineEdit, key);
+    qApp->processEvents();
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_minor_key_test()
@@ -155,7 +160,9 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_minor_key_test()
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_key_base_test(QString base)
 {
-    ui_ptr->CustomCMDKeyBase_LineEdit->setText(base);
+    ui_ptr->CustomCMDKeyBase_LineEdit->clear();
+    QTest::keyClicks(ui_ptr->CustomCMDKeyBase_LineEdit, base);
+    qApp->processEvents();
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_key_base_test()
@@ -165,7 +172,9 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_key_base_test()
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_cmd_base_test(QString base)
 {
-    ui_ptr->CustomCMDBase_LineEdit->setText(base);
+    ui_ptr->CustomCMDBase_LineEdit->clear();
+    QTest::keyClicks(ui_ptr->CustomCMDBase_LineEdit, base);
+    qApp->processEvents();
 }
 
 QString GUI_CUSTOM_CMD_TEST_CLASS::get_cmd_base_test()

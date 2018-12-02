@@ -64,6 +64,15 @@ typedef struct {
 } PinTypeInfo;
 #define EMPTY_PIN_TYPE_INFO PinTypeInfo{.grid=nullptr, .pinType=0, .minorKey=0, .cols=0}
 
+// IO grid positions
+typedef enum {
+    io_label_pos = 0,
+    io_combo_pos,
+    io_slider_pos,
+    io_line_edit_pos,
+    io_num_entries
+} io_gui_positions;
+
 class GUI_IO_CONTROL : public GUI_BASE
 {
     Q_OBJECT
@@ -161,15 +170,6 @@ private:
     // DIO pin information
     QGridLayout *DIO_Grid;
     uint8_t num_DIOcols;
-
-    // IO grid positions
-    typedef enum {
-        io_label_pos = 0,
-        io_combo_pos,
-        io_slider_pos,
-        io_line_edit_pos,
-        io_num_entries
-    } io_gui_positions;
 
     // Connection settings
     bool devConnected;

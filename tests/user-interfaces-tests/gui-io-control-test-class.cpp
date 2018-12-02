@@ -47,10 +47,106 @@ qint64 GUI_IO_CONTROL_TEST_CLASS::rcvd_formatted_size_test()
     return rcvd_formatted_size();
 }
 
-QHBoxLayout *GUI_IO_CONTROL_TEST_CLASS::get_pin(uint8_t, uint8_t)
+QHBoxLayout *GUI_IO_CONTROL_TEST_CLASS::get_pin_test(uint8_t pinType, uint8_t pinNum)
 {
-    /* Get the pin combo list */
+    // Get relevant grid
+    QGridLayout *pin_grid;
+    switch (pinType)
+    {
+        case MINOR_KEY_IO_AIO:
+        {
+            pin_grid = (QGridLayout*) ui_ptr->AIOVLayout->itemAt(1)->layout();
+            break;
+        }
+        case MINOR_KEY_IO_DIO:
+        {
+            pin_grid = (QGridLayout*) ui_ptr->DIOVLayout->itemAt(1)->layout();
+            break;
+        }
+        default:
+        {
+            return nullptr;
+        }
+    }
+
+    // Get the pin from the grid
+    int curr_pin_num;
+    QHBoxLayout *pin;
+    for (int i = 0; i < pin_grid->count(); i++)
+    {
+        pin = (QHBoxLayout*) pin_grid->itemAt(i)->layout();
+        curr_pin_num = ((QLabel*) pin->itemAt(io_label_pos)->widget())->text().toInt(nullptr, 10);
+        if (curr_pin_num == pinNum)
+        {
+            return pin;
+        }
+    }
+
+    // Return null if not found
     return nullptr;
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_aio_update_rate_test(float rate)
+{
+    QTest::keyClicks(ui_ptr->AIO_UR_LineEdit, QString::number(rate));
+    qApp->processEvents();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_dio_update_rate_test(float rate)
+{
+    QTest::keyClicks(ui_ptr->DIO_UR_LineEdit, QString::number(rate));
+    qApp->processEvents();
+}
+
+QString GUI_IO_CONTROL_TEST_CLASS::get_update_rate_start_text_test()
+{
+    return ui_ptr->StartUpdater_Button->text();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::update_rate_start_clicked_test()
+{
+    QTest::mouseClick(ui_ptr->StartUpdater_Button, Qt::LeftButton);
+    qApp->processEvents();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::update_rate_stop_clicked_test()
+{
+    QTest::mouseClick(ui_ptr->StopUpdater_Button, Qt::LeftButton);
+    qApp->processEvents();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_log_file_save_path_test(QString filePath)
+{
+    QTest::keyClicks(ui_ptr->LogSaveLoc_LineEdit, filePath);
+    qApp->processEvents();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_log_file_update_rate_test(float rate)
+{
+    QTest::keyClicks(ui_ptr->LOG_UR_LineEdit, QString::number(rate));
+    qApp->processEvents();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_log_append_checked_test(bool b)
+{
+    set_checked_click_test(ui_ptr->AppendLog_CheckBox, b);
+}
+
+QString GUI_IO_CONTROL_TEST_CLASS::get_log_start_text_test()
+{
+    return ui_ptr->StartLog_Button->text();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::log_start_clicked_test()
+{
+    QTest::mouseClick(ui_ptr->StartLog_Button, Qt::LeftButton);
+    qApp->processEvents();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::log_stop_clicked_test()
+{
+    QTest::mouseClick(ui_ptr->StopLog_Button, Qt::LeftButton);
+    qApp->processEvents();
 }
 
 void GUI_IO_CONTROL_TEST_CLASS::reset_clicked_test()
