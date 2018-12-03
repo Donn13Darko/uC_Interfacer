@@ -39,7 +39,10 @@ public:
     QHBoxLayout *get_pin_test(uint8_t pinType, uint8_t pinNum);
 
     void set_aio_update_rate_test(float rate);
+    float get_aio_update_rate_test();
+
     void set_dio_update_rate_test(float rate);
+    float get_dio_update_rate_test();
 
     QString get_update_rate_start_text_test();
 
@@ -47,8 +50,13 @@ public:
     void update_rate_stop_clicked_test();
 
     void set_log_file_save_path_test(QString filePath);
+    QString get_log_file_save_path_test();
+
     void set_log_file_update_rate_test(float rate);
+    float get_log_file_update_rate_test();
+
     void set_log_append_checked_test(bool b);
+    bool get_log_append_checked_test();
 
     QString get_log_start_text_test();
 

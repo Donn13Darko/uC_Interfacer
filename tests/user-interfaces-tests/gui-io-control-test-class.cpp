@@ -92,10 +92,20 @@ void GUI_IO_CONTROL_TEST_CLASS::set_aio_update_rate_test(float rate)
     qApp->processEvents();
 }
 
+float GUI_IO_CONTROL_TEST_CLASS::get_aio_update_rate_test()
+{
+    return ui_ptr->AIO_UR_LineEdit->text().toFloat();
+}
+
 void GUI_IO_CONTROL_TEST_CLASS::set_dio_update_rate_test(float rate)
 {
     QTest::keyClicks(ui_ptr->DIO_UR_LineEdit, QString::number(rate));
     qApp->processEvents();
+}
+
+float GUI_IO_CONTROL_TEST_CLASS::get_dio_update_rate_test()
+{
+    return ui_ptr->DIO_UR_LineEdit->text().toFloat();
 }
 
 QString GUI_IO_CONTROL_TEST_CLASS::get_update_rate_start_text_test()
@@ -121,15 +131,30 @@ void GUI_IO_CONTROL_TEST_CLASS::set_log_file_save_path_test(QString filePath)
     qApp->processEvents();
 }
 
+QString GUI_IO_CONTROL_TEST_CLASS::get_log_file_save_path_test()
+{
+    return ui_ptr->LogSaveLoc_LineEdit->text();
+}
+
 void GUI_IO_CONTROL_TEST_CLASS::set_log_file_update_rate_test(float rate)
 {
     QTest::keyClicks(ui_ptr->LOG_UR_LineEdit, QString::number(rate));
     qApp->processEvents();
 }
 
+float GUI_IO_CONTROL_TEST_CLASS::get_log_file_update_rate_test()
+{
+    return ui_ptr->LOG_UR_LineEdit->text().toFloat();
+}
+
 void GUI_IO_CONTROL_TEST_CLASS::set_log_append_checked_test(bool b)
 {
     set_checked_click_test(ui_ptr->AppendLog_CheckBox, b);
+}
+
+bool GUI_IO_CONTROL_TEST_CLASS::get_log_append_checked_test()
+{
+    return ui_ptr->AppendLog_CheckBox->isChecked();
 }
 
 QString GUI_IO_CONTROL_TEST_CLASS::get_log_start_text_test()

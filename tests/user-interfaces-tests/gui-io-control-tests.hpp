@@ -38,9 +38,16 @@ private slots:
     void cleanupTestCase();
 
     // Member tests
+    void test_init_vals();
+    void test_basic_features();
+
+    void test_gui_config();
+    void test_gui_config_data();
 
 private:
     GUI_IO_CONTROL_TEST_CLASS *io_control_tester;
+
+    void verify_reset_values();
 };
 
 #endif // GUI_IO_CONTROL_TESTS_H

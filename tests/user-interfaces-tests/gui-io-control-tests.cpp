@@ -51,3 +51,96 @@ void GUI_IO_CONTROL_TESTS::cleanupTestCase()
         io_control_tester = nullptr;
     }
 }
+
+void GUI_IO_CONTROL_TESTS::test_init_vals()
+{
+    // Verify reset defaults
+    verify_reset_values();
+
+    // Verify non-reset & defualt members
+    QVERIFY(io_control_tester->isClosable());
+    QCOMPARE(io_control_tester->get_gui_tab_name(), io_control_tester->get_gui_name());
+    QCOMPARE(io_control_tester->get_gui_config(),
+             io_control_tester->get_gui_name().prepend("[").append("]\n\n"));
+
+    // Verify init update info
+    QCOMPARE(io_control_tester->get_aio_update_rate_test(), 1.0f);
+    QCOMPARE(io_control_tester->get_dio_update_rate_test(), 1.0f);
+
+    // Verify init log info
+    QCOMPARE(io_control_tester->get_log_file_update_rate_test(), 1.0f);
+    QCOMPARE(io_control_tester->get_log_file_save_path_test(), QString(""));
+    QCOMPARE(io_control_tester->get_log_append_checked_test(), true);
+}
+
+void GUI_IO_CONTROL_TESTS::test_basic_features()
+{
+    // Test waitForDevice
+    QVERIFY(!io_control_tester->waitForDevice(0));
+    QVERIFY(io_control_tester->waitForDevice(MINOR_KEY_IO_REMOTE_CONN_READ));
+    QVERIFY(!io_control_tester->waitForDevice(MINOR_KEY_IO_AIO_READ));
+    QVERIFY(!io_control_tester->waitForDevice(MINOR_KEY_IO_DIO_READ));
+}
+
+void GUI_IO_CONTROL_TESTS::test_gui_config()
+{
+    // Fetch data
+    QFETCH(QString, config_str);
+    QFETCH(QString, gui_tab_name);
+    QFETCH(bool, isClosable);
+
+    // Clear current config
+    QMap<QString, QVariant> reset_map;
+    io_control_tester->parseConfigMap(&reset_map);
+
+    // Get gui values
+    uint8_t curr_gui_key = io_control_tester->get_gui_key();
+    QString curr_gui_name = io_control_tester->get_gui_name();
+
+    // Generate new config
+    CONFIG_MAP *gui_config = \
+            GUI_GENERIC_HELPER::decode_configMap(config_str);
+
+    // Parse new config
+    io_control_tester->parseConfigMap(gui_config->value(curr_gui_name, nullptr));
+
+    // Check values
+    QCOMPARE(io_control_tester->get_gui_key(), curr_gui_key);
+    QCOMPARE(io_control_tester->get_gui_name(), curr_gui_name);
+    QCOMPARE(io_control_tester->get_gui_tab_name(), gui_tab_name);
+    QCOMPARE(io_control_tester->isClosable(), isClosable);
+}
+
+void GUI_IO_CONTROL_TESTS::test_gui_config_data()
+{
+    // Setup data columns
+    QTest::addColumn<QString>("config_str");
+    QTest::addColumn<QString>("gui_tab_name");
+    QTest::addColumn<bool>("isClosable");
+
+    // Helper variables
+    QString config_str;
+    QString curr_gui_name = io_control_tester->get_gui_name();
+
+    // Setup basic config str
+    config_str.clear();
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += "tab_name=\"Tab A\"\n\n";
+    config_str += "closable=\"false\"\n\n";
+
+    // Load in basic
+    QTest::newRow("Basic") << config_str \
+                           << "Tab A" \
+                           << false;
+}
+
+void GUI_IO_CONTROL_TESTS::verify_reset_values()
+{
+    // Check class memebrs
+    QCOMPARE(io_control_tester->get_gui_key(), (uint8_t) MAJOR_KEY_IO);
+    QCOMPARE(io_control_tester->get_gui_name(), QString("IO"));
+    QCOMPARE(io_control_tester->rcvd_formatted_size_test(), (qint64) 0);
+
+    // Check update rate
+    QCOMPARE(io_control_tester->get_update_rate_start_text_test(), QString("Start"));
+}
