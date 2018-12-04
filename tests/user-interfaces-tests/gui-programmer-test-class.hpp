@@ -36,7 +36,7 @@ public:
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
 
-    void reset_clicked_test();
+    bool reset_clicked_test();
 
 private:
     Ui::GUI_PROGRAMMER *ui_ptr;

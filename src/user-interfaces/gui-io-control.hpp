@@ -96,6 +96,13 @@ protected slots:
     virtual void receive_gui(QByteArray recvData);
 
 protected:
+    // Get pin list
+    QStringList get_pin_list();
+
+    // Get pin layout
+    bool get_pin_layout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout);
+    bool get_widget_layout(uint8_t pinType, QWidget *item, QLayout **itemLayout);
+
     /** Declare ui accessor for testing **/
     Ui::GUI_IO_CONTROL *get_ui();
 
@@ -178,10 +185,6 @@ private:
     // Handle changes on the GUI
     void inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_pos, QByteArray *data = nullptr);
     void updateSliderRange(QSlider *slider, RangeList *rList);
-
-    // Get pin layout
-    bool getPinLayout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout);
-    bool getWidgetLayout(uint8_t pinType, QWidget *item, QLayout **itemLayout);
 
     // Set pin settings
     void setPinCombos(PinTypeInfo *pInfo, QList<QString> combos);

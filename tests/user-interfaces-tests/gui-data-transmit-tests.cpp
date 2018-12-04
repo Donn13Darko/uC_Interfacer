@@ -407,7 +407,7 @@ void GUI_DATA_TRANSMIT_TESTS::test_complex_transmit()
     if (click_buttons.at(6))
     {
         // Send Reset
-        data_transmit_tester->reset_clicked_test();
+        QVERIFY(data_transmit_tester->reset_clicked_test());
 
         // Verify reset values
         verify_reset_values();

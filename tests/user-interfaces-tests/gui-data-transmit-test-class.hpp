@@ -62,7 +62,7 @@ public:
     QString get_displayed_recv_test();
     void recv_clear_clicked_test();
 
-    void reset_clicked_test();
+    bool reset_clicked_test();
 
 private:
     Ui::GUI_DATA_TRANSMIT *ui_ptr;

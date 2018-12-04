@@ -228,7 +228,7 @@ void GUI_IO_CONTROL::chart_update_request(QList<QString> data_points, GUI_CHART_
         }
 
         // Get pin value
-        if (!pin_error && getPinLayout(pinType, pinNum, &item))
+        if (!pin_error && get_pin_layout(pinType, pinNum, &item))
         {
             val = new double(((QLineEdit*) item->itemAt(io_line_edit_pos)->widget())->text().toDouble());
         } else
@@ -370,6 +370,69 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
             break;
         }
     }
+}
+
+QStringList GUI_IO_CONTROL::get_pin_list()
+{
+    return pinList;
+}
+
+bool GUI_IO_CONTROL::get_pin_layout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout)
+{
+    // Set itemLayout to nullptr
+    *itemLayout = nullptr;
+
+    // Get pins
+    QList<QHBoxLayout*> *pins = pinMap.value(pinType);
+
+    // Verify pins
+    if (!pins) return false;
+
+    // Search pins for item
+    QHBoxLayout *pin;
+    int num_pins = pins->length();
+    int curr_pin_num;
+    for (int i = 0; i < num_pins; i++)
+    {
+        pin = pins->at(i);
+        curr_pin_num = ((QLabel*) pin->itemAt(io_label_pos)->widget())->text().toInt(nullptr, 10);
+        if (curr_pin_num == pin_num)
+        {
+            *itemLayout = pin;
+            return true;
+        }
+    }
+
+    // If reached, couldn't find pin in pins
+    return false;
+}
+
+bool GUI_IO_CONTROL::get_widget_layout(uint8_t pinType, QWidget *item, QLayout **itemLayout)
+{
+    // Set itemLayout to nullptr
+    *itemLayout = nullptr;
+
+    // Get pins
+    QList<QHBoxLayout*> *pins = pinMap.value(pinType);
+
+    // Verify item & pins
+    if (!(item && pins)) return false;
+
+    // Search pins for item
+    QHBoxLayout *pin;
+    int num_pins = pins->length();
+    for (int i = 0; i < num_pins; i++)
+    {
+        pin = pins->at(i);
+        if (pin->indexOf(item) != -1)
+        {
+            *itemLayout = pin;
+            return true;
+        }
+    }
+
+    // If reached, couldn't find pin in pins
+    return false;
 }
 
 Ui::GUI_IO_CONTROL *GUI_IO_CONTROL::get_ui()
@@ -668,7 +731,7 @@ void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_
 
     // Get pin info of button clicked
     QLayout *pin;
-    if (!getWidgetLayout(pInfo.pinType, (QWidget*) caller, &pin)) return;
+    if (!get_widget_layout(pInfo.pinType, (QWidget*) caller, &pin)) return;
 
     // Get widgets
     QLabel *label = (QLabel*) pin->itemAt(io_label_pos)->widget();
@@ -766,64 +829,6 @@ void GUI_IO_CONTROL::updateSliderRange(QSlider *slider, RangeList *rList)
     slider->blockSignals(prev_block_status);
 }
 
-bool GUI_IO_CONTROL::getPinLayout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout)
-{
-    // Set itemLayout to nullptr
-    *itemLayout = nullptr;
-
-    // Get pins
-    QList<QHBoxLayout*> *pins = pinMap.value(pinType);
-
-    // Verify pins
-    if (!pins) return false;
-
-    // Search pins for item
-    QHBoxLayout *pin;
-    int num_pins = pins->length();
-    int curr_pin_num;
-    for (int i = 0; i < num_pins; i++)
-    {
-        pin = pins->at(i);
-        curr_pin_num = ((QLabel*) pin->itemAt(io_label_pos)->widget())->text().toInt(nullptr, 10);
-        if (curr_pin_num == pin_num)
-        {
-            *itemLayout = pin;
-            return true;
-        }
-    }
-
-    // If reached, couldn't find pin in pins
-    return false;
-}
-
-bool GUI_IO_CONTROL::getWidgetLayout(uint8_t pinType, QWidget *item, QLayout **itemLayout)
-{
-    // Set itemLayout to nullptr
-    *itemLayout = nullptr;
-
-    // Get pins
-    QList<QHBoxLayout*> *pins = pinMap.value(pinType);
-
-    // Verify item & pins
-    if (!(item && pins)) return false;
-
-    // Search pins for item
-    QHBoxLayout *pin;
-    int num_pins = pins->length();
-    for (int i = 0; i < num_pins; i++)
-    {
-        pin = pins->at(i);
-        if (pin->indexOf(item) != -1)
-        {
-            *itemLayout = pin;
-            return true;
-        }
-    }
-
-    // If reached, couldn't find pin in pins
-    return false;
-}
-
 void GUI_IO_CONTROL::setConTypes(QStringList connTypes, QList<char> mapValues)
 {
     if (connTypes.length() != mapValues.length()) return;
@@ -919,7 +924,7 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
             // Find row & column of desired pin
             // If not found, create a new pin and insert it into
             // the map & list at the correct location (ordered by number)
-            if (!getPinLayout(pInfo->pinType, pin, &pin_layout))
+            if (!get_pin_layout(pInfo->pinType, pin, &pin_layout))
             {
                 // Create the new pin
                 new_pin = create_pin();
@@ -1131,7 +1136,7 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
             while (i < val_len)
             {
                 // Find pin layout on GUI
-                if (!getPinLayout(pInfo.pinType, pin_num, &pin)) return;
+                if (!get_pin_layout(pInfo.pinType, pin_num, &pin)) return;
 
                 // Get all the widgets
                 comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
@@ -1191,7 +1196,7 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
             if (combo_text.isEmpty()) return;
 
             // Find pin layout on GUI
-            if (!getPinLayout(pInfo.pinType, pin_num, &pin)) return;
+            if (!get_pin_layout(pInfo.pinType, pin_num, &pin)) return;
 
             // Get all the widgets
             comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
@@ -1241,7 +1246,7 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
             value = ((uint16_t) values.at(s2_io_value_high_loc) << 8) | ((uchar) values.at(s2_io_value_low_loc));
 
             // Find pin layout on GUI
-            if (!getPinLayout(pInfo.pinType, pin_num, &pin)) return;
+            if (!get_pin_layout(pInfo.pinType, pin_num, &pin)) return;
 
             // Get all the widgets
             comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();

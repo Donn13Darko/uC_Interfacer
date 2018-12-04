@@ -71,6 +71,10 @@ void GUI_IO_CONTROL_TESTS::test_init_vals()
     QCOMPARE(io_control_tester->get_log_file_update_rate_test(), 1.0f);
     QCOMPARE(io_control_tester->get_log_file_save_path_test(), QString(""));
     QCOMPARE(io_control_tester->get_log_append_checked_test(), true);
+
+    // Verify init num pins
+    QVERIFY(io_control_tester->check_pins_test(QStringList(), QList<QStringList>(),
+                                               QList<QList<int>>(), QStringList()));
 }
 
 void GUI_IO_CONTROL_TESTS::test_basic_features()
@@ -88,6 +92,13 @@ void GUI_IO_CONTROL_TESTS::test_gui_config()
     QFETCH(QString, config_str);
     QFETCH(QString, gui_tab_name);
     QFETCH(bool, isClosable);
+    QFETCH(QStringList, expected_pins);
+    QFETCH(QList<QStringList>, expected_combos);
+    QFETCH(QList<QList<int>>, expected_sliders);
+    QFETCH(QStringList, expected_lineEdits);
+
+    // Verify input arguments
+    QCOMPARE(expected_pins.length(), expected_combos.length());
 
     // Clear current config
     QMap<QString, QVariant> reset_map;
@@ -109,6 +120,8 @@ void GUI_IO_CONTROL_TESTS::test_gui_config()
     QCOMPARE(io_control_tester->get_gui_name(), curr_gui_name);
     QCOMPARE(io_control_tester->get_gui_tab_name(), gui_tab_name);
     QCOMPARE(io_control_tester->isClosable(), isClosable);
+    QVERIFY(io_control_tester->check_pins_test(expected_pins, expected_combos,
+                                               expected_sliders, expected_lineEdits));
 }
 
 void GUI_IO_CONTROL_TESTS::test_gui_config_data()
@@ -117,10 +130,27 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
     QTest::addColumn<QString>("config_str");
     QTest::addColumn<QString>("gui_tab_name");
     QTest::addColumn<bool>("isClosable");
+    QTest::addColumn<QStringList>("expected_pins");
+    QTest::addColumn<QList<QStringList>>("expected_combos");
+
+    // The slider qlist<int> is setup as follows:
+    //   0) Expected current value
+    //   1) Expected minimum value
+    //   2) Expected maximum value
+    //   3) Expected step size
+    QTest::addColumn<QList<QList<int>>>("expected_sliders");
+
+    QTest::addColumn<QStringList>("expected_lineEdits");
 
     // Helper variables
     QString config_str;
     QString curr_gui_name = io_control_tester->get_gui_name();
+    QStringList pin_list;
+    QList<QStringList> combo_list;
+    QStringList pin_combo_list;
+    QList<QList<int>> slider_list;
+    QList<int> pin_slider_list;
+    QStringList lineEdit_list;
 
     // Setup Basic config str
     config_str.clear();
@@ -128,25 +158,134 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
     config_str += "tab_name=\"Tab A\"\n";
     config_str += "closable=\"false\"\n";
 
+    pin_list.clear();
+    combo_list.clear();
+    slider_list.clear();
+    lineEdit_list.clear();
+
     // Load in Basic
     QTest::newRow("Basic") << config_str \
                            << "Tab A" \
-                           << false;
+                           << false \
+                           << pin_list \
+                           << combo_list \
+                           << slider_list \
+                           << lineEdit_list;
 
     // Setup Basic DIO/AIO config str
     config_str.clear();
     config_str += "[" + curr_gui_name + "]\n";
     config_str += "tab_name=\"IO\"\n";
     config_str += "closable=\"true\"\n";
-    config_str += "dio_combo_settings=\"Input,true,0-1-1-1.0\"\n";
-    config_str += "dio_pin_settings=\"0=Input\"\n";
-    config_str += "aio_combo_settings=\"Input,true,0-1-1-1.0\"\n";
-    config_str += "aio_pin_settings=\"0=Input\"\n";
+    config_str += "dio_combo_settings = \\\n";
+    config_str += "\"Input,true,0-1-1-1.0\"\n";
+    config_str += "dio_pin_settings = \\\n";
+    config_str += "\"0=Input\"\n";
+    config_str += "aio_combo_settings = \\\n";
+    config_str += "\"Input,true,0-1-1-1.0\"\n";
+    config_str += "aio_pin_settings = \\\n";
+    config_str += "\"0=Input\"\n";
+
+    pin_list.clear();
+    pin_list << "DIO_00" << "AIO_00";
+
+    combo_list.clear();
+    pin_combo_list.clear();
+    pin_combo_list << "Input";
+    combo_list << pin_combo_list << pin_combo_list;
+
+    slider_list.clear();
+    pin_slider_list.clear();
+    pin_slider_list << 0 << 0 << 1 << 1;
+    slider_list << pin_slider_list << pin_slider_list;
+
+    lineEdit_list.clear();
+    lineEdit_list << "0" << "0";
 
     // Load in Basic DIO/AIO
     QTest::newRow("Basic DIO/AIO") << config_str \
                            << "IO" \
-                           << true;
+                           << true \
+                           << pin_list \
+                           << combo_list \
+                           << slider_list \
+                           << lineEdit_list;
+
+    // Setup Complex DIO/AIO config str
+    config_str.clear();
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += "tab_name=\"IO\"\n";
+    config_str += "closable=\"true\"\n";
+    config_str += "dio_combo_settings = \\\n";
+    config_str += "\"Input,true,0-1-1-1.0\",\\\n";
+    config_str += "\"Output,false,0-5-1-1.0\"\n";
+    config_str += "dio_pin_settings = \\\n";
+    config_str += "\"0,1=Input,Output\",\\\n";
+    config_str += "\"3=Input\",\\\n";
+    config_str += "\"4=Output\"\n";
+    config_str += "aio_combo_settings = \\\n";
+    config_str += "\"Input,true,0-500-50-100.0\"\n";
+    config_str += "aio_pin_settings = \\\n";
+    config_str += "\"0-3=Input\"\n";
+
+    // Clear and setup pin list
+    pin_list.clear();
+    pin_list << "DIO_00" << "DIO_01" << "DIO_03" << "DIO_04" \
+             << "AIO_00" << "AIO_01" << "AIO_02" << "AIO_03";
+
+    // Clear combo list
+    combo_list.clear();
+
+    // DIO 0/1 are INPUT & OUTPUT combo
+    pin_combo_list.clear();
+    pin_combo_list << "Input" << "Output";
+    combo_list << pin_combo_list << pin_combo_list;
+
+    // DIO 3 is INPUT combo
+    pin_combo_list.clear();
+    pin_combo_list << "Input";
+    combo_list << pin_combo_list;
+
+    // DIO 4 is OUTPUT combo
+    pin_combo_list.clear();
+    pin_combo_list << "Output";
+    combo_list << pin_combo_list;
+
+    // AIO 0/1/2/3 are INPUT combo
+    pin_combo_list.clear();
+    pin_combo_list << "Input";
+    combo_list << pin_combo_list << pin_combo_list << pin_combo_list << pin_combo_list;
+
+    // Clear slider list
+    slider_list.clear();
+
+    // DIO 0/1/3 are INPUT slider
+    pin_slider_list.clear();
+    pin_slider_list << 0 << 0 << 1 << 1;
+    slider_list << pin_slider_list << pin_slider_list << pin_slider_list;
+
+    // DIO 4 is OUTPUT slider
+    pin_slider_list.clear();
+    pin_slider_list << 0 << 0 << 5 << 1;
+    slider_list << pin_slider_list;
+
+    // AIO 0/1/2/3 are INPUT slider
+    pin_slider_list.clear();
+    pin_slider_list << 0 << 0 << 500 << 50;
+    slider_list << pin_slider_list << pin_slider_list << pin_slider_list << pin_slider_list;
+
+    lineEdit_list.clear();
+    lineEdit_list << "0" << "0" << "0" << "0" \
+                  << "0" << "0" << "0" << "0";
+
+    // Load in Complex DIO/AIO
+    QTest::newRow("Complex DIO/AIO") << config_str \
+                           << "IO" \
+                           << true \
+                           << pin_list \
+                           << combo_list \
+                           << slider_list \
+                           << lineEdit_list;
 }
 
 void GUI_IO_CONTROL_TESTS::verify_reset_values()

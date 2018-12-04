@@ -233,22 +233,22 @@ QString GUI_CUSTOM_CMD_TEST_CLASS::get_instructions_text_test()
     return ui_ptr->Instructions_PlainText->toPlainText();
 }
 
-void GUI_CUSTOM_CMD_TEST_CLASS::reset_clicked_test()
+bool GUI_CUSTOM_CMD_TEST_CLASS::reset_clicked_test()
 {
     // Setup spy to catch tranmit signal
     QList<QVariant> spy_args;
     QSignalSpy transmit_chunk_spy(this, transmit_chunk);
-    QVERIFY(transmit_chunk_spy.isValid());
+    if (!transmit_chunk_spy.isValid()) return false;
 
     // Click the reset button
     QTest::mouseClick(ui_ptr->ResetGUI_Button, Qt::LeftButton);
     qApp->processEvents();
 
     // Verify that reset signal emitted
-    QCOMPARE(transmit_chunk_spy.count(), 1);
+    if (transmit_chunk_spy.count() != 1) return false;
     spy_args = transmit_chunk_spy.takeFirst();
-    QCOMPARE(spy_args.at(0).toInt(), (int) MAJOR_KEY_RESET);
-    QCOMPARE(spy_args.at(1).toInt(), (int) 0);
+    return ((spy_args.at(0).toInt() == MAJOR_KEY_RESET)
+            && (spy_args.at(1).toInt() == 0));
 }
 
 void GUI_CUSTOM_CMD_TEST_CLASS::set_checked_click_test(QCheckBox *check, bool b)

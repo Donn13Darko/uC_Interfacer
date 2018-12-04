@@ -74,6 +74,10 @@ int main(int argc, char *argv[])
     GUI_CUSTOM_CMD_TESTS gui_custom_cmd_tester;
     status |= QTest::qExec(&gui_custom_cmd_tester, argList);
 
+    /* Show if pass or fail */
+    if (status) qInfo() << "Tests Failed!";
+    else qInfo() << "All Tests Passed!";
+
     // Return if error
     return status;
 }

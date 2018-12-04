@@ -724,7 +724,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
     if (click_buttons.at(8))
     {
         // Send Reset
-        custom_cmd_tester->reset_clicked_test();
+        QVERIFY(custom_cmd_tester->reset_clicked_test());
 
         // Verify reset values
         verify_reset_values();

@@ -36,8 +36,6 @@ public:
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
 
-    QHBoxLayout *get_pin_test(uint8_t pinType, uint8_t pinNum);
-
     void set_aio_update_rate_test(float rate);
     float get_aio_update_rate_test();
 
@@ -63,10 +61,21 @@ public:
     void log_start_clicked_test();
     void log_stop_clicked_test();
 
-    void reset_clicked_test();
+    bool reset_clicked_test();
+
+    bool check_pins_test(QStringList expected_pin_list,
+                         QList<QStringList> expected_combo_list,
+                         QList<QList<int>> expected_slider_list,
+                         QStringList expected_lineEdit_list);
+    bool check_pin_test(QString pin_str, QStringList expected_combo,
+                        QList<int> expected_slider, QString expected_value);
 
 private:
     Ui::GUI_IO_CONTROL *ui_ptr;
+
+    bool check_pin_list_test(QStringList expected_pin_list);
+    QHBoxLayout *get_pin_test(QString pin_str);
+    QHBoxLayout *get_pin_test(uint8_t pinType, uint8_t pinNum);
 
     void set_checked_click_test(QCheckBox *check, bool b);
 };
