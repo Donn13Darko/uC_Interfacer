@@ -65,7 +65,7 @@ void GUI_BASE_TESTS::test_init_vals()
     QCOMPARE(base_tester->get_gui_name(), QString("GUI Base"));
     QCOMPARE(base_tester->get_gui_tab_name(), base_tester->get_gui_name());
     QCOMPARE(base_tester->get_gui_config(),
-             base_tester->get_gui_name().prepend("[").append("]\n\n"));
+             base_tester->get_gui_name().prepend("[").append("]\n"));
 }
 
 void GUI_BASE_TESTS::test_basic_features()
@@ -220,7 +220,7 @@ void GUI_BASE_TESTS::test_gui_config_2()
     // generate it from a map object as get_gui_config() calls this
     QString config_str = "[";
     config_str += base_tester->get_gui_name() + "]\n";
-    config_str += "tab_name=\"\"\n\n";
+    config_str += "tab_name=\"\"\n";
 
     // Create config map
     QMap<QString, QMap<QString, QVariant>*> *config_map = \
@@ -279,7 +279,7 @@ void GUI_BASE_TESTS::test_gui_config_data()
 
     // Setup defaults config str
     config_str.clear();
-    config_str += "[" + curr_gui_name + "]\n\n";
+    config_str += "[" + curr_gui_name + "]\n";
 
     // Load in defaults
     QTest::newRow("Empty") << config_str \
@@ -289,7 +289,7 @@ void GUI_BASE_TESTS::test_gui_config_data()
     // Setup only tab name config str
     config_str.clear();
     config_str += "[" + curr_gui_name + "]\n";
-    config_str += "tab_name=\"Only Tab\"\n\n";
+    config_str += "tab_name=\"Only Tab\"\n";
 
     // Load in only tab name
     QTest::newRow("Only Tab Name") << config_str \
@@ -299,7 +299,7 @@ void GUI_BASE_TESTS::test_gui_config_data()
     // Setup only closable config str
     config_str.clear();
     config_str += "[" + curr_gui_name + "]\n";
-    config_str += "closable=\"false\"\n\n";
+    config_str += "closable=\"false\"\n";
 
     // Load in only tab name
     QTest::newRow("Only Closable") << config_str \
@@ -309,8 +309,8 @@ void GUI_BASE_TESTS::test_gui_config_data()
     // Setup basic config str
     config_str.clear();
     config_str += "[" + curr_gui_name + "]\n";
-    config_str += "tab_name=\"Tab A\"\n\n";
-    config_str += "closable=\"false\"\n\n";
+    config_str += "tab_name=\"Tab A\"\n";
+    config_str += "closable=\"false\"\n";
 
     // Load in basic
     QTest::newRow("Basic") << config_str \
@@ -320,8 +320,8 @@ void GUI_BASE_TESTS::test_gui_config_data()
     // Setup empty tab name config str
     config_str.clear();
     config_str += "[" + curr_gui_name + "]\n";
-    config_str += "tab_name=\"\"\n\n";
-    config_str += "closable=\"true\"\n\n";
+    config_str += "tab_name=\"\"\n";
+    config_str += "closable=\"true\"\n";
 
     // Load in empty tab name
     QTest::newRow("Empty Tab Name") << config_str \
@@ -331,8 +331,8 @@ void GUI_BASE_TESTS::test_gui_config_data()
     // Setup incorrect group name config str
     config_str.clear();
     config_str += "[Bad_Name]\n";
-    config_str += "tab_name=\"\"\n\n";
-    config_str += "closable=\"false\"\n\n";
+    config_str += "tab_name=\"\"\n";
+    config_str += "closable=\"false\"\n";
 
     // Load in incorrect group name
     QTest::newRow("Incorrect Group Name") << config_str \

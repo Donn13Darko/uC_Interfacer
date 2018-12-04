@@ -65,7 +65,7 @@ void GUI_WELCOME_TESTS::test_init_vals()
     QCOMPARE(welcome_tester->get_buttons_enabled(), false);
 
     QString config_str = welcome_tester->get_gui_name().prepend("[")
-            + "]\nheader=\"" + welcome_tester->get_gui_name() + "\"\n\n";
+            + "]\nheader=\"" + welcome_tester->get_gui_name() + "\"\n";
     QCOMPARE(welcome_tester->get_gui_config(), config_str);
 }
 
@@ -151,7 +151,7 @@ void GUI_WELCOME_TESTS::test_gui_config_data()
 
     // Setup empty config str
     config_str.clear();
-    config_str += "[" + curr_gui_name + "]\n\n";
+    config_str += "[" + curr_gui_name + "]\n";
 
     // Load in defaults
     QTest::newRow("Empty") << config_str \

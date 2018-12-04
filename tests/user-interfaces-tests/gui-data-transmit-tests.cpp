@@ -61,7 +61,7 @@ void GUI_DATA_TRANSMIT_TESTS::test_init_vals()
     QVERIFY(data_transmit_tester->isClosable());
     QCOMPARE(data_transmit_tester->get_gui_tab_name(), data_transmit_tester->get_gui_name());
     QCOMPARE(data_transmit_tester->get_gui_config(),
-             data_transmit_tester->get_gui_name().prepend("[").append("]\n\n"));
+             data_transmit_tester->get_gui_name().prepend("[").append("]\n"));
 }
 
 void GUI_DATA_TRANSMIT_TESTS::test_basic_features()
@@ -114,8 +114,8 @@ void GUI_DATA_TRANSMIT_TESTS::test_gui_config_data()
     // Setup basic config str
     config_str.clear();
     config_str += "[" + curr_gui_name + "]\n";
-    config_str += "tab_name=\"Tab A\"\n\n";
-    config_str += "closable=\"false\"\n\n";
+    config_str += "tab_name=\"Tab A\"\n";
+    config_str += "closable=\"false\"\n";
 
     // Load in basic
     QTest::newRow("Basic") << config_str \
@@ -124,7 +124,7 @@ void GUI_DATA_TRANSMIT_TESTS::test_gui_config_data()
 
     // Setup RESET config str
     config_str.clear();
-    config_str += "[" + curr_gui_name + "]\n\n";
+    config_str += "[" + curr_gui_name + "]\n";
 
     // Load in RESET
     QTest::newRow("RESET") << config_str \

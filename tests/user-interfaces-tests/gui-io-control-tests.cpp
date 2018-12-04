@@ -61,7 +61,7 @@ void GUI_IO_CONTROL_TESTS::test_init_vals()
     QVERIFY(io_control_tester->isClosable());
     QCOMPARE(io_control_tester->get_gui_tab_name(), io_control_tester->get_gui_name());
     QCOMPARE(io_control_tester->get_gui_config(),
-             io_control_tester->get_gui_name().prepend("[").append("]\n\n"));
+             io_control_tester->get_gui_name().prepend("[").append("]\n"));
 
     // Verify init update info
     QCOMPARE(io_control_tester->get_aio_update_rate_test(), 1.0f);
@@ -122,16 +122,31 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
     QString config_str;
     QString curr_gui_name = io_control_tester->get_gui_name();
 
-    // Setup basic config str
+    // Setup Basic config str
     config_str.clear();
     config_str += "[" + curr_gui_name + "]\n";
-    config_str += "tab_name=\"Tab A\"\n\n";
-    config_str += "closable=\"false\"\n\n";
+    config_str += "tab_name=\"Tab A\"\n";
+    config_str += "closable=\"false\"\n";
 
-    // Load in basic
+    // Load in Basic
     QTest::newRow("Basic") << config_str \
                            << "Tab A" \
                            << false;
+
+    // Setup Basic DIO/AIO config str
+    config_str.clear();
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += "tab_name=\"IO\"\n";
+    config_str += "closable=\"true\"\n";
+    config_str += "dio_combo_settings=\"Input,true,0-1-1-1.0\"\n";
+    config_str += "dio_pin_settings=\"0=Input\"\n";
+    config_str += "aio_combo_settings=\"Input,true,0-1-1-1.0\"\n";
+    config_str += "aio_pin_settings=\"0=Input\"\n";
+
+    // Load in Basic DIO/AIO
+    QTest::newRow("Basic DIO/AIO") << config_str \
+                           << "IO" \
+                           << true;
 }
 
 void GUI_IO_CONTROL_TESTS::verify_reset_values()

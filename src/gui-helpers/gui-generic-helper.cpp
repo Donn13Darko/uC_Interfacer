@@ -266,9 +266,6 @@ QString GUI_GENERIC_HELPER::encode_configMap(CONFIG_MAP *configMap)
             // Add end assignment to string
             configMap_str += "\"\n";
         }
-
-        // Add ending newline
-        configMap_str += "\n";
     }
 
     // Return the config data
