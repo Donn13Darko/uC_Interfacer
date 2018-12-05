@@ -61,14 +61,18 @@ public:
     void log_start_clicked_test();
     void log_stop_clicked_test();
 
-    bool reset_clicked_test();
-
     bool check_pins_test(QStringList expected_pin_list,
                          QList<QStringList> expected_combo_list,
                          QList<QList<int>> expected_slider_list,
-                         QStringList expected_lineEdit_list);
+                         QStringList expected_lineEdit_list,
+                         QList<bool> expected_disabled_list);
     bool check_pin_test(QString pin_str, QStringList expected_combo,
-                        QList<int> expected_slider, QString expected_value);
+                        QList<int> expected_slider, QString expected_value,
+                        bool expected_disabled);
+
+    bool perform_action_test(QString pin_str, uint8_t button, QString value);
+
+    bool reset_clicked_test();
 
 private:
     Ui::GUI_IO_CONTROL *ui_ptr;
@@ -78,6 +82,9 @@ private:
     QHBoxLayout *get_pin_test(uint8_t pinType, uint8_t pinNum);
 
     void set_checked_click_test(QCheckBox *check, bool b);
+
+    void show_warning(QString hint, QString value = "");
+    void show_warning(QString hint, QString got, QString expected);
 };
 
 #endif // GUI_IO_CONTROL_TEST_CLASS_H

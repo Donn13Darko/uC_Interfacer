@@ -250,7 +250,7 @@ void GUI_IO_CONTROL::recordPinValues(PinTypeInfo *pInfo)
 
     *logStream << pInfo->pinType;
 
-    QLineEdit *textValue;
+    QLineEdit *lineEditValue;
     foreach (QHBoxLayout* pin, *pinMap.value(pInfo->pinType))
     {
         // Make sure pin valid
@@ -259,11 +259,11 @@ void GUI_IO_CONTROL::recordPinValues(PinTypeInfo *pInfo)
         // Add comma
         *logStream << ",";
 
-        // Get text value
-        textValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
+        // Get lineEdit value
+        lineEditValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
 
         // Append pin value
-        *logStream << textValue->text();
+        *logStream << lineEditValue->text();
     }
     // Add new line
     *logStream << "\n";
@@ -737,8 +737,8 @@ void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_
     QLabel *label = (QLabel*) pin->itemAt(io_label_pos)->widget();
     QComboBox *comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
     QSlider *sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
-    QLineEdit *textValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
-    if (!(label && comboBox && sliderValue && textValue)) return;
+    QLineEdit *lineEditValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
+    if (!(label && comboBox && sliderValue && lineEditValue)) return;
 
     // Set Pin Num
     QString pinNum = QString::number(label->text().toInt());
@@ -759,7 +759,7 @@ void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_
             // Enable/Disable pins if selection changed
             bool disableClicks = pinDisabledSet->contains(io_combo);
             sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
-            textValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
+            lineEditValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
 
             // Update slider range (will reset slider value)
             updateSliderRange(sliderValue, rList);
@@ -772,16 +772,16 @@ void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_
             newVAL = ((float) sliderValue->value()) / rList->div;
             if (pInfo.pinType == MINOR_KEY_IO_DIO) newVAL = qRound(newVAL);
 
-            // Update text value
-            prev_block_status = textValue->blockSignals(true);
-            textValue->setText(QString::number(newVAL));
-            textValue->blockSignals(prev_block_status);
+            // Update lineEdit value
+            prev_block_status = lineEditValue->blockSignals(true);
+            lineEditValue->setText(QString::number(newVAL));
+            lineEditValue->blockSignals(prev_block_status);
             break;
         }
         case io_line_edit_pos:
         {
             // Update values if text box changed
-            newVAL = rList->div * textValue->text().toFloat();
+            newVAL = rList->div * lineEditValue->text().toFloat();
             if (pInfo.pinType == MINOR_KEY_IO_DIO) newVAL = qRound(newVAL);
 
             // Update slider value
@@ -799,8 +799,12 @@ void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_
 
     if (data != nullptr)
     {
+        // Scale & verify value
+        newVAL = qRound(newVAL - (rList->min * rList->div));
+        if (newVAL < 0) return;
+        uint16_t v = (uint16_t) newVAL;
+
         // Build pin data array
-        uint16_t v = (uint16_t) QString::number(newVAL).toInt();
         data->append((char) pinNum.toInt());    // Pin Num
         data->append((char) ((v >> 8) & 0xFF)); // Value High
         data->append((char) (v & 0xFF));        // Value Low
@@ -889,10 +893,10 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
         foreach (QString pinNum, comboStr_split.at(0).split(','))
         {
             // See if defines a range
-            if (pinNum.contains('-'))
+            if (pinNum.contains(':'))
             {
                 // Split range list
-                QStringList numStr_split = pinNum.split('-');
+                QStringList numStr_split = pinNum.split(':');
                 if (numStr_split.length() != 2) continue;
 
                 // Get start and end of range
@@ -1014,14 +1018,14 @@ void GUI_IO_CONTROL::addComboSettings(PinTypeInfo *pInfo, QList<QString> newSett
 {
     // Setup lists to hold setting
     QList<QString> settingValues;
-    QList<QString> pinCombos = {}, pinSetDisabled = {};
-    QList<RangeList*> pinRanges = {};
+    QList<QString> pinCombos, pinSetDisabled;
+    QList<RangeList*> pinRanges;
 
     // Get each setting
-    foreach (QString i, newSettings)
+    foreach (QString setting_str, newSettings)
     {
         // Split settings string into values [name,setEnabled,rangeList]
-        settingValues = i.split(',');
+        settingValues = setting_str.split(',');
 
         // Add to combos
         pinCombos.append(settingValues.at(0));
@@ -1057,15 +1061,15 @@ void GUI_IO_CONTROL::addPinControls(uint8_t pinType, QList<QString> keys)
 {
     // Get map
     QMap<QString, uint8_t> *pinControlMap = controlMap.value(pinType);
-    int key_num = pinControlMap->keys().length();
+    int key_num = pinControlMap->size();
 
     // Add each string to pinMap
-    foreach (QString i, keys)
+    foreach (QString key, keys)
     {
         // Verify its a new value
-        if (!pinControlMap->contains(i))
+        if (!pinControlMap->contains(key))
         {
-            pinControlMap->insert(i, key_num);
+            pinControlMap->insert(key, key_num);
             key_num += 1;
         }
     }
@@ -1115,10 +1119,12 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
     QLayout *pin;
     QComboBox *comboBox;
     QSlider *sliderValue;
-    QLineEdit *textValue;
+    QLineEdit *lineEditValue;
+    RangeList *rList;
     uint16_t value;
-    uint8_t comboVal, divisor;
-    bool prev_block_combo, prev_block_slider, prev_block_text;
+    int newVAL;
+    uint8_t comboVal;
+    bool prev_block_combo, prev_block_slider, prev_block_lineEdit;
 
     // Set loop variables
     uint8_t pin_num = 0;
@@ -1157,20 +1163,23 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
 
                     // Get other widgets
                     sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
-                    textValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
+                    lineEditValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
 
                     // Block signals before setting
                     prev_block_slider = sliderValue->blockSignals(true);
-                    prev_block_text = textValue->blockSignals(true);
+                    prev_block_lineEdit = lineEditValue->blockSignals(true);
 
-                    // Set values
-                    divisor = pinRangeMap->value(comboVal)->div;
-                    sliderValue->setSliderPosition(value);
-                    textValue->setText(QString::number(((float) value) / divisor));
+                    // Get range list
+                    rList = pinRangeMap->value(comboVal);
+
+                    // Adjust & set value
+                    newVAL = qRound((float) value + (rList->min * rList->div));
+                    sliderValue->setSliderPosition(newVAL);
+                    lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
 
                     // Unblock signals now that they are set
                     sliderValue->blockSignals(prev_block_slider);
-                    textValue->blockSignals(prev_block_text);
+                    lineEditValue->blockSignals(prev_block_lineEdit);
                 } else
                 {
                     // Skip value in list
@@ -1201,12 +1210,12 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
             // Get all the widgets
             comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
             sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
-            textValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
+            lineEditValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
 
             // Block combo signals before setting
             prev_block_combo = comboBox->blockSignals(true);
             prev_block_slider = sliderValue->blockSignals(true);
-            prev_block_text = textValue->blockSignals(true);
+            prev_block_lineEdit = lineEditValue->blockSignals(true);
 
             // Set combo to correct position
             comboBox->setCurrentText(combo_text);
@@ -1217,21 +1226,21 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
             // Overwrite current values with inputs changed
             bool disableClicks = pinDisabledSet->contains(comboVal);
             sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
-            textValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
+            lineEditValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
 
             // Get & update slider range list
-            RangeList *rList = pinRangeMap->value(comboVal);
+            rList = pinRangeMap->value(comboVal);
             updateSliderRange(sliderValue, rList);
 
-            // Set slider and divisor
-            divisor = pinRangeMap->value(comboVal)->div;
-            sliderValue->setSliderPosition(value);
-            textValue->setText(QString::number(((float) value) / divisor));
+            // Adjust & set value
+            newVAL = qRound((float) value + (rList->min * rList->div));
+            sliderValue->setSliderPosition(newVAL);
+            lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
 
             // Unblock signals now that they are set
             comboBox->blockSignals(prev_block_combo);
             sliderValue->blockSignals(prev_block_slider);
-            textValue->blockSignals(prev_block_text);
+            lineEditValue->blockSignals(prev_block_lineEdit);
 
             // Break out after setting and writing new value
             break;
@@ -1251,25 +1260,28 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
             // Get all the widgets
             comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
             sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
-            textValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
+            lineEditValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
 
             // Block combo signals before setting
             prev_block_combo = comboBox->blockSignals(true);
             prev_block_slider = sliderValue->blockSignals(true);
-            prev_block_text = textValue->blockSignals(true);
+            prev_block_lineEdit = lineEditValue->blockSignals(true);
 
             // Get combo value
             comboVal = pinControlMap->value(comboBox->currentText());
 
-            // Set slider and divisor
-            divisor = pinRangeMap->value(comboVal)->div;
-            sliderValue->setSliderPosition(value);
-            textValue->setText(QString::number(((float) value) / divisor));
+            // Get range list
+            rList = pinRangeMap->value(comboVal);
+
+            // Adjust & set value
+            newVAL = qRound((float) value + (rList->min * rList->div));
+            sliderValue->setSliderPosition(newVAL);
+            lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
 
             // Unblock signals now that they are set
             comboBox->blockSignals(prev_block_combo);
             sliderValue->blockSignals(prev_block_slider);
-            textValue->blockSignals(prev_block_text);
+            lineEditValue->blockSignals(prev_block_lineEdit);
 
             // Break out after writing new value
             break;
@@ -1317,14 +1329,14 @@ bool GUI_IO_CONTROL::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
 RangeList *GUI_IO_CONTROL::makeRangeList(QString rangeInfo)
 {
     // Split range info string into values
-    QStringList ril = rangeInfo.split('-');
-    if (ril.length() != 4) return new EMPTY_RANGE;
+    QStringList range_split = rangeInfo.split(':');
+    if (range_split.length() != 4) return new EMPTY_RANGE;
 
     return new RangeList({
-                             .min=ril.at(0).toInt(),
-                             .max=ril.at(1).toInt(),
-                             .step=ril.at(2).toInt(),
-                             .div=ril.at(3).toFloat()
+                             .min=range_split.at(0).toInt(),
+                             .max=range_split.at(1).toInt(),
+                             .step=range_split.at(2).toInt(),
+                             .div=range_split.at(3).toFloat()
                          });
 }
 

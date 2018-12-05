@@ -44,6 +44,20 @@ private slots:
     void test_gui_config();
     void test_gui_config_data();
 
+    void test_gui_interactions();
+    void test_gui_interactions_data();
+
+    void test_complex_send();
+
+    void test_complex_recv();
+    void test_complex_recv_data();
+
+    void test_basic_chart_features();
+    void test_complex_chart_features();
+
+    void test_chart_update_features();
+    void test_chart_update_features_data();
+
 private:
     GUI_IO_CONTROL_TEST_CLASS *io_control_tester;
 

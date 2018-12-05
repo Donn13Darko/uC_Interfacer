@@ -132,6 +132,7 @@ void GUI_WELCOME_TESTS::test_gui_config()
     QCOMPARE(welcome_tester->get_gui_key(), curr_gui_key);
     QCOMPARE(welcome_tester->get_gui_name(), curr_gui_name);
     QCOMPARE(welcome_tester->get_gui_tab_name(), gui_tab_name);
+    QCOMPARE(welcome_tester->get_buttons_enabled(), buttons);
     QCOMPARE(welcome_tester->isClosable(), isClosable);
 }
 
