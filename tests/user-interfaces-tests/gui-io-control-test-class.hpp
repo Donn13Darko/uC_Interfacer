@@ -61,16 +61,19 @@ public:
     void log_start_clicked_test();
     void log_stop_clicked_test();
 
+    bool perform_action_test(QString pin_str, uint8_t button, QString value);
+
     bool check_pins_test(QStringList expected_pin_list,
                          QList<QStringList> expected_combo_list,
                          QList<QList<int>> expected_slider_list,
                          QStringList expected_lineEdit_list,
                          QList<bool> expected_disabled_list);
-    bool check_pin_test(QString pin_str, QStringList expected_combo,
-                        QList<int> expected_slider, QString expected_value,
-                        bool expected_disabled);
-
-    bool perform_action_test(QString pin_str, uint8_t button, QString value);
+    bool check_pin_test(QString pin_str, QStringList expected_combos,
+                        QList<int> expected_slider, QString expected_lineEdit,
+                        bool isDisabled);
+    bool check_pin_test(QString pin_str, QString combo_value,
+                        int slider_value, QString lineEdit_value,
+                        bool isDisabled);
 
     bool reset_clicked_test();
 
@@ -78,6 +81,15 @@ private:
     Ui::GUI_IO_CONTROL *ui_ptr;
 
     bool check_pin_list_test(QStringList expected_pin_list);
+    bool check_pin_label_test(QHBoxLayout *pin, QString expected_label_value);
+    bool check_pin_combo_test(QHBoxLayout *pin, QString expected_combo_value);
+    bool check_pin_combo_test(QHBoxLayout *pin, QStringList expected_combos);
+    bool check_pin_slider_test(QHBoxLayout *pin, int expected_slider_value, bool isDisabled);
+    bool check_pin_slider_test(QHBoxLayout *pin, QList<int> expected_slider, bool isDisabled);
+    bool check_pin_lineEdit_test(QHBoxLayout *pin, QString lineEdit_value, bool isDisabled);
+
+    QWidget *get_pin_element(QHBoxLayout *pin, uint8_t pos, QString test = "");
+
     QHBoxLayout *get_pin_test(QString pin_str);
     QHBoxLayout *get_pin_test(uint8_t pinType, uint8_t pinNum);
 

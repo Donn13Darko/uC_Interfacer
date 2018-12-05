@@ -176,11 +176,11 @@ void GUI_DATA_TRANSMIT_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                     0, 0, 0, 0, 0}));
+                     0x00, 0x00, 0x00, 0x00, 0x00}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_DATA,
-                     0}));
+                     0x00}));
 
     // Enter Simple Send Empty Input test:
     //  send_fill_data = ""
@@ -197,11 +197,11 @@ void GUI_DATA_TRANSMIT_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                     0, 0, 0, 0, 0}));
+                     0x00, 0x00, 0x00, 0x00, 0x00}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_DATA,
-                     0}));
+                     0x00}));
 
     // Enter Simple Send Empty File test:
     //  send_fill_data = ""
@@ -220,16 +220,16 @@ void GUI_DATA_TRANSMIT_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                     0, 0, 0, 0, 13}));
+                     0x00, 0x00, 0x00, 0x00, 0x0D}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_DATA,
-                     0})
+                     0x00})
                 .append("Hello World!\n"));
 
     // Enter Simple Send Input test:
     //  send_fill_data = "Hello World!\n"
-    //  send_expected_signals = {"4 1 0 0 0 0", "4 2 Hello World!\n"}
+    //  send_expected_signals = {"4 1 0 0 0 13", "4 2 Hello World!\n"}
     //  send_file = false
     QTest::newRow("Simple Send Input") \
             << input_data \
@@ -324,7 +324,7 @@ void GUI_DATA_TRANSMIT_TESTS::test_rcvd_data()
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                    100}));
+                    0x96}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_DATA})

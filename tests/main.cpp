@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     if (!argList.contains("-interfaceForceParamsOff"))
     {
         // Force silent mode
-        if (!argList.contains("-silent")) argList.append("-silent");
+//        if (!argList.contains("-silent")) argList.append("-silent");
     } else
     {
         // Remove force off argument if present
@@ -75,9 +75,10 @@ int main(int argc, char *argv[])
     status += QTest::qExec(&gui_custom_cmd_tester, argList);
 
     /* Show if pass or fail */
-    if (status) qInfo() << "Tests Failed!";
+    if (status == 1) qInfo() << "1 Test Failed!";
+    else if (status) qInfo() << QString::number(status) + " Tests Failed!";
     else qInfo() << "All Tests Passed!";
 
-    // Return if error
+    // Return status
     return status;
 }

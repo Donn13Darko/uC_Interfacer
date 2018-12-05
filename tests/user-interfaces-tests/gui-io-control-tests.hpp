@@ -47,7 +47,11 @@ private slots:
     void test_gui_interactions();
     void test_gui_interactions_data();
 
-    void test_complex_send();
+    void test_updates();
+    void test_updates_data();
+
+    void test_logging();
+    void test_logging_data();
 
     void test_complex_recv();
     void test_complex_recv_data();

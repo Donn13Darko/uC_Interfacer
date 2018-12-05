@@ -202,7 +202,7 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 0}));
+                     0x00, 0x10, 0x00}));
 
     // Enter Simple Send test:
     //  send_fill_data = ""
@@ -225,10 +225,10 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 0}));
+                     0x00, 0x10, 0x00}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
                 .append("Read"));
 
     // Enter simple keys test:
@@ -252,14 +252,14 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 16}));
+                     0x00, 0x10, 0x10}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     16, 50, 0, 48}));
+                     0x10, 0x32, 0x00, 0x30}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
                 .append("read"));
 
     // Enter set base v1 test:
@@ -283,11 +283,12 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 16}));
+                     0x00, 0x10, 0x10}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 16,
-                     53, 50, 0, 52, 53, 0, 52, 49, 0, 52, 52}));
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x10,
+                     0x35, 0x32, 0x00, 0x34, 0x35, 0x00,
+                     0x34, 0x31, 0x00, 0x34, 0x34}));
 
     // Enter double set base test:
     //  send_fill_data = "6 2 10 0\n6 3 52 45 41 44\n"
@@ -310,10 +311,10 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 0}));
+                     0x00, 0x10, 0x00}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
                 .append("Re ad"));
 
     // Enter Space in CMD test:
@@ -337,7 +338,7 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 16}));
+                     0x00, 0x10, 0x10}));
 
     // Enter Malformed Input V1 test:
     //  send_fill_data = "6 \n"
@@ -360,7 +361,7 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 16}));
+                     0x00, 0x10, 0x10}));
 
     // Enter Malformed Input V2 test:
     //  send_fill_data = "6 2 1 \n"
@@ -383,10 +384,10 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 0, 0}));
+                     0x00, 0x00, 0x00}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {54, 51, 0})
+                    {0x36, 0x33, 0x00})
                 .append("Read"));
 
     // Enter KB_0_CB_0 test:
@@ -410,11 +411,12 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 16}));
+                     0x00, 0x10, 0x10}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 16,
-                    53, 50, 0, 52, 53, 0, 52, 49, 0, 52, 52}));
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x10,
+                     0x35, 0x32, 0x00, 0x34, 0x35, 0x00,
+                     0x34, 0x31, 0x00, 0x34, 0x34}));
 
     // Enter KB_16_CB_16 test:
     //  send_fill_data = "54 51 52 45 41 44\n"
@@ -436,7 +438,7 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 0}));
+                     0x00, 0x10, 0x00}));
 
     // Enter Simple Send File test:
     //  send_fill_data = ""
@@ -459,10 +461,10 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 0}));
+                     0x00, 0x10, 0x00}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
                 .append("Read"));
 
     // Enter Send File V1 test:
@@ -546,11 +548,11 @@ void GUI_CUSTOM_CMD_TESTS::test_rcvd_data()
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     16, 0}));
+                     0x10, 0x00}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE,
-                     100}));
+                     0x96}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD})
@@ -579,11 +581,11 @@ void GUI_CUSTOM_CMD_TESTS::test_rcvd_data()
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     16, 0}));
+                     0x10, 0x00}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD+1, MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE,
-                     100}));
+                     0x96}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD})
@@ -613,11 +615,11 @@ void GUI_CUSTOM_CMD_TESTS::test_rcvd_data()
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     16, 0}));
+                     0x10, 0x00}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE,
-                     5}));
+                     0x05}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD})
@@ -646,11 +648,11 @@ void GUI_CUSTOM_CMD_TESTS::test_rcvd_data()
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     16, 0}));
+                     0x10, 0x00}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE,
-                     5}));
+                     0x05}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD})
@@ -658,7 +660,7 @@ void GUI_CUSTOM_CMD_TESTS::test_rcvd_data()
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_TRANS_SIZE,
-                     4}));
+                     0x04}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD})
@@ -824,10 +826,10 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 0}));
+                     0x00, 0x10, 0x00}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
                 .append("Input_PlainText"));
 
     // Load send test data:
@@ -863,7 +865,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     16, 0}));
+                     0x10, 0x00}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD})
@@ -905,17 +907,17 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0, 16, 0}));
+                     0x00, 0x10, 0x00}));
     expected_send_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0})
+                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
                 .append("Input_PlainText"));
 
     rcvd_list.clear();
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     16, 0}));
+                     0x10, 0x00}));
     rcvd_list.append(
                 GUI_GENERIC_HELPER::qList_to_byteArray(
                     {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD})

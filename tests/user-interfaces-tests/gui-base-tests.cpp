@@ -356,9 +356,9 @@ void GUI_BASE_TESTS::test_recv_length()
     qApp->processEvents();
 
     // Verify set signal
-    QCOMPARE(progress_spy.count(), 1);
+    QCOMPARE(progress_spy.count(), (int) 1);
     spy_args = progress_spy.takeFirst();
-    QCOMPARE(spy_args.at(0).toInt(), 0);
+    QCOMPARE(spy_args.at(0).toInt(), (int) 0);
     QCOMPARE(spy_args.at(1).toString(), QString(""));
 
     // Send packets & verify signals
@@ -373,7 +373,7 @@ void GUI_BASE_TESTS::test_recv_length()
         // Continue if already received expected_recv_len
         if (recv_len_done)
         {
-            QCOMPARE(progress_spy.count(), 0);
+            QCOMPARE(progress_spy.count(), (int) 0);
             continue;
         }
 
@@ -387,13 +387,13 @@ void GUI_BASE_TESTS::test_recv_length()
             if (expected_recv_len && (expected_recv_len <= target_recv))
             {
                 // Verify progress signal
-                QCOMPARE(progress_spy.count(), 1);
+                QCOMPARE(progress_spy.count(), (int) 1);
                 spy_args = progress_spy.takeFirst();
-                QCOMPARE(spy_args.at(0).toInt(), 100);
+                QCOMPARE(spy_args.at(0).toInt(), (int) 100);
                 QCOMPARE(spy_args.at(1).toString(), QString("Done!"));
             } else
             {
-                QCOMPARE(progress_spy.count(), 0);
+                QCOMPARE(progress_spy.count(), (int) 0);
             }
 
             // Clear expected values
@@ -406,7 +406,7 @@ void GUI_BASE_TESTS::test_recv_length()
         } else if (recv_len)
         {
             // Verify progress signal
-            QCOMPARE(progress_spy.count(), 1);
+            QCOMPARE(progress_spy.count(), (int) 1);
             spy_args = progress_spy.takeFirst();
             QCOMPARE(spy_args.at(0).toInt(), qRound(((float) target_recv / expected_recv_len) * 100.0f));
             QCOMPARE(spy_args.at(1).toString(), QString::number((float) target_recv / 1000.0f) + expected_recv_len_str);
@@ -421,28 +421,28 @@ void GUI_BASE_TESTS::test_recv_length_data()
     QTest::addColumn<QList<quint32>>("recv_len_data");
 
     // Load in data
-    QTest::newRow("E0_S0") << (quint32) 0 << QList<quint32>({0});
-    QTest::newRow("E0_S1") << (quint32) 0 << QList<quint32>({1});
-    QTest::newRow("E1_S0") << (quint32) 1 << QList<quint32>({0});
-    QTest::newRow("E1_S1 Start") << (quint32) 1 << QList<quint32>({1, 0, 0});
-    QTest::newRow("E1_S1 Middle") << (quint32) 1 << QList<quint32>({0, 1, 0});
-    QTest::newRow("E1_S1 End") << (quint32) 1 << QList<quint32>({0, 0, 1});
-    QTest::newRow("E1_S3 V1") << (quint32) 1 << QList<quint32>({3});
-    QTest::newRow("E1_S3 V2") << (quint32) 1 << QList<quint32>({1, 2});
-    QTest::newRow("E1_S3 V3") << (quint32) 1 << QList<quint32>({1, 0, 2});
-    QTest::newRow("E5_S6 V1") << (quint32) 5 << QList<quint32>({0, 1, 2, 3});
-    QTest::newRow("E500_S0") << (quint32) 500 << QList<quint32>({0});
-    QTest::newRow("E500_S500") << (quint32) 500 << QList<quint32>({500});
-    QTest::newRow("E500_S5") << (quint32) 500 << QList<quint32>({5});
-    QTest::newRow("E500_S6 Sum") << (quint32) 500 << QList<quint32>({0, 1, 2, 3});
-    QTest::newRow("E500_S500 Sum V1") << (quint32) 500 << QList<quint32>({250, 250});
-    QTest::newRow("E500_S500 Sum V1") << (quint32) 500 << QList<quint32>({100, 100, 100, 100, 100});
-    QTest::newRow("E1000_S500 Sum") << (quint32) 1000 << QList<quint32>({250, 250});
-    QTest::newRow("E1000_S1000 Sum") << (quint32) 1000 << QList<quint32>({250, 250, 500});
-    QTest::newRow("E1234_S0") << (quint32) 1234 << QList<quint32>({0});
-    QTest::newRow("E12345_S0") << (quint32) 12345 << QList<quint32>({0});
-    QTest::newRow("E123456_S0") << (quint32) 123456 << QList<quint32>({0});
-    QTest::newRow("RESET") << (quint32) 0 << QList<quint32>({0});
+    QTest::newRow("E0_S0") << (quint32) 0x00 << QList<quint32>({0x00});
+    QTest::newRow("E0_S1") << (quint32) 0x00 << QList<quint32>({0x01});
+    QTest::newRow("E1_S0") << (quint32) 0x01 << QList<quint32>({0x00});
+    QTest::newRow("E1_S1 Start") << (quint32) 0x01 << QList<quint32>({0x01, 0x00, 0x00});
+    QTest::newRow("E1_S1 Middle") << (quint32) 0x01 << QList<quint32>({0x00, 0x01, 0x00});
+    QTest::newRow("E1_S1 End") << (quint32) 0x01 << QList<quint32>({0x00, 0x00, 0x01});
+    QTest::newRow("E1_S3 V1") << (quint32) 0x01 << QList<quint32>({0x03});
+    QTest::newRow("E1_S3 V2") << (quint32) 0x01 << QList<quint32>({0x01, 0x02});
+    QTest::newRow("E1_S3 V3") << (quint32) 0x01 << QList<quint32>({0x01, 0x00, 0x02});
+    QTest::newRow("E5_S6 V1") << (quint32) 0x05 << QList<quint32>({0x00, 0x01, 0x02, 0x03});
+    QTest::newRow("E500_S0") << (quint32) 0x01F4 << QList<quint32>({0x00});
+    QTest::newRow("E500_S500") << (quint32) 0x01F4 << QList<quint32>({0x01F4});
+    QTest::newRow("E500_S5") << (quint32) 0x01F4 << QList<quint32>({0x05});
+    QTest::newRow("E500_S6 Sum") << (quint32) 0x01F4 << QList<quint32>({0x00, 0x01, 0x02, 0x03});
+    QTest::newRow("E500_S500 Sum V1") << (quint32) 0x01F4 << QList<quint32>({0xFA, 0xFA});
+    QTest::newRow("E500_S500 Sum V1") << (quint32) 0x01F4 << QList<quint32>({0x64, 0x64, 0x64, 0x64, 0x64});
+    QTest::newRow("E1000_S500 Sum") << (quint32) 0x03E8 << QList<quint32>({0xFA, 0xFA});
+    QTest::newRow("E1000_S1000 Sum") << (quint32) 0x03E8 << QList<quint32>({0xFA, 0xFA, 0x01F4});
+    QTest::newRow("E1234_S0") << (quint32) 0x04D2 << QList<quint32>({0x00});
+    QTest::newRow("E12345_S0") << (quint32) 0x3039 << QList<quint32>({0x00});
+    QTest::newRow("E123456_S0") << (quint32) 0x01E240 << QList<quint32>({0x00});
+    QTest::newRow("RESET") << (quint32) 0x00 << QList<quint32>({0x00});
 }
 
 void GUI_BASE_TESTS::test_reset_gui_1()
@@ -476,7 +476,7 @@ void GUI_BASE_TESTS::test_reset_gui_1()
 
     // Verify the reset values
     QCOMPARE(base_tester->rcvd_formatted_readAll_test(), QByteArray());
-    QCOMPARE(base_tester->rcvd_formatted_size_test(), 0);
+    QCOMPARE(base_tester->rcvd_formatted_size_test(), (int) 0);
 
     // Verify the static values haven't changed
     QCOMPARE(base_tester->get_gui_key(), gui_key);
@@ -484,14 +484,14 @@ void GUI_BASE_TESTS::test_reset_gui_1()
     QCOMPARE(base_tester->get_gui_config(), gui_config);
 
     // Verify signal spy
-    QCOMPARE(rcvd_reset_spy.count(), 1);
+    QCOMPARE(rcvd_reset_spy.count(), (int) 1);
     spy_args = rcvd_reset_spy.takeFirst();
-    QCOMPARE(spy_args.at(0).toInt(), 0);
+    QCOMPARE(spy_args.at(0).toInt(), (int) 0);
     QCOMPARE(spy_args.at(1).toString(), QString(""));
 
-    QCOMPARE(send_reset_spy.count(), 1);
+    QCOMPARE(send_reset_spy.count(), (int) 1);
     spy_args = send_reset_spy.takeFirst();
-    QCOMPARE(spy_args.at(0).toInt(), 0);
+    QCOMPARE(spy_args.at(0).toInt(), (int) 0);
     QCOMPARE(spy_args.at(1).toString(), QString(""));
 }
 
@@ -506,10 +506,10 @@ void GUI_BASE_TESTS::test_reset_gui_2()
     base_tester->on_ResetGUI_Button_clicked_test();
 
     // Verify signal spy
-    QCOMPARE(transmit_chunk_spy.count(), 1);
+    QCOMPARE(transmit_chunk_spy.count(), (int) 1);
     spy_args = transmit_chunk_spy.takeFirst();
     QCOMPARE(spy_args.at(0).toInt(), (int) MAJOR_KEY_RESET);
-    QCOMPARE(spy_args.at(1).toInt(), 0);
+    QCOMPARE(spy_args.at(1).toInt(), (int) 0);
 }
 
 void GUI_BASE_TESTS::test_rcvd_formatted()
@@ -566,7 +566,7 @@ void GUI_BASE_TESTS::test_rcvd_formatted()
 
         // Verify cleared
         QCOMPARE(base_tester->rcvd_formatted_readAll_test(), QByteArray());
-        QCOMPARE(base_tester->rcvd_formatted_size_test(), 0);
+        QCOMPARE(base_tester->rcvd_formatted_size_test(), (int) 0);
     }
 }
 
@@ -630,7 +630,7 @@ void GUI_BASE_TESTS::test_send_chunk_qlist()
     base_tester->send_chunk_test(major_key, minor_key, send_chunk);
 
     // Verify signal spy
-    QCOMPARE(transmit_chunk_spy.count(), 1);
+    QCOMPARE(transmit_chunk_spy.count(), (int) 1);
     spy_args = transmit_chunk_spy.takeFirst();
     QCOMPARE(spy_args.at(0).toInt(), (int) major_key);
     QCOMPARE(spy_args.at(1).toInt(), (int) minor_key);
@@ -645,8 +645,8 @@ void GUI_BASE_TESTS::test_send_chunk_qlist_data()
     QTest::addColumn<QList<quint8>>("send_chunk");
 
     // Load in data
-    QTest::newRow("Empty") << (quint8) 0 << (quint8) 0 << QList<quint8>();
-    QTest::newRow("Basic") << (quint8) 4 << (quint8) 3 << QList<quint8>({(quint8) 0, (quint8) 1, (quint8) 2});
+    QTest::newRow("Empty") << (quint8) 0x00 << (quint8) 0x00 << QList<quint8>();
+    QTest::newRow("Basic") << (quint8) 0x04 << (quint8) 0x03 << QList<quint8>({0x00, 0x01, 0x02});
     QTest::newRow("Random") << (quint8) qrand() << (quint8) qrand() \
                             << QList<quint8>({(quint8) qrand(), (quint8) qrand(), (quint8) qrand()});
 }

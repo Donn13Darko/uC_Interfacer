@@ -446,6 +446,9 @@ void GUI_IO_CONTROL::DIO_ComboValueChanged()
     QByteArray data;
     inputsChanged(MINOR_KEY_IO_DIO, sender(), io_combo_pos, &data);
 
+    // Verify data packet
+    if (data.length() < 4) return;
+
     // Send update
     emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_DIO_SET, data);
 }
@@ -455,6 +458,9 @@ void GUI_IO_CONTROL::DIO_SliderValueChanged()
     // Set message for clicked button
     QByteArray data;
     inputsChanged(MINOR_KEY_IO_DIO, sender(), io_slider_pos, &data);
+
+    // Verify data packet
+    if (data.length() < 4) return;
 
     // Remove combo setting (unneeded)
     data.remove(s2_io_combo_loc, 1);
@@ -469,6 +475,9 @@ void GUI_IO_CONTROL::DIO_LineEditValueChanged()
     QByteArray data;
     inputsChanged(MINOR_KEY_IO_DIO, sender(), io_line_edit_pos, &data);
 
+    // Verify data packet
+    if (data.length() < 4) return;
+
     // Remove combo setting (unneeded)
     data.remove(s2_io_combo_loc, 1);
 
@@ -482,6 +491,9 @@ void GUI_IO_CONTROL::AIO_ComboValueChanged()
     QByteArray data;
     inputsChanged(MINOR_KEY_IO_AIO, sender(), io_combo_pos, &data);
 
+    // Verify data packet
+    if (data.length() < 4) return;
+
     // Send update
     emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_AIO_SET, data);
 }
@@ -491,6 +503,9 @@ void GUI_IO_CONTROL::AIO_SliderValueChanged()
     // Send message for edited button
     QByteArray data;
     inputsChanged(MINOR_KEY_IO_AIO, sender(), io_slider_pos, &data);
+
+    // Verify data packet
+    if (data.length() < 4) return;
 
     // Remove combo setting (unneeded)
     data.remove(s2_io_combo_loc, 1);
@@ -504,6 +519,9 @@ void GUI_IO_CONTROL::AIO_LineEditValueChanged()
     // Send message for edited button
     QByteArray data;
     inputsChanged(MINOR_KEY_IO_AIO, sender(), io_line_edit_pos, &data);
+
+    // Verify data packet
+    if (data.length() < 4) return;
 
     // Remove combo setting (unneeded)
     data.remove(s2_io_combo_loc, 1);
@@ -800,9 +818,15 @@ void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_
     if (data != nullptr)
     {
         // Scale & verify value
-        newVAL = qRound(newVAL - (rList->min * rList->div));
-        if (newVAL < 0) return;
-        uint16_t v = (uint16_t) newVAL;
+        if (io_pos != io_line_edit_pos) newVAL = (newVAL - (float) rList->min) * rList->div;
+        else newVAL = newVAL - ((float) rList->min * rList->div);
+        if (newVAL < 0)
+        {
+            GUI_GENERIC_HELPER::showMessage("Error: Invalid Pin Value:  " \
+                                            + QString::number(newVAL));
+            return;
+        }
+        uint16_t v = (uint16_t) (qRound(newVAL) & 0xFFFF);
 
         // Build pin data array
         data->append((char) pinNum.toInt());    // Pin Num
