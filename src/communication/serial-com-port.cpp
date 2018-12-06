@@ -18,7 +18,7 @@
 
 #include "serial-com-port.hpp"
 
-QStringList
+const QStringList
 SERIAL_COM_PORT::Baudrate_Defaults({
                                     "1200", "2400", "4800",
                                     "9600", "19200", "39400",

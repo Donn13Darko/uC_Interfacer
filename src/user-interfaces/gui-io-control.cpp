@@ -804,7 +804,7 @@ void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_
 
             // Update slider value
             prev_block_status = sliderValue->blockSignals(true);
-            sliderValue->setSliderPosition(newVAL);
+            sliderValue->setValue(newVAL);
             sliderValue->blockSignals(prev_block_status);
             break;
         }
@@ -849,9 +849,9 @@ void GUI_IO_CONTROL::updateSliderRange(QSlider *slider, RangeList *rList)
     slider->setPageStep(rList->step);
 
     // Set to 0, or min/max if 0 out of range
-    if (0 < rList->min) slider->setSliderPosition(rList->min);
-    else if (rList->max < 0) slider->setSliderPosition(rList->max);
-    else slider->setSliderPosition(0);
+    if (0 < rList->min) slider->setValue(rList->min);
+    else if (rList->max < 0) slider->setValue(rList->max);
+    else slider->setValue(0);
 
     // Enable signals
     slider->blockSignals(prev_block_status);
@@ -1198,7 +1198,7 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
 
                     // Adjust & set value
                     newVAL = qRound((float) value + (rList->min * rList->div));
-                    sliderValue->setSliderPosition(newVAL);
+                    sliderValue->setValue(newVAL);
                     lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
 
                     // Unblock signals now that they are set
@@ -1258,7 +1258,7 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
 
             // Adjust & set value
             newVAL = qRound((float) value + (rList->min * rList->div));
-            sliderValue->setSliderPosition(newVAL);
+            sliderValue->setValue(newVAL);
             lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
 
             // Unblock signals now that they are set
@@ -1299,7 +1299,7 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
 
             // Adjust & set value
             newVAL = qRound((float) value + (rList->min * rList->div));
-            sliderValue->setSliderPosition(newVAL);
+            sliderValue->setValue(newVAL);
             lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
 
             // Unblock signals now that they are set

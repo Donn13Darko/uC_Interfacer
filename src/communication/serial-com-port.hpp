@@ -48,7 +48,7 @@ public:
     virtual bool isConnected();
 
     static QStringList *getDevices();
-    static QStringList Baudrate_Defaults;
+    static const QStringList Baudrate_Defaults;
 
 public slots:
     virtual void write(QByteArray writeData);

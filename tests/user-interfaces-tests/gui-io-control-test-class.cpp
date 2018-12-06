@@ -135,67 +135,91 @@ void GUI_IO_CONTROL_TEST_CLASS::log_stop_clicked_test()
     qApp->processEvents();
 }
 
-bool GUI_IO_CONTROL_TEST_CLASS::perform_action_test(QString pin_str, uint8_t button, QString value)
+bool GUI_IO_CONTROL_TEST_CLASS::set_pin_test(QString pin_str, QString combo_value, int slider_value)
 {
     // Get pin
     QHBoxLayout *pin = get_pin_test(pin_str);
     if (!pin) return false;
 
     // Get items
+    QComboBox *pin_combo = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
+    QSlider *pin_slider = (QSlider*) pin->itemAt(io_slider_pos)->widget();
+    if (!(pin_combo && pin_slider))
+    {
+        show_warning("Failed to retrieve pin combo and/or slider!");
+        return false;
+    }
 
+    // Set & process combo info
+    pin_combo->setCurrentText(combo_value);
+    qApp->processEvents();
+
+    // Set & process slider info
+    pin_slider->setValue(slider_value);
+    qApp->processEvents();
+
+    // Pin set complete
+    return true;
+}
+
+bool GUI_IO_CONTROL_TEST_CLASS::perform_action_test(QString pin_str, uint8_t button, QString value)
+{
+    // Get pin
+    QHBoxLayout *pin = get_pin_test(pin_str);
+    if (!pin) return false;
 
     // Perform action on button
     switch (button)
     {
         case io_combo_pos:
         {
-            QComboBox *combo = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
-            if (!combo)
+            QComboBox *pin_combo = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
+            if (!pin_combo)
             {
-                show_warning("Failed to retrieve combo!");
+                show_warning("Failed to retrieve pin combo!");
                 return false;
             }
 
-            combo->setCurrentText(value);
+            pin_combo->setCurrentText(value);
             qApp->processEvents();
 
             break;
         }
         case io_slider_pos:
         {
-            QSlider *slider = (QSlider*) pin->itemAt(io_slider_pos)->widget();
-            if (!slider)
+            QSlider *pin_slider = (QSlider*) pin->itemAt(io_slider_pos)->widget();
+            if (!pin_slider)
             {
-                show_warning("Failed to retrieve slider!");
+                show_warning("Failed to retrieve pin slider!");
                 return false;
-            } else if (slider->testAttribute(Qt::WA_TransparentForMouseEvents))
+            } else if (pin_slider->testAttribute(Qt::WA_TransparentForMouseEvents))
             {
-                show_warning("Slider disabled!");
+                show_warning("Pin slider disabled!");
                 return false;
             }
 
             int value_int = value.toInt();
-            slider->setSliderPosition(value_int);
+            pin_slider->setValue(value_int);
             qApp->processEvents();
 
             break;
         }
         case io_line_edit_pos:
         {
-            QLineEdit *lineEdit = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
-            if (!lineEdit)
+            QLineEdit *pin_lineEdit = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
+            if (!pin_lineEdit)
             {
-                show_warning("Failed to retrieve line edit!");
+                show_warning("Failed to retrieve pin line edit!");
                 return false;
-            } else if (lineEdit->testAttribute(Qt::WA_TransparentForMouseEvents))
+            } else if (pin_lineEdit->testAttribute(Qt::WA_TransparentForMouseEvents))
             {
-                show_warning("Line edit disabled!");
+                show_warning("pin lineEdit disabled!");
                 return false;
             }
 
-            lineEdit->clear();
-            QTest::keyClicks(lineEdit, value);
-            QTest::keyClick(lineEdit, Qt::Key_Enter);
+            pin_lineEdit->clear();
+            QTest::keyClicks(pin_lineEdit, value);
+            QTest::keyClick(pin_lineEdit, Qt::Key_Enter);
             qApp->processEvents();
 
             break;

@@ -53,8 +53,8 @@ private slots:
     void test_logging();
     void test_logging_data();
 
-    void test_complex_recv();
-    void test_complex_recv_data();
+    void test_recv();
+    void test_recv_data();
 
     void test_basic_chart_features();
     void test_complex_chart_features();
@@ -64,6 +64,8 @@ private slots:
 
 private:
     GUI_IO_CONTROL_TEST_CLASS *io_control_tester;
+
+    static const QString headless_config_str;
 
     void verify_reset_values();
 };

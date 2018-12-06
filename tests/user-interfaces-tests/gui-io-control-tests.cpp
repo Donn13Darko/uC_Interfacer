@@ -24,6 +24,28 @@
 
 #include "../../src/gui-helpers/gui-generic-helper.hpp"
 
+// Setup global_config_str
+const QString
+GUI_IO_CONTROL_TESTS::headless_config_str = \
+        "tab_name=\"IO\"\n" \
+        "closable=\"true\"\n" \
+        "dio_combo_settings = \\\n" \
+        "\"Input,true,0:1:1:1.0\",\\\n" \
+        "\"Output,false,0:5:1:1.0\",\\\n" \
+        "\"Neg_Out,false,-5:5:1:1.0\"\n" \
+        "dio_pin_settings = \\\n" \
+        "\"0,1=Input,Output\",\\\n" \
+        "\"3=Input\",\\\n" \
+        "\"4=Output\",\\\n" \
+        "\"5=Input,Neg_Out\"\n" \
+        "aio_combo_settings = \\\n" \
+        "\"Input,true,0:500:50:100.0\",\\\n" \
+        "\"Output,false,0:500:50:100.0\"\n" \
+        "aio_pin_settings = \\\n" \
+        "\"0:3=Input\",\\\n" \
+        "\"4=Output\",\\\n" \
+        "\"5=Input,Output\"\n";
+
 GUI_IO_CONTROL_TESTS::GUI_IO_CONTROL_TESTS()
 {
     /* DO NOTHING */
@@ -313,7 +335,7 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
                                      << lineEdit_list \
                                      << disabled_list;
 
-    // Setup Verify GUI Interactions Test config_str test data
+    // Setup Verify headless_config_str test data
     config_str.clear();
     pin_list.clear();
     combo_list.clear();
@@ -323,24 +345,7 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
 
     // Setup config_str
     config_str += "[" + curr_gui_name + "]\n";
-    config_str += "tab_name=\"IO\"\n";
-    config_str += "closable=\"true\"\n";
-    config_str += "dio_combo_settings = \\\n";
-    config_str += "\"Input,true,0:1:1:1.0\",\\\n";
-    config_str += "\"Output,false,0:5:1:1.0\",\\\n";
-    config_str += "\"Neg_Out,false,-5:5:1:1.0\"\n";
-    config_str += "dio_pin_settings = \\\n";
-    config_str += "\"0,1=Input,Output\",\\\n";
-    config_str += "\"3=Input\",\\\n";
-    config_str += "\"4=Output\",\\\n";
-    config_str += "\"5=Input,Neg_Out\"\n";
-    config_str += "aio_combo_settings = \\\n";
-    config_str += "\"Input,true,0:500:50:100.0\",\\\n";
-    config_str += "\"Output,false,0:500:50:100.0\"\n";
-    config_str += "aio_pin_settings = \\\n";
-    config_str += "\"0:3=Input\",\\\n";
-    config_str += "\"4=Output\",\\\n";
-    config_str += "\"5=Input,Output\"\n";
+    config_str += headless_config_str;
 
     // DIO 0/1 are INPUT & OUTPUT
     pin_list << "DIO_00" << "DIO_01";
@@ -578,7 +583,6 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
 void GUI_IO_CONTROL_TESTS::test_gui_interactions()
 {
     // Fetch data
-    QFETCH(QString, config_str);
     QFETCH(QList<QList<QString>>, actions);
     QFETCH(QList<QList<QByteArray>>, expected_signals);
     QFETCH(QList<QList<QString>>, expected_pin_settings);
@@ -595,6 +599,9 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions()
     QString curr_gui_name = io_control_tester->get_gui_name();
 
     // Generate new config
+    QString config_str;
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += headless_config_str;
     CONFIG_MAP *gui_config = \
             GUI_GENERIC_HELPER::decode_configMap(config_str);
 
@@ -655,8 +662,6 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions()
 void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
 {
     // Setup data columns
-    QTest::addColumn<QString>("config_str");
-
     // Each action item is composed as follows:
     //   0) pin_str
     //   1) button pos
@@ -677,34 +682,10 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     QTest::addColumn<QList<QList<QString>>>("expected_pin_settings");
 
     // Helper variables
-    QString config_str;
-    QString curr_gui_name = io_control_tester->get_gui_name();
     QList<QList<QString>> action_list;
     QList<QList<QByteArray>> action_signals_list;
     QList<QByteArray> action_signal;
     QList<QList<QString>> action_settings_list;
-
-    // Setup config_str for all tests
-    config_str.clear();
-    config_str += "[" + curr_gui_name + "]\n";
-    config_str += "tab_name=\"IO\"\n";
-    config_str += "closable=\"true\"\n";
-    config_str += "dio_combo_settings = \\\n";
-    config_str += "\"Input,true,0:1:1:1.0\",\\\n";
-    config_str += "\"Output,false,0:5:1:1.0\",\\\n";
-    config_str += "\"Neg_Out,false,-5:5:1:1.0\"\n";
-    config_str += "dio_pin_settings = \\\n";
-    config_str += "\"0,1=Input,Output\",\\\n";
-    config_str += "\"3=Input\",\\\n";
-    config_str += "\"4=Output\",\\\n";
-    config_str += "\"5=Input,Neg_Out\"\n";
-    config_str += "aio_combo_settings = \\\n";
-    config_str += "\"Input,true,0:500:50:100.0\",\\\n";
-    config_str += "\"Output,false,0:500:50:100.0\"\n";
-    config_str += "aio_pin_settings = \\\n";
-    config_str += "\"0:3=Input\",\\\n";
-    config_str += "\"4=Output\",\\\n";
-    config_str += "\"5=Input,Output\"\n";
 
     // Setup basic test (performs no actions)
     action_list.clear();
@@ -712,8 +693,7 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     action_settings_list.clear();
 
     // Load basic test (performs no actions)
-    QTest::newRow("Basic") << config_str \
-                           << action_list \
+    QTest::newRow("Basic") << action_list \
                            << action_signals_list \
                            << action_settings_list;
 
@@ -750,8 +730,7 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     // Performs the following actions:
     //   1) Change DIO_00 to Output
     //   2) Set DIO_00 to 1 using slider
-    QTest::newRow("Basic DIO Verify") << config_str \
-                                      << action_list \
+    QTest::newRow("Basic DIO Verify") << action_list \
                                       << action_signals_list \
                                       << action_settings_list;
 
@@ -775,8 +754,7 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     // Load basic AIO verify test.
     // Performs the following actions:
     //   1) Set AIO_04 to 1 using line edit
-    QTest::newRow("Basic AIO Verify") << config_str \
-                                      << action_list \
+    QTest::newRow("Basic AIO Verify") << action_list \
                                       << action_signals_list \
                                       << action_settings_list;
 
@@ -879,8 +857,7 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     //   5) Set DIO_05 to -2 using slider
     //   6) Set AIO_04 to 1.5 using slider
     //   7) Set AIO_04 to 2.75 using lineEdit
-    QTest::newRow("Complex DIO/AIO Actions") << config_str \
-                                             << action_list \
+    QTest::newRow("Complex DIO/AIO Actions") << action_list \
                                              << action_signals_list \
                                              << action_settings_list;
 }
@@ -905,12 +882,12 @@ void GUI_IO_CONTROL_TESTS::test_logging_data()
     // Start the log and wait for various amounts of time to verify signals/file
 }
 
-void GUI_IO_CONTROL_TESTS::test_complex_recv()
+void GUI_IO_CONTROL_TESTS::test_recv()
 {
     // Recv data and verify results
 }
 
-void GUI_IO_CONTROL_TESTS::test_complex_recv_data()
+void GUI_IO_CONTROL_TESTS::test_recv_data()
 {
     // Setup recv data and expected results
 }
@@ -927,12 +904,38 @@ void GUI_IO_CONTROL_TESTS::test_complex_chart_features()
 
 void GUI_IO_CONTROL_TESTS::test_chart_update_features()
 {
-    // Populate expected data/pins
+    // Clear current config
+    QMap<QString, QVariant> reset_map;
+    io_control_tester->parseConfigMap(&reset_map);
+
+    // Get gui values
+    QString curr_gui_name = io_control_tester->get_gui_name();
+
+    // Generate new config
+    QString config_str;
+    config_str += "[" + curr_gui_name + "]\n";
+    config_str += headless_config_str;
+    CONFIG_MAP *gui_config = \
+            GUI_GENERIC_HELPER::decode_configMap(config_str);
+
+    // Parse new config
+    io_control_tester->parseConfigMap(gui_config->value(curr_gui_name, nullptr));
 }
 
 void GUI_IO_CONTROL_TESTS::test_chart_update_features_data()
 {
-    // Set expected data/pins
+    // Setup data columns
+    // Iteratively called before each chart_update_request
+    // Each button item is set as follows:
+    //   0) pin_str
+    //   1) combo value
+    //   2) slider value
+    QTest::addColumn<QList<QList<QList<QString>>>>("button_settings");
+
+    QTest::addColumn<QList<QList<QString>>>("request_pins");
+    QTest::addColumn<QList<QList<double>>>("expected_signals");
+
+    // Helper variables
 }
 
 void GUI_IO_CONTROL_TESTS::verify_reset_values()

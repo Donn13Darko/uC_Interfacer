@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     if (!argList.contains("-interfaceForceParamsOff"))
     {
         // Force silent mode
-//        if (!argList.contains("-silent")) argList.append("-silent");
+        if (!argList.contains("-silent")) argList.append("-silent");
     } else
     {
         // Remove force off argument if present

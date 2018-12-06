@@ -61,6 +61,7 @@ public:
     void log_start_clicked_test();
     void log_stop_clicked_test();
 
+    bool set_pin_test(QString pin_str, QString combo_value, int slider_value);
     bool perform_action_test(QString pin_str, uint8_t button, QString value);
 
     bool check_pins_test(QStringList expected_pin_list,
