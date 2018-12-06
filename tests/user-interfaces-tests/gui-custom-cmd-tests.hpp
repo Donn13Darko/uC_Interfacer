@@ -68,7 +68,7 @@ private:
     void perform_cmd_send(QString send_fill_data, QList<QString> key_and_base_fills,
                           bool send_file_radio, bool keys_in_input = false,
                           bool click_send = false, bool check_send = false,
-                          QList<QByteArray> send_expected_signals = QList<QByteArray>());
+                          QList<QList<QVariant>> send_expected_signals = QList<QList<QVariant>>());
 };
 
 #endif // GUI_CUSTOM_CMD_TESTS_H

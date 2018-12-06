@@ -65,8 +65,10 @@ private slots:
 private:
     GUI_IO_CONTROL_TEST_CLASS *io_control_tester;
 
-    static const QString headless_config_str;
+    static const QString generic_config_str;
 
+    bool set_gui_config(QString config_str);
+    void clear_gui_config();
     void verify_reset_values();
 };
 

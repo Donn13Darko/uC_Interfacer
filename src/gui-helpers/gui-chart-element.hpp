@@ -28,6 +28,7 @@
 // Helpers
 #include <QTimer>
 #include <QMap>
+#include <QVariant>
 #include "gui-generic-helper.hpp"
 
 // Needs to be in same order as supportedChartsList
@@ -62,7 +63,7 @@ public:
 signals:
     void exit_clicked();
     void update_request(QList<QString> data_points);
-    void update_receive(QList<double*> data_values);
+    void update_receive(QList<QVariant> data_values);
 
 public slots:
     void update_series_combo(QStringList new_data_series_list);
@@ -80,7 +81,7 @@ private slots:
     void on_xDuration_LineEdit_editingFinished();
 
     void update_data_series();
-    void process_update(QList<double*> data_values);
+    void process_update(QList<QVariant> data_values);
 
 private:
     Ui::GUI_CHART_ELEMENT *ui;

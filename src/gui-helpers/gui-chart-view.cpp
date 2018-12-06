@@ -27,7 +27,7 @@ GUI_CHART_VIEW::GUI_CHART_VIEW(QWidget *parent) :
     ui->setupUi(this);
     setWindowFlag(Qt::WindowMinMaxButtonsHint, true);
 
-    // Register types
+    // Register QList<QString> metaType
     qRegisterMetaType<QList<QString>>("QList<QString>");
 
     // Load graph types

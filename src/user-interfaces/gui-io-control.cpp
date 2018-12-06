@@ -198,14 +198,14 @@ void GUI_IO_CONTROL::reset_gui()
 void GUI_IO_CONTROL::chart_update_request(QList<QString> data_points, GUI_CHART_ELEMENT *target_element)
 {
     // Update and emit back
-    QList<qreal*> data;
+    QList<QVariant> data;
 
     // Setup variables
     uint8_t pinType = 0, pinNum = 0;
     QStringList pinNum_split;
     QLayout *item;
     bool pin_error;
-    double *val;
+    QVariant val;
 
     // Get each element
     foreach (QString pin, data_points)
@@ -213,27 +213,31 @@ void GUI_IO_CONTROL::chart_update_request(QList<QString> data_points, GUI_CHART_
         // Set to no pin error
         pin_error = false;
 
-        // Get pin type to read
-        if (pin.startsWith("AIO_")) pinType = MINOR_KEY_IO_AIO;
-        else if (pin.startsWith("DIO_")) pinType = MINOR_KEY_IO_DIO;
-        else pin_error = true;
+        // Get pin str
+        pinNum_split = pin.split('_');
+        if (pinNum_split.length() != 2) pin_error = true;
 
-        // If no error, get pinNum
+        // If no error, get pin info
         if (!pin_error)
         {
+            // Get pin type
+            if (pinNum_split.at(0) == "AIO") pinType = MINOR_KEY_IO_AIO;
+            else if (pinNum_split.at(0) == "DIO") pinType = MINOR_KEY_IO_DIO;
+            else pin_error = true;
+
             // Get pin number
-            pinNum_split = pin.split('_');
-            if (pinNum_split.length() != 2) pin_error = true;
-            else pinNum = pinNum_split.at(1).toInt();
+            bool ok = false;
+            pinNum = pinNum_split.at(1).toInt(&ok);
+            if (!ok) pin_error = true;
         }
 
         // Get pin value
         if (!pin_error && get_pin_layout(pinType, pinNum, &item))
         {
-            val = new double(((QLineEdit*) item->itemAt(io_line_edit_pos)->widget())->text().toDouble());
+            val = QVariant(((QLineEdit*) item->itemAt(io_line_edit_pos)->widget())->text().toDouble());
         } else
         {
-            val = new double(-1);
+            val = QVariant(-1.0);
         }
 
         // Add to data list

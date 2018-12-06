@@ -136,7 +136,7 @@ void GUI_DATA_TRANSMIT_TESTS::test_send()
 {
     // Fetch data
     QFETCH(QString, send_fill_data);
-    QFETCH(QList<QByteArray>, send_expected_signals);
+    QFETCH(QList<QList<QVariant>>, send_expected_signals);
     QFETCH(bool, send_file);
 
     // Reset the gui before (direct call slot)
@@ -154,12 +154,12 @@ void GUI_DATA_TRANSMIT_TESTS::test_send_data()
     QTest::addColumn<QString>("send_fill_data");
 
     // Send expected signals column (emit transmit_chunk())
-    // Each QByteArray must be arranged as follows:
-    //  0) Major Key
-    //  1) Minor Key
-    //  2) CMD Base
-    //  3-end) Data Packet
-    QTest::addColumn<QList<QByteArray>>("send_expected_signals");
+    // Each QList<QVariant> must be arranged as follows:
+    //  0) Major Key (uint8_t)
+    //  1) Minor Key (uint8_t)
+    //  2) Data Packet (QByteArray)
+    //  3) CMD Base (uint8_t)
+    QTest::addColumn<QList<QList<QVariant>>>("send_expected_signals");
 
     // Add misc columns
     QTest::addColumn<bool>("send_file");
@@ -168,19 +168,24 @@ void GUI_DATA_TRANSMIT_TESTS::test_send_data()
     QString input_data;
     QString gui_major_key_str = QString::number(MAJOR_KEY_DATA_TRANSMIT, 16);
     QString gui_minor_key_str = QString::number(MINOR_KEY_DATA_TRANSMIT_DATA, 16);
-    QList<QByteArray> expected_send_list;
+    QList<QList<QVariant>> expected_send_list;
+    QList<QVariant> send_list;
 
     // Setup Simple Send Empty Input test data (no data)
     input_data.clear();
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                     0x00, 0x00, 0x00, 0x00, 0x00}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_DATA,
-                     0x00}));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_DATA_TRANSMIT) \
+              << QVariant(MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x00, 0x00, 0x00, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_DATA_TRANSMIT) \
+              << QVariant(MINOR_KEY_DATA_TRANSMIT_DATA) \
+              << QByteArray() \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Simple Send Empty Input test:
     //  send_fill_data = ""
@@ -194,14 +199,18 @@ void GUI_DATA_TRANSMIT_TESTS::test_send_data()
     // Setup Simple Send Empty File test data (no data)
     input_data.clear();
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                     0x00, 0x00, 0x00, 0x00, 0x00}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_DATA,
-                     0x00}));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_DATA_TRANSMIT) \
+              << QVariant(MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x00, 0x00, 0x00, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_DATA_TRANSMIT) \
+              << QVariant(MINOR_KEY_DATA_TRANSMIT_DATA) \
+              << QByteArray() \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Simple Send Empty File test:
     //  send_fill_data = ""
@@ -217,15 +226,18 @@ void GUI_DATA_TRANSMIT_TESTS::test_send_data()
     input_data += "Hello World!";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE,
-                     0x00, 0x00, 0x00, 0x00, 0x0D}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_DATA_TRANSMIT, MINOR_KEY_DATA_TRANSMIT_DATA,
-                     0x00})
-                .append("Hello World!\n"));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_DATA_TRANSMIT) \
+              << QVariant(MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x00, 0x00, 0x00, 0x0D}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_DATA_TRANSMIT) \
+              << QVariant(MINOR_KEY_DATA_TRANSMIT_DATA) \
+              << QByteArray("Hello World!\n") \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Simple Send Input test:
     //  send_fill_data = "Hello World!\n"
@@ -379,7 +391,7 @@ void GUI_DATA_TRANSMIT_TESTS::test_complex_transmit()
     QFETCH(QList<QByteArray>, rcvd_fill_data);
     QFETCH(QString, rcvd_expected_display_data);
     QFETCH(QByteArray, rcvd_expected_file_data);
-    QFETCH(QList<QByteArray>, send_expected_signals);
+    QFETCH(QList<QList<QVariant>>, send_expected_signals);
     QFETCH(QList<bool>, click_buttons);
     QFETCH(bool, check_send);
     QFETCH(bool, check_rcvd);
@@ -423,12 +435,12 @@ void GUI_DATA_TRANSMIT_TESTS::test_complex_transmit_data()
     QTest::addColumn<QByteArray>("rcvd_expected_file_data");
 
     // Send expected signals column (emit transmit_chunk())
-    // Each QByteArray must be arranged as follows:
-    //  0) Major Key
-    //  1) Minor Key
-    //  2) CMD Base
-    //  3-end) Data Packet
-    QTest::addColumn<QList<QByteArray>>("send_expected_signals");
+    // Each QList<QVariant> must be arranged as follows:
+    //  0) Major Key (uint8_t)
+    //  1) Minor Key (uint8_t)
+    //  2) Data Packet (QByteArray)
+    //  3) CMD Base (uint8_t)
+    QTest::addColumn<QList<QList<QVariant>>>("send_expected_signals");
 
     // Click buttons column
     // Ordering as follows:
@@ -448,7 +460,8 @@ void GUI_DATA_TRANSMIT_TESTS::test_complex_transmit_data()
     // Setup helper variables
     QString gui_major_key_str = QString::number(MAJOR_KEY_DATA_TRANSMIT, 16);
     QString gui_minor_key_str = QString::number(MINOR_KEY_DATA_TRANSMIT_DATA, 16);
-    QList<QByteArray> expected_send_list;
+    QList<QList<QVariant>> expected_send_list;
+    QList<QVariant> send_list;
     QList<QByteArray> rcvd_list;
     QString expected_feedback;
 
@@ -643,7 +656,7 @@ void GUI_DATA_TRANSMIT_TESTS::perform_data_rcvd(QList<QByteArray> rcvd_fill_data
 
 void GUI_DATA_TRANSMIT_TESTS::perform_data_send(QString send_fill_data, bool send_file_radio,
                                                 bool click_send, bool check_send,
-                                                QList<QByteArray> send_expected_signals)
+                                                QList<QList<QVariant>> send_expected_signals)
 {
     // Create temp file to store data in
     QTemporaryFile temp_file;
@@ -687,42 +700,44 @@ void GUI_DATA_TRANSMIT_TESTS::perform_data_send(QString send_fill_data, bool sen
     if (check_send)
     {
         // Verify num signals equal to expected
-        QCOMPARE(send_expected_signals.length(), (int) 2);
+        QVERIFY(send_expected_signals.length() == 2);
 
         // Send byte array holder
-        QByteArray expected_send = send_expected_signals.takeFirst();
-        QVERIFY(4 <= expected_send.length());
+        QList<QVariant> expected_send = send_expected_signals.takeFirst();
+        QVERIFY(expected_send.length() == 4);
 
         // Get transmit_chunk signal
-        QCOMPARE(transmit_chunk_spy.count(), (int) 1);
+        QVERIFY(transmit_chunk_spy.count() == 1);
         spy_args = transmit_chunk_spy.takeFirst();
 
         // Verify transmit_chunk signal
-        QCOMPARE(spy_args.at(0).toInt(), (int) expected_send.at(0));
-        QCOMPARE(spy_args.at(1).toInt(), (int) expected_send.at(1));
-        QCOMPARE(spy_args.at(3).toInt(), (int) expected_send.at(2));
-        QCOMPARE(spy_args.at(2).toByteArray(), expected_send.mid(3));
+        QCOMPARE(spy_args.at(0).toUInt(), expected_send.at(0).toUInt());
+        QCOMPARE(spy_args.at(1).toUInt(), expected_send.at(1).toUInt());
+        QCOMPARE(spy_args.at(2).toByteArray(), expected_send.at(2).toByteArray());
+        QCOMPARE(spy_args.at(3).toUInt(), expected_send.at(3).toUInt());
 
         // Get next expected
         expected_send = send_expected_signals.takeFirst();
-        QVERIFY(3 <= expected_send.length());
+        QVERIFY(expected_send.length() == 4);
 
         // Get file or chunk pack signal
+        QByteArray expected_data;
         if (send_file_radio)
         {
-            QCOMPARE(transmit_file_pack_spy.count(), (int) 1);
+            QVERIFY(transmit_file_pack_spy.count() == 1);
             spy_args = transmit_file_pack_spy.takeFirst();
-            QCOMPARE(spy_args.at(2).toByteArray(), temp_file.fileName().toLatin1());
+            expected_data = temp_file.fileName().toLatin1();
         } else
         {
-            QCOMPARE(transmit_chunk_pack_spy.count(), (int) 1);
+            QVERIFY(transmit_chunk_pack_spy.count() == 1);
             spy_args = transmit_chunk_pack_spy.takeFirst();
-            QCOMPARE(spy_args.at(2).toByteArray(), expected_send.mid(3));
+            expected_data = expected_send.at(2).toByteArray();
         }
 
         // Verify file or chunk pack signal
-        QCOMPARE(spy_args.at(0).toInt(), (int) expected_send.at(0));
-        QCOMPARE(spy_args.at(1).toInt(), (int) expected_send.at(1));
-        QCOMPARE(spy_args.at(3).toInt(), (int) expected_send.at(2));
+        QCOMPARE(spy_args.at(0).toUInt(), expected_send.at(0).toUInt());
+        QCOMPARE(spy_args.at(1).toUInt(), expected_send.at(1).toUInt());
+        QCOMPARE(spy_args.at(2).toByteArray(), expected_data);
+        QCOMPARE(spy_args.at(3).toUInt(), expected_send.at(3).toUInt());
     }
 }

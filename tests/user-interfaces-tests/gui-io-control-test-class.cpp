@@ -162,7 +162,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::set_pin_test(QString pin_str, QString combo_valu
     return true;
 }
 
-bool GUI_IO_CONTROL_TEST_CLASS::perform_action_test(QString pin_str, uint8_t button, QString value)
+bool GUI_IO_CONTROL_TEST_CLASS::perform_action_test(QString pin_str, uint8_t button, QVariant value)
 {
     // Get pin
     QHBoxLayout *pin = get_pin_test(pin_str);
@@ -180,7 +180,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::perform_action_test(QString pin_str, uint8_t but
                 return false;
             }
 
-            pin_combo->setCurrentText(value);
+            pin_combo->setCurrentText(value.toString());
             qApp->processEvents();
 
             break;
@@ -198,8 +198,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::perform_action_test(QString pin_str, uint8_t but
                 return false;
             }
 
-            int value_int = value.toInt();
-            pin_slider->setValue(value_int);
+            pin_slider->setValue(value.toInt());
             qApp->processEvents();
 
             break;
@@ -218,7 +217,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::perform_action_test(QString pin_str, uint8_t but
             }
 
             pin_lineEdit->clear();
-            QTest::keyClicks(pin_lineEdit, value);
+            QTest::keyClicks(pin_lineEdit, value.toString());
             QTest::keyClick(pin_lineEdit, Qt::Key_Enter);
             qApp->processEvents();
 

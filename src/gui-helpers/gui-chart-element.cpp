@@ -63,13 +63,12 @@ GUI_CHART_ELEMENT::GUI_CHART_ELEMENT(int type, QWidget *parent) :
     on_yMax_LineEdit_editingFinished();
     on_xDuration_LineEdit_editingFinished();
 
-    // Registar types
+    // Register QList<QString> metaType
     qRegisterMetaType<QList<QString>>("QList<QString>");
-    qRegisterMetaType<QList<double*>>("QList<double*>");
 
     // Connect update receiver
-    connect(this, SIGNAL(update_receive(QList<double*>)),
-            this, SLOT(process_update(QList<double*>)),
+    connect(this, SIGNAL(update_receive(QList<QVariant>)),
+            this, SLOT(process_update(QList<QVariant>)),
             Qt::QueuedConnection);
 
     // Setup, connect, and start the update rate
@@ -354,7 +353,7 @@ void GUI_CHART_ELEMENT::update_data_series()
     emit update_request(addded_data_series_map.keys());
 }
 
-void GUI_CHART_ELEMENT::process_update(QList<double*> data_values)
+void GUI_CHART_ELEMENT::process_update(QList<QVariant> data_values)
 {
     // Verify chart element
     if (!chart_element) return;
@@ -378,26 +377,14 @@ void GUI_CHART_ELEMENT::process_update(QList<double*> data_values)
         {
             // Add values to series
             QLineSeries *data_series;
-            double *data_point;
             for (int i = 0; i < added_len; i++)
             {
-                // Parse values from info
-                data_point = data_values.at(i);
+                // Get data series
                 data_series = (QLineSeries*) addded_data_series_map.value(added_keys.at(i));
-                if (!data_point)
-                {
-                    continue;
-                } else if (!data_series)
-                {
-                    delete data_point;
-                    continue;
-                }
+                if (!data_series) continue;
 
-                // Append to series
-                data_series->append(curr_time, *data_point);
-
-                // Delete point
-                delete data_point;
+                // Append data_point to series
+                data_series->append(curr_time, data_values.at(i).toDouble());
             }
             break;
         }
@@ -481,7 +468,7 @@ void GUI_CHART_ELEMENT::destroy_chart_element()
 
 void GUI_CHART_ELEMENT::destroy_data_map()
 {
-    // Decide how to delete
+    // Decide how to delete map
     switch (chart_type)
     {
         case CHART_TYPE_2D_LINE:

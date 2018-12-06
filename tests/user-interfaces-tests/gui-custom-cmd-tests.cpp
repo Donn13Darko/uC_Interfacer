@@ -146,7 +146,7 @@ void GUI_CUSTOM_CMD_TESTS::test_send()
 {
     // Fetch data
     QFETCH(QString, send_fill_data);
-    QFETCH(QList<QByteArray>, send_expected_signals);
+    QFETCH(QList<QList<QVariant>>, send_expected_signals);
     QFETCH(QList<QString>, key_and_base_fills);
     QFETCH(QList<bool>, click_buttons);
 
@@ -169,12 +169,12 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     QTest::addColumn<QString>("send_fill_data");
 
     // Send expected signals column (emit transmit_chunk())
-    // Each QByteArray must be arranged as follows:
-    //  0) Major Key
-    //  1) Minor Key
-    //  2) CMD Base
-    //  3-end) Data Packet
-    QTest::addColumn<QList<QByteArray>>("send_expected_signals");
+    // Each QList<QVariant> must be arranged as follows:
+    //  0) Major Key (uint8_t)
+    //  1) Minor Key (uint8_t)
+    //  2) Data Packet (QByteArray)
+    //  3) CMD Base (uint8_t)
+    QTest::addColumn<QList<QList<QVariant>>>("send_expected_signals");
 
     // Key & Base fill column
     // Ordering as follows:
@@ -194,15 +194,18 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     QString input_data;
     QString gui_major_key_str = QString::number(MAJOR_KEY_CUSTOM_CMD, 16);
     QString gui_minor_key_str = QString::number(MINOR_KEY_CUSTOM_CMD_CMD, 16);
-    QList<QByteArray> expected_send_list;
+    QList<QList<QVariant>> expected_send_list;
+    QList<QVariant> send_list;
 
     // Setup Simple Send test data (no data)
     input_data.clear();
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x00}));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Simple Send test:
     //  send_fill_data = ""
@@ -222,14 +225,18 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 3 Read\n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x00}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
-                .append("Read"));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_CMD) \
+              << QByteArray("Read") \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter simple keys test:
     //  send_fill_data = "6 3 Read\n"
@@ -249,18 +256,24 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 2 2 0\n110 11 read\n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x10}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x10, 0x32, 0x00, 0x30}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
-                .append("read"));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x10}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x32, 0x00, 0x30}) \
+              << QVariant(0x10);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_CMD) \
+              << QByteArray("read") \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter set base v1 test:
     //  send_fill_data = "6 2 2 0\n6 3 read\n"
@@ -280,15 +293,19 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 2 10 10\n6 3 52 45 41 44\n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x10}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x10,
-                     0x35, 0x32, 0x00, 0x34, 0x35, 0x00,
-                     0x34, 0x31, 0x00, 0x34, 0x34}));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x10}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_CMD) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x35, 0x32, 0x00, 0x34, 0x35, 0x00,
+                                                         0x34, 0x31, 0x00, 0x34, 0x34}) \
+              << QVariant(0x10);
+    expected_send_list << send_list;
 
     // Enter double set base test:
     //  send_fill_data = "6 2 10 0\n6 3 52 45 41 44\n"
@@ -308,14 +325,18 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 3 Re ad\n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x00}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
-                .append("Re ad"));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_CMD) \
+              << QByteArray("Re ad") \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Space in CMD test:
     //  send_fill_data = "6 3 Re ad\n"
@@ -335,10 +356,12 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 \n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x10}));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x10}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Malformed Input V1 test:
     //  send_fill_data = "6 \n"
@@ -358,10 +381,12 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 2 1 \n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x10}));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x10}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Malformed Input V2 test:
     //  send_fill_data = "6 2 1 \n"
@@ -381,14 +406,18 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 3 Read\n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x00, 0x00}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {0x36, 0x33, 0x00})
-                .append("Read"));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x00, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(0x36) \
+              << QVariant(0x33) \
+              << QByteArray("Read") \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter KB_0_CB_0 test:
     //  send_fill_data = "54 51 Read\n"
@@ -408,15 +437,19 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 3 52 45 41 44\n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x10}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x10,
-                     0x35, 0x32, 0x00, 0x34, 0x35, 0x00,
-                     0x34, 0x31, 0x00, 0x34, 0x34}));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x10}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_CMD) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x35, 0x32, 0x00, 0x34, 0x35, 0x00,
+                                                         0x34, 0x31, 0x00, 0x34, 0x34}) \
+              << QVariant(0x10);
+    expected_send_list << send_list;
 
     // Enter KB_16_CB_16 test:
     //  send_fill_data = "54 51 52 45 41 44\n"
@@ -435,10 +468,12 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data.clear();
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x00}));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Simple Send File test:
     //  send_fill_data = ""
@@ -458,14 +493,18 @@ void GUI_CUSTOM_CMD_TESTS::test_send_data()
     input_data += "6 3 Read\n";
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x00}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
-                .append("Read"));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_CMD) \
+              << QByteArray("Read") \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Enter Send File V1 test:
     //  send_fill_data = ""
@@ -693,7 +732,7 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd()
     QFETCH(QList<QByteArray>, rcvd_fill_data);
     QFETCH(QString, rcvd_expected_display_data);
     QFETCH(QByteArray, rcvd_expected_file_data);
-    QFETCH(QList<QByteArray>, send_expected_signals);
+    QFETCH(QList<QList<QVariant>>, send_expected_signals);
     QFETCH(QList<QString>, key_and_base_fills);
     QFETCH(QList<bool>, click_buttons);
     QFETCH(bool, check_send);
@@ -747,12 +786,12 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     QTest::addColumn<QByteArray>("rcvd_expected_file_data");
 
     // Send expected signals column (emit transmit_chunk())
-    // Each QByteArray must be arranged as follows:
-    //  0) Major Key
-    //  1) Minor Key
-    //  2) CMD Base
-    //  3-end) Data Packet
-    QTest::addColumn<QList<QByteArray>>("send_expected_signals");
+    // Each QList<QVariant> must be arranged as follows:
+    //  0) Major Key (uint8_t)
+    //  1) Minor Key (uint8_t)
+    //  2) Data Packet (QByteArray)
+    //  3) CMD Base (uint8_t)
+    QTest::addColumn<QList<QList<QVariant>>>("send_expected_signals");
 
     // Key & Base fill column
     // Ordering as follows:
@@ -782,7 +821,8 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     // Setup helper variables
     QString gui_major_key_str = QString::number(MAJOR_KEY_CUSTOM_CMD, 16);
     QString gui_minor_key_str = QString::number(MINOR_KEY_CUSTOM_CMD_CMD, 16);
-    QList<QByteArray> expected_send_list;
+    QList<QList<QVariant>> expected_send_list;
+    QList<QVariant> send_list;
     QList<QByteArray> rcvd_list;
     QString expected_feedback;
 
@@ -823,14 +863,18 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
     expected_feedback.clear();
 
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x00}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
-                .append("Input_PlainText"));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_CMD) \
+              << QByteArray("Input_PlainText") \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     // Load send test data:
     //  instructions = ""
@@ -904,14 +948,18 @@ void GUI_CUSTOM_CMD_TESTS::test_complex_cmd_data()
 
     // Setup send/recv test data
     expected_send_list.clear();
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                     0x00, 0x10, 0x00}));
-    expected_send_list.append(
-                GUI_GENERIC_HELPER::qList_to_byteArray(
-                    {MAJOR_KEY_CUSTOM_CMD, MINOR_KEY_CUSTOM_CMD_CMD, 0x00})
-                .append("Input_PlainText"));
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE) \
+              << GUI_GENERIC_HELPER::qList_to_byteArray({0x10, 0x00}) \
+              << QVariant(0x00);
+    expected_send_list << send_list;
+    send_list.clear();
+    send_list << QVariant(MAJOR_KEY_CUSTOM_CMD) \
+              << QVariant(MINOR_KEY_CUSTOM_CMD_CMD) \
+              << QByteArray("Input_PlainText") \
+              << QVariant(0x00);
+    expected_send_list << send_list;
 
     rcvd_list.clear();
     rcvd_list.append(
@@ -1129,7 +1177,7 @@ void GUI_CUSTOM_CMD_TESTS::perform_cmd_rcvd(QList<QByteArray> rcvd_fill_data,
 void GUI_CUSTOM_CMD_TESTS::perform_cmd_send(QString send_fill_data, QList<QString> key_and_base_fills,
                                             bool send_file_radio, bool keys_in_input,
                                             bool click_send, bool check_send,
-                                            QList<QByteArray> send_expected_signals)
+                                            QList<QList<QVariant>> send_expected_signals)
 {
     // Create temp file to store data in
     QTemporaryFile temp_file;
@@ -1182,17 +1230,17 @@ void GUI_CUSTOM_CMD_TESTS::perform_cmd_send(QString send_fill_data, QList<QStrin
         QCOMPARE(transmit_chunk_spy.count(), send_expected_signals.length());
 
         // Loop through variables
-        foreach (QByteArray expected_send, send_expected_signals)
+        foreach (QList<QVariant> expected_send, send_expected_signals)
         {
             // Get signal
             spy_args = transmit_chunk_spy.takeFirst();
 
             // Verify values
             QVERIFY(3 <= expected_send.length());
-            QCOMPARE(spy_args.at(0).toInt(), (int) expected_send.at(0));
-            QCOMPARE(spy_args.at(1).toInt(), (int) expected_send.at(1));
-            QCOMPARE(spy_args.at(3).toInt(), (int) expected_send.at(2));
-            QCOMPARE(spy_args.at(2).toByteArray(), expected_send.mid(3));
+            QCOMPARE(spy_args.at(0).toUInt(), expected_send.at(0).toUInt());
+            QCOMPARE(spy_args.at(1).toUInt(), expected_send.at(1).toUInt());
+            QCOMPARE(spy_args.at(2).toByteArray(), expected_send.at(2).toByteArray());
+            QCOMPARE(spy_args.at(3).toUInt(), expected_send.at(3).toUInt());
         }
     }
 }

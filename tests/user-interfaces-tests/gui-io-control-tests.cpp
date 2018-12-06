@@ -26,7 +26,8 @@
 
 // Setup global_config_str
 const QString
-GUI_IO_CONTROL_TESTS::headless_config_str = \
+GUI_IO_CONTROL_TESTS::generic_config_str = \
+        "[IO]\n"
         "tab_name=\"IO\"\n" \
         "closable=\"true\"\n" \
         "dio_combo_settings = \\\n" \
@@ -124,20 +125,15 @@ void GUI_IO_CONTROL_TESTS::test_gui_config()
     // Verify input arguments
     QCOMPARE(expected_pins.length(), expected_combos.length());
 
-    // Clear current config
-    QMap<QString, QVariant> reset_map;
-    io_control_tester->parseConfigMap(&reset_map);
+    // Clear existing config
+    clear_gui_config();
 
-    // Get gui values
+    // Get default gui values
     uint8_t curr_gui_key = io_control_tester->get_gui_key();
     QString curr_gui_name = io_control_tester->get_gui_name();
 
-    // Generate new config
-    CONFIG_MAP *gui_config = \
-            GUI_GENERIC_HELPER::decode_configMap(config_str);
-
-    // Parse new config
-    io_control_tester->parseConfigMap(gui_config->value(curr_gui_name, nullptr));
+    // Set to new config
+    QVERIFY(set_gui_config(config_str));
 
     // Check values
     QCOMPARE(io_control_tester->get_gui_key(), curr_gui_key);
@@ -335,7 +331,7 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
                                      << lineEdit_list \
                                      << disabled_list;
 
-    // Setup Verify headless_config_str test data
+    // Setup Verify generic_config_str test data
     config_str.clear();
     pin_list.clear();
     combo_list.clear();
@@ -344,8 +340,7 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
     disabled_list.clear();
 
     // Setup config_str
-    config_str += "[" + curr_gui_name + "]\n";
-    config_str += headless_config_str;
+    config_str += generic_config_str;
 
     // DIO 0/1 are INPUT & OUTPUT
     pin_list << "DIO_00" << "DIO_01";
@@ -583,30 +578,17 @@ void GUI_IO_CONTROL_TESTS::test_gui_config_data()
 void GUI_IO_CONTROL_TESTS::test_gui_interactions()
 {
     // Fetch data
-    QFETCH(QList<QList<QString>>, actions);
-    QFETCH(QList<QList<QByteArray>>, expected_signals);
-    QFETCH(QList<QList<QString>>, expected_pin_settings);
+    QFETCH(QList<QList<QVariant>>, actions);
+    QFETCH(QList<QList<QVariant>>, send_expected_signals);
+    QFETCH(QList<QList<QVariant>>, expected_pin_settings);
 
     // Verify length match
-    QCOMPARE(actions.length(), expected_signals.length());
-    QCOMPARE(actions.length(), expected_pin_settings.length());
+    int num_actions = actions.length();
+    QCOMPARE(send_expected_signals.length(), num_actions);
+    QCOMPARE(expected_pin_settings.length(), num_actions);
 
-    // Clear current config
-    QMap<QString, QVariant> reset_map;
-    io_control_tester->parseConfigMap(&reset_map);
-
-    // Get gui values
-    QString curr_gui_name = io_control_tester->get_gui_name();
-
-    // Generate new config
-    QString config_str;
-    config_str += "[" + curr_gui_name + "]\n";
-    config_str += headless_config_str;
-    CONFIG_MAP *gui_config = \
-            GUI_GENERIC_HELPER::decode_configMap(config_str);
-
-    // Parse new config
-    io_control_tester->parseConfigMap(gui_config->value(curr_gui_name, nullptr));
+    // Set new config
+    QVERIFY(set_gui_config(generic_config_str));
 
     // Setup spy to catch tranmit signal
     QList<QVariant> spy_args;
@@ -614,48 +596,50 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions()
     QVERIFY(transmit_chunk_spy.isValid());
 
     // Setup action loop variables
-    QList<QString> action;
-    QList<QByteArray> action_signals;
-    QList<QString> action_pin_settings;
-    int num_actions = actions.length();
+    QList<QVariant> action;
+    QList<QVariant> action_signal;
+    QList<QVariant> action_pin_values;
 
     // Perform all actions
     for (int i = 0; i < num_actions; i++)
     {
         // Get current action info
         action = actions.at(i);
-        action_signals = expected_signals.at(i);
-        action_pin_settings = expected_pin_settings.at(i);
+        action_signal = send_expected_signals.at(i);
+        action_pin_values = expected_pin_settings.at(i);
 
         // Verify action lengths
-        QCOMPARE(action.length(), (int) 3);
-        QCOMPARE(action_pin_settings.length(), (int) 4);
+        QVERIFY(action.length() == 3);
+        QVERIFY(action_pin_values.length() == 4);
 
         // Perform action
-        io_control_tester->perform_action_test(action.at(0),
-                                               (uint8_t) action.at(1).toUInt(),
+        io_control_tester->perform_action_test(action.at(0).toString(),
+                                               action.at(1).toUInt(),
                                                action.at(2));
 
         // Get & verify signals
-        QCOMPARE(transmit_chunk_spy.count(), action_signals.length());
-        foreach (QByteArray signal, action_signals)
+        if (!action_signal.isEmpty())
         {
+            // Verify signals
+            QVERIFY(transmit_chunk_spy.count() == 1);
+            QVERIFY(action_signal.length() == 3);
+
             // Get next spy signal
             spy_args = transmit_chunk_spy.takeFirst();
 
             // Verify signal values
-            QVERIFY(2 <= signal.length());
-            QCOMPARE(spy_args.at(0).toInt(), (int) signal.at(0));
-            QCOMPARE(spy_args.at(1).toInt(), (int) signal.at(1));
-            QCOMPARE(spy_args.at(2).toByteArray(), signal.mid(2));
-        }
+            QVERIFY(action_signal.length() == 3);
+            QCOMPARE(spy_args.at(0).toUInt(), action_signal.at(0).toUInt());
+            QCOMPARE(spy_args.at(1).toUInt(), action_signal.at(1).toUInt());
+            QCOMPARE(spy_args.at(2).toByteArray(), action_signal.at(2).toByteArray());
 
-        // Verify GUI values
-        QVERIFY(io_control_tester->check_pin_test(action.at(0),
-                                                  action_pin_settings.at(0),
-                                                  action_pin_settings.at(1).toInt(),
-                                                  action_pin_settings.at(2),
-                                                  action_pin_settings.at(3).toLower() == "true"));
+            // Verify GUI values
+            QVERIFY(io_control_tester->check_pin_test(action.at(0).toString(),
+                                                      action_pin_values.at(0).toString(),
+                                                      action_pin_values.at(1).toInt(),
+                                                      action_pin_values.at(2).toString(),
+                                                      action_pin_values.at(3).toBool()));
+        }
     }
 }
 
@@ -666,36 +650,37 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     //   0) pin_str
     //   1) button pos
     //   2) set value
-    QTest::addColumn<QList<QList<QString>>>("actions");
+    QTest::addColumn<QList<QList<QVariant>>>("actions");
 
-    // Each expected signal item is composed as follows:
-    //   0) Major Key
-    //   1) Minor Key
-    //   2-end) Data
-    QTest::addColumn<QList<QList<QByteArray>>>("expected_signals");
+    // Send expected signals column (emit transmit_chunk())
+    // Each QList<QVariant> must be arranged as follows:
+    //  0) Major Key (uint8_t)
+    //  1) Minor Key (uint8_t)
+    //  2) Data Packet (QByteArray)
+    QTest::addColumn<QList<QList<QVariant>>>("send_expected_signals");
 
     // Each pin setting item is composed as follows:
     //   0) Combo Value
     //   1) Slider Value
     //   2) Line Edit Value
     //   3) isDisabled
-    QTest::addColumn<QList<QList<QString>>>("expected_pin_settings");
+    QTest::addColumn<QList<QList<QVariant>>>("expected_pin_settings");
 
     // Helper variables
-    QList<QList<QString>> action_list;
-    QList<QList<QByteArray>> action_signals_list;
-    QList<QByteArray> action_signal;
-    QList<QList<QString>> action_settings_list;
+    QList<QList<QVariant>> action_list;
+    QList<QList<QVariant>> action_signals_list;
+    QList<QVariant> action_signal;
+    QList<QList<QVariant>> action_settings_list;
 
-    // Setup basic test (performs no actions)
+    // Setup Verify test (performs no actions)
     action_list.clear();
     action_signals_list.clear();
     action_settings_list.clear();
 
-    // Load basic test (performs no actions)
-    QTest::newRow("Basic") << action_list \
-                           << action_signals_list \
-                           << action_settings_list;
+    // Load Verify test (performs no actions)
+    QTest::newRow("Verify") << action_list \
+                            << action_signals_list \
+                            << action_settings_list;
 
     // Setup basic DIO verify test
     action_list.clear();
@@ -703,28 +688,24 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     action_settings_list.clear();
 
     // Add first action (Change DIO_00 to Output)
-    action_list << QList<QString>({"DIO_00", QString::number(io_combo_pos), "Output"});
+    action_list << QList<QVariant>({"DIO_00", io_combo_pos, "Output"});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_DIO_SET,
-                                 0x00, 0x00, 0x00, 0x01
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_DIO_SET) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x00, 0x00, 0x00, 0x01});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Output", "0", "0", "false"});
+    action_settings_list << QList<QVariant>({"Output", 0, "0", false});
 
     // Add second action (Set DIO_00 to 1 using slider)
-    action_list << QList<QString>({"DIO_00", QString::number(io_slider_pos), "1"});
+    action_list << QList<QVariant>({"DIO_00", io_slider_pos, 1});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_DIO_WRITE,
-                                 0x00, 0x00, 0x01
-                             }));
+    action_signal << QList<QVariant>({
+                                         QVariant(MAJOR_KEY_IO),
+                                         QVariant(MINOR_KEY_IO_DIO_WRITE),
+                                         GUI_GENERIC_HELPER::qList_to_byteArray({0x00, 0x00, 0x01})
+                                     });
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Output", "1", "1", "false"});
+    action_settings_list << QList<QVariant>({"Output", 1, "1", false});
 
     // Load basic DIO verify test.
     // Performs the following actions:
@@ -740,16 +721,13 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     action_settings_list.clear();
 
     // Add first action (Set AIO_04 to 1 using line edit)
-    action_list << QList<QString>({"AIO_04", QString::number(io_line_edit_pos), "1"});
+    action_list << QList<QVariant>({"AIO_04", io_line_edit_pos, "1"});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_AIO_WRITE,
-                                 0x04, 0x00, 0x64
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_AIO_WRITE) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x04, 0x00, 0x64});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Output", "100", "1", "false"});
+    action_settings_list << QList<QVariant>({"Output", 100, "1", false});
 
     // Load basic AIO verify test.
     // Performs the following actions:
@@ -764,89 +742,68 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions_data()
     action_settings_list.clear();
 
     // Add first action (Change DIO_00 to Output)
-    action_list << QList<QString>({"DIO_00", QString::number(io_combo_pos), "Output"});
+    action_list << QList<QVariant>({"DIO_00", io_combo_pos, "Output"});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_DIO_SET,
-                                 0x00, 0x00, 0x00, 0x01
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_DIO_SET) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x00, 0x00, 0x00, 0x01});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Output", "0", "0", "false"});
+    action_settings_list << QList<QVariant>({"Output", 0, "0", false});
 
     // Add second action (Change DIO_05 to Neg_Out)
-    action_list << QList<QString>({"DIO_05", QString::number(io_combo_pos), "Neg_Out"});
+    action_list << QList<QVariant>({"DIO_05", io_combo_pos, "Neg_Out"});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_DIO_SET,
-                                 0x05, 0x00, 0x05, 0x02
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_DIO_SET) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x05, 0x00, 0x05, 0x02});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Neg_Out", "0", "0", "false"});
+    action_settings_list << QList<QVariant>({"Neg_Out", 0, "0", false});
 
     // Add third action (Set DIO_00 to 1 using slider)
-    action_list << QList<QString>({"DIO_00", QString::number(io_slider_pos), "1"});
+    action_list << QList<QVariant>({"DIO_00", io_slider_pos, 1});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_DIO_WRITE,
-                                 0x00, 0x00, 0x01
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_DIO_WRITE) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x00, 0x00, 0x01});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Output", "1", "1", "false"});
+    action_settings_list << QList<QVariant>({"Output", 1, "1", false});
 
 
     // Add fourth action (Set DIO_05 to -1 using line edit)
-    action_list << QList<QString>({"DIO_05", QString::number(io_line_edit_pos), "-1"});
+    action_list << QList<QVariant>({"DIO_05", io_line_edit_pos, "-1"});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_DIO_WRITE,
-                                 0x05, 0x00, 0x04
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_DIO_WRITE) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x05, 0x00, 0x04});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Neg_Out", "-1", "-1", "false"});
+    action_settings_list << QList<QVariant>({"Neg_Out", -1, "-1", false});
 
     // Add fifth action (Set DIO_05 to -2 using slider)
-    action_list << QList<QString>({"DIO_05", QString::number(io_slider_pos), "-2"});
+    action_list << QList<QVariant>({"DIO_05", io_slider_pos, -2});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_DIO_WRITE,
-                                 0x05, 0x00, 0x03
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_DIO_WRITE) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x05, 0x00, 0x03});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Neg_Out", "-2", "-2", "false"});
+    action_settings_list << QList<QVariant>({"Neg_Out", -2, "-2", false});
 
     // Add sixth action (Set AIO_04 to 1.5 using slider)
-    action_list << QList<QString>({"AIO_04", QString::number(io_slider_pos), "150"});
+    action_list << QList<QVariant>({"AIO_04", io_slider_pos, 150});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_AIO_WRITE,
-                                 0x04, 0x00, 0x96
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_AIO_WRITE) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x04, 0x00, 0x96});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Output", "150", "1.5", "false"});
+    action_settings_list << QList<QVariant>({"Output", 150, "1.5", false});
 
     // Add seventh action (Set AIO_04 to 2.75 using lineEdit)
-    action_list << QList<QString>({"AIO_04", QString::number(io_line_edit_pos), "2.75"});
+    action_list << QList<QVariant>({"AIO_04", io_line_edit_pos, "2.75"});
     action_signal.clear();
-    action_signal.append(GUI_GENERIC_HELPER::qList_to_byteArray(
-                             {
-                                 MAJOR_KEY_IO,
-                                 MINOR_KEY_IO_AIO_WRITE,
-                                 0x04, 0x01, 0x13
-                             }));
+    action_signal << QVariant(MAJOR_KEY_IO) \
+                  << QVariant(MINOR_KEY_IO_AIO_WRITE) \
+                  << GUI_GENERIC_HELPER::qList_to_byteArray({0x04, 0x01, 0x13});
     action_signals_list << action_signal;
-    action_settings_list << QList<QString>({"Output", "275", "2.75", "false"});
+    action_settings_list << QList<QVariant>({"Output", 275, "2.75", false});
 
     // Load Complex DIO/AIO Actions test data.
     // Performs the following actions:
@@ -884,12 +841,22 @@ void GUI_IO_CONTROL_TESTS::test_logging_data()
 
 void GUI_IO_CONTROL_TESTS::test_recv()
 {
-    // Recv data and verify results
+    // Fetch data
+//    QFETCH(QList<QList<QList<QString>>>, button_settings);
 }
 
 void GUI_IO_CONTROL_TESTS::test_recv_data()
 {
-    // Setup recv data and expected results
+    // Setup data columns
+    // Iteratively called before each chart_update_request
+    // Each button item is set as follows:
+    //   0) pin_str
+    //   1) combo value
+    //   2) slider value
+    QTest::addColumn<QList<QList<QList<QString>>>>("button_settings");
+
+    QTest::addColumn<QList<QByteArray>>("recv_data");
+    QTest::addColumn<QList<QList<QString>>>("verify_buttons");
 }
 
 void GUI_IO_CONTROL_TESTS::test_basic_chart_features()
@@ -904,22 +871,55 @@ void GUI_IO_CONTROL_TESTS::test_complex_chart_features()
 
 void GUI_IO_CONTROL_TESTS::test_chart_update_features()
 {
-    // Clear current config
-    QMap<QString, QVariant> reset_map;
-    io_control_tester->parseConfigMap(&reset_map);
+    // Fetch data
+    QFETCH(QList<QList<QList<QVariant>>>, button_settings);
+    QFETCH(QList<QList<QString>>, request_pins);
+    QFETCH(QList<QList<QVariant>>, expected_signals);
 
-    // Get gui values
-    QString curr_gui_name = io_control_tester->get_gui_name();
+    // Verify input data
+    int num_entries = button_settings.length();
+    QCOMPARE(request_pins.length(), num_entries);
+    QCOMPARE(expected_signals.length(), num_entries);
 
-    // Generate new config
-    QString config_str;
-    config_str += "[" + curr_gui_name + "]\n";
-    config_str += headless_config_str;
-    CONFIG_MAP *gui_config = \
-            GUI_GENERIC_HELPER::decode_configMap(config_str);
+    // Set new config
+    QVERIFY(set_gui_config(generic_config_str));
 
-    // Parse new config
-    io_control_tester->parseConfigMap(gui_config->value(curr_gui_name, nullptr));
+    // Create helper chart element
+    GUI_CHART_ELEMENT chart_elem_test(CHART_TYPE_2D_LINE);
+
+    // Setup spy to catch update signal
+    QList<QVariant> spy_args;
+    QSignalSpy update_receive_spy(&chart_elem_test, chart_elem_test.update_receive);
+    QVERIFY(update_receive_spy.isValid());
+
+    // Setup loop variables
+    QList<QVariant> curr_signal, spy_signal;
+
+    // Loop through all buttons, calls, and verify
+    for (int i = 0; i < num_entries; i++)
+    {
+        // Set current buttons
+        foreach (QList<QVariant> button, button_settings.at(i))
+        {
+            QVERIFY(button.length() == 3);
+            io_control_tester->set_pin_test(button.at(0).toString(), button.at(1).toString(),
+                                            button.at(2).toInt());
+        }
+
+        // Call update request
+        io_control_tester->chart_update_request(request_pins.at(i), &chart_elem_test);
+        qApp->processEvents();
+
+        // Get emitted signal
+        QVERIFY(update_receive_spy.count() == 1);
+        spy_args = update_receive_spy.takeFirst();
+        spy_signal = spy_args.at(0).toList();
+
+        // Verify signal with expected
+        curr_signal = expected_signals.at(i);
+        QCOMPARE(spy_signal.length(), curr_signal.length());
+        QCOMPARE(spy_signal, curr_signal);
+    }
 }
 
 void GUI_IO_CONTROL_TESTS::test_chart_update_features_data()
@@ -930,12 +930,158 @@ void GUI_IO_CONTROL_TESTS::test_chart_update_features_data()
     //   0) pin_str
     //   1) combo value
     //   2) slider value
-    QTest::addColumn<QList<QList<QList<QString>>>>("button_settings");
+    QTest::addColumn<QList<QList<QList<QVariant>>>>("button_settings");
 
     QTest::addColumn<QList<QList<QString>>>("request_pins");
-    QTest::addColumn<QList<QList<double>>>("expected_signals");
+
+
+    QTest::addColumn<QList<QList<QVariant>>>("expected_signals");
 
     // Helper variables
+    QList<QList<QList<QVariant>>> button_settings_list;
+    QList<QList<QVariant>> button_group;
+    QList<QList<QString>> request_pins_list;
+    QList<QList<QVariant>> expected_signals_list;
+
+    // Setup verify test data (does nothing)
+    button_settings_list.clear();
+    request_pins_list.clear();
+    expected_signals_list.clear();
+
+    // Load verify test data (does nothing)
+    QTest::newRow("Verify") << button_settings_list \
+                            << request_pins_list \
+                            << expected_signals_list;
+
+    // Setup basic DIO test data
+    button_settings_list.clear();
+    request_pins_list.clear();
+    expected_signals_list.clear();
+
+    // Set DIO_00 to Output with value 0
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Output", 0});
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"DIO_00"});
+    expected_signals_list << QList<QVariant>({0.0});
+
+    // Set DIO_00 to Output with value 1
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Output", 1});
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"DIO_00"});
+    expected_signals_list << QList<QVariant>({1.0});
+
+    // Set DIO_00 to Output with value 0
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Output", 0});
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"DIO_00"});
+    expected_signals_list << QList<QVariant>({0.0});
+
+    // Load basic DIO test data
+    // Performs and checks the following
+    //   1) DIO_00 set to 0
+    //   2) DIO_00 set to 1
+    //   3) DIO_00 set to 0
+    QTest::newRow("Basic DIO") << button_settings_list \
+                               << request_pins_list \
+                               << expected_signals_list;
+
+    // Setup basic AIO test data
+    button_settings_list.clear();
+    request_pins_list.clear();
+    expected_signals_list.clear();
+
+    // Set AIO_04 to Output with value 0
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_04", "Output", 0});
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"AIO_04"});
+    expected_signals_list << QList<QVariant>({0.0});
+
+    // Set AIO_04 to Output with value 3.3
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_04", "Output", 330});
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"AIO_04"});
+    expected_signals_list << QList<QVariant>({3.3});
+
+    // Set AIO_04 to Output with value 0
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_04", "Output", 0});
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"AIO_04"});
+    expected_signals_list << QList<QVariant>({0.0});
+
+    // Load basic AIO test data
+    // Performs and checks the following
+    //   1) AIO_04 set to 0.0
+    //   2) AIO_04 set to 3.3
+    //   3) AIO_04 set to 0.0
+    QTest::newRow("Basic AIO") << button_settings_list \
+                               << request_pins_list \
+                               << expected_signals_list;
+
+    // Setup bad pin test data
+    button_settings_list.clear();
+    request_pins_list.clear();
+    expected_signals_list.clear();
+
+    // Try reading non-existent pin 127
+    button_group.clear();
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"AIO_127"});
+    expected_signals_list << QList<QVariant>({-1.0});
+
+    // Try reading bad pin_str V1
+    button_group.clear();
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"V1"});
+    expected_signals_list << QList<QVariant>({-1.0});
+
+    // Try reading bad pin_str V2
+    button_group.clear();
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"V2_00"});
+    expected_signals_list << QList<QVariant>({-1.0});
+
+    // Try reading bad pin_str V3
+    button_group.clear();
+    button_settings_list << button_group;
+    request_pins_list << QList<QString>({"DIO_V3"});
+    expected_signals_list << QList<QVariant>({-1.0});
+
+    // Load bad pin test data
+    QTest::newRow("Test bad pins") << button_settings_list \
+                                   << request_pins_list \
+                                   << expected_signals_list;
+}
+
+bool GUI_IO_CONTROL_TESTS::set_gui_config(QString config_str)
+{
+    // Clear current config
+    clear_gui_config();
+
+    // Deode new config map
+    CONFIG_MAP *gui_config = \
+            GUI_GENERIC_HELPER::decode_configMap(config_str);
+    if (!gui_config) return false;
+
+    // Parse new config
+    io_control_tester->parseConfigMap(
+                gui_config->value(io_control_tester->get_gui_name(),
+                                  nullptr));
+
+    // Config parsed
+    return true;
+}
+
+void GUI_IO_CONTROL_TESTS::clear_gui_config()
+{
+    // Clear current config
+    QMap<QString, QVariant> reset_map;
+    io_control_tester->parseConfigMap(&reset_map);
 }
 
 void GUI_IO_CONTROL_TESTS::verify_reset_values()

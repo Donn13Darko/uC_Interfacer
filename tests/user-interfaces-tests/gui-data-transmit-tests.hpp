@@ -67,7 +67,7 @@ private:
 
     void perform_data_send(QString send_fill_data, bool send_file_radio,
                            bool click_send = false, bool check_send = false,
-                           QList<QByteArray> send_expected_signals = QList<QByteArray>());
+                           QList<QList<QVariant>> send_expected_signals = QList<QList<QVariant>>());
 };
 
 #endif // GUI_DATA_TRANSMIT_TESTS_H
