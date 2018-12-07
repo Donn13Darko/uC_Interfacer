@@ -225,7 +225,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::perform_action_test(QString pin_str, uint8_t but
         }
         default:
         {
-            show_warning("Unknown button position:",
+            show_warning("Unknown button position",
                          QString::number(button));
             return false;
         }
@@ -248,11 +248,11 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pins_test(QStringList expected_pin_list,
             || (expected_lineEdit_list.length() != expected_disabled_list.length()))
     {
         show_warning("Lengths mismatch!");
-        show_warning("Pin list length:", QString::number(expected_pin_list.length()));
-        show_warning("Combo list length:", QString::number(expected_combo_list.length()));
-        show_warning("Slider list length:", QString::number(expected_slider_list.length()));
-        show_warning("LineEdit list length:", QString::number(expected_lineEdit_list.length()));
-        show_warning("Disabled list length:", QString::number(expected_disabled_list.length()));
+        show_warning("Pin list length", QString::number(expected_pin_list.length()));
+        show_warning("Combo list length", QString::number(expected_combo_list.length()));
+        show_warning("Slider list length", QString::number(expected_slider_list.length()));
+        show_warning("LineEdit list length", QString::number(expected_lineEdit_list.length()));
+        show_warning("Disabled list length", QString::number(expected_disabled_list.length()));
         return false;
     }
 
@@ -267,7 +267,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pins_test(QStringList expected_pin_list,
                             expected_slider_list.at(i), expected_lineEdit_list.at(i),
                             expected_disabled_list.at(i)))
         {
-            show_warning("Bad pin:", expected_pin_list.at(i));
+            show_warning("Bad pin", expected_pin_list.at(i));
             return false;
         }
     }
@@ -290,7 +290,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_test(QString pin_str, QStringList expe
             || !check_pin_slider_test(pin, expected_slider, isDisabled)
             || !check_pin_lineEdit_test(pin, expected_lineEdit, isDisabled))
     {
-        show_warning("Bad pin:", pin_str);
+        show_warning("Bad pin", pin_str);
         return false;
     }
 
@@ -312,7 +312,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_test(QString pin_str, QString combo_va
             || !check_pin_slider_test(pin, slider_value, isDisabled)
             || !check_pin_lineEdit_test(pin, lineEdit_value, isDisabled))
     {
-        show_warning("Bad pin:", pin_str);
+        show_warning("Bad pin", pin_str);
         return false;
     }
 
@@ -346,7 +346,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_list_test(QStringList expected_pin_lis
     // Verify length
     if (pin_list.length() != expected_pin_list.length())
     {
-        show_warning("Expected pins length mismatch:",
+        show_warning("Expected pins length mismatch",
                      QString::number(pin_list.length()),
                      QString::number(expected_pin_list.length()));
         return false;
@@ -357,7 +357,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_list_test(QStringList expected_pin_lis
     {
         if (!pin_list.contains(pin))
         {
-            show_warning("Pin not found:", pin);
+            show_warning("Pin not found", pin);
             return false;
         }
     }
@@ -375,7 +375,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_label_test(QHBoxLayout *pin, QString e
     // Check label element
     if (pin_label->text() != expected_label_value)
     {
-        show_warning("Bad pin label:",
+        show_warning("Bad pin label",
                      pin_label->text(),
                      expected_label_value);
         return false;
@@ -394,7 +394,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_combo_test(QHBoxLayout *pin, QString e
     // Check combo element
     if (pin_combo->currentText() != expected_combo_value)
     {
-        show_warning("Bad current combo:",
+        show_warning("Bad current combo",
                      pin_combo->currentText(),
                      expected_combo_value);
         return false;
@@ -413,7 +413,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_combo_test(QHBoxLayout *pin, QStringLi
     // Check combo length
     if (pin_combo->count() != expected_combos.length())
     {
-        show_warning("Bad combo length:",
+        show_warning("Bad combo length",
                      QString::number(pin_combo->count()),
                      QString::number(expected_combos.length()));
         return false;
@@ -424,7 +424,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_combo_test(QHBoxLayout *pin, QStringLi
     {
         if (pin_combo->findText(combo_entry) == -1)
         {
-            show_warning("Combo entry not found:", combo_entry);
+            show_warning("Combo entry not found", combo_entry);
             return false;
         }
     }
@@ -442,7 +442,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_slider_test(QHBoxLayout *pin, int expe
     // Check slider clickable
     if (pin_slider->testAttribute(Qt::WA_TransparentForMouseEvents) != isDisabled)
     {
-        show_warning("Bad clicking slider:",
+        show_warning("Bad clicking slider",
                      QString::number(pin_slider->testAttribute(Qt::WA_TransparentForMouseEvents)),
                      QString::number(isDisabled));
         return false;
@@ -451,7 +451,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_slider_test(QHBoxLayout *pin, int expe
     // Check slider value
     if (pin_slider->value() != expected_slider_value)
     {
-        show_warning("Bad Slider Value:",
+        show_warning("Bad Slider Value",
                      QString::number(pin_slider->value()),
                      QString::number(expected_slider_value));
         return false;
@@ -471,7 +471,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_slider_test(QHBoxLayout *pin, QList<in
     int expected_len = 4;
     if (expected_slider.length() != expected_len)
     {
-        show_warning("Slider incorrect num elements:",
+        show_warning("Slider incorrect num elements",
                      QString::number(expected_slider.length()),
                      QString::number(expected_len));
         return false;
@@ -488,19 +488,19 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_slider_test(QHBoxLayout *pin, QList<in
             || (pin_slider->pageStep() != expected_slider.at(3)))
     {
         show_warning("Slider mismatch!");
-        show_warning("Minimum:",
+        show_warning("Minimum",
                      QString::number(pin_slider->minimum()),
                      QString::number(expected_slider.at(1)));
-        show_warning("Maximum:",
+        show_warning("Maximum",
                      QString::number(pin_slider->maximum()),
                      QString::number(expected_slider.at(2)));
-        show_warning("Tick Interval:",
+        show_warning("Tick Interval",
                      QString::number(pin_slider->tickInterval()),
                      QString::number(expected_slider.at(3)));
-        show_warning("Single Step:",
+        show_warning("Single Step",
                      QString::number(pin_slider->singleStep()),
                      QString::number(expected_slider.at(3)));
-        show_warning("Page Step:",
+        show_warning("Page Step",
                      QString::number(pin_slider->pageStep()),
                      QString::number(expected_slider.at(3)));
         return false;
@@ -519,7 +519,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_lineEdit_test(QHBoxLayout *pin, QStrin
     // Check line edit clickable
     if (pin_lineEdit->testAttribute(Qt::WA_TransparentForMouseEvents) != isDisabled)
     {
-        show_warning("Bad clicking line edit:",
+        show_warning("Bad clicking line edit",
                      QString::number(pin_lineEdit->testAttribute(Qt::WA_TransparentForMouseEvents)),
                      QString::number(isDisabled));
         return false;
@@ -528,7 +528,7 @@ bool GUI_IO_CONTROL_TEST_CLASS::check_pin_lineEdit_test(QHBoxLayout *pin, QStrin
     // Check line edit value
     if (pin_lineEdit->text() != lineEdit_value)
     {
-        show_warning("Bad line edit:",
+        show_warning("Bad line edit",
                      pin_lineEdit->text(),
                      lineEdit_value);
         return false;
@@ -543,11 +543,11 @@ QWidget *GUI_IO_CONTROL_TEST_CLASS::get_pin_element(QHBoxLayout *pin, uint8_t po
     // Verify pin
     if (!pin)
     {
-        show_warning("NULL pin passed into get_pin_element. Test Name:", test);
+        show_warning("NULL pin passed into get_pin_element. Test Name", test);
         return nullptr;
     } else if (pin->count() < pos)
     {
-        show_warning("Widget pos out of bounds. Test Name:", test);
+        show_warning("Widget pos out of bounds. Test Name", test);
         return nullptr;
     }
 
@@ -555,7 +555,7 @@ QWidget *GUI_IO_CONTROL_TEST_CLASS::get_pin_element(QHBoxLayout *pin, uint8_t po
     QWidget *pin_elem = pin->itemAt(pos)->widget();
     if (!pin_elem)
     {
-        show_warning("Failed to retreive pin element from pin. Test Name:", test);
+        show_warning("Failed to retreive pin element from pin. Test Name", test);
         return nullptr;
     }
 
@@ -569,7 +569,7 @@ QHBoxLayout *GUI_IO_CONTROL_TEST_CLASS::get_pin_test(QString pin_str)
     QStringList pin_vals = pin_str.split("_");
     if (pin_vals.length() != 2)
     {
-        show_warning("Bad pin string format:", pin_str);
+        show_warning("Bad pin string format", pin_str);
         return nullptr;
     }
 
@@ -580,7 +580,7 @@ QHBoxLayout *GUI_IO_CONTROL_TEST_CLASS::get_pin_test(QString pin_str)
     else if (pin_vals.at(0) == "DIO") pinType = MINOR_KEY_IO_DIO;
     else
     {
-        show_warning("Unknown pinType:", pin_vals.at(0));
+        show_warning("Unknown pinType", pin_vals.at(0));
         return nullptr;
     }
 
@@ -606,7 +606,7 @@ QHBoxLayout *GUI_IO_CONTROL_TEST_CLASS::get_pin_test(uint8_t pinType, uint8_t pi
         }
         default:
         {
-            show_warning("Unknown pinType:",
+            show_warning("Unknown pinType",
                          QString::number(pinType),
                          QString::number(MINOR_KEY_IO_AIO) + "-or-" \
                          + QString::number(MINOR_KEY_IO_DIO));
@@ -628,7 +628,7 @@ QHBoxLayout *GUI_IO_CONTROL_TEST_CLASS::get_pin_test(uint8_t pinType, uint8_t pi
     }
 
     // Warn and return null if not found
-    show_warning("Pin not found:", QString::number(pinNum));
+    show_warning("Pin not found", QString::number(pinNum));
     return nullptr;
 }
 
@@ -644,10 +644,14 @@ void GUI_IO_CONTROL_TEST_CLASS::set_checked_click_test(QCheckBox *check, bool b)
 
 void GUI_IO_CONTROL_TEST_CLASS::show_warning(QString hint, QString value)
 {
-    qWarning() << hint << value;
+    if (!value.isEmpty()) hint += ": \"" + value + "\"";
+    qWarning().noquote().nospace() << "\n\t" << hint;
 }
 
 void GUI_IO_CONTROL_TEST_CLASS::show_warning(QString hint, QString got, QString expected)
 {
-    qWarning() << hint << "Got:" << got << "Expected:" << expected;
+    qWarning().noquote().nospace() \
+            << "\n\t" << hint \
+            << "\n\tGot: \"" << got << "\"" \
+            << "\n\tExpected: \"" << expected << "\"";
 }

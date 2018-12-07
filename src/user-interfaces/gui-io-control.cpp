@@ -136,9 +136,11 @@ bool GUI_IO_CONTROL::waitForDevice(uint8_t minorKey)
         case MINOR_KEY_IO_REMOTE_CONN_READ:
             return true;
         case MINOR_KEY_IO_AIO_READ:
+            // Check if read pin list has value
         case MINOR_KEY_IO_AIO_READ_ALL:
             return aio_read_requested;
         case MINOR_KEY_IO_DIO_READ:
+            // Check if read pin list has value
         case MINOR_KEY_IO_DIO_READ_ALL:
             return dio_read_requested;
         default:
@@ -203,7 +205,7 @@ void GUI_IO_CONTROL::chart_update_request(QList<QString> data_points, GUI_CHART_
     // Setup variables
     uint8_t pinType = 0, pinNum = 0;
     QStringList pinNum_split;
-    QLayout *item;
+    QHBoxLayout *item;
     bool pin_error;
     QVariant val;
 
@@ -288,6 +290,56 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
     uint8_t minor_key = recvData.at(s1_minor_key_loc);
     switch (minor_key)
     {
+        case MINOR_KEY_IO_AIO_READ:
+        case MINOR_KEY_IO_DIO_READ:
+        {
+
+            // Check if request or respone
+            if (recvData.length() == (num_s1_bytes+1))
+            {
+                // Packet is a request so get pin values
+                uint32_t pinValue;
+                QByteArray pinValues;
+                QSlider *sliderValue;
+
+                // Get pin info
+                PinTypeInfo pInfo;
+                getPinTypeInfo(minor_key, &pInfo);
+
+                // Make sure pin valid
+                QHBoxLayout *pin;
+                if (!get_pin_layout(pInfo.pinType, recvData.at(s1_end_loc), &pin))
+                {
+                    // Exit out of parse
+                    break;
+                }
+
+                // Get slider value
+                sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
+
+                // Get value
+                pinValue = sliderValue->value();
+
+                // Parse value to uint16_t and append to pin values
+                pinValues.append(GUI_GENERIC_HELPER::uint32_to_byteArray(pinValue).right(2));
+
+                // Send values back
+                emit transmit_chunk(local_gui_key, minor_key, pinValues);
+
+                // Send device ready
+                emit transmit_chunk(MAJOR_KEY_DEV_READY, 0);
+
+                // Exit out of parse
+                break;
+            }
+
+            // Set values with minor key
+            setValues(minor_key, recvData.mid(s1_end_loc));
+            break;
+
+            // Exit out of parse
+            break;
+        }
         case MINOR_KEY_IO_AIO_READ_ALL:
         case MINOR_KEY_IO_DIO_READ_ALL:
         {
@@ -330,8 +382,7 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
             }
 
             // Otherwise, packet is a response so clear data request,
-            // check if need to request again right away,
-            // and fall through to set values
+            // check if need to request again right away
             if (minor_key == MINOR_KEY_IO_AIO_READ_ALL)
             {
                 // Check if double request
@@ -363,6 +414,10 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
                     dio_read_requested = false;
                 }
             }
+
+            // Set values with minor key
+            setValues(minor_key, recvData.mid(s1_end_loc));
+            break;
         }
         case MINOR_KEY_IO_AIO_SET:
         case MINOR_KEY_IO_DIO_SET:
@@ -381,7 +436,7 @@ QStringList GUI_IO_CONTROL::get_pin_list()
     return pinList;
 }
 
-bool GUI_IO_CONTROL::get_pin_layout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout)
+bool GUI_IO_CONTROL::get_pin_layout(uint8_t pinType, uint8_t pin_num, QHBoxLayout **itemLayout)
 {
     // Set itemLayout to nullptr
     *itemLayout = nullptr;
@@ -411,7 +466,7 @@ bool GUI_IO_CONTROL::get_pin_layout(uint8_t pinType, uint8_t pin_num, QLayout **
     return false;
 }
 
-bool GUI_IO_CONTROL::get_widget_layout(uint8_t pinType, QWidget *item, QLayout **itemLayout)
+bool GUI_IO_CONTROL::get_widget_layout(uint8_t pinType, QWidget *item, QHBoxLayout **itemLayout)
 {
     // Set itemLayout to nullptr
     *itemLayout = nullptr;
@@ -752,7 +807,7 @@ void GUI_IO_CONTROL::inputsChanged(uint8_t pinType, QObject *caller, uint8_t io_
     if (!(pinControlMap && pinRangeMap && pinDisabledSet)) return;
 
     // Get pin info of button clicked
-    QLayout *pin;
+    QHBoxLayout *pin;
     if (!get_widget_layout(pInfo.pinType, (QWidget*) caller, &pin)) return;
 
     // Get widgets
@@ -904,7 +959,7 @@ void GUI_IO_CONTROL::setPinCombos(PinTypeInfo *pInfo, QList<QString> combos)
     QComboBox *itemCombo;
     QSlider *itemSlider;
     QLineEdit *itemLineEdit;
-    QLayout *pin_layout;
+    QHBoxLayout *pin_layout;
     QHBoxLayout *new_pin;
 
     // Iterate though each combo setting
@@ -1138,77 +1193,62 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
     if (!getPinTypeInfo(minorKey, &pInfo)) return;
 
     // Get & verify maps
-    QList<QHBoxLayout*> *pins = pinMap.value(pInfo.pinType);
     QMap<QString, uint8_t> *pinControlMap = controlMap.value(pInfo.pinType);
     QMap<uint8_t, RangeList*> *pinRangeMap = rangeMap.value(pInfo.pinType);
     QList<uint8_t> *pinDisabledSet = disabledValueSet.value(pInfo.pinType);
-    if (!(pins && pinControlMap && pinRangeMap && pinDisabledSet)) return;
+    if (!(pinControlMap && pinRangeMap && pinDisabledSet)) return;
 
     // Allocate loop variables
-    QLayout *pin;
-    QComboBox *comboBox;
-    QSlider *sliderValue;
-    QLineEdit *lineEditValue;
-    RangeList *rList;
+    QHBoxLayout *pin = nullptr;
+    QComboBox *comboBox = nullptr;
+    RangeList *rList = nullptr;
+    uint8_t combo_value;
     uint16_t value;
     int newVAL;
-    uint8_t comboVal;
-    bool prev_block_combo, prev_block_slider, prev_block_lineEdit;
 
-    // Set loop variables
+    // Set loop values
     uint8_t pin_num = 0;
+    uint8_t val_len = values.length();
 
     switch (minorKey)
     {
-        // If read data
+        // If read_all data
         case MINOR_KEY_IO_AIO_READ_ALL:
         case MINOR_KEY_IO_DIO_READ_ALL:
         {
             // Setup variables
-            uint8_t i = 0, j = 0, val_len = values.length();
+            uint8_t i = 0, j = 0;
+            QList<QHBoxLayout*> *pins = pinMap.value(pInfo.pinType);
 
-            // Verify length
-            if ((2*pins->length()) != val_len) return;
+            // Verify values
+            if (!pins || ((2*pins->length()) != val_len)) break;
 
             // Loop over all pins and set their value
             foreach (pin, *pins)
             {
-                // Get all the widgets
+                // Get combo
                 comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
-
-                // Get combo value
-                comboVal = pinControlMap->value(comboBox->currentText());
+                combo_value = pinControlMap->value(comboBox->currentText());
 
                 // Only update value if not controllable
-                if (pinDisabledSet->contains(comboVal))
+                if (pinDisabledSet->contains(combo_value))
                 {
-                    // Get value from list
-                    // Value is big endian
+                    // Get value from list (value is big endian)
                     value = 0;
                     for (j = 0; j < bytesPerPin; j++)
                     {
                         value = (value << 8) | ((uchar) values.at(i+j));
                     }
 
-                    // Get other widgets
-                    sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
-                    lineEditValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
-
-                    // Block signals before setting
-                    prev_block_slider = sliderValue->blockSignals(true);
-                    prev_block_lineEdit = lineEditValue->blockSignals(true);
-
-                    // Get range list
-                    rList = pinRangeMap->value(comboVal);
-
-                    // Adjust & set value
+                    // Scale value
+                    rList = pinRangeMap->value(combo_value);
                     newVAL = qRound((float) value + (rList->min * rList->div));
-                    sliderValue->setValue(newVAL);
-                    lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
 
-                    // Unblock signals now that they are set
-                    sliderValue->blockSignals(prev_block_slider);
-                    lineEditValue->blockSignals(prev_block_lineEdit);
+                    // Set slider
+                    set_pin_io(pin, io_slider_pos, newVAL);
+
+                    // Set lineEdit
+                    set_pin_io(pin, io_line_edit_pos, QString::number(((float) newVAL) / rList->div));
                 }
 
                 // Move to next pin
@@ -1218,100 +1258,131 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
             // Leave parse loop
             break;
         }
-        // If set data
+        // If set pin data
         case MINOR_KEY_IO_AIO_SET:
         case MINOR_KEY_IO_DIO_SET:
         {
             // Parse & verify info from set data
             // Formatted as [pinNum, val_high, val_low, io_combo]
+            if (val_len != 4) break;
             pin_num = values.at(s2_io_pin_num_loc);
-            value = ((uint16_t) values.at(s2_io_value_high_loc) << 8) | ((uchar) values.at(s2_io_value_low_loc));
-            QString combo_text = pinControlMap->key(values.at(s2_io_combo_loc), "");
-            if (combo_text.isEmpty()) return;
 
             // Find pin layout on GUI
-            if (!get_pin_layout(pInfo.pinType, pin_num, &pin)) return;
+            if (!get_pin_layout(pInfo.pinType, pin_num, &pin)) break;
 
-            // Get all the widgets
+            // Set new combo
+            set_pin_io(pin, io_combo_pos, values.at(s2_io_combo_loc));
+
+            // Propogate combo value update
             comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
-            sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
-            lineEditValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
+            inputsChanged(pInfo.pinType, comboBox, io_combo_pos);
 
-            // Block combo signals before setting
-            prev_block_combo = comboBox->blockSignals(true);
-            prev_block_slider = sliderValue->blockSignals(true);
-            prev_block_lineEdit = lineEditValue->blockSignals(true);
-
-            // Set combo to correct position
-            comboBox->setCurrentText(combo_text);
-
-            // Get combo value
-            comboVal = pinControlMap->value(comboBox->currentText());
-
-            // Overwrite current values with inputs changed
-            bool disableClicks = pinDisabledSet->contains(comboVal);
-            sliderValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
-            lineEditValue->setAttribute(Qt::WA_TransparentForMouseEvents, disableClicks);
-
-            // Get & update slider range list
-            rList = pinRangeMap->value(comboVal);
-            updateSliderRange(sliderValue, rList);
-
-            // Adjust & set value
-            newVAL = qRound((float) value + (rList->min * rList->div));
-            sliderValue->setValue(newVAL);
-            lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
-
-            // Unblock signals now that they are set
-            comboBox->blockSignals(prev_block_combo);
-            sliderValue->blockSignals(prev_block_slider);
-            lineEditValue->blockSignals(prev_block_lineEdit);
-
-            // Break out after setting and writing new value
-            break;
+            // Subtract one from val_len (combo pos)
+            // and fall through to set value
+            val_len -= 1;
         }
-        // If write data
+        // If read/write pin data
+        case MINOR_KEY_IO_AIO_READ:
+        case MINOR_KEY_IO_DIO_READ:
         case MINOR_KEY_IO_AIO_WRITE:
         case MINOR_KEY_IO_DIO_WRITE:
         {
             // Parse & verify info from set data
             // Formatted as [pinNum, val_high, val_low]
+            if (val_len != 3) break;
             pin_num = values.at(s2_io_pin_num_loc);
             value = ((uint16_t) values.at(s2_io_value_high_loc) << 8) | ((uchar) values.at(s2_io_value_low_loc));
 
-            // Find pin layout on GUI
-            if (!get_pin_layout(pInfo.pinType, pin_num, &pin)) return;
+            // Find pin layout on GUI (if not already found)
+            // Break out of parse if not found
+            if (!pin && !get_pin_layout(pInfo.pinType, pin_num, &pin)) break;
 
-            // Get all the widgets
+            // Get combo
             comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
-            sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
-            lineEditValue = (QLineEdit*) pin->itemAt(io_line_edit_pos)->widget();
+            combo_value = pinControlMap->value(comboBox->currentText());
 
-            // Block combo signals before setting
-            prev_block_combo = comboBox->blockSignals(true);
-            prev_block_slider = sliderValue->blockSignals(true);
-            prev_block_lineEdit = lineEditValue->blockSignals(true);
+            // Check if was a read (need to check pin disabled if so)
+            bool exitWrite = false;
+            switch (minorKey)
+            {
+                case MINOR_KEY_IO_AIO_READ:
+                case MINOR_KEY_IO_DIO_READ:
+                {
+                    exitWrite = !pinDisabledSet->contains(combo_value);
+                    break;
+                }
+            }
 
-            // Get combo value
-            comboVal = pinControlMap->value(comboBox->currentText());
+            // If exitWrite set, break out of parse
+            if (exitWrite) break;
 
-            // Get range list
-            rList = pinRangeMap->value(comboVal);
-
-            // Adjust & set value
+            // Scale value
+            rList = pinRangeMap->value(combo_value);
             newVAL = qRound((float) value + (rList->min * rList->div));
-            sliderValue->setValue(newVAL);
-            lineEditValue->setText(QString::number(((float) newVAL) / rList->div));
 
-            // Unblock signals now that they are set
-            comboBox->blockSignals(prev_block_combo);
-            sliderValue->blockSignals(prev_block_slider);
-            lineEditValue->blockSignals(prev_block_lineEdit);
+            // Set slider
+            set_pin_io(pin, io_slider_pos, newVAL);
+
+            // Set lineEdit
+            set_pin_io(pin, io_line_edit_pos, QString::number(((float) newVAL) / rList->div));
 
             // Break out after writing new value
             break;
         }
     }
+}
+
+bool GUI_IO_CONTROL::set_pin_io(QHBoxLayout *pin, uint8_t io_pos, QVariant value)
+{
+    // Verify pin
+    if (!pin) return false;
+
+    // Get io widget
+    QWidget *pin_io = pin->itemAt(io_pos)->widget();
+
+    // Block signals
+    bool prev_block_io = pin_io->blockSignals(true);
+
+    // Parse how to set
+    bool set_success = false;
+    switch (io_pos)
+    {
+        case io_combo_pos:
+        {
+            uint8_t combo_value = value.toUInt();
+            QComboBox *pin_combo = (QComboBox*) pin_io;
+
+            // Verify value in range (break if not)
+            if (pin_combo->count() <= combo_value) break;
+
+            // Set value
+            pin_combo->setCurrentIndex(combo_value);
+            set_success = (pin_combo->currentIndex() == combo_value);
+            break;
+        }
+        case io_slider_pos:
+        {
+            int slider_value = value.toInt();
+            QSlider *pin_slider = (QSlider*) pin_io;
+            pin_slider->setValue(slider_value);
+            set_success = (pin_slider->value() == slider_value);
+            break;
+        }
+        case io_line_edit_pos:
+        {
+            QString lineEdit_value = value.toString();
+            QLineEdit *pin_lineEdit = (QLineEdit*) pin_io;
+            pin_lineEdit->setText(lineEdit_value);
+            set_success = (pin_lineEdit->text() == lineEdit_value);
+            break;
+        }
+    }
+
+    // Unblock signals
+    pin_io->blockSignals(prev_block_io);
+
+    // Return if combo set
+    return set_success;
 }
 
 bool GUI_IO_CONTROL::getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr)
@@ -1560,6 +1631,7 @@ void GUI_IO_CONTROL::clear_all_maps()
         {
             destroy_pin(pin);
         }
+        delete pinMap.value(pinType);
     }
     pinMap.clear();
 

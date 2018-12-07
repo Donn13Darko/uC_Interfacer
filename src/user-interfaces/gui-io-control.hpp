@@ -100,8 +100,8 @@ protected:
     QStringList get_pin_list();
 
     // Get pin layout
-    bool get_pin_layout(uint8_t pinType, uint8_t pin_num, QLayout **itemLayout);
-    bool get_widget_layout(uint8_t pinType, QWidget *item, QLayout **itemLayout);
+    bool get_pin_layout(uint8_t pinType, uint8_t pin_num, QHBoxLayout **itemLayout);
+    bool get_widget_layout(uint8_t pinType, QWidget *item, QHBoxLayout **itemLayout);
 
     /** Declare ui accessor for testing **/
     Ui::GUI_IO_CONTROL *get_ui();
@@ -199,6 +199,7 @@ private:
 
     // Set GUI values
     void setValues(uint8_t minorKey, QByteArray values);
+    bool set_pin_io(QHBoxLayout *pin, uint8_t io_pos, QVariant value);
 
     // Get information
     bool getPinTypeInfo(uint8_t pinType, PinTypeInfo *infoPtr);
