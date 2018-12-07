@@ -1138,10 +1138,11 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
     if (!getPinTypeInfo(minorKey, &pInfo)) return;
 
     // Get & verify maps
+    QList<QHBoxLayout*> *pins = pinMap.value(pInfo.pinType);
     QMap<QString, uint8_t> *pinControlMap = controlMap.value(pInfo.pinType);
     QMap<uint8_t, RangeList*> *pinRangeMap = rangeMap.value(pInfo.pinType);
     QList<uint8_t> *pinDisabledSet = disabledValueSet.value(pInfo.pinType);
-    if (!pinControlMap || !pinRangeMap || !pinDisabledSet) return;
+    if (!(pins && pinControlMap && pinRangeMap && pinDisabledSet)) return;
 
     // Allocate loop variables
     QLayout *pin;
@@ -1166,12 +1167,12 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
             // Setup variables
             uint8_t i = 0, j = 0, val_len = values.length();
 
-            // Loop over all pins and set their value
-            while (i < val_len)
-            {
-                // Find pin layout on GUI
-                if (!get_pin_layout(pInfo.pinType, pin_num, &pin)) return;
+            // Verify length
+            if ((2*pins->length()) != val_len) return;
 
+            // Loop over all pins and set their value
+            foreach (pin, *pins)
+            {
                 // Get all the widgets
                 comboBox = (QComboBox*) pin->itemAt(io_combo_pos)->widget();
 
@@ -1186,7 +1187,7 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
                     value = 0;
                     for (j = 0; j < bytesPerPin; j++)
                     {
-                        value = (value << 8) | ((uchar) values.at(i++));
+                        value = (value << 8) | ((uchar) values.at(i+j));
                     }
 
                     // Get other widgets
@@ -1208,14 +1209,10 @@ void GUI_IO_CONTROL::setValues(uint8_t minorKey, QByteArray values)
                     // Unblock signals now that they are set
                     sliderValue->blockSignals(prev_block_slider);
                     lineEditValue->blockSignals(prev_block_lineEdit);
-                } else
-                {
-                    // Skip value in list
-                    i += bytesPerPin;
                 }
 
-                // Increment pin
-                pin_num += 1;
+                // Move to next pin
+                i += bytesPerPin;
             }
 
             // Leave parse loop
