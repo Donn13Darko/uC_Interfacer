@@ -449,8 +449,8 @@ bool GUI_IO_CONTROL::get_pin_layout(uint8_t pinType, uint8_t pin_num, QHBoxLayou
 
     // Search pins for item
     QHBoxLayout *pin;
-    int num_pins = pins->length();
     int curr_pin_num;
+    int num_pins = pins->length();
     for (int i = 0; i < num_pins; i++)
     {
         pin = pins->at(i);

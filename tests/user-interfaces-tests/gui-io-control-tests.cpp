@@ -1275,7 +1275,7 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"DIO_05", "Input", 0, "0", true});
     button_post_settings_list << button_group;
 
-    // Load Basic DIO Set V1 test data
+    // Load Basic DIO Write V1 test data
     // Performs the following actions:
     //   1) Sets DIO_00 to 1
     //   2) Sets DIO_00 to 0
@@ -1466,7 +1466,201 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
 
     /** Start of AIO SET Tests **/
 
+    // Setup Basic AIO Set V1 test data
+    button_pre_settings_list.clear();
+    recv_data.clear();
+    button_post_settings_list.clear();
+    expected_signals_list.clear();
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_SET,
+                                                        0x05, 0x00, 0x00, 0x01}));
+    recv_data << data;
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_SET,
+                                                        0x05, 0x00, 0x64, 0x00}));
+    recv_data << data;
+
+    button_group.clear();
+    button_pre_settings_list << button_group;
+    button_pre_settings_list << button_group;
+
+    button_group.clear();
+    expected_signals_list << button_group;
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Output", 0, "0", false});
+    button_post_settings_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 100, "1", true});
+    button_post_settings_list << button_group;
+
+    // Load Basic AIO Set V1 test data
+    // Performs the following actions:
+    //   1) Sets AIO_05 to Output with value 0
+    //   2) Sets AIO_05 to Input with value 1
+    QTest::newRow("Basic AIO Set V1") \
+            << button_pre_settings_list \
+            << recv_data \
+            << button_post_settings_list \
+            << expected_signals_list;
+
+    // Setup AIO Set Bad Pin V1 test data
+    button_pre_settings_list.clear();
+    recv_data.clear();
+    button_post_settings_list.clear();
+    expected_signals_list.clear();
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_SET,
+                                                        0x7F, 0x00, 0x00, 0x01}));
+    recv_data << data;
+
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    button_group.clear();
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Load AIO Set Bad Pin V1 test data
+    // Performs the following actions:
+    //   1) Trys setting AIO_127 to Output with value 0
+    QTest::newRow("AIO Set Bad Pin V1") \
+            << button_pre_settings_list \
+            << recv_data \
+            << button_post_settings_list \
+            << expected_signals_list;
+
     /** Start of AIO WRITE Tests **/
+
+    // Setup Basic AIO Write V1 test data
+    button_pre_settings_list.clear();
+    recv_data.clear();
+    button_post_settings_list.clear();
+    expected_signals_list.clear();
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
+                                                        0x05, 0x00, 0x64}));
+    recv_data << data;
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
+                                                        0x05, 0x00, 0x00}));
+    recv_data << data;
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
+                                                        0x05, 0x00, 0x64}));
+    recv_data << data;
+
+    button_group.clear();
+    button_pre_settings_list << button_group;
+    button_pre_settings_list << button_group;
+    button_group << QList<QVariant>({"AIO_05", "Output", 0});
+    button_pre_settings_list << button_group;
+
+    button_group.clear();
+    expected_signals_list << button_group;
+    expected_signals_list << button_group;
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_SET,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x05, 0x00, 0x00, 0x01})
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 100, "1", true});
+    button_post_settings_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Output", 100, "1", false});
+    button_post_settings_list << button_group;
+
+    // Load Basic AIO Write V1 test data
+    // Performs the following actions:
+    //   1) Sets AIO_05 to 1
+    //   2) Sets AIO_05 to 0
+    //   3) Sets AIO_05 to 1 (after chaning to Output)
+    QTest::newRow("Basic AIO Write V1") \
+            << button_pre_settings_list \
+            << recv_data \
+            << button_post_settings_list \
+            << expected_signals_list;
+
+    // Setup AIO Write Bad Pin V1 test data
+    button_pre_settings_list.clear();
+    recv_data.clear();
+    button_post_settings_list.clear();
+    expected_signals_list.clear();
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
+                                                        0x7F, 0x00, 0x01}));
+    recv_data << data;
+
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    button_group.clear();
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Load AIO Write Bad Pin V1 test data
+    // Performs the following actions:
+    //   1) Trys writing AIO_127 with value 1
+    QTest::newRow("AIO Write Bad Pin V1") \
+            << button_pre_settings_list \
+            << recv_data \
+            << button_post_settings_list \
+            << expected_signals_list;
 }
 
 void GUI_IO_CONTROL_TESTS::test_basic_chart_features()
