@@ -139,6 +139,16 @@ void GUI_IO_CONTROL_TEST_CLASS::log_stop_clicked_test()
     qApp->processEvents();
 }
 
+void GUI_IO_CONTROL_TEST_CLASS::request_read_all_test(uint8_t pinType)
+{
+    request_read_all(pinType);
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::request_read_pin_test(uint8_t pinType, uint8_t pinNum)
+{
+    request_read_pin(pinType, pinNum);
+}
+
 bool GUI_IO_CONTROL_TEST_CLASS::set_pin_test(QString pin_str, QString combo_value, int slider_value)
 {
     // Get pin

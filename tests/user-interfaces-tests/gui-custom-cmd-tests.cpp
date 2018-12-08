@@ -1236,7 +1236,7 @@ void GUI_CUSTOM_CMD_TESTS::perform_cmd_send(QString send_fill_data, QList<QStrin
             spy_args = transmit_chunk_spy.takeFirst();
 
             // Verify values
-            QVERIFY(3 <= expected_send.length());
+            QVERIFY(expected_send.length() == 4);
             QCOMPARE(spy_args.at(0).toUInt(), expected_send.at(0).toUInt());
             QCOMPARE(spy_args.at(1).toUInt(), expected_send.at(1).toUInt());
             QCOMPARE(spy_args.at(2).toByteArray(), expected_send.at(2).toByteArray());

@@ -61,6 +61,9 @@ public:
     void log_start_clicked_test();
     void log_stop_clicked_test();
 
+    void request_read_all_test(uint8_t pinType);
+    void request_read_pin_test(uint8_t pinType, uint8_t pinNum);
+
     bool set_pin_test(QString pin_str, QString combo_value, int slider_value);
     bool perform_action_test(QString pin_str, uint8_t button, QVariant value);
 

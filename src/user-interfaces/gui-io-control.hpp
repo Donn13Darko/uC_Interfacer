@@ -96,6 +96,9 @@ protected slots:
     void recordPinValues(PinTypeInfo *pInfo);
     virtual void receive_gui(QByteArray recvData);
 
+    void request_read_all(uint8_t pinType);
+    void request_read_pin(uint8_t pinType, uint8_t pinNum);
+
 protected:
     // Get pin list
     QStringList get_pin_list();
@@ -158,9 +161,13 @@ private:
     QTimer DIO_READ;
     bool dio_read_requested;
     bool dio_read_requested_double;
+    QList<uint8_t> dio_read_pins;
+    QList<uint8_t> dio_read_pins_double;
     QTimer AIO_READ;
     bool aio_read_requested;
     bool aio_read_requested_double;
+    QList<uint8_t> aio_read_pins;
+    QList<uint8_t> aio_read_pins_double;
 
     // Log variables
     QFile *logFile;

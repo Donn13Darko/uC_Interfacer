@@ -129,8 +129,9 @@ void GUI_IO_CONTROL_TESTS::test_gui_config()
     // Verify input arguments
     QCOMPARE(expected_pins.length(), expected_combos.length());
 
-    // Clear existing config
+    // Clear existing config & reset GUI
     clear_gui_config();
+    io_control_tester->reset_gui();
 
     // Get default gui values
     uint8_t curr_gui_key = io_control_tester->get_gui_key();
@@ -591,8 +592,9 @@ void GUI_IO_CONTROL_TESTS::test_gui_interactions()
     QCOMPARE(send_expected_signals.length(), num_actions);
     QCOMPARE(expected_pin_settings.length(), num_actions);
 
-    // Set new config
+    // Set new config & reset GUI
     QVERIFY(set_gui_config(generic_config_str));
+    io_control_tester->reset_gui();
 
     // Setup spy to catch tranmit signal
     QList<QVariant> spy_args;
@@ -850,8 +852,9 @@ void GUI_IO_CONTROL_TESTS::test_logging()
     int num_entries = pin_settings.length();
     QCOMPARE(log_settings.length(), num_entries);
 
-    // Set new config
+    // Set new config & reset GUI
     QVERIFY(set_gui_config(generic_config_str));
+    io_control_tester->reset_gui();
 
     // Create temporary file
     QTemporaryFile *tmp_file = new QTemporaryFile();
@@ -891,16 +894,17 @@ void GUI_IO_CONTROL_TESTS::test_logging()
         io_control_tester->set_log_file_update_rate_test(log_entry.at(0).toFloat());
         io_control_tester->set_log_append_checked_test(log_entry.at(1).toBool());
 
-        // Reset num starts if not appending and filling data
-        num_pin_entries = pin_entry.length();
-        if (!log_entry.at(1).toBool() && (num_pin_entries != 0))
+        // If not appending, reset values
+        if (!log_entry.at(1).toBool())
         {
+            // Reset values
             last_reset = i;
             start_line_pos.clear();
             num_expected_log_lines = 0;
         }
 
         // Loop until button entries empty
+        num_pin_entries = pin_entry.length();
         for (int j = 0; j < num_pin_entries; j++)
         {
             // Set pin group
@@ -914,10 +918,16 @@ void GUI_IO_CONTROL_TESTS::test_logging()
             // Start log if not running
             if (!log_running)
             {
+                // Set values
+                start_line_pos << num_expected_log_lines;
+                num_expected_log_lines += 1;
+
+                // Click start
                 io_control_tester->log_start_clicked_test();
                 log_running = true;
-                start_line_pos << (num_expected_log_lines - start_line_pos.last());
-                num_expected_log_lines += 1;
+
+                // Verify start log button text
+                QCOMPARE(io_control_tester->get_log_start_text_test(), QString("Running"));
             }
 
             // Wait for log updated
@@ -928,8 +938,12 @@ void GUI_IO_CONTROL_TESTS::test_logging()
         // Check if clicking stop after test
         if (log_entry.at(2).toBool() && log_running)
         {
+            // Click the stop button
             io_control_tester->log_stop_clicked_test();
             log_running = false;
+
+            // Verify start log button text
+            QCOMPARE(io_control_tester->get_log_start_text_test(), QString("Start Log"));
         }
     }
 
@@ -940,8 +954,8 @@ void GUI_IO_CONTROL_TESTS::test_logging()
     QList<QByteArray> log_data = GUI_GENERIC_HELPER::loadFile(temp_filename).split('\n');
 
     // Setup log check loop data
-    QString expected_start_line;
-    QString curr_data_line;
+    QByteArray expected_start_line;
+    QByteArray curr_data_line;
     int next_start_line = 0, curr_start_line = 0;
     QCOMPARE(log_data.length(), num_expected_log_lines+1);
 
@@ -975,12 +989,15 @@ void GUI_IO_CONTROL_TESTS::test_logging()
                      expected_start_line.split(' ').mid(0));
 
             // Set next expected start
-            next_start_line += start_line_pos.at(i);
             curr_start_line += 1;
+            if (curr_start_line < start_line_pos.length())
+            {
+                next_start_line = start_line_pos.at(curr_start_line);
+            }
         } else
         {
             // Compare data log line
-            QCOMPARE(log_data.at(i), expected_log_lines.at(i - curr_start_line));
+            QCOMPARE(curr_data_line, expected_log_lines.at(i - curr_start_line));
         }
     }
 }
@@ -1021,7 +1038,6 @@ void GUI_IO_CONTROL_TESTS::test_logging_data()
                             << log_settings_list \
                             << log_data_lines;
 
-
     // Setup basic test data
     pin_settings_list.clear();
     pin_settings_entry.clear();
@@ -1030,16 +1046,73 @@ void GUI_IO_CONTROL_TESTS::test_logging_data()
 
     log_settings_list.clear();
     button_group.clear();
-    log_settings_list << QList<QVariant>({0.25, true, false});
+    log_settings_list << QList<QVariant>({0.5, true, false});
 
     log_data_lines.clear();
     log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
     log_data_lines << QString("6,0,0,0,0,0").toLatin1();
 
-    // Load basic test data (does nothing)
+    // Load basic test data
+    // Reads one set of values before calling stop
     QTest::newRow("Basic") << pin_settings_list \
                            << log_settings_list \
                            << log_data_lines;
+
+    // Setup Basic Append test data
+    pin_settings_list.clear();
+    pin_settings_entry.clear();
+    pin_settings_entry << QList<QList<QVariant>>();
+    pin_settings_entry << QList<QList<QVariant>>();
+    pin_settings_list << pin_settings_entry;
+    pin_settings_list << pin_settings_entry;
+
+    log_settings_list.clear();
+    button_group.clear();
+    log_settings_list << QList<QVariant>({0.05, true, true});
+    log_settings_list << QList<QVariant>({0.05, true, false});
+
+    log_data_lines.clear();
+    log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("6,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("6,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("6,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("6,0,0,0,0,0").toLatin1();
+
+    // Load Basic Append test data
+    //   1) Saves two rows then clicks stop
+    //   2) Saves two more rows (appends to existing)
+    QTest::newRow("Basic Append") << pin_settings_list \
+                                  << log_settings_list \
+                                  << log_data_lines;
+
+    // Setup Basic Append test data
+    pin_settings_list.clear();
+    pin_settings_entry.clear();
+    pin_settings_entry << QList<QList<QVariant>>();
+    pin_settings_entry << QList<QList<QVariant>>();
+    pin_settings_list << pin_settings_entry;
+    pin_settings_list << pin_settings_entry;
+
+    log_settings_list.clear();
+    button_group.clear();
+    log_settings_list << QList<QVariant>({0.05, true, true});
+    log_settings_list << QList<QVariant>({0.05, false, false});
+
+    log_data_lines.clear();
+    log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("6,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("6,0,0,0,0,0").toLatin1();
+
+    // Load Basic No Append test data
+    //   1) Saves two rows then clicks stop
+    //   2) Saves two more rows (erases existing)
+    QTest::newRow("Basic No Append") << pin_settings_list \
+                                     << log_settings_list \
+                                     << log_data_lines;
 }
 
 void GUI_IO_CONTROL_TESTS::test_logging_cleanup()
@@ -1061,8 +1134,9 @@ void GUI_IO_CONTROL_TESTS::test_recv()
     QCOMPARE(expected_pin_settings.length(), num_entries);
     QCOMPARE(send_expected_signals.length(), num_entries);
 
-    // Set new config
+    // Set new config & reset GUI
     QVERIFY(set_gui_config(generic_config_str));
+    io_control_tester->reset_gui();
 
     // Setup spy to catch update signal
     QList<QVariant> spy_args;
@@ -1071,6 +1145,7 @@ void GUI_IO_CONTROL_TESTS::test_recv()
 
     // Setup loop variables
     QList<QList<QVariant>> curr_signal;
+    QByteArray curr_recv_data;
 
     // Loop through all buttons, calls, and verify
     for (int i = 0; i < num_entries; i++)
@@ -1083,8 +1158,38 @@ void GUI_IO_CONTROL_TESTS::test_recv()
                                             button.at(2).toInt());
         }
 
+        // Setup current recv
+        curr_recv_data = recv_data.at(i);
+
+        // Check if read write (need to have read request)
+        switch (curr_recv_data.at(s1_minor_key_loc))
+        {
+            case MINOR_KEY_IO_AIO_READ:
+            case MINOR_KEY_IO_DIO_READ:
+            {
+                if (curr_recv_data.length() != (s1_end_loc + s2_io_read_end))
+                {
+                    // Send read request
+                    io_control_tester->request_read_pin_test(
+                                curr_recv_data.at(s1_minor_key_loc),
+                                curr_recv_data.at(s1_end_loc + s2_io_pin_num_loc));
+                }
+                break;
+            }
+            case MINOR_KEY_IO_AIO_READ_ALL:
+            case MINOR_KEY_IO_DIO_READ_ALL:
+            {
+                if (curr_recv_data.length() != s1_end_loc)
+                {
+                    // Send read request
+                    io_control_tester->request_read_all_test(curr_recv_data.at(s1_minor_key_loc));
+                }
+                break;
+            }
+        }
+
         // Send data
-        emit io_control_tester->readyRead(recv_data.at(i));
+        emit io_control_tester->readyRead(curr_recv_data);
         qApp->processEvents();
 
         // Verify same number of signals
@@ -1174,6 +1279,10 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ_ALL,
                                                         0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
@@ -1181,9 +1290,10 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ_ALL,
+                                     QByteArray()
+                                    });
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1208,23 +1318,20 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ_ALL,
                                                         0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
                                                         0x00, 0x01, 0x00, 0x01}));
-    recv_data << data << data;
+    recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-    button_group << QList<QVariant>({"DIO_00", "Output", 0});
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
-    expected_signals_list << button_group;
     button_group << QList<QVariant>({MAJOR_KEY_IO,
-                                     MINOR_KEY_IO_DIO_SET,
-                                     GUI_GENERIC_HELPER::qList_to_byteArray(
-                                        {0x00, 0x00, 0x00, 0x01})
+                                     MINOR_KEY_IO_DIO_READ_ALL,
+                                     QByteArray()
                                     });
     expected_signals_list << button_group;
 
@@ -1235,6 +1342,29 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"DIO_04", "Output", 0, "0", false});
     button_group << QList<QVariant>({"DIO_05", "Input", 1, "1", true});
     button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Output", 0});
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ_ALL,
+                                                        0x00, 0x01, 0x00, 0x01, 0x00, 0x01,
+                                                        0x00, 0x01, 0x00, 0x01}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_SET,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x00, 0x00, 0x00, 0x01})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ_ALL,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
 
     button_group.clear();
     button_group << QList<QVariant>({"DIO_00", "Output", 0, "0", false});
@@ -1259,15 +1389,20 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ_ALL,
                                                         0x00, 0x01, 0x00, 0x01, 0x00, 0x01}));
     recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ_ALL,
+                                     QByteArray()
+                                    });
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1285,6 +1420,91 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
             << button_post_settings_list \
             << expected_signals_list;
 
+    // Setup DIO Read All Request test data
+    button_pre_settings_list.clear();
+    recv_data.clear();
+    button_post_settings_list.clear();
+    expected_signals_list.clear();
+
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ_ALL}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ_ALL,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                         0x00, 0x00, 0x00, 0x00})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_DEV_READY,
+                                     0,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"DIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_01", "Output", 1});
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ_ALL}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_SET,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x01, 0x00, 0x00, 0x01})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_WRITE,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x01, 0x00, 0x01})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ_ALL,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+                                         0x00, 0x00, 0x00, 0x00})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_DEV_READY,
+                                     0,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_01", "Output", 1, "1", false});
+    button_group << QList<QVariant>({"DIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"DIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Load DIO Read All Request test data
+    // Performs the following actions:
+    //   1) Reads all default values (0 for all pins)
+    //   2) Sets DIO_01 to Output with Value 1, then reads all values again
+    QTest::newRow("DIO Read All Request") \
+            << button_pre_settings_list \
+            << recv_data \
+            << button_post_settings_list \
+            << expected_signals_list;
+
     /** Start of DIO READ SINGLE Tests **/
 
     // Setup Basic DIO Read Single test data
@@ -1293,21 +1513,21 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ,
                                                         0x00, 0x00, 0x01}));
     recv_data << data;
-    data.clear();
-    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ,
-                                                        0x05, 0x00, 0x01}));
-    recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
-    expected_signals_list << button_group;
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x00})
+                                    });
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1317,6 +1537,23 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"DIO_04", "Output", 0, "0", false});
     button_group << QList<QVariant>({"DIO_05", "Input", 0, "0", true});
     button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ,
+                                                        0x05, 0x00, 0x01}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x05})
+                                    });
+    expected_signals_list << button_group;
 
     button_group.clear();
     button_group << QList<QVariant>({"DIO_00", "Input", 1, "1", true});
@@ -1336,6 +1573,86 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
             << button_post_settings_list \
             << expected_signals_list;
 
+    // Setup DIO Read Single Request test data
+    button_pre_settings_list.clear();
+    recv_data.clear();
+    button_post_settings_list.clear();
+    expected_signals_list.clear();
+
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ,
+                                                        0x05}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x05, 0x00, 0x00})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_DEV_READY,
+                                     0,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"DIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_05", "Input", 1});
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_READ,
+                                                        0x05}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_WRITE,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x05, 0x00, 0x01})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_READ,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x05, 0x00, 0x01})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_DEV_READY,
+                                     0,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"DIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"DIO_05", "Input", 1, "1", true});
+    button_post_settings_list << button_group;
+
+    // Load DIO Read Single Request test data
+    // Performs the following actions:
+    //   1) Reads DIO_05 default value (0)
+    //   2) Sets DIO_05 to 1, then reads value again
+    QTest::newRow("DIO Read Single Request") \
+            << button_pre_settings_list \
+            << recv_data \
+            << button_post_settings_list \
+            << expected_signals_list;
+
     /** Start of DIO SET Tests **/
 
     // Setup Basic DIO Set V1 test data
@@ -1344,21 +1661,16 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_SET,
                                                         0x00, 0x00, 0x00, 0x01}));
     recv_data << data;
-    data.clear();
-    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_SET,
-                                                        0x00, 0x00, 0x01, 0x00}));
-    recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
-    expected_signals_list << button_group;
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1368,6 +1680,18 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"DIO_04", "Output", 0, "0", false});
     button_group << QList<QVariant>({"DIO_05", "Input", 0, "0", true});
     button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_SET,
+                                                        0x00, 0x00, 0x01, 0x00}));
+    recv_data << data;
+
+    button_group.clear();
+    expected_signals_list << button_group;
 
     button_group.clear();
     button_group << QList<QVariant>({"DIO_00", "Input", 1, "1", true});
@@ -1393,13 +1717,14 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_SET,
                                                         0x7F, 0x00, 0x00, 0x01}));
     recv_data << data;
-
-    button_group.clear();
-    button_pre_settings_list << button_group;
 
     button_group.clear();
     expected_signals_list << button_group;
@@ -1429,33 +1754,16 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
-    data.clear();
-    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_WRITE,
-                                                        0x00, 0x00, 0x01}));
-    recv_data << data;
-    data.clear();
-    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_WRITE,
-                                                        0x00, 0x00, 0x00}));
-    recv_data << data;
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_WRITE,
                                                         0x00, 0x00, 0x01}));
     recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-    button_pre_settings_list << button_group;
-    button_group << QList<QVariant>({"DIO_00", "Output", 0});
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
-    expected_signals_list << button_group;
-    expected_signals_list << button_group;
-    button_group << QList<QVariant>({MAJOR_KEY_IO,
-                                     MINOR_KEY_IO_DIO_SET,
-                                     GUI_GENERIC_HELPER::qList_to_byteArray(
-                                        {0x00, 0x00, 0x00, 0x01})
-                                    });
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1466,6 +1774,18 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"DIO_05", "Input", 0, "0", true});
     button_post_settings_list << button_group;
 
+    // Set second action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_WRITE,
+                                                        0x00, 0x00, 0x00}));
+    recv_data << data;
+
+    button_group.clear();
+    expected_signals_list << button_group;
+
     button_group.clear();
     button_group << QList<QVariant>({"DIO_00", "Input", 0, "0", true});
     button_group << QList<QVariant>({"DIO_01", "Input", 0, "0", true});
@@ -1473,6 +1793,24 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"DIO_04", "Output", 0, "0", false});
     button_group << QList<QVariant>({"DIO_05", "Input", 0, "0", true});
     button_post_settings_list << button_group;
+
+    // Set third action
+    button_group.clear();
+    button_group << QList<QVariant>({"DIO_00", "Output", 0});
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_WRITE,
+                                                        0x00, 0x00, 0x01}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_DIO_SET,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x00, 0x00, 0x00, 0x01})
+                                    });
+    expected_signals_list << button_group;
 
     button_group.clear();
     button_group << QList<QVariant>({"DIO_00", "Output", 1, "1", false});
@@ -1499,13 +1837,14 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_DIO_WRITE,
                                                         0x7F, 0x00, 0x01}));
     recv_data << data;
-
-    button_group.clear();
-    button_pre_settings_list << button_group;
 
     button_group.clear();
     expected_signals_list << button_group;
@@ -1535,6 +1874,10 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ_ALL,
                                                         0x00, 0x64, 0x00, 0x64, 0x00, 0x64,
@@ -1542,9 +1885,10 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_READ_ALL,
+                                     QByteArray()
+                                    });
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1570,23 +1914,20 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ_ALL,
                                                         0x00, 0x64, 0x00, 0x64, 0x00, 0x64,
                                                         0x00, 0x64, 0x00, 0x64, 0x00, 0x64}));
-    recv_data << data << data;
+    recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-    button_group << QList<QVariant>({"AIO_05", "Output", 0});
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
-    expected_signals_list << button_group;
     button_group << QList<QVariant>({MAJOR_KEY_IO,
-                                     MINOR_KEY_IO_AIO_SET,
-                                     GUI_GENERIC_HELPER::qList_to_byteArray(
-                                        {0x05, 0x00, 0x00, 0x01})
+                                     MINOR_KEY_IO_AIO_READ_ALL,
+                                     QByteArray()
                                     });
     expected_signals_list << button_group;
 
@@ -1598,6 +1939,29 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
     button_group << QList<QVariant>({"AIO_05", "Input", 100, "1", true});
     button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_05", "Output", 0});
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ_ALL,
+                                                        0x00, 0x64, 0x00, 0x64, 0x00, 0x64,
+                                                        0x00, 0x64, 0x00, 0x64, 0x00, 0x64}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_SET,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x05, 0x00, 0x00, 0x01})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_READ_ALL,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
 
     button_group.clear();
     button_group << QList<QVariant>({"AIO_00", "Input", 100, "1", true});
@@ -1618,6 +1982,88 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
             << button_post_settings_list \
             << expected_signals_list;
 
+    // Setup AIO Read All Request test data
+    button_pre_settings_list.clear();
+    recv_data.clear();
+    button_post_settings_list.clear();
+    expected_signals_list.clear();
+
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ_ALL}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_READ_ALL,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_DEV_READY,
+                                     0,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_02", "Input", 500});
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ_ALL}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_WRITE,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x02, 0x01, 0xF4})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_READ_ALL,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x00, 0x00, 0x00, 0x00, 0x01, 0xF4,
+                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_DEV_READY,
+                                     0,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 500, "5", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Load AIO Read All Request test data
+    // Performs the following actions:
+    //   1) Reads all default values (0 for all pins)
+    //   2) Sets AIO_02 to 500, then reads all values again
+    QTest::newRow("AIO Read All Request") \
+            << button_pre_settings_list \
+            << recv_data \
+            << button_post_settings_list \
+            << expected_signals_list;
+
     /** Start of AIO READ SINGLE Tests **/
 
     // Setup Basic AIO Read Single test data
@@ -1626,21 +2072,21 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ,
                                                         0x00, 0x00, 0xDC}));
     recv_data << data;
-    data.clear();
-    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ,
-                                                        0x03, 0x01, 0x4A}));
-    recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
-    expected_signals_list << button_group;
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_READ,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x00})
+                                    });
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1651,6 +2097,23 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
     button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
     button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ,
+                                                        0x03, 0x01, 0x4A}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_READ,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x03})
+                                    });
+    expected_signals_list << button_group;
 
     button_group.clear();
     button_group << QList<QVariant>({"AIO_00", "Input", 220, "2.2", true});
@@ -1671,6 +2134,88 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
             << button_post_settings_list \
             << expected_signals_list;
 
+    // Setup AIO Read Single Request test data
+    button_pre_settings_list.clear();
+    recv_data.clear();
+    button_post_settings_list.clear();
+    expected_signals_list.clear();
+
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ,
+                                                        0x04}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_READ,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x04, 0x00, 0x00})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_DEV_READY,
+                                     0,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_04", "Input", 210});
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_READ,
+                                                        0x04}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_WRITE,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x04, 0x00, 0xD2})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_READ,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x04, 0x00, 0xD2})
+                                    });
+    button_group << QList<QVariant>({MAJOR_KEY_DEV_READY,
+                                     0,
+                                     QByteArray()
+                                    });
+    expected_signals_list << button_group;
+
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_02", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_03", "Input", 0, "0", true});
+    button_group << QList<QVariant>({"AIO_04", "Output", 210, "2.1", false});
+    button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
+    button_post_settings_list << button_group;
+
+    // Load AIO Read Single Request test data
+    // Performs the following actions:
+    //   1) Reads AIO_04 default value (0)
+    //   2) Sets AIO_04 to 2.1, then reads value again
+    QTest::newRow("AIO Read Single Request") \
+            << button_pre_settings_list \
+            << recv_data \
+            << button_post_settings_list \
+            << expected_signals_list;
+
     /** Start of AIO SET Tests **/
 
     // Setup Basic AIO Set V1 test data
@@ -1679,21 +2224,16 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_SET,
                                                         0x05, 0x00, 0x00, 0x01}));
     recv_data << data;
-    data.clear();
-    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_SET,
-                                                        0x05, 0x00, 0x64, 0x00}));
-    recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
-    expected_signals_list << button_group;
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1704,6 +2244,18 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
     button_group << QList<QVariant>({"AIO_05", "Output", 0, "0", false});
     button_post_settings_list << button_group;
+
+    // Set second action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_SET,
+                                                        0x05, 0x00, 0x64, 0x00}));
+    recv_data << data;
+
+    button_group.clear();
+    expected_signals_list << button_group;
 
     button_group.clear();
     button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
@@ -1730,13 +2282,14 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_SET,
                                                         0x7F, 0x00, 0x00, 0x01}));
     recv_data << data;
-
-    button_group.clear();
-    button_pre_settings_list << button_group;
 
     button_group.clear();
     expected_signals_list << button_group;
@@ -1767,33 +2320,16 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
-    data.clear();
-    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
-                                                        0x05, 0x00, 0x64}));
-    recv_data << data;
-    data.clear();
-    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
-                                                        0x05, 0x00, 0x00}));
-    recv_data << data;
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
                                                         0x05, 0x00, 0x64}));
     recv_data << data;
 
     button_group.clear();
-    button_pre_settings_list << button_group;
-    button_pre_settings_list << button_group;
-    button_group << QList<QVariant>({"AIO_05", "Output", 0});
-    button_pre_settings_list << button_group;
-
-    button_group.clear();
-    expected_signals_list << button_group;
-    expected_signals_list << button_group;
-    button_group << QList<QVariant>({MAJOR_KEY_IO,
-                                     MINOR_KEY_IO_AIO_SET,
-                                     GUI_GENERIC_HELPER::qList_to_byteArray(
-                                        {0x05, 0x00, 0x00, 0x01})
-                                    });
     expected_signals_list << button_group;
 
     button_group.clear();
@@ -1805,6 +2341,18 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"AIO_05", "Input", 100, "1", true});
     button_post_settings_list << button_group;
 
+    // Set second action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
+                                                        0x05, 0x00, 0x00}));
+    recv_data << data;
+
+    button_group.clear();
+    expected_signals_list << button_group;
+
     button_group.clear();
     button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
     button_group << QList<QVariant>({"AIO_01", "Input", 0, "0", true});
@@ -1813,6 +2361,24 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_group << QList<QVariant>({"AIO_04", "Output", 0, "0", false});
     button_group << QList<QVariant>({"AIO_05", "Input", 0, "0", true});
     button_post_settings_list << button_group;
+
+    // Set third action
+    button_group.clear();
+    button_group << QList<QVariant>({"AIO_05", "Output", 0});
+    button_pre_settings_list << button_group;
+
+    data.clear();
+    data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
+                                                        0x05, 0x00, 0x64}));
+    recv_data << data;
+
+    button_group.clear();
+    button_group << QList<QVariant>({MAJOR_KEY_IO,
+                                     MINOR_KEY_IO_AIO_SET,
+                                     GUI_GENERIC_HELPER::qList_to_byteArray(
+                                        {0x05, 0x00, 0x00, 0x01})
+                                    });
+    expected_signals_list << button_group;
 
     button_group.clear();
     button_group << QList<QVariant>({"AIO_00", "Input", 0, "0", true});
@@ -1840,13 +2406,14 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     button_post_settings_list.clear();
     expected_signals_list.clear();
 
+    // Set first action
+    button_group.clear();
+    button_pre_settings_list << button_group;
+
     data.clear();
     data.append(GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO, MINOR_KEY_IO_AIO_WRITE,
                                                         0x7F, 0x00, 0x01}));
     recv_data << data;
-
-    button_group.clear();
-    button_pre_settings_list << button_group;
 
     button_group.clear();
     expected_signals_list << button_group;
@@ -1892,8 +2459,9 @@ void GUI_IO_CONTROL_TESTS::test_chart_update_features()
     QCOMPARE(request_pins.length(), num_entries);
     QCOMPARE(expected_signals.length(), num_entries);
 
-    // Set new config
+    // Set new config & reset GUI
     QVERIFY(set_gui_config(generic_config_str));
+    io_control_tester->reset_gui();
 
     // Create helper chart element
     GUI_CHART_ELEMENT chart_elem_test(CHART_TYPE_2D_LINE);

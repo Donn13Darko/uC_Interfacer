@@ -56,10 +56,10 @@ GUI_IO_CONTROL::GUI_IO_CONTROL(QWidget *parent) :
 
     // Connect updaters
     // All internal object connections so direct is okay
-    connect(&DIO_READ, SIGNAL(timeout()),
+    connect(&AIO_READ, SIGNAL(timeout()),
             this, SLOT(updateValues()),
             Qt::DirectConnection);
-    connect(&AIO_READ, SIGNAL(timeout()),
+    connect(&DIO_READ, SIGNAL(timeout()),
             this, SLOT(updateValues()),
             Qt::DirectConnection);
     connect(&logTimer, SIGNAL(timeout()),
@@ -136,11 +136,11 @@ bool GUI_IO_CONTROL::waitForDevice(uint8_t minorKey)
         case MINOR_KEY_IO_REMOTE_CONN_READ:
             return true;
         case MINOR_KEY_IO_AIO_READ:
-            // Check if read pin list has value
+            // Check if read pin
         case MINOR_KEY_IO_AIO_READ_ALL:
             return aio_read_requested;
         case MINOR_KEY_IO_DIO_READ:
-            // Check if read pin list has value
+            // Check if read pin
         case MINOR_KEY_IO_DIO_READ_ALL:
             return dio_read_requested;
         default:
@@ -158,6 +158,10 @@ void GUI_IO_CONTROL::reset_gui()
     aio_read_requested = false;
     dio_read_requested_double = false;
     aio_read_requested_double = false;
+    dio_read_pins.clear();
+    aio_read_pins.clear();
+    dio_read_pins_double.clear();
+    aio_read_pins_double.clear();
 
     // Stop logging and updating if running
     on_StopLog_Button_clicked();
@@ -296,6 +300,8 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
         case MINOR_KEY_IO_AIO_READ:
         case MINOR_KEY_IO_DIO_READ:
         {
+            // Get pin num
+            uint8_t pinNum = recvData.at(s1_end_loc);
 
             // Check if request or respone
             if (recvData.length() == (num_s1_bytes+1))
@@ -311,11 +317,14 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
 
                 // Make sure pin valid
                 QHBoxLayout *pin;
-                if (!get_pin_layout(pInfo.pinType, recvData.at(s1_end_loc), &pin))
+                if (!get_pin_layout(pInfo.pinType, pinNum, &pin))
                 {
                     // Exit out of parse
                     break;
                 }
+
+                // Append pin num to return array
+                pinValues.append(pinNum);
 
                 // Get slider value
                 sliderValue = (QSlider*) pin->itemAt(io_slider_pos)->widget();
@@ -334,6 +343,49 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
 
                 // Exit out of parse
                 break;
+            }
+
+            // Otherwise packet is a response so...
+            // Check if need to send another data request
+            // Otherwise, clear read request
+            if (minor_key == MINOR_KEY_IO_AIO_READ)
+            {
+                // Verify GUI requested
+                if (!aio_read_pins.contains(pinNum)) break;
+
+                // Check if double request
+                if (aio_read_pins_double.contains(pinNum))
+                {
+                    // Clear double
+                    aio_read_pins_double.removeAll(pinNum);
+
+                    // Emit another request for data
+                    emit transmit_chunk(local_gui_key, minor_key,
+                                        GUI_GENERIC_HELPER::qList_to_byteArray({pinNum}));
+                } else
+                {
+                    // Clear single request
+                    aio_read_pins.removeAll(pinNum);
+                }
+            } else if (minor_key == MINOR_KEY_IO_DIO_READ)
+            {
+                // Verify GUI requested
+                if (!dio_read_pins.contains(pinNum)) break;
+
+                // Check if double request
+                if (dio_read_pins_double.contains(pinNum))
+                {
+                    // Clear double
+                    dio_read_pins_double.removeAll(pinNum);
+
+                    // Emit another request for data
+                    emit transmit_chunk(local_gui_key, minor_key,
+                                        GUI_GENERIC_HELPER::qList_to_byteArray({pinNum}));
+                } else
+                {
+                    // Clear single request
+                    dio_read_pins.removeAll(pinNum);
+                }
             }
 
             // Set values with minor key
@@ -384,10 +436,14 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
                 break;
             }
 
-            // Otherwise, packet is a response so clear data request,
-            // check if need to request again right away
+            // Otherwise packet is a response so...
+            // Check if need to send another data request
+            // Otherwise, clear read request
             if (minor_key == MINOR_KEY_IO_AIO_READ_ALL)
             {
+                // Verify GUI requested
+                if (!aio_read_requested) break;;
+
                 // Check if double request
                 if (aio_read_requested_double)
                 {
@@ -403,6 +459,9 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
                 }
             } else if (minor_key == MINOR_KEY_IO_DIO_READ_ALL)
             {
+                // Verify GUI requested
+                if (!dio_read_requested) break;
+
                 // Check if double request
                 if (dio_read_requested_double)
                 {
@@ -432,6 +491,117 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
             break;
         }
     }
+}
+
+void GUI_IO_CONTROL::request_read_all(uint8_t pinType)
+{
+    // Get pin info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(pinType, &pInfo)) return;
+
+    // Request read (or set double)
+    uint8_t requestType;
+    switch (pInfo.pinType)
+    {
+        case MINOR_KEY_IO_AIO:
+        {
+            // Check if already waiting for a response
+            if (aio_read_requested)
+            {
+                aio_read_requested_double = true;
+                return;
+            }
+
+            // Set requested and key
+            aio_read_requested = true;
+            requestType = MINOR_KEY_IO_AIO_READ_ALL;
+
+            // Break out of selection
+            break;
+        }
+        case MINOR_KEY_IO_DIO:
+        {
+            // Check if already waiting for a response
+            if (dio_read_requested)
+            {
+                dio_read_requested_double = true;
+                return;
+            }
+
+            // Set requested and key
+            dio_read_requested = true;
+            requestType = MINOR_KEY_IO_DIO_READ_ALL;
+
+            // Break out of selection
+            break;
+        }
+        default:
+        {
+            return;
+        }
+    }
+
+    // Emit request for data
+    emit transmit_chunk(get_gui_key(), requestType);
+}
+
+void GUI_IO_CONTROL::request_read_pin(uint8_t pinType, uint8_t pinNum)
+{
+    // Get pin info
+    PinTypeInfo pInfo;
+    if (!getPinTypeInfo(pinType, &pInfo)) return;
+
+    // Request read (or set double)
+    uint8_t requestType;
+    switch (pInfo.pinType)
+    {
+        case MINOR_KEY_IO_AIO:
+        {
+            // Check if already waiting for a response
+            if (aio_read_pins.contains(pinNum))
+            {
+                if (!aio_read_pins_double.contains(pinNum))
+                {
+                    aio_read_pins_double.append(pinNum);
+                }
+                return;
+            }
+
+            // Set requested and key
+            aio_read_pins.append(pinNum);
+            requestType = MINOR_KEY_IO_AIO_READ;
+
+            // Break out of selection
+            break;
+        }
+        case MINOR_KEY_IO_DIO:
+        {
+            // Check if already waiting for a response
+            if (dio_read_pins.contains(pinNum))
+            {
+                if (!dio_read_pins_double.contains(pinNum))
+                {
+                    dio_read_pins_double.append(pinNum);
+                }
+                return;
+            }
+
+            // Set requested and key
+            dio_read_pins.append(pinNum);
+            requestType = MINOR_KEY_IO_DIO_READ;
+
+            // Break out of selection
+            break;
+        }
+        default:
+        {
+            return;
+        }
+    }
+
+    // Emit request for data
+    emit transmit_chunk(get_gui_key(), requestType,
+                        GUI_GENERIC_HELPER::qList_to_byteArray({pinNum}));
 }
 
 QStringList GUI_IO_CONTROL::get_pin_list()
@@ -597,39 +767,9 @@ void GUI_IO_CONTROL::updateValues()
     // Get caller to find request type
     QTimer *caller = (QTimer*) sender();
 
-    // Find request type & set read_requested
-    uint8_t requestType;
-    if (caller == &DIO_READ)
-    {
-        // Check if already waiting for a response
-        if (dio_read_requested)
-        {
-            dio_read_requested_double = true;
-            return;
-        }
-
-        // Set requested and key
-        dio_read_requested = true;
-        requestType = MINOR_KEY_IO_DIO_READ_ALL;
-    } else if (caller == &AIO_READ)
-    {
-        // Check if already waiting for a response
-        if (aio_read_requested)
-        {
-            aio_read_requested_double = true;
-            return;
-        }
-
-        // Set requested and key
-        aio_read_requested = true;
-        requestType = MINOR_KEY_IO_AIO_READ_ALL;
-    } else
-    {
-        return;
-    }
-
-    // Emit request for data
-    emit transmit_chunk(get_gui_key(), requestType);
+    // Call request_read_all with correct pin type
+    if (caller == &AIO_READ) request_read_all(MINOR_KEY_IO_AIO);
+    else if (caller == &DIO_READ) request_read_all(MINOR_KEY_IO_DIO);
 }
 
 void GUI_IO_CONTROL::recordLogData()
@@ -652,10 +792,18 @@ void GUI_IO_CONTROL::on_StartUpdater_Button_clicked()
 
 void GUI_IO_CONTROL::on_StopUpdater_Button_clicked()
 {
-    ui->StartUpdater_Button->setText("Start");
-
+    // Stop timers
     DIO_READ.stop();
     AIO_READ.stop();
+
+    // Set button text
+    ui->StartUpdater_Button->setText("Start");
+
+    // Clear double requests
+    dio_read_requested_double = false;
+    aio_read_requested_double = false;
+    dio_read_pins_double.clear();
+    aio_read_pins_double.clear();
 }
 
 void GUI_IO_CONTROL::on_LogSaveLocSelect_Button_clicked()
