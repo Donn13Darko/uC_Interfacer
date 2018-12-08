@@ -50,8 +50,11 @@ private slots:
     void test_updates();
     void test_updates_data();
 
+    void test_logging_errors();
+
     void test_logging();
     void test_logging_data();
+    void test_logging_cleanup();
 
     void test_recv();
     void test_recv_data();
@@ -64,6 +67,7 @@ private slots:
 
 private:
     GUI_IO_CONTROL_TEST_CLASS *io_control_tester;
+    QString temp_filename;
 
     static const QString generic_config_str;
 

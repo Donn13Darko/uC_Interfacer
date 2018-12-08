@@ -24,6 +24,10 @@
 
 #include "../../src/gui-helpers/gui-generic-helper.hpp"
 
+// Object includes
+#include <QFile>
+#include <QTemporaryFile>
+
 // Setup global_config_str
 const QString
 GUI_IO_CONTROL_TESTS::generic_config_str = \
@@ -830,26 +834,229 @@ void GUI_IO_CONTROL_TESTS::test_updates_data()
     // Start the updater and wait for various amounts of time to verify signals
 }
 
+void GUI_IO_CONTROL_TESTS::test_logging_errors()
+{
+    // Double click start log, no path in lineEdit
+}
+
 void GUI_IO_CONTROL_TESTS::test_logging()
 {
-    // Start the log and wait for various amounts of time to verify signals/file
+    // Fetch data
+    QFETCH(QList<QList<QList<QList<QVariant>>>>, pin_settings);
+    QFETCH(QList<QList<QVariant>>, log_settings);
+    QFETCH(QList<QByteArray>, expected_log_lines);
+
+    // Verify input data
+    int num_entries = pin_settings.length();
+    QCOMPARE(log_settings.length(), num_entries);
+
+    // Set new config
+    QVERIFY(set_gui_config(generic_config_str));
+
+    // Create temporary file
+    QTemporaryFile *tmp_file = new QTemporaryFile();
+    tmp_file->setAutoRemove(true);
+    QVERIFY(tmp_file->open());
+    tmp_file->close();
+    temp_filename = tmp_file->fileName();
+    delete tmp_file;
+
+    // Set log path
+    io_control_tester->set_log_file_save_path_test(temp_filename);
+
+    // Connect log wait signals
+    QEventLoop log_waiter;
+    connect(io_control_tester, SIGNAL(log_updated()),
+            &log_waiter, SLOT(quit()),
+            Qt::QueuedConnection);
+
+    // Setup loop variables
+    QList<QList<QList<QVariant>>> pin_entry;
+    QList<QVariant> log_entry;
+    bool log_running = false;
+    int last_reset = 0;
+    int num_pin_entries = 0;
+    int num_expected_log_lines = 0;
+    QList<int> start_line_pos;
+
+    // Loop over all entries
+    for (int i = 0; i < num_entries; i++)
+    {
+        // Get current values
+        pin_entry = pin_settings.at(i);
+        log_entry = log_settings.at(i);
+
+        // Verify and set log settings
+        QVERIFY(log_entry.length() == 3);
+        io_control_tester->set_log_file_update_rate_test(log_entry.at(0).toFloat());
+        io_control_tester->set_log_append_checked_test(log_entry.at(1).toBool());
+
+        // Reset num starts if not appending and filling data
+        num_pin_entries = pin_entry.length();
+        if (!log_entry.at(1).toBool() && (num_pin_entries != 0))
+        {
+            last_reset = i;
+            start_line_pos.clear();
+            num_expected_log_lines = 0;
+        }
+
+        // Loop until button entries empty
+        for (int j = 0; j < num_pin_entries; j++)
+        {
+            // Set pin group
+            foreach (QList<QVariant> button, pin_entry.at(j))
+            {
+                QVERIFY(button.length() == 3);
+                io_control_tester->set_pin_test(button.at(0).toString(), button.at(1).toString(),
+                                                button.at(2).toInt());
+            }
+
+            // Start log if not running
+            if (!log_running)
+            {
+                io_control_tester->log_start_clicked_test();
+                log_running = true;
+                start_line_pos << (num_expected_log_lines - start_line_pos.last());
+                num_expected_log_lines += 1;
+            }
+
+            // Wait for log updated
+            log_waiter.exec();
+            num_expected_log_lines += 2;
+        }
+
+        // Check if clicking stop after test
+        if (log_entry.at(2).toBool() && log_running)
+        {
+            io_control_tester->log_stop_clicked_test();
+            log_running = false;
+        }
+    }
+
+    // If log running, click stop log
+    if (log_running) io_control_tester->log_start_clicked_test();
+
+    // Read log file
+    QList<QByteArray> log_data = GUI_GENERIC_HELPER::loadFile(temp_filename).split('\n');
+
+    // Setup log check loop data
+    QString expected_start_line;
+    QString curr_data_line;
+    int next_start_line = 0, curr_start_line = 0;
+    QCOMPARE(log_data.length(), num_expected_log_lines+1);
+
+    // Handle empty log file case
+    if (num_expected_log_lines == 0)
+    {
+        QVERIFY(log_data.length() == 1);
+        QVERIFY(log_data.at(0).isEmpty());
+        return;
+    }
+
+    // Check log file
+    for (int i = 0; i < num_expected_log_lines; i++)
+    {
+        // Get next log line
+        curr_data_line = log_data.at(i);
+
+        // Check if should be a start line
+        if (i == next_start_line)
+        {
+            // Build expected start line (minus time)
+            expected_start_line.clear();
+            expected_start_line += "with update rate ";
+            expected_start_line += QString::number(log_settings.at(last_reset+curr_start_line)
+                                                   .at(0).toFloat());
+            expected_start_line += " seconds";
+
+            // Compare start line
+            QVERIFY(curr_data_line.startsWith("Started: "));
+            QCOMPARE(curr_data_line.split(' ').mid(7),
+                     expected_start_line.split(' ').mid(0));
+
+            // Set next expected start
+            next_start_line += start_line_pos.at(i);
+            curr_start_line += 1;
+        } else
+        {
+            // Compare data log line
+            QCOMPARE(log_data.at(i), expected_log_lines.at(i - curr_start_line));
+        }
+    }
 }
 
 void GUI_IO_CONTROL_TESTS::test_logging_data()
 {
-    // Start the log and wait for various amounts of time to verify signals/file
+    // Setup data columns
+    // Gets parsed after each log timeout
+    // Each button item is set as follows:
+    //   0) pin_str
+    //   1) combo value
+    //   2) slider value
+    QTest::addColumn<QList<QList<QList<QList<QVariant>>>>>("pin_settings");
+
+    // Parsed before each start click
+    // Each log item is set as follows:
+    //   0) log update_rate (s - float)
+    //   1) append if exists? (bool)
+    //   2) reset log (click stop after run - bool)
+    QTest::addColumn<QList<QList<QVariant>>>("log_settings");
+
+    QTest::addColumn<QList<QByteArray>>("expected_log_lines");
+
+    // Helper variables
+    QList<QList<QList<QList<QVariant>>>> pin_settings_list;
+    QList<QList<QList<QVariant>>> pin_settings_entry;
+    QList<QList<QVariant>> button_group;
+    QList<QList<QVariant>> log_settings_list;
+    QList<QByteArray> log_data_lines;
+
+    // Setup verify test data (does nothing)
+    pin_settings_list.clear();
+    log_settings_list.clear();
+    log_data_lines.clear();
+
+    // Load verify test data (does nothing)
+    QTest::newRow("Verify") << pin_settings_list \
+                            << log_settings_list \
+                            << log_data_lines;
+
+
+    // Setup basic test data
+    pin_settings_list.clear();
+    pin_settings_entry.clear();
+    pin_settings_entry << QList<QList<QVariant>>();
+    pin_settings_list << pin_settings_entry;
+
+    log_settings_list.clear();
+    button_group.clear();
+    log_settings_list << QList<QVariant>({0.25, true, false});
+
+    log_data_lines.clear();
+    log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
+    log_data_lines << QString("6,0,0,0,0,0").toLatin1();
+
+    // Load basic test data (does nothing)
+    QTest::newRow("Basic") << pin_settings_list \
+                           << log_settings_list \
+                           << log_data_lines;
+}
+
+void GUI_IO_CONTROL_TESTS::test_logging_cleanup()
+{
+    QFile::remove(temp_filename);
 }
 
 void GUI_IO_CONTROL_TESTS::test_recv()
 {
     // Fetch data
-    QFETCH(QList<QList<QList<QVariant>>>, button_settings);
+    QFETCH(QList<QList<QList<QVariant>>>, pin_settings);
     QFETCH(QList<QByteArray>, recv_data);
     QFETCH(QList<QList<QList<QVariant>>>, expected_pin_settings);
     QFETCH(QList<QList<QList<QVariant>>>, send_expected_signals);
 
     // Verify input data
-    int num_entries = button_settings.length();
+    int num_entries = pin_settings.length();
     QCOMPARE(recv_data.length(), num_entries);
     QCOMPARE(expected_pin_settings.length(), num_entries);
     QCOMPARE(send_expected_signals.length(), num_entries);
@@ -869,7 +1076,7 @@ void GUI_IO_CONTROL_TESTS::test_recv()
     for (int i = 0; i < num_entries; i++)
     {
         // Set current buttons
-        foreach (QList<QVariant> button, button_settings.at(i))
+        foreach (QList<QVariant> button, pin_settings.at(i))
         {
             QVERIFY(button.length() == 3);
             io_control_tester->set_pin_test(button.at(0).toString(), button.at(1).toString(),
@@ -919,7 +1126,7 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
     //   0) pin_str
     //   1) combo value
     //   2) slider value
-    QTest::addColumn<QList<QList<QList<QVariant>>>>("button_settings");
+    QTest::addColumn<QList<QList<QList<QVariant>>>>("pin_settings");
 
     QTest::addColumn<QList<QByteArray>>("recv_data");
 
@@ -1676,12 +1883,12 @@ void GUI_IO_CONTROL_TESTS::test_complex_chart_features()
 void GUI_IO_CONTROL_TESTS::test_chart_update_features()
 {
     // Fetch data
-    QFETCH(QList<QList<QList<QVariant>>>, button_settings);
+    QFETCH(QList<QList<QList<QVariant>>>, pin_settings);
     QFETCH(QList<QList<QString>>, request_pins);
     QFETCH(QList<QList<QVariant>>, expected_signals);
 
     // Verify input data
-    int num_entries = button_settings.length();
+    int num_entries = pin_settings.length();
     QCOMPARE(request_pins.length(), num_entries);
     QCOMPARE(expected_signals.length(), num_entries);
 
@@ -1703,7 +1910,7 @@ void GUI_IO_CONTROL_TESTS::test_chart_update_features()
     for (int i = 0; i < num_entries; i++)
     {
         // Set current buttons
-        foreach (QList<QVariant> button, button_settings.at(i))
+        foreach (QList<QVariant> button, pin_settings.at(i))
         {
             QVERIFY(button.length() == 3);
             io_control_tester->set_pin_test(button.at(0).toString(), button.at(1).toString(),
@@ -1734,50 +1941,50 @@ void GUI_IO_CONTROL_TESTS::test_chart_update_features_data()
     //   0) pin_str
     //   1) combo value
     //   2) slider value
-    QTest::addColumn<QList<QList<QList<QVariant>>>>("button_settings");
+    QTest::addColumn<QList<QList<QList<QVariant>>>>("pin_settings");
 
     QTest::addColumn<QList<QList<QString>>>("request_pins");
     QTest::addColumn<QList<QList<QVariant>>>("expected_signals");
 
     // Helper variables
-    QList<QList<QList<QVariant>>> button_settings_list;
+    QList<QList<QList<QVariant>>> pin_settings_list;
     QList<QList<QVariant>> button_group;
     QList<QList<QString>> request_pins_list;
     QList<QList<QVariant>> expected_signals_list;
 
     // Setup verify test data (does nothing)
-    button_settings_list.clear();
+    pin_settings_list.clear();
     request_pins_list.clear();
     expected_signals_list.clear();
 
     // Load verify test data (does nothing)
-    QTest::newRow("Verify") << button_settings_list \
+    QTest::newRow("Verify") << pin_settings_list \
                             << request_pins_list \
                             << expected_signals_list;
 
     // Setup basic DIO test data
-    button_settings_list.clear();
+    pin_settings_list.clear();
     request_pins_list.clear();
     expected_signals_list.clear();
 
     // Set DIO_00 to Output with value 0
     button_group.clear();
     button_group << QList<QVariant>({"DIO_00", "Output", 0});
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"DIO_00"});
     expected_signals_list << QList<QVariant>({0.0});
 
     // Set DIO_00 to Output with value 1
     button_group.clear();
     button_group << QList<QVariant>({"DIO_00", "Output", 1});
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"DIO_00"});
     expected_signals_list << QList<QVariant>({1.0});
 
     // Set DIO_00 to Output with value 0
     button_group.clear();
     button_group << QList<QVariant>({"DIO_00", "Output", 0});
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"DIO_00"});
     expected_signals_list << QList<QVariant>({0.0});
 
@@ -1786,33 +1993,33 @@ void GUI_IO_CONTROL_TESTS::test_chart_update_features_data()
     //   1) DIO_00 set to 0
     //   2) DIO_00 set to 1
     //   3) DIO_00 set to 0
-    QTest::newRow("Basic DIO") << button_settings_list \
+    QTest::newRow("Basic DIO") << pin_settings_list \
                                << request_pins_list \
                                << expected_signals_list;
 
     // Setup basic AIO test data
-    button_settings_list.clear();
+    pin_settings_list.clear();
     request_pins_list.clear();
     expected_signals_list.clear();
 
     // Set AIO_04 to Output with value 0
     button_group.clear();
     button_group << QList<QVariant>({"AIO_04", "Output", 0});
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"AIO_04"});
     expected_signals_list << QList<QVariant>({0.0});
 
     // Set AIO_04 to Output with value 3.3
     button_group.clear();
     button_group << QList<QVariant>({"AIO_04", "Output", 330});
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"AIO_04"});
     expected_signals_list << QList<QVariant>({3.3});
 
     // Set AIO_04 to Output with value 0
     button_group.clear();
     button_group << QList<QVariant>({"AIO_04", "Output", 0});
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"AIO_04"});
     expected_signals_list << QList<QVariant>({0.0});
 
@@ -1821,41 +2028,41 @@ void GUI_IO_CONTROL_TESTS::test_chart_update_features_data()
     //   1) AIO_04 set to 0.0
     //   2) AIO_04 set to 3.3
     //   3) AIO_04 set to 0.0
-    QTest::newRow("Basic AIO") << button_settings_list \
+    QTest::newRow("Basic AIO") << pin_settings_list \
                                << request_pins_list \
                                << expected_signals_list;
 
     // Setup bad pin test data
-    button_settings_list.clear();
+    pin_settings_list.clear();
     request_pins_list.clear();
     expected_signals_list.clear();
 
     // Try reading non-existent pin 127
     button_group.clear();
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"AIO_127"});
     expected_signals_list << QList<QVariant>({-1.0});
 
     // Try reading bad pin_str V1
     button_group.clear();
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"V1"});
     expected_signals_list << QList<QVariant>({-1.0});
 
     // Try reading bad pin_str V2
     button_group.clear();
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"V2_00"});
     expected_signals_list << QList<QVariant>({-1.0});
 
     // Try reading bad pin_str V3
     button_group.clear();
-    button_settings_list << button_group;
+    pin_settings_list << button_group;
     request_pins_list << QList<QString>({"DIO_V3"});
     expected_signals_list << QList<QVariant>({-1.0});
 
     // Load bad pin test data
-    QTest::newRow("Test bad pins") << button_settings_list \
+    QTest::newRow("Test bad pins") << pin_settings_list \
                                    << request_pins_list \
                                    << expected_signals_list;
 }

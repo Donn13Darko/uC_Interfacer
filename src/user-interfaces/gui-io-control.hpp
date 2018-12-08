@@ -86,6 +86,7 @@ public:
 
 signals:
     void pin_update(QStringList pin_list);
+    void log_updated();
 
 public slots:
     virtual void reset_gui();

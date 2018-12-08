@@ -49,6 +49,7 @@ qint64 GUI_IO_CONTROL_TEST_CLASS::rcvd_formatted_size_test()
 
 void GUI_IO_CONTROL_TEST_CLASS::set_aio_update_rate_test(float rate)
 {
+    ui_ptr->AIO_UR_LineEdit->clear();
     QTest::keyClicks(ui_ptr->AIO_UR_LineEdit, QString::number(rate));
     qApp->processEvents();
 }
@@ -60,6 +61,7 @@ float GUI_IO_CONTROL_TEST_CLASS::get_aio_update_rate_test()
 
 void GUI_IO_CONTROL_TEST_CLASS::set_dio_update_rate_test(float rate)
 {
+    ui_ptr->DIO_UR_LineEdit->clear();
     QTest::keyClicks(ui_ptr->DIO_UR_LineEdit, QString::number(rate));
     qApp->processEvents();
 }
@@ -88,6 +90,7 @@ void GUI_IO_CONTROL_TEST_CLASS::update_rate_stop_clicked_test()
 
 void GUI_IO_CONTROL_TEST_CLASS::set_log_file_save_path_test(QString filePath)
 {
+    ui_ptr->LogSaveLoc_LineEdit->clear();
     QTest::keyClicks(ui_ptr->LogSaveLoc_LineEdit, filePath);
     qApp->processEvents();
 }
@@ -99,6 +102,7 @@ QString GUI_IO_CONTROL_TEST_CLASS::get_log_file_save_path_test()
 
 void GUI_IO_CONTROL_TEST_CLASS::set_log_file_update_rate_test(float rate)
 {
+    ui_ptr->LOG_UR_LineEdit->clear();
     QTest::keyClicks(ui_ptr->LOG_UR_LineEdit, QString::number(rate));
     qApp->processEvents();
 }

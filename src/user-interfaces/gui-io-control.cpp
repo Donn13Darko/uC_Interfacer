@@ -276,6 +276,9 @@ void GUI_IO_CONTROL::recordPinValues(PinTypeInfo *pInfo)
 
     // Flush data to file
     logStream->flush();
+
+    // Emit updated
+    emit log_updated();
 }
 
 void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
@@ -672,15 +675,17 @@ void GUI_IO_CONTROL::on_StartLog_Button_clicked()
         error = GUI_GENERIC_HELPER::showMessage("Error: Must provide log file!");
     if (error) return;
 
-    uint32_t enumFlags = QIODevice::WriteOnly | QIODevice::Text;
+    uint32_t enumFlags = QIODevice::WriteOnly;
     if (ui->AppendLog_CheckBox->isChecked()) enumFlags |= QIODevice::Append;
     else enumFlags |= QIODevice::Truncate;
 
+    if (logFile) delete logFile;
     logFile = new QFile(ui->LogSaveLoc_LineEdit->text());
     if (!logFile->open((QIODevice::OpenModeFlag) enumFlags))
         error = GUI_GENERIC_HELPER::showMessage("Error: Couldn't open log file!");
     if (error) return;
 
+    if (logStream) delete logStream;
     logStream = new QTextStream(logFile);
     *logStream << "Started: " << QDateTime::currentDateTimeUtc().toString() << " ";
     *logStream << "with update rate " << ui->LOG_UR_LineEdit->text() << " seconds\n";
@@ -1457,6 +1462,10 @@ QHBoxLayout *GUI_IO_CONTROL::create_pin()
     }
 
     // Set size attributes
+    pin_label->setMinimumSize(20, 20);
+    pin_combo->setMinimumSize(75, 20);
+    pin_slider->setMinimumSize(85, 20);
+    pin_edit->setMinimumSize(50, 20);
     pin_label->setMaximumSize(20, 20);
     pin_combo->setMaximumSize(75, 20);
     pin_slider->setMaximumSize(85, 20);
