@@ -1,5 +1,5 @@
-# Microcontroller Interface
-This project aims at providing a simple user interface for controlling various microcontrollers. By utlizing the provided gui and defining the desired functions from the base file (required to map CMDs to hardware),  The ultimate goal is to aid in rapid hardware prototyping by eliminating the burden of intial software bring up and device programming.
+# [Microcontroller Interface](https://moleson21.github.io/uc-interface)
+This project aims at providing a simple user interface for controlling various microcontrollers. By utlizing the provided gui and defining the desired functions from the base file (required to map CMDs to hardware),  The ultimate goal is to aid in rapid hardware prototyping by eliminating the burden of intial software bring up and device programming. [Click here](https://moleson21.github.io/uc-interface) to see the complete documentation.
 
 
 # Primary Interfaces
