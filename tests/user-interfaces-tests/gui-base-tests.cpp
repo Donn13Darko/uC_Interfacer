@@ -551,7 +551,7 @@ void GUI_BASE_TESTS::test_rcvd_formatted()
 
         // Read data from file & remove file
         QByteArray data = GUI_GENERIC_HELPER::loadFile(fileName);
-        QFile::remove(fileName);
+        QVERIFY(QFile::remove(fileName));
 
         // Verify read data
         QCOMPARE(data, rcvd_data);
@@ -602,8 +602,7 @@ void GUI_BASE_TESTS::test_rcvd_formatted_save_fail()
     qApp->processEvents();
 
     // Verify active window is error message
-    QMessageBox *error_msg = \
-            qobject_cast<QMessageBox*>(QApplication::activeWindow());
+    QMessageBox *error_msg = qobject_cast<QMessageBox*>(QApplication::activeWindow());
     QVERIFY(error_msg);
     QCOMPARE(error_msg->text(), QString("Error: Failed to save file!"));
 
@@ -612,41 +611,4 @@ void GUI_BASE_TESTS::test_rcvd_formatted_save_fail()
 
     // Close file
     tmp.close();
-}
-
-void GUI_BASE_TESTS::test_send_chunk_qlist()
-{
-    // Fetch data
-    QFETCH(quint8, major_key);
-    QFETCH(quint8, minor_key);
-    QFETCH(QList<quint8>, send_chunk);
-
-    // Setup signal spy
-    QList<QVariant> spy_args;
-    QSignalSpy transmit_chunk_spy(base_tester, base_tester->transmit_chunk);
-    QVERIFY(transmit_chunk_spy.isValid());
-
-    // Send the chunk
-    base_tester->send_chunk_test(major_key, minor_key, send_chunk);
-
-    // Verify signal spy
-    QCOMPARE(transmit_chunk_spy.count(), (int) 1);
-    spy_args = transmit_chunk_spy.takeFirst();
-    QCOMPARE(spy_args.at(0).toInt(), (int) major_key);
-    QCOMPARE(spy_args.at(1).toInt(), (int) minor_key);
-    QCOMPARE(spy_args.at(2).toByteArray(), GUI_GENERIC_HELPER::qList_to_byteArray(send_chunk));
-}
-
-void GUI_BASE_TESTS::test_send_chunk_qlist_data()
-{
-    // Setup data columns
-    QTest::addColumn<quint8>("major_key");
-    QTest::addColumn<quint8>("minor_key");
-    QTest::addColumn<QList<quint8>>("send_chunk");
-
-    // Load in data
-    QTest::newRow("Empty") << (quint8) 0x00 << (quint8) 0x00 << QList<quint8>();
-    QTest::newRow("Basic") << (quint8) 0x04 << (quint8) 0x03 << QList<quint8>({0x00, 0x01, 0x02});
-    QTest::newRow("Random") << (quint8) qrand() << (quint8) qrand() \
-                            << QList<quint8>({(quint8) qrand(), (quint8) qrand(), (quint8) qrand()});
 }

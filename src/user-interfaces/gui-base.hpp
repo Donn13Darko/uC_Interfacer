@@ -92,9 +92,6 @@ protected slots:
     virtual void set_progress_update_recv(int progress, QString label);
     virtual void set_progress_update_send(int progress, QString label);
 
-    // Chunk sending from list
-    void send_chunk(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk);
-
 protected:
     // Set gui values
     virtual void set_gui_key(uint8_t new_key);

@@ -67,9 +67,6 @@ private slots:
 
     void test_rcvd_formatted_save_fail();
 
-    void test_send_chunk_qlist();
-    void test_send_chunk_qlist_data();
-
 private:
     GUI_BASE_TEST_CLASS *base_tester;
 };

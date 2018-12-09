@@ -186,12 +186,6 @@ void GUI_BASE::set_progress_update_send(int, QString)
     // Default do nothing
 }
 
-void GUI_BASE::send_chunk(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk)
-{
-    emit transmit_chunk(major_key, minor_key,
-                        GUI_GENERIC_HELPER::qList_to_byteArray(chunk));
-}
-
 void GUI_BASE::set_gui_key(uint8_t new_key)
 {
     gui_key = new_key;

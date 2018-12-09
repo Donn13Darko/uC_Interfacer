@@ -143,6 +143,9 @@ void GUI_PROGRAMMER::reset_gui()
 
 void GUI_PROGRAMMER::receive_gui(QByteArray recvData)
 {
+    // Verify length
+    if (recvData.length() < s1_end_loc) return;
+
     // Get gui key
     uint8_t local_gui_key = get_gui_key();
 

@@ -188,6 +188,7 @@ private:
 
     // Connection settings
     bool devConnected;
+    bool devConnectRequested;
     QMap<QString, QStringList> devSettings;
 
     // Handle changes on the GUI

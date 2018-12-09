@@ -93,6 +93,9 @@ void GUI_CUSTOM_CMD::reset_gui()
 
 void GUI_CUSTOM_CMD::receive_gui(QByteArray recvData)
 {
+    // Verify length
+    if (recvData.length() < s1_end_loc) return;
+
     // Get gui key
     uint8_t local_gui_key = get_gui_key();
 
@@ -239,8 +242,8 @@ void GUI_CUSTOM_CMD::on_CustomCMDSend_Button_clicked()
 
     // Transmit cmd base at start
     // (Have other guis ignore CMDs that don't have the relevant gui_key as major_key)
-    send_chunk(get_gui_key(), MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
-                {send_key_base, send_cmd_base});
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_CUSTOM_CMD_SET_CMD_BASE,
+                        GUI_GENERIC_HELPER::qList_to_byteArray({send_key_base, send_cmd_base}));
 
     // Setup variables
     bool parseKeys = false;

@@ -47,7 +47,6 @@ public:
     void update_current_recv_length_test(uint32_t recv_len);
 
     void on_ResetGUI_Button_clicked_test();
-    void send_chunk_test(uint8_t major_key, uint8_t minor_key, QList<uint8_t> chunk);
 
     void set_gui_map_value_test(QString key, QVariant value);
 };

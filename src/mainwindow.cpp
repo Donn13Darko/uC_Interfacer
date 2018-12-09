@@ -791,7 +791,7 @@ void MainWindow::updateConnInfoCombo()
             }
 
             QStringList *avail = SERIAL_COM_PORT::getDevices();
-            if (avail->length() != 0)
+            if (!avail->isEmpty())
             {
                 QString curr = ui->ConnInfo_Combo->currentText();
                 ui->ConnInfo_Combo->clear();

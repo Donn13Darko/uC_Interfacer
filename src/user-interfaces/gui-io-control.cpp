@@ -133,7 +133,9 @@ bool GUI_IO_CONTROL::waitForDevice(uint8_t minorKey)
 {
     switch (minorKey)
     {
+        case MINOR_KEY_IO_REMOTE_CONN_SET:
         case MINOR_KEY_IO_REMOTE_CONN_READ:
+        case MINOR_KEY_IO_REMOTE_CONN_SEND:
             return true;
         case MINOR_KEY_IO_AIO_READ:
             // Check if read pin
@@ -290,9 +292,12 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
     // Get gui key
     uint8_t local_gui_key = get_gui_key();
 
-    // Ignore commands not meant for this GUI
-    if (recvData.at(s1_major_key_loc) != (char) local_gui_key)
+    // Verify length & ignore commands not meant for this GUI
+    if ((recvData.length() < s1_end_loc)
+            || (recvData.at(s1_major_key_loc) != (char) local_gui_key))
+    {
         return;
+    }
 
     uint8_t minor_key = recvData.at(s1_minor_key_loc);
     switch (minor_key)
@@ -488,6 +493,81 @@ void GUI_IO_CONTROL::receive_gui(QByteArray recvData)
         {
             // Set values with minor key
             setValues(minor_key, recvData.mid(s1_end_loc));
+            break;
+        }
+        case MINOR_KEY_IO_REMOTE_CONN_CONNECTED:
+        {
+            // Check length
+            if (recvData.length() != 3) break;
+
+            // Check connected
+            bool conn_status = recvData.at(2);
+
+            // Parse what to do
+            if (devConnected && !conn_status)
+            {
+                // Set connected bools
+                devConnected = false;
+                if (!devConnectRequested)
+                {
+                    GUI_GENERIC_HELPER::showMessage("Error: IO remote conn lost!");
+                } else
+                {
+                    devConnectRequested = false;
+                }
+
+                // Set conneccted button
+                ui->ConnConnect_Button->setText("Connect");
+            } else if (devConnectRequested && !devConnected)
+            {
+                if (conn_status)
+                {
+                    // Set connected bools
+                    devConnected = true;
+                    devConnectRequested = false;
+
+                    // Set connected button
+                    ui->ConnConnect_Button->setText("Disconnect");
+                } else
+                {
+                    GUI_GENERIC_HELPER::showMessage("Error: IO remote conn failed!");
+                }
+            }
+            break;
+        }
+        case MINOR_KEY_IO_REMOTE_CONN_SET:
+        {
+            // Check length
+            if (recvData.length() != 4) break;
+
+            // Get combo values
+            uint8_t conn_type = recvData.at(0);
+            uint8_t conn_dev = recvData.at(1);
+            uint8_t conn_speed = recvData.at(2);
+            uint8_t conn_addr = recvData.at(3);
+
+            // Check combo values
+            if ((ui->ConnType_Combo->count() <= conn_type)
+                    || (ui->ConnDeviceNum_Combo->count() <= conn_dev)
+                    || (ui->ConnSpeed_Combo->count() <= conn_speed)
+                    || (ui->ConnAddr_Combo->count() <= conn_addr))
+            {
+                break;
+            }
+
+            // Set combos
+            ui->ConnType_Combo->setCurrentIndex(conn_type);
+            ui->ConnDeviceNum_Combo->setCurrentIndex(conn_dev);
+            ui->ConnSpeed_Combo->setCurrentIndex(conn_speed);
+            ui->ConnAddr_Combo->setCurrentIndex(conn_addr);
+
+            break;
+        }
+        case MINOR_KEY_IO_REMOTE_CONN_READ:
+        case MINOR_KEY_IO_REMOTE_CONN_SEND:
+        {
+            ui->ConnRecv_PlainText->appendPlainText(recvData.mid(s1_end_loc));
+            rcvd_formatted_append(recvData);
             break;
         }
     }
@@ -868,30 +948,42 @@ void GUI_IO_CONTROL::on_StopLog_Button_clicked()
 
 void GUI_IO_CONTROL::on_ConnConnect_Button_clicked()
 {
+    // Holder for connection info (if connecting)
     QByteArray msg;
+    devConnectRequested = true;
+
+    // Set connection status
     if (devConnected)
     {
-        ui->ConnConnect_Button->setText("Connect");
-        ui->ConnSend_Button->setEnabled(false);
-        devConnected = false;
+        // Add connection values
+        msg.append((char) 0x00);
+
+        // Transmit disconnect
+        emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_REMOTE_CONN_CONNECTED, msg);
     } else
     {
-        ui->ConnConnect_Button->setText("Disconnect");
-        ui->ConnSend_Button->setEnabled(true);
-        devConnected = true;
-    }
-    msg.append(ui->ConnSpeed_Combo->currentText());
-    msg.append(ui->ConnAddr_Combo->currentText());
+        // Add connection values
+        msg.append((char) ui->ConnType_Combo->currentIndex());
+        msg.append((char) ui->ConnDeviceNum_Combo->currentIndex());
+        msg.append((char) ui->ConnSpeed_Combo->currentIndex());
+        msg.append((char) ui->ConnAddr_Combo->currentIndex());
 
-    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_REMOTE_CONN, msg);
+        // Transmit connection request
+        emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_REMOTE_CONN_SET, msg);
+    }
+
+    // Enable or disable send
+    ui->ConnSend_Button->setEnabled(devConnected);
 }
 
 void GUI_IO_CONTROL::on_ConnSend_Button_clicked()
 {
-    QByteArray msg;
-    msg.append(ui->ConnMsg_PlainText->toPlainText());
+    // Check connected
+    if (!devConnected) return;
 
-    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_REMOTE_CONN_SEND, msg);
+    // Send input data
+    emit transmit_chunk(get_gui_key(), MINOR_KEY_IO_REMOTE_CONN_SEND,
+                        ui->ConnMsg_PlainText->toPlainText().toLatin1());
 }
 
 void GUI_IO_CONTROL::on_ConnClearRecv_Button_clicked()
@@ -907,17 +999,19 @@ void GUI_IO_CONTROL::on_ConnSaveRecv_Button_clicked()
 
 void GUI_IO_CONTROL::on_ConnType_Combo_currentIndexChanged(int)
 {
+    // Get current combo & info
     QString currVal = ui->ConnType_Combo->currentText();
     uint8_t type = controlMap.value(MINOR_KEY_IO_REMOTE_CONN)->value(currVal);
-    if (disabledValueSet.value(MINOR_KEY_IO_REMOTE_CONN)->contains(type)) ui->ConnSpeed_Combo->setEnabled(false);
-    else ui->ConnSpeed_Combo->setEnabled(true);
 
+    // Enable/disable speed combo
+    ui->ConnSpeed_Combo->setEnabled(
+                !disabledValueSet.value(MINOR_KEY_IO_REMOTE_CONN)->contains(type));
+
+    // Set connect devices values (or leave editable)
     QStringList deviceConns = devSettings.value(currVal);
     ui->ConnAddr_Combo->clear();
     ui->ConnAddr_Combo->addItems(deviceConns);
-
-    if (deviceConns.length() == 0) ui->ConnAddr_Combo->setEditable(true);
-    else ui->ConnAddr_Combo->setEditable(false);
+    ui->ConnAddr_Combo->setEditable(deviceConns.isEmpty());
 }
 
 void GUI_IO_CONTROL::on_CreatePlots_Button_clicked()

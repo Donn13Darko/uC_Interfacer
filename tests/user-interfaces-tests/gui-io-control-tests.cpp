@@ -27,11 +27,12 @@
 // Object includes
 #include <QFile>
 #include <QTemporaryFile>
+#include <QMessageBox>
 
 // Setup global_config_str
 const QString
 GUI_IO_CONTROL_TESTS::generic_config_str = \
-        "[IO]\n"
+        "[IO]\n" \
         "tab_name=\"IO\"\n" \
         "closable=\"true\"\n" \
         "dio_combo_settings = \\\n" \
@@ -67,10 +68,22 @@ void GUI_IO_CONTROL_TESTS::initTestCase()
     // Create object for testing
     io_control_tester = new GUI_IO_CONTROL_TEST_CLASS();
     QVERIFY(io_control_tester);
+
+    // Create temporary fileName
+    QTemporaryFile *tmp_file = new QTemporaryFile();
+    tmp_file->setAutoRemove(true);
+    QVERIFY(tmp_file->open());
+    tmp_file->close();
+    temp_filename = tmp_file->fileName();
+    delete tmp_file;
+    QVERIFY(!temp_filename.isEmpty());
 }
 
 void GUI_IO_CONTROL_TESTS::cleanupTestCase()
 {
+    // Cleanup tempFile
+    QVERIFY(remove_tempFile());
+
     // Delete test class
     if (io_control_tester)
     {
@@ -109,7 +122,9 @@ void GUI_IO_CONTROL_TESTS::test_basic_features()
 {
     // Test waitForDevice
     QVERIFY(!io_control_tester->waitForDevice(0));
+    QVERIFY(io_control_tester->waitForDevice(MINOR_KEY_IO_REMOTE_CONN_SET));
     QVERIFY(io_control_tester->waitForDevice(MINOR_KEY_IO_REMOTE_CONN_READ));
+    QVERIFY(io_control_tester->waitForDevice(MINOR_KEY_IO_REMOTE_CONN_SEND));
     QVERIFY(!io_control_tester->waitForDevice(MINOR_KEY_IO_AIO_READ));
     QVERIFY(!io_control_tester->waitForDevice(MINOR_KEY_IO_DIO_READ));
 }
@@ -838,7 +853,69 @@ void GUI_IO_CONTROL_TESTS::test_updates_data()
 
 void GUI_IO_CONTROL_TESTS::test_logging_errors()
 {
-    // Double click start log, no path in lineEdit
+    // Set new config & reset GUI
+    QVERIFY(set_gui_config(generic_config_str));
+    io_control_tester->reset_gui();
+    QVERIFY(remove_tempFile());
+
+    // Setup local variables
+    QMessageBox *error_msg;
+
+    // Try clicking start (should show missing filePath error)
+    io_control_tester->set_log_file_save_path_test("");
+    io_control_tester->log_start_clicked_test();
+
+    // Check & close error
+    error_msg = qobject_cast<QMessageBox*>(QApplication::activeWindow());
+    QVERIFY(error_msg);
+    QCOMPARE(error_msg->text(), QString("Error: Must provide log file!"));
+    error_msg->close();
+
+    // Set filePath to a bad path
+    io_control_tester->set_log_file_save_path_test(":/BAD PATH");
+
+    // Try clicking start (gives failed to open error)
+    io_control_tester->log_start_clicked_test();
+
+    // Check & close error
+    error_msg = qobject_cast<QMessageBox*>(QApplication::activeWindow());
+    QVERIFY(error_msg);
+    QCOMPARE(error_msg->text(), QString("Error: Couldn't open log file!"));
+    error_msg->close();
+
+    // Set filePath to a good path
+    io_control_tester->set_log_file_save_path_test(temp_filename);
+
+    // Try clicking start (should be no error)
+    io_control_tester->log_start_clicked_test();
+
+    // Check no error, button text change, and file exists
+    error_msg = qobject_cast<QMessageBox*>(QApplication::activeWindow());
+    QVERIFY(!error_msg);
+    QCOMPARE(io_control_tester->get_log_start_text_test(), QString("Running"));
+    QVERIFY(QFile(temp_filename).exists());
+
+    // Double click start (nothing should happen since button disabled)
+    io_control_tester->log_start_clicked_test();
+
+    // Check no error, button text same, and file exists
+    error_msg = qobject_cast<QMessageBox*>(QApplication::activeWindow());
+    QVERIFY(!error_msg);
+    QCOMPARE(io_control_tester->get_log_start_text_test(), QString("Running"));
+    QVERIFY(QFile(temp_filename).exists());
+
+    // Force clicking of button (should show already recording error)
+    io_control_tester->log_start_clicked_force_test();
+
+    // Check & close error
+    error_msg = qobject_cast<QMessageBox*>(QApplication::activeWindow());
+    QVERIFY(error_msg);
+    QCOMPARE(error_msg->text(), QString("Error: Already recording!"));
+    error_msg->close();
+
+    // Click stop log
+    io_control_tester->log_stop_clicked_test();
+    QCOMPARE(io_control_tester->get_log_start_text_test(), QString("Start Log"));
 }
 
 void GUI_IO_CONTROL_TESTS::test_logging()
@@ -855,14 +932,7 @@ void GUI_IO_CONTROL_TESTS::test_logging()
     // Set new config & reset GUI
     QVERIFY(set_gui_config(generic_config_str));
     io_control_tester->reset_gui();
-
-    // Create temporary file
-    QTemporaryFile *tmp_file = new QTemporaryFile();
-    tmp_file->setAutoRemove(true);
-    QVERIFY(tmp_file->open());
-    tmp_file->close();
-    temp_filename = tmp_file->fileName();
-    delete tmp_file;
+    QVERIFY(remove_tempFile());
 
     // Set log path
     io_control_tester->set_log_file_save_path_test(temp_filename);
@@ -1046,7 +1116,7 @@ void GUI_IO_CONTROL_TESTS::test_logging_data()
 
     log_settings_list.clear();
     button_group.clear();
-    log_settings_list << QList<QVariant>({0.5, true, false});
+    log_settings_list << QList<QVariant>({0.05, true, false});
 
     log_data_lines.clear();
     log_data_lines << QString("1,0,0,0,0,0,0").toLatin1();
@@ -1113,11 +1183,6 @@ void GUI_IO_CONTROL_TESTS::test_logging_data()
     QTest::newRow("Basic No Append") << pin_settings_list \
                                      << log_settings_list \
                                      << log_data_lines;
-}
-
-void GUI_IO_CONTROL_TESTS::test_logging_cleanup()
-{
-    QFile::remove(temp_filename);
 }
 
 void GUI_IO_CONTROL_TESTS::test_recv()
@@ -2437,6 +2502,163 @@ void GUI_IO_CONTROL_TESTS::test_recv_data()
             << expected_signals_list;
 }
 
+void GUI_IO_CONTROL_TESTS::test_conn_type()
+{
+    // Fetch data
+    QFETCH(QString, config_str);
+    QFETCH(QList<QList<QString>>, conn_settings);
+    QFETCH(QList<QList<QString>>, send_fill_data);
+    QFETCH(QList<QList<QByteArray>>, recv_fill_data);
+    QFETCH(QList<QList<QList<QVariant>>>, send_expected_signals);
+
+    // Verify input data
+    int num_entries = conn_settings.length();
+    QCOMPARE(send_fill_data.length(), num_entries);
+    QCOMPARE(recv_fill_data.length(), num_entries);
+    QCOMPARE(send_expected_signals.length(), num_entries);
+
+    // Set new config & reset GUI
+    QVERIFY(!config_str.isEmpty());
+    QVERIFY(set_gui_config(config_str));
+    io_control_tester->reset_gui();
+    QVERIFY(remove_tempFile());
+
+    // Setup loop variables
+    int num_values;
+    QList<QString> curr_settings;
+    QList<QString> curr_send_data;
+    QList<QByteArray> curr_recv_data;
+    QList<QList<QVariant>> curr_signals;
+    QByteArray dev_connected = \
+            GUI_GENERIC_HELPER::qList_to_byteArray({MAJOR_KEY_IO,
+                                                    MINOR_KEY_IO_REMOTE_CONN_CONNECTED,
+                                                    0x01});
+
+    // Loop over all entries
+    for (int i = 0; i < num_entries; i++)
+    {
+        // Get current values
+        curr_settings = conn_settings.at(i);
+        curr_send_data = send_fill_data.at(i);
+        curr_recv_data = recv_fill_data.at(i);
+        curr_signals = send_expected_signals.at(i);
+
+        // Check current values
+        num_values = curr_send_data.length();
+        QVERIFY(curr_send_data.length() == curr_recv_data.length());
+        QVERIFY(curr_settings.length() == 4);
+
+        // Set settings
+        io_control_tester->set_connType_combo_test(curr_settings.at(0));
+        io_control_tester->set_connDevice_combo_test(curr_settings.at(1));
+        io_control_tester->set_connSpeed_combo_test(curr_settings.at(2));
+        io_control_tester->set_connAddr_combo_test(curr_settings.at(3));
+
+        // Click connect
+        io_control_tester->conn_connect_clicked_test();
+
+        // emit readyRead device connected
+        // Required to establish connection
+        emit io_control_tester->readyRead(dev_connected);
+
+        // Loop over current values
+        for (int j = 0; j < num_values; j++)
+        {
+            // Fill send plaintext
+            io_control_tester->set_conn_msg_data_test(curr_send_data.at(i));
+
+            // Click send
+            io_control_tester->conn_send_clicked_test();
+
+            // Emit ready read
+            emit io_control_tester->readyRead(curr_recv_data.at(j));
+        }
+
+        // Click disconnect
+        QCOMPARE(io_control_tester->get_conn_connectButton_text_test(), QString("Disconnect"));
+        io_control_tester->conn_connect_clicked_test();
+        QCOMPARE(io_control_tester->get_conn_connectButton_text_test(), QString("Connect"));
+    }
+}
+
+void GUI_IO_CONTROL_TESTS::test_conn_type_data()
+{
+    // Setup data columns
+    QTest::addColumn<QString>("config_str");
+
+    // Parsed between call groups (data set, connect called, then
+    // Each item is set as follows:
+    //   0) connType
+    //   1) connDevice
+    //   2) connSpeed
+    //   3) connAddr
+    QTest::addColumn<QList<QList<QString>>>("conn_settings");
+
+    // Send fill data column
+    // Each byte array is loaded into the msg box before send is clicked
+    QTest::addColumn<QList<QList<QString>>>("send_fill_data");
+
+    // Read fill data column
+    // Each byte array is passed in via the readyRead signal
+    //   0) Major Key
+    //   1) Minor Key
+    //   2-end) Data packet
+    QTest::addColumn<QList<QList<QByteArray>>>("recv_fill_data");
+
+    // Send expected signals column (emit transmit_chunk())
+    // Each QList<QVariant> must be arranged as follows:
+    //  0) Major Key (uint8_t)
+    //  1) Minor Key (uint8_t)
+    //  2) Data Packet (QByteArray)
+    QTest::addColumn<QList<QList<QList<QVariant>>>>("send_expected_signals");
+
+    // Helper variables
+    QString config_str;
+    QList<QList<QString>> conn_settings_list;
+    QList<QList<QString>> send_data_list;
+    QList<QList<QByteArray>> recv_data_list;
+    QList<QByteArray> packet;
+    QList<QList<QList<QVariant>>> expected_signals_list;
+    QList<QList<QVariant>> button_group;
+
+    // Setup config str
+    config_str = \
+            "[IO]\n" \
+            "remote_combo_settings = \\\n" \
+            "\"UART,false,\",\\\n" \
+            "\"I2C,false,\",\\\n" \
+            "\"SPI,true,\"\n";
+
+    // Setup verify test data (does nothing)
+    conn_settings_list.clear();
+    send_data_list.clear();
+    recv_data_list.clear();
+    expected_signals_list.clear();
+
+    // Load verify test data (does nothing)
+    QTest::newRow("Verify") << config_str \
+                            << conn_settings_list \
+                            << send_data_list \
+                            << recv_data_list \
+                            << expected_signals_list;
+
+    // Setup basic test data
+    conn_settings_list.clear();
+    send_data_list.clear();
+    recv_data_list.clear();
+    expected_signals_list.clear();
+
+    // Set first action
+
+    // Load Basic test data
+    // Sets settings and performs simple send/recv
+    QTest::newRow("Basic") << config_str \
+                           << conn_settings_list \
+                           << send_data_list \
+                           << recv_data_list \
+                           << expected_signals_list;
+}
+
 void GUI_IO_CONTROL_TESTS::test_basic_chart_features()
 {
     // Chart creation and destruction
@@ -2663,6 +2885,40 @@ void GUI_IO_CONTROL_TESTS::clear_gui_config()
     // Clear current config
     QMap<QString, QVariant> reset_map;
     io_control_tester->parseConfigMap(&reset_map);
+}
+
+bool GUI_IO_CONTROL_TESTS::reset_tempFile()
+{
+    // Check temp_filename
+    if (temp_filename.isEmpty()) return false;
+
+    // Reset temp file (creates if doesn't exist)
+    QFile file(temp_filename);
+    if (!file.open(QIODevice::ReadWrite)) return false;
+
+    // Try resizing file then close
+    bool resize_success = file.resize(0);
+    file.close();
+
+    // Return if resized correctlr
+    return resize_success;
+}
+
+bool GUI_IO_CONTROL_TESTS::remove_tempFile()
+{
+    // Check temp_filename
+    if (temp_filename.isEmpty()) return false;
+
+    // Remove temp file if exists
+    QFile temp_file(temp_filename);
+    if (temp_file.exists())
+    {
+        return temp_file.remove();
+    } else
+    {
+        // Return true (file doesn't exist)
+        return true;
+    }
 }
 
 void GUI_IO_CONTROL_TESTS::verify_reset_values()

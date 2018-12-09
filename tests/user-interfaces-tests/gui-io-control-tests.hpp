@@ -54,10 +54,12 @@ private slots:
 
     void test_logging();
     void test_logging_data();
-    void test_logging_cleanup();
 
     void test_recv();
     void test_recv_data();
+
+    void test_conn_type();
+    void test_conn_type_data();
 
     void test_basic_chart_features();
     void test_complex_chart_features();
@@ -73,6 +75,10 @@ private:
 
     bool set_gui_config(QString config_str);
     void clear_gui_config();
+
+    bool reset_tempFile();
+    bool remove_tempFile();
+
     void verify_reset_values();
 };
 

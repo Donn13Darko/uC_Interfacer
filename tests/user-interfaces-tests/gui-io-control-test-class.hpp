@@ -36,6 +36,25 @@ public:
     QByteArray rcvd_formatted_readAll_test();
     qint64 rcvd_formatted_size_test();
 
+    void set_connType_combo_test(QString combo_value);
+    QString get_connType_combo_test();
+
+    void set_connDevice_combo_test(QString combo_value);
+    QString get_connDevice_combo_test();
+
+    void set_connSpeed_combo_test(QString combo_value);
+    QString get_connSpeed_combo_test();
+
+    void set_connAddr_combo_test(QString combo_value);
+    QString get_connAddr_combo_test();
+
+    void set_conn_msg_data_test(QString msg);
+    QByteArray get_conn_recv_data_test();
+
+    QString get_conn_connectButton_text_test();
+    void conn_connect_clicked_test();
+    void conn_send_clicked_test();
+
     void set_aio_update_rate_test(float rate);
     float get_aio_update_rate_test();
 
@@ -57,8 +76,9 @@ public:
     bool get_log_append_checked_test();
 
     QString get_log_start_text_test();
-
     void log_start_clicked_test();
+    void log_start_clicked_force_test();
+
     void log_stop_clicked_test();
 
     void request_read_all_test(uint8_t pinType);

@@ -47,6 +47,79 @@ qint64 GUI_IO_CONTROL_TEST_CLASS::rcvd_formatted_size_test()
     return rcvd_formatted_size();
 }
 
+void GUI_IO_CONTROL_TEST_CLASS::set_connType_combo_test(QString combo_value)
+{
+    ui_ptr->ConnType_Combo->setCurrentText(combo_value);
+    qApp->processEvents();
+}
+
+QString GUI_IO_CONTROL_TEST_CLASS::get_connType_combo_test()
+{
+    return ui_ptr->ConnType_Combo->currentText();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_connDevice_combo_test(QString combo_value)
+{
+    ui_ptr->ConnDeviceNum_Combo->setCurrentText(combo_value);
+    qApp->processEvents();
+}
+
+QString GUI_IO_CONTROL_TEST_CLASS::get_connDevice_combo_test()
+{
+    return ui_ptr->ConnDeviceNum_Combo->currentText();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_connSpeed_combo_test(QString combo_value)
+{
+    ui_ptr->ConnSpeed_Combo->setCurrentText(combo_value);
+    qApp->processEvents();
+}
+
+QString GUI_IO_CONTROL_TEST_CLASS::get_connSpeed_combo_test()
+{
+    return ui_ptr->ConnSpeed_Combo->currentText();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_connAddr_combo_test(QString combo_value)
+{
+    ui_ptr->ConnAddr_Combo->setCurrentText(combo_value);
+    qApp->processEvents();
+}
+
+QString GUI_IO_CONTROL_TEST_CLASS::get_connAddr_combo_test()
+{
+    return ui_ptr->ConnAddr_Combo->currentText();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::set_conn_msg_data_test(QString msg)
+{
+    ui_ptr->ConnMsg_PlainText->clear();
+    QTest::keyClicks(ui_ptr->ConnMsg_PlainText, msg);
+    qApp->processEvents();
+}
+
+QByteArray GUI_IO_CONTROL_TEST_CLASS::get_conn_recv_data_test()
+{
+    return ui_ptr->ConnRecv_PlainText->toPlainText().toLatin1();
+}
+
+QString GUI_IO_CONTROL_TEST_CLASS::get_conn_connectButton_text_test()
+{
+    return ui_ptr->ConnSend_Button->text();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::conn_connect_clicked_test()
+{
+    QTest::mouseClick(ui_ptr->ConnConnect_Button, Qt::LeftButton);
+    qApp->processEvents();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::conn_send_clicked_test()
+{
+    QTest::mouseClick(ui_ptr->ConnSend_Button, Qt::LeftButton);
+    qApp->processEvents();
+}
+
 void GUI_IO_CONTROL_TEST_CLASS::set_aio_update_rate_test(float rate)
 {
     ui_ptr->AIO_UR_LineEdit->clear();
@@ -131,6 +204,20 @@ void GUI_IO_CONTROL_TEST_CLASS::log_start_clicked_test()
 {
     QTest::mouseClick(ui_ptr->StartLog_Button, Qt::LeftButton);
     qApp->processEvents();
+}
+
+void GUI_IO_CONTROL_TEST_CLASS::log_start_clicked_force_test()
+{
+    // Get if button was enabled
+    bool wasEnabled = ui_ptr->StartLog_Button->isEnabled();
+
+    // Set enabled and click
+    ui_ptr->StartLog_Button->setEnabled(true);
+    QTest::mouseClick(ui_ptr->StartLog_Button, Qt::LeftButton);
+    qApp->processEvents();
+
+    // Reset to previous state
+    ui_ptr->StartLog_Button->setEnabled(wasEnabled);
 }
 
 void GUI_IO_CONTROL_TEST_CLASS::log_stop_clicked_test()
