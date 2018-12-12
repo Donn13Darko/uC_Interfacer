@@ -1,0 +1,6 @@
+theme: jekyll-theme-cayman
+
+repository: moleson21/uc-interface
+
+plugins:
+  - jekyll-target-blank
