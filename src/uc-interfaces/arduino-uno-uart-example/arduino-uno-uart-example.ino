@@ -71,6 +71,11 @@ void uc_data_handle(const uint8_t* buffer, uint8_t buffer_len) { /* Do Nothing*/
 // Ignore uc_custom_cmd (needs custom interface)
 void uc_custom_cmd(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len) { /* Do Nothing*/ }
 
+// Ignore uc_programmer (to be added)
+bool uc_programmer_setup(uint8_t prog_burn_method) { return true; }
+bool uc_programmer_write(uint8_t prog_file_format, uint8_t prog_burn_method,
+                          const uint8_t* data, uint32_t data_len) { return true; }
+
 // Function prototypes
 void set_pwm_on(uint8_t pin);
 void set_pwm_off(uint8_t pin);

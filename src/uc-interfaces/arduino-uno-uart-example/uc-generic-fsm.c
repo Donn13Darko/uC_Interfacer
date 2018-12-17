@@ -29,35 +29,39 @@
 
 // GUI checksums
 #ifdef UC_IO
-checksum_struct io_checksum = DEFAULT_CHECKSUM_STRUCT;
+static const checksum_struct io_checksum = DEFAULT_CHECKSUM_STRUCT;
 #endif
 #ifdef UC_DATA_TRANSMIT
-checksum_struct data_transfer_checksum = DEFAULT_CHECKSUM_STRUCT;
+static const checksum_struct data_transfer_checksum = DEFAULT_CHECKSUM_STRUCT;
 #endif
 #ifdef UC_PROGRAMMER
-checksum_struct programmer_checksum = DEFAULT_CHECKSUM_STRUCT;
+static const checksum_struct programmer_checksum = DEFAULT_CHECKSUM_STRUCT;
 #endif
 #ifdef UC_CUSTOM_CMD
-checksum_struct custom_cmd_checksum = DEFAULT_CHECKSUM_STRUCT;
+static const checksum_struct custom_cmd_checksum = DEFAULT_CHECKSUM_STRUCT;
 #endif
 
 // Default checksum (for acks, errors, and resets);
-checksum_struct default_checksum = DEFAULT_CHECKSUM_STRUCT;
+static const checksum_struct default_checksum = DEFAULT_CHECKSUM_STRUCT;
 
 // Dynamic buffer
-uint8_t *fsm_buffer;
-uint8_t *fsm_buffer_ptr;
-uint32_t fsm_buffer_len;
+static uint8_t *fsm_buffer;
+static uint8_t *fsm_buffer_ptr;
+static uint32_t fsm_buffer_len;
 
 // Static buffers
-uint8_t *fsm_ready_buffer;
-uint8_t *fsm_ack_buffer;
-uint8_t *fsm_checksum_buffer;
+static uint8_t *fsm_ready_buffer;
+static uint8_t *fsm_ack_buffer;
+static uint8_t *fsm_checksum_buffer;
 
 // Key & packet holders
-uint32_t num_s2_bytes, checksum_max_size, num_default_packet_bytes;
-uint8_t major_key, minor_key, num_s2_bits;
-uint8_t curr_packet_stage;
+static uint32_t num_s2_bytes;
+static uint32_t checksum_max_size;
+static uint32_t num_default_packet_bytes;
+static uint8_t major_key;
+static uint8_t minor_key;
+static uint8_t num_s2_bits;
+static uint8_t curr_packet_stage;
 
 typedef enum {
     packet_stage_error = 0,
@@ -67,16 +71,25 @@ typedef enum {
     packet_stage_read_checksum
 } packet_stages;
 
+// fsm_global_flags as a flag variable with bits set as follows:
+//   1) Manual exit of internal loop
+//   2) malloc or realloc failures
+typedef enum {
+    fsm_global_exit_flag = 0x01,
+    fsm_global_alloction_error_flag = 0x02
+} FSM_GLOBAL_FLAGS_ENUM;
+static uint8_t fsm_global_flags = fsm_global_alloction_error_flag;
+
 // Function prototypes (local access only)
-void fsm_ack(uint8_t ack_key);
-bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
-bool fsm_check_checksum(const uint8_t* data, uint32_t data_len, const uint8_t* checksum_cmp);
-checksum_struct* fsm_get_checksum_struct(uint8_t gui_key);
+static void fsm_ack(uint8_t ack_key);
+static bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout);
+static bool fsm_check_checksum(const uint8_t* data, uint32_t data_len, const uint8_t* checksum_cmp);
+static const checksum_struct* fsm_get_checksum_struct(uint8_t gui_key);
 
 void fsm_setup(uint32_t buffer_len)
 {
     // Initialize variables
-    fsm_error = 0;                // Set to no error
+    fsm_global_flags = 0x00;      // Clear any flags
     major_key = MAJOR_KEY_ERROR;  // All errors are 0
     minor_key = MAJOR_KEY_ERROR;  // All errors are 0
     curr_packet_stage = 1;        // Set to stage 1
@@ -140,7 +153,11 @@ void fsm_setup(uint32_t buffer_len)
     }
 
     // Check mallocs and set error accordingly
-    fsm_error |= !(fsm_buffer && fsm_ready_buffer && fsm_ack_buffer && fsm_checksum_buffer);
+    if (!(fsm_buffer && fsm_ready_buffer && fsm_ack_buffer && fsm_checksum_buffer))
+    {
+        // Set allocation error flag
+        fsm_global_flags |= fsm_global_alloction_error_flag;
+    }
 }
 
 void fsm_destroy()
@@ -153,9 +170,9 @@ void fsm_destroy()
     free(fsm_ack_buffer);
     free(fsm_checksum_buffer);
 
-    // Set fsm_error for malloc nullptr
-    // Forces setup call again to use fsm
-    fsm_error |= 0x01;
+    // Set fsm_global_flags for allocation error
+    // Forces another call to fsm_setup to use fsm
+    fsm_global_flags |= fsm_global_alloction_error_flag;
 }
 
 void fsm_poll()
@@ -164,7 +181,7 @@ void fsm_poll()
     uint32_t min_buffer_len;
 
     // Loop while no errors (error only set if malloc or realloc fails)
-    while (!fsm_error)
+    while (!fsm_global_flags)
     {
         // Reset buffer pointer
         fsm_buffer_ptr = fsm_buffer;
@@ -193,8 +210,12 @@ void fsm_poll()
             fsm_buffer = (uint8_t*) realloc(fsm_buffer, sizeof(uint8_t) * fsm_buffer_len);
 
             // Verify realloc
-            fsm_error |= !fsm_buffer;
-            if (fsm_error) break;
+            if (!fsm_buffer)
+            {
+                // Set allocation error flag
+                fsm_global_flags |= fsm_global_alloction_error_flag;
+                break;
+            }
 
             // Update pointer
             fsm_buffer_ptr = fsm_buffer + num_s1_bytes;
@@ -242,8 +263,12 @@ void fsm_poll()
             fsm_buffer = (uint8_t*) realloc(fsm_buffer, sizeof(uint8_t) * fsm_buffer_len);
 
             // Verify realloc
-            fsm_error |= !fsm_buffer;
-            if (fsm_error) break;
+            if (!fsm_buffer)
+            {
+                // Set allocation error flag
+                fsm_global_flags |= fsm_global_alloction_error_flag;
+                break;
+            }
 
             // Update pointer
             fsm_buffer_ptr = fsm_buffer + num_s1_bytes + num_s2_bits;
@@ -480,7 +505,7 @@ void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uin
     else num_s2_bits = num_s2_bits_4;
 
     // Find checksum size
-    checksum_struct* check = fsm_get_checksum_struct(s_major_key);
+    const checksum_struct* check = fsm_get_checksum_struct(s_major_key);
     uint32_t checksum_size = check->get_checksum_size();
 
     // Realloc if need bigger send buffer
@@ -492,8 +517,12 @@ void fsm_send(uint8_t s_major_key, uint8_t s_minor_key, const uint8_t* data, uin
         fsm_buffer = (uint8_t*) realloc(fsm_buffer, sizeof(uint8_t) * fsm_buffer_len);
 
         // Verify realloc
-        fsm_error |= !fsm_buffer;
-        if (fsm_error) return;
+        if (!fsm_buffer)
+        {
+            // Set allocation error flag
+            fsm_global_flags |= fsm_global_alloction_error_flag;
+            return;
+        }
     }
     fsm_buffer_ptr = fsm_buffer;
 
@@ -598,13 +627,13 @@ bool fsm_read_next(uint8_t* data_array, uint32_t num_bytes, uint32_t timeout)
 
 bool fsm_check_checksum(const uint8_t* data, uint32_t data_len, const uint8_t* checksum_cmp)
 {
-    checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc] & s1_major_key_byte_mask);
+    const checksum_struct* check = fsm_get_checksum_struct(data[s1_major_key_loc] & s1_major_key_byte_mask);
     uint32_t checksum_size = check->get_checksum_size();
     check->get_checksum(data, data_len, check->checksum_start, fsm_checksum_buffer);
     return check->check_checksum(checksum_cmp, fsm_checksum_buffer);
 }
 
-checksum_struct* fsm_get_checksum_struct(uint8_t gui_key)
+const checksum_struct* fsm_get_checksum_struct(uint8_t gui_key)
 {
     switch (gui_key)
     {

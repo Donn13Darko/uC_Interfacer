@@ -70,7 +70,6 @@ signals:
     void write_data(QByteArray data);
 
     // Ack info
-    void ackReceived(QByteArray ack);
     void ackChecked(bool ackStatus);
 
     // Ready info
@@ -130,7 +129,6 @@ private slots:
     // Ack
     void send_ack(uint8_t majorKey);
     void waitForAck(int msecs = 5000);
-    void checkAck(QByteArray ack);
 
 private:
     /* Bridge flag. Bits as follows:

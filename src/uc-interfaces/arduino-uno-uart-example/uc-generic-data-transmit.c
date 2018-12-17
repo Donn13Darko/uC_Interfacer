@@ -18,26 +18,19 @@
 
 #include "uc-generic-data-transmit.h"
 
-uint32_t data_transmit_expected_trans_size = 0;
-uint32_t data_transmit_curr_trans_size = 0;
+static uint32_t data_transmit_expected_trans_size = 0;
+static uint32_t data_transmit_curr_trans_size = 0;
 
 void uc_data_transmit(uint8_t major_key, uint8_t minor_key, const uint8_t* buffer, uint32_t buffer_len)
 {
-    // Verify bytes for command or return
-    switch (minor_key)
-    {
-        case MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE:
-        {
-            if (buffer_len != s2_data_transmit_settings_trans_end) return;
-            else break;
-        }
-    }
-
     // Parse and act on minor key
     switch (minor_key)
     {
         case MINOR_KEY_DATA_TRANSMIT_SET_TRANS_SIZE:
         {
+            // Check packet length
+            if (buffer_len != s2_data_transmit_settings_trans_end) break;
+
             // Set expected size and reset current size
             data_transmit_expected_trans_size = *((uint32_t*) buffer);
             data_transmit_curr_trans_size = 0;
@@ -50,6 +43,11 @@ void uc_data_transmit(uint8_t major_key, uint8_t minor_key, const uint8_t* buffe
 
             // Send data to be handled
             uc_data_handle(buffer, buffer_len);
+
+            // Send ready
+            fsm_send_ready();
+
+            // Break out
             break;
         }
     }

@@ -93,7 +93,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     // Setup More Options Dialog
     main_options_settings.reset_on_tab_switch = false;
-    main_options_settings.send_little_endian = false;
     main_options_settings.chunk_size = GUI_COMM_BRIDGE::default_chunk_size;
     more_options = new GUI_MORE_OPTIONS(&main_options_settings, &local_options_settings,
                                         supportedGUIsList, GUI_COMM_BRIDGE::get_supported_checksums(),
@@ -959,12 +958,6 @@ GUI_BASE *MainWindow::create_new_tab(uint8_t gui_key, QMap<QString, QVariant> *g
             if (guiConfigMap->value("reset_tabs_on_switch", "false").toBool())
             {
                 main_options_settings.reset_on_tab_switch = true;
-            }
-
-            // Check little endian setting (forces a true from INI)
-            if (guiConfigMap->value("send_little_endian", "false").toBool())
-            {
-                main_options_settings.send_little_endian = true;
             }
 
             // Check chunk size setting (overrides if options setting is default)

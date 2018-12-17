@@ -73,7 +73,6 @@ static const uint8_t num_s1_bytes = s1_end_loc;
 static const uint8_t s1_major_key_byte_mask = 0x3F;
 static const uint8_t s1_num_s2_bits_byte_mask = 0x03;
 static const uint8_t s1_num_s2_bits_byte_shift = 6;
-extern uint32_t num_s2_bytes;
 
 /*
  * Struct for settings the checksum functions

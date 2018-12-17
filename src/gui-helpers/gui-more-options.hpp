@@ -27,7 +27,6 @@
 
 typedef struct MoreOptions_struct {
     bool reset_on_tab_switch;
-    bool send_little_endian;
     uint32_t chunk_size;
     // (1) checksum_name, (2) checksum_start, (3) checksum_start_base, (4) checksum_exe
     QMap<QString, QStringList> checksum_map;

@@ -1705,12 +1705,12 @@ QHBoxLayout *GUI_IO_CONTROL::create_pin()
 
     // Set size attributes
     pin_label->setMinimumSize(20, 20);
-    pin_combo->setMinimumSize(75, 20);
-    pin_slider->setMinimumSize(85, 20);
-    pin_edit->setMinimumSize(50, 20);
     pin_label->setMaximumSize(20, 20);
+    pin_combo->setMinimumSize(75, 20);
     pin_combo->setMaximumSize(75, 20);
-    pin_slider->setMaximumSize(85, 20);
+    pin_slider->setMinimumSize(75, 20);
+    pin_slider->setMaximumSize(75, 20);
+    pin_edit->setMinimumSize(50, 20);
     pin_edit->setMaximumSize(50, 20);
 
     // Set size policy

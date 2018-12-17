@@ -66,9 +66,6 @@ GUI_COMM_BRIDGE::GUI_COMM_BRIDGE(uint8_t num_guis, QObject *parent) :
 
     // Connect ack loop signals and slots
     // All internal object connections so direct is okay
-    connect(this, SIGNAL(ackReceived(QByteArray)),
-            this, SLOT(checkAck(QByteArray)),
-            Qt::DirectConnection);
     connect(this, SIGNAL(ackChecked(bool)),
             &ackLoop, SLOT(quit()),
             Qt::DirectConnection);
@@ -260,16 +257,15 @@ void GUI_COMM_BRIDGE::receive(QByteArray recvData)
                 {
                     case MAJOR_KEY_ACK:
                     {
-                        // If not error, emit ackReceived
+                        // If not error, check ack
                         if (!exit_recv)
                         {
-                            // Build temporary array to send off data
-                            tmp.clear();
-                            tmp.append((char) major_key);
-                            tmp.append((char) minor_key);
+                            // Check ack against inputs
+                            ack_status = ((major_key == (char) MAJOR_KEY_ACK)
+                                          && (minor_key == (char) ack_key));
 
-                            // Emit ack received
-                            emit ackReceived(tmp);
+                            // Emit checked signal
+                            emit ackChecked(ack_status);
                         }
 
                         // Break out of Act Switch
@@ -645,16 +641,6 @@ void GUI_COMM_BRIDGE::waitForAck(int msecs)
 
     // Stop timer
     ackTimer.stop();
-}
-
-void GUI_COMM_BRIDGE::checkAck(QByteArray ack)
-{
-    // Check ack against inputs
-    ack_status = ((ack.at(s1_major_key_loc) == (char) MAJOR_KEY_ACK)
-            && (ack.at(s1_minor_key_loc) == (char) ack_key));
-
-    // Emit checked signal
-    emit ackChecked(ack_status);
 }
 
 void GUI_COMM_BRIDGE::getChecksum(const uint8_t *data, uint32_t data_len, uint8_t checksum_key,
@@ -1150,7 +1136,7 @@ void GUI_COMM_BRIDGE::transmit_data(QByteArray data)
     // Check if trying to send empty data array or exiting
     if (data.isEmpty() || (bridge_flags & bridge_close_flag)) return;
 
-    // Get next data to send
+    // Setup next transmit
     dev_status = false;
     ack_status = false;
     ack_key = ((char) data.at(s1_major_key_loc) & s1_major_key_byte_mask);
