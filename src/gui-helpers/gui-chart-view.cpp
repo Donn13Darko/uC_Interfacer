@@ -226,9 +226,14 @@ void GUI_CHART_VIEW::destroy_chart_elements()
 
     // Get and delete all grid elements
     QLayoutItem *item;
-    while ((item = ui->ChartGridLayout->itemAt(0)))
+    QWidget *itemWidget;
+    while ((item = ui->ChartGridLayout->takeAt(0)))
     {
-        delete item->widget();
-        delete item;
+        if (item != NULL)
+        {
+            itemWidget = item->widget();
+            if (itemWidget != NULL) delete itemWidget;
+            delete item;
+        }
     }
 }
